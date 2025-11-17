@@ -1,5 +1,12 @@
 # Domain Brief - AI-Powered MSP Platform
 
+**Document Type:** Functional Requirements & Business Rules
+**Related Documents:**
+- [Architecture Session Context](./architecture-session-context.md) - Technical implementation architecture
+- [Agent Handoff - Continue PRD](./agent-handoff-continue-prd.md) - Strategic vision and context
+
+---
+
 ## Core Functional Requirements
 
 ### Authentication & Authorization

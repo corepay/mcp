@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat priv/repo/migrations/*.exs)",
+      "Bash(cat .formatter.exs)",
+      "SlashCommand(/bmad:bmm:workflows:architecture)",
+      "WebSearch",
+      "Bash(test -f /Users/rp/Developer/Base/mcp/mix.exs)",
+      "SlashCommand(/bmad:core:workflows:party-mode)",
+      "Bash(test -f /Users/rp/Developer/Base/mcp/docs/bmm-workflow-status.yaml)",
+      "Bash(tree -L 3 -d /Users/rp/Developer/Base/mcp/lib/mcp)",
+      "Bash(git add .)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Complete epics 8-11 story breakdown and fix self-registration model\n\n- Add Epic 8: Portal Routing & Context Resolution (12 stories)\n  - Subdomain resolution with ContextPlug\n  - 8 portal types (platform, discovery, tenant, developer, reseller, merchant, customer, vendor, store)\n  - Branding cascade system\n  - Complete test coverage\n\n- Add Epic 9: Polymorphic Shared Entities with RLS (10 stories)\n  - Addresses with PostGIS geocoding\n  - Emails, phones, socials with type classification\n  - Images (S3/MinIO), documents (encrypted storage)\n  - Todos with assignment, notes with full-text search\n  - RLS helper functions for access control\n\n- Add Epic 10: API Keys & Developer Portal Access (10 stories)\n  - Three-tier API key model (developer, merchant, reseller)\n  - Tenant-scoped, auto-scoped, portfolio-scoped keys\n  - API authentication plug with rate limiting\n  - Header-based API versioning\n  - Complete API documentation with OpenAPI spec\n\n- Add Epic 11: Custom Domains & SSL Management (10 stories)\n  - DNS verification challenge system\n  - Automatic SSL provisioning via Let''s Encrypt ACME\n  - ProvisionReactor saga for domain provisioning\n  - Automatic SSL renewal (80-day schedule)\n  - Daily DNS validation for hijacking detection\n\n- Fix self-registration model across all stories\n  - Clarify: ONLY customers/vendors can self-register\n  - Add merchant settings: customer_self_registration, vendor_self_registration (both default false)\n  - Update FR33, FR34 to specify conditional self-registration\n  - Update Story 2.9 with clear IMPORTANT callout\n  - Update Stories 8.8, 8.9 with conditional acceptance criteria\n  - All other entity types remain invitation-only always\n\nTotal: 109 stories implementing 112 functional requirements\nPhase 1 foundation is now complete and implementation-ready\nEOF\n)\")",
+      "Bash(git push)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

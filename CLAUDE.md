@@ -1,150 +1,110 @@
-# DaisyUI Knowledge Base
+# CLAUDE.md
 
-## Component Library (50+ Components)
-- **Form Controls**: button, input, textarea, select, checkbox, radio, toggle, range, file input
-- **Navigation**: navbar, sidebar, breadcrumbs, pagination, tabs, steps
-- **Data Display**: card, alert, badge, avatar, divider, collapse, accordion, timeline
-- **Feedback**: loading, spinner, progress, toast, modal, drawer, dropdown, tooltip
-- **Layout**: container, hero, footer, stats, stack
-- **Interactive**: swap, countdown, timer, countdown timer
-- **Advanced**: join, artboard, phone mockup, mockup code, mockup browser
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## DaisyUI Pattern System
-### Component Structure: {component} {part} {modifier}
-- **Components**: card, btn, modal, input, etc.
-- **Parts**: body, title, content, actions, etc.
-- **Modifiers**: primary, secondary, success, warning, error, info, ghost, link
+## Project Overview
 
-### Size Modifiers
-- btn-xs, btn-sm, btn-md, btn-lg, btn-xl
-- Same pattern applies to other components
+An AI-powered MSP (Managed Service Provider) platform built with:
+- **Phoenix/Elixir** - Web framework and backend
+- **Ash Framework** - Resource-based backend architecture with declarative domain modeling
+- **DaisyUI + Tailwind CSS** - Frontend component library
+- **BMAD (Build, Manage, Automate, Deploy)** - Workflow orchestration system
+- **PostgreSQL** with advanced extensions (TimescaleDB, PostGIS, pgvector, Apache AGE)
+- **Redis** - Caching layer
+- **MinIO** - S3-compatible object storage
+- **Vault** - Secrets management
 
-### Color System (Semantic Names)
-- **primary**: Main brand color
-- **secondary**: Secondary accent
-- **accent**: Highlight color
-- **neutral**: Gray scale
-- **base**: Background colors
-- **info**: Blue tones
-- **success**: Green tones
-- **warning**: Yellow/amber tones
-- **error**: Red tones
+The unique aspect of this project is the unified pattern language across all three layers (BMAD, Ash, DaisyUI) enabling automatic cross-stack validation and code generation.
 
-### State Modifiers
-- **disabled**: Disabled state
-- **loading**: Loading state
-- **active**: Active/selected state
-- **focus**: Focus state
-- **hover**: Hover state
+## Common Development Commands
 
-### Animation & Effects
-- **hover-**: hover effects (hover:hover, hover:bg-primary, etc.)
-- **group-**: group hover states
-- **transition-**: smooth transitions
-- **swap**: component swapping animations
-
-## Responsive Design Patterns
-- Mobile-first approach
-- Responsive modifiers built into Tailwind
-- Collapse/expand patterns for mobile
-
-## Theme System
-### Light/Dark Mode
-- Automatic theme switching
-- Custom theme configuration
-- CSS custom properties for colors
-
-### Custom Themes
-- Define custom color schemes
-- Override default DaisyUI themes
-- Component-specific theming
-
-## Best Practices
-- Use semantic color names (primary, success) over literal colors
-- Leverage component variants for consistency
-- Combine with Tailwind utilities for custom styling
-- Maintain accessibility with proper contrast ratios
-
----
-
-# Ash Framework Knowledge Base
-
-## Core Concepts
-- **Resources**: Domain models with actions, attributes, and validations
-- **Actions**: CRUD operations (create, read, update, destroy) + custom actions
-- **Attributes**: Data fields with types, validations, and constraints
-- **Relationships**: belongs_to, has_one, has_many, many_to_many
-- **Policies**: Authorization and access control
-- **Changesets**: Data transformation pipelines
-
-## Resource Definition Pattern
-```elixir
-defmodule MyApp.Resources.User do
-  use Ash.Resource
-
-  attributes do
-    uuid_primary_key :id
-    attribute :name, :string, allow_nil?: false
-    attribute :email, :string, allow_nil?: false
-  end
-
-  relationships do
-    has_many :posts, MyApp.Resources.Post
-  end
-
-  actions do
-    defaults [:create, :read, :update, :destroy]
-  end
-end
-```
-
-## Action Types
-- **Read**: show, list, read
-- **Create**: create
-- **Update**: update
-- **Destroy**: destroy
-- **Generic**: Custom business logic actions
-
-## Usage Rules System
-- **usage-rules.md**: Auto-generated documentation per package
-- **Rule combining**: Multiple rule sets can be combined
-- **Validation**: Enforces best practices and constraints
-- **Documentation**: Self-documenting system
-
-## Extensions & Integrations
-- **AshPostgres**: PostgreSQL data layer
-- **AshJsonApi**: JSON:API API layer
-- **AshGraphql**: GraphQL API layer
-- **AshAdmin**: Admin interface generation
-- **AshArchival**: Soft deletion
-- **AshPaperTrail**: Audit trails
-
-## Code Generation
-- **Generators**: Resource, domain, API scaffolding
-- **Templates**: Customizable code templates
-- **Migrations**: Database schema management
-
----
-
-# BMAD Integration Patterns
-
-## Unified Syntax
-```
-ash://resource.action:modifier
-daisyui://component-part:modifier
-bmad://workflow.step:modifier
-```
-
-## Cross-Stack Mapping
-| Ash Resource | DaisyUI Component | BMAD Workflow |
-|-------------|------------------|---------------|
-| UserResource | user-card | user_lifecycle |
-| PostResource | post-card | post_lifecycle |
-| CommentResource | comment-thread | comment_lifecycle |
-
-## Integration Commands
+### Setup and Dependencies
 ```bash
-# Validate cross-stack consistency
+# Initial setup (dependencies, database, assets)
+mix setup
+
+# Install dependencies only
+mix deps.get
+
+# Database setup
+mix ecto.setup           # Create, migrate, seed
+mix ecto.reset           # Drop, recreate, migrate, seed
+mix ecto.create          # Create database
+mix ecto.migrate         # Run migrations
+mix ecto.rollback        # Rollback last migration
+```
+
+### Development Server
+```bash
+# Start Phoenix server
+mix phx.server
+
+# Start with IEx console
+iex -S mix phx.server
+
+# Start infrastructure (Postgres, Redis, MinIO, Vault)
+docker-compose up -d
+docker-compose down
+```
+
+### Testing
+```bash
+# Run all tests
+mix test
+
+# Run specific test file
+mix test test/path/to/test_file.exs
+
+# Run specific test by line number
+mix test test/path/to/test_file.exs:42
+
+# Run previously failed tests only
+mix test --failed
+
+# Run tests with coverage
+mix test --cover
+```
+
+### Code Quality
+```bash
+# Pre-commit checks (compile, credo, format check, unused deps, test)
+mix precommit
+
+# Quality checks (compile, credo, dialyzer)
+mix quality
+
+# Full check suite (compile, credo, dialyzer, test)
+mix check
+
+# Format code
+mix format
+
+# Check formatting without changes
+mix format --check-formatted
+
+# Run Credo linter
+mix credo
+mix credo --strict
+
+# Run Dialyzer type checker (first run is slow)
+mix dialyzer
+```
+
+### Asset Pipeline
+```bash
+# Setup assets (install Tailwind and esbuild)
+mix assets.setup
+
+# Build assets for development
+mix assets.build
+
+# Build and minify assets for production
+mix assets.deploy
+```
+
+### BMAD Integration Tools
+```bash
+# Validate cross-stack consistency (Ash ↔ DaisyUI ↔ BMAD)
 python3 lib/bmad_integration/validators/cross_stack_validator.py
 
 # Generate full-stack resources
@@ -154,15 +114,94 @@ python3 lib/bmad_integration/tools/full_stack_tools.py
 python3 lib/bmad_integration/core/live-validation/realtime_validator.py
 ```
 
----
+## Architecture
 
-## Project-Specific Rules
-- always warn about the context remaining and before starting a new task make sure there the remaining context in the session is enough to complete the next task.  If not enough context, ask the user to use compact or create a new agent handoff doc for the remaning tasks
-- Anything less than a 100% passing test rate for any implementation is unacceptable.  Assume this requirement and do not ask for confiration or propose moving on or alternatives.
-- Minimize documentation - prefer terminal output and self-documenting code
-- Do not lie
-- Maintain doc hygiene - update existing docs rather than creating new ones
-- Keep root directory clean - organize features in appropriate subdirectories
-- Use lib/ directory for all implementation code following Phoenix conventions
-- Test actual functionality before claiming features work
-- Clean up temporary files and testing artifacts immediately
+### Domain Structure
+The application follows Phoenix conventions with domain-driven modules in `lib/mcp/`:
+
+- **`core/`** - Core domain logic, Ecto repo, telemetry
+- **`cache/`** - Redis-based caching (supervisor, cache manager, session store)
+- **`secrets/`** - Vault integration (credential manager, encryption service)
+- **`storage/`** - S3/MinIO object storage client
+- **`communication/`** - Messaging and notifications
+
+Web layer is in `lib/mcp_web/` following standard Phoenix structure.
+
+### Database Architecture
+**Repo**: `Mcp.Core.Repo` with advanced PostgreSQL features:
+- **Multi-tenancy**: Schema-based isolation with `with_tenant_schema/2`
+- **TimescaleDB**: Time-series data with hypertables via `create_hypertable/3`
+- **PostGIS**: Geospatial queries
+- **pgvector**: Vector similarity search for AI/ML
+- **Apache AGE**: Graph database capabilities
+
+Search path organization: `acq_{tenant} → public → platform → shared → ag_catalog`
+
+### BMAD Integration Pattern
+Unified syntax across all layers enables automatic validation:
+
+```
+ash://resource.action:modifier       # Backend (Ash)
+daisyui://component-part:modifier    # Frontend (DaisyUI)
+bmad://workflow.step:modifier        # Process (BMAD)
+```
+
+**Example mapping**:
+- Ash: `UserResource` → DaisyUI: `user-card` → BMAD: `user_lifecycle`
+
+Configuration in `lib/bmad_integration/adapters/config.yaml` defines cross-stack mappings.
+
+### Configuration
+- **Development**: `config/dev.exs` - Phoenix server on port 4000
+- **Runtime**: `config/runtime.exs` - Environment-based configuration
+- **Test**: `config/test.exs` - Test environment with SQL sandbox
+- **Database**: Environment variables loaded at runtime via `Mcp.Core.Repo.init/2`
+
+Environment variables (see `.env` file):
+- `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
+- `REDIS_PORT`, `MINIO_PORT`, `VAULT_PORT`
+- `VAULT_DEV_ROOT_TOKEN_ID`
+
+### Frontend Architecture
+- **Tailwind CSS v4** with new import syntax (no `tailwind.config.js`)
+- **DaisyUI components** for UI patterns
+- **Phoenix LiveView** for real-time interactions
+- **esbuild** for JS bundling (ES2022 target)
+
+Asset source paths configured in `config/config.exs`:
+```elixir
+@source "../css"
+@source "../js"
+@source "../../lib/mcp_web"
+```
+
+## Project-Specific Guidelines
+
+### Quality Standards
+- **100% test pass rate required** - No exceptions. Never propose moving forward with failing tests.
+- Always run `mix precommit` before claiming work is complete.
+- Use `mix test --failed` to quickly iterate on failing tests.
+
+### Code Organization
+- Keep root directory clean - features go in domain subdirectories under `lib/mcp/`
+- Follow Phoenix conventions for web layer in `lib/mcp_web/`
+- BMAD integration code lives in `lib/bmad_integration/`
+
+### Documentation
+- Minimize documentation files - prefer self-documenting code and terminal output
+- Update existing docs rather than creating new ones
+- Don't create README files proactively
+
+### HTTP Requests
+Use `:req` (Req) library for all HTTP requests - already included as dependency. Avoid `:httpoison`, `:tesla`, `:httpc`.
+
+### Cross-Stack Validation
+When working across Ash resources and DaisyUI components:
+1. Check pattern mappings in `lib/bmad_integration/adapters/config.yaml`
+2. Run cross-stack validator to ensure consistency
+3. Verify theme synchronization between layers
+
+### Context Awareness
+Always warn when context is running low before starting new tasks. If insufficient context remains, ask user to:
+- Use compact mode, or
+- Create agent handoff document for remaining tasks
