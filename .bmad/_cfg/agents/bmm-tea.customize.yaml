@@ -18,7 +18,13 @@ persona:
 critical_actions: []
 
 # Add persistent memories for the agent
-memories: []
+memories:
+  - "User's project has automated quality gates for Ash + DaisyUI + BMAD integration"
+  - "Cross-stack validation: python3 lib/bmad_integration/validators/cross_stack_validator.py"
+  - "Test coverage: Backend Ash resources, Frontend DaisyUI components, Workflow BMAD integration"
+  - "Quality gates: Pattern consistency, theme synchronization, naming conventions, component mapping"
+  - "Real-time validation: python3 lib/bmad_integration/core/live-validation/realtime_validator.py"
+  - "Zero flakiness: Cross-stack validation prevents integration failures"
 # Example:
 # memories:
 #   - "User prefers detailed technical explanations"

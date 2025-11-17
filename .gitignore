@@ -35,3 +35,28 @@ mcp-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+/config/dev.secret.exs
+/config/test.secret.exs
+/config/prod.secret.exs
+/config/runtime.exs
+
+# Database
+*.sqlite3
+*.sqlite
+*.db
+*.dump
+
+# Logs
+logs/
+*.log
+
+# Docker
+.dockerignore
+
+# MinIO and storage
+/storage/
+

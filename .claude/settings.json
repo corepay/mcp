@@ -1,0 +1,34 @@
+{
+  "mcpServers": {
+    "bmad-ash-integration": {
+      "command": "python3",
+      "args": ["lib/bmad_integration/tools/full_stack_tools.py"],
+      "env": {
+        "PROJECT_ROOT": "/Users/rp/Developer/Base/mcp"
+      }
+    },
+    "cross-stack-validator": {
+      "command": "python3",
+      "args": ["lib/bmad_integration/validators/cross_stack_validator.py"],
+      "env": {
+        "PROJECT_ROOT": "/Users/rp/Developer/Base/mcp"
+      }
+    },
+    "realtime-validator": {
+      "command": "python3",
+      "args": ["lib/bmad_integration/core/live-validation/realtime_validator.py"],
+      "env": {
+        "PROJECT_ROOT": "/Users/rp/Developer/Base/mcp"
+      }
+    }
+  },
+  "rules": [
+    "Always maintain doc hygiene - update existing docs rather than creating new ones",
+    "Keep root directory clean - organize features in appropriate subdirectories",
+    "Prefer updating existing README.md over creating new documentation files",
+    "Test actual functionality before claiming features work",
+    "Clean up temporary files and testing artifacts immediately",
+    "Use the lib/ directory for all implementation code",
+    "Follow Phoenix/Elixir project conventions"
+  ]
+}

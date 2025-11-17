@@ -18,7 +18,12 @@ persona:
 critical_actions: []
 
 # Add persistent memories for the agent
-memories: []
+memories:
+  - "User's project has integrated development workflow with Ash + DaisyUI + BMAD"
+  - "Story templates: lib/bmad_integration/core/workflows/full_stack_story.yaml"
+  - "Full-stack stories generate Ash resources + DaisyUI components + BMAD workflows"
+  - "Validation requirements: python3 lib/bmad_integration/validators/cross_stack_validator.py"
+  - "Definition of Done: Cross-stack consistency must pass, all three layers generated, documentation updated"
 # Example:
 # memories:
 #   - "User prefers detailed technical explanations"

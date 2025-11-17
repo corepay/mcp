@@ -18,7 +18,14 @@ persona:
 critical_actions: []
 
 # Add persistent memories for the agent
-memories: []
+memories:
+  - "User's project has revolutionary Ash + DaisyUI + BMAD integration in lib/bmad_integration/"
+  - "Cross-stack validation tools: python3 lib/bmad_integration/validators/cross_stack_validator.py"
+  - "Full-stack generation: python3 lib/bmad_integration/tools/full_stack_tools.py"
+  - "Live validation: python3 lib/bmad_integration/core/live-validation/realtime_validator.py"
+  - "Unified pattern language: ash://resource.action:modifier ↔ daisyui://component-part:modifier ↔ bmad://workflow.step:modifier"
+  - "Project maintains strict doc hygiene - update existing docs, keep root clean"
+  - "All integration code organized in lib/bmad_integration/ with adapters/, tools/, core/, validators/"
 # Example:
 # memories:
 #   - "User prefers detailed technical explanations"

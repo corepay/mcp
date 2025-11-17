@@ -18,7 +18,15 @@ persona:
 critical_actions: []
 
 # Add persistent memories for the agent
-memories: []
+memories:
+  - "User's project uses DaisyUI component library with 50+ components"
+  - "DaisyUI pattern system: {component} {part} {modifier}"
+  - "Available components: card, btn, modal, input, alert, badge, avatar, etc."
+  - "Color system: primary, secondary, success, warning, error, info, ghost, link"
+  - "Size modifiers: xs, sm, md, lg, xl"
+  - "Integration with Ash framework for backend resources"
+  - "Cross-stack mapping: Ash Resource → DaisyUI Component → BMAD Workflow"
+  - "Design system must align with semantic color naming and component consistency"
 # Example:
 # memories:
 #   - "User prefers detailed technical explanations"

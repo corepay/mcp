@@ -11,7 +11,28 @@ defmodule Mcp.MixProject do
       aliases: aliases(),
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
-      listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader],
+
+      # Code quality settings
+      dialyzer: [
+        plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
+        plt_add_apps: [:ex_unit, :mix],
+        ignore_warnings: ".dialyzer_ignore.exs",
+        list_unused_filters: true,
+        uncover_locals: true
+      ],
+
+      # Warnings as errors in production
+      consolidate_protocols: Mix.env() == :prod,
+
+      # Strict compiler options
+      xref: [exclude: [Mix.Tasks.Compile]],
+
+      # Documentation coverage
+      docs: [
+        main: "Mcp",
+        source_ref: "main"
+      ]
     ]
   end
 
@@ -78,6 +99,11 @@ defmodule Mcp.MixProject do
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.13"},
       {:postgrex, ">= 0.0.0"},
+      {:ex_aws, "~> 2.4"},
+      {:ex_aws_s3, "~> 2.4"},
+      {:sweet_xml, "~> 0.7"},
+      {:vaultex, "~> 1.0"},
+      {:redix, "~> 1.5"},
       {:phoenix_html, "~> 4.1"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 1.1.0"},
@@ -99,7 +125,13 @@ defmodule Mcp.MixProject do
       {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+
+      # Code quality tools (dev only)
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false},
+      {:ex_check, "~> 0.16", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -122,7 +154,9 @@ defmodule Mcp.MixProject do
         "esbuild mcp --minify",
         "phx.digest"
       ],
-      precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
+      precommit: ["compile --warning-as-errors", "credo --strict", "deps.unlock --unused", "format --check-formatted", "test"],
+      quality: ["compile --warning-as-errors", "credo", "dialyzer"],
+      check: ["compile", "credo --strict", "dialyzer", "test"]
     ]
   end
 end

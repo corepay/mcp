@@ -18,7 +18,13 @@ persona:
 critical_actions: []
 
 # Add persistent memories for the agent
-memories: []
+memories:
+  - "User's project has industry-disrupting Ash + DaisyUI + BMAD integration"
+  - "Business model innovation: Zero boilerplate development eliminates massive cost center"
+  - "Competitive moat: Unified pattern language is extremely difficult to replicate"
+  - "Market disruption: First truly unified full-stack development ecosystem"
+  - "Strategic advantage: Perfect documentation sync eliminates knowledge debt"
+  - "Innovation pipeline: Automated generation enables rapid experimentation"
 # Example:
 # memories:
 #   - "User prefers detailed technical explanations"

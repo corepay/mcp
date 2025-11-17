@@ -1,0 +1,54 @@
+# BMAD-Ash Adapter Configuration
+name: "bmad-ash-adapter"
+version: "1.0.0"
+description: "Unified pattern adapter for BMAD + Ash framework integration"
+
+# Core pattern mapping system
+unified_patterns:
+  backend_syntax: "ash://{resource}.{action}:{modifier}"
+  frontend_syntax: "daisyui://{component}-{part}:{modifier}"
+  workflow_syntax: "bmad://{workflow}.{step}:{modifier}"
+
+# Resource to component mappings
+pattern_mappings:
+  # Ash Resources → DaisyUI Components
+  user:
+    resource: "user"
+    component: "user-card"
+    actions:
+      show: "user-card:detail"
+      list: "user-card:list"
+      create: "user-card:form"
+      edit: "user-card:form"
+
+  post:
+    resource: "post"
+    component: "post-card"
+    actions:
+      show: "post-card:full"
+      list: "post-card:preview"
+      create: "post-card:editor"
+
+  comment:
+    resource: "comment"
+    component: "comment-thread"
+    actions:
+      show: "comment-thread:expanded"
+      create: "comment-thread:form"
+
+# Cross-stack validation rules
+validation_rules:
+  - name_pattern_consistency
+  - modifier_syntax_alignment
+  - cross_stack_coherence
+  - theme_sync_validation
+
+# Theme mapping
+theme_mappings:
+  ash_colors:
+    primary: "primary"
+    secondary: "secondary"
+    error: "error"
+    warning: "warning"
+    success: "success"
+    info: "info"

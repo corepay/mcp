@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: mcp_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/full-stack-init.sql:/docker-entrypoint-initdb.d/00-init.sql
+    networks:
+      - mcp_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: mcp_redis
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - mcp_network
+
+  minio:
+    image: minio/minio:latest
+    container_name: mcp_minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "${MINIO_PORT}:9000"
+      - "9001:9001"  # Console
+    volumes:
+      - minio_data:/data
+    networks:
+      - mcp_network
+    command: server /data --console-address ":9001"
+
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: mcp_vault
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - "${VAULT_PORT}:8200"
+    volumes:
+      - vault_data:/vault/data
+    networks:
+      - mcp_network
+    command: vault server -dev -dev-root-token-id=${VAULT_DEV_ROOT_TOKEN_ID}
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  vault_data:
+
+networks:
+  mcp_network:
+    driver: bridge

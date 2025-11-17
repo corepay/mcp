@@ -1,14 +1,46 @@
 import Config
 
-# Configure your database
+# Configure CLDR backend for Money library
+config :ex_cldr,
+  default_backend: Mcp.Cldr
+
+config :ex_money,
+  default_cldr_backend: Mcp.Cldr
+
+# Configure your database with environment variables
 config :mcp, Mcp.Repo,
-  username: "postgres",
-  password: "postgres",
+  username: System.get_env("POSTGRES_USER", "base_mcp_dev"),
+  password: System.get_env("POSTGRES_PASSWORD", "mcp_password"),
   hostname: "localhost",
-  database: "mcp_dev",
-  stacktrace: true,
+  database: System.get_env("POSTGRES_DB", "base_mcp_dev"),
+  port: String.to_integer(System.get_env("POSTGRES_PORT", "41789")),
   show_sensitive_data_on_connection_error: true,
-  pool_size: 10
+  pool_size: 10,
+  ssl: false
+
+# Configure Redis for caching
+config :mcp, Mcp.Redis,
+  host: "localhost",
+  port: String.to_integer(System.get_env("REDIS_PORT", "48234")),
+  database: 0,
+  reconnect_interval: :timer.seconds(5)
+
+# Configure MinIO (S3-compatible) storage
+config :ex_aws,
+  access_key_id: System.get_env("MINIO_ROOT_USER", "minioadmin"),
+  secret_access_key: System.get_env("MINIO_ROOT_PASSWORD", "minioadmin123"),
+  region: "us-east-1"
+
+config :ex_aws, :s3,
+  scheme: "http://",
+  host: "localhost",
+  port: String.to_integer(System.get_env("MINIO_PORT", "49723"))
+
+# Configure Vault for secrets management
+config :vaultex,
+  vault_address: "http://localhost:#{System.get_env("VAULT_PORT", "44567")}",
+  vault_token: System.get_env("VAULT_DEV_ROOT_TOKEN_ID", "dev-root-token"),
+  auth_method: :token
 
 # For development, we disable any cache and enable
 # debugging and code reloading.

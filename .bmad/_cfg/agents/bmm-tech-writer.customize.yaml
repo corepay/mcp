@@ -18,7 +18,13 @@ persona:
 critical_actions: []
 
 # Add persistent memories for the agent
-memories: []
+memories:
+  - "User's project maintains strict doc hygiene with Ash + DaisyUI + BMAD integration"
+  - "Primary documentation: README.md (update existing, don't create new)"
+  - "Technical docs: docs/ directory for implementation details"
+  - "Cross-stack documentation: Backend API docs include matching frontend components"
+  - "Auto-documentation: Generated docs stay in sync with implementation"
+  - "Documentation generation: python3 lib/bmad_integration/tools/full_stack_tools.py"
 # Example:
 # memories:
 #   - "User prefers detailed technical explanations"

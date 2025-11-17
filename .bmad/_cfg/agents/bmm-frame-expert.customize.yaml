@@ -18,7 +18,13 @@ persona:
 critical_actions: []
 
 # Add persistent memories for the agent
-memories: []
+memories:
+  - "User's project uses DaisyUI component library with 50+ components"
+  - "DaisyUI pattern system: {component} {part} {modifier}"
+  - "Cross-stack mapping: Ash Resource → DaisyUI Component → BMAD Workflow"
+  - "Component structure: card, btn, modal, input with semantic color variants"
+  - "Integration workflows: lib/bmad_integration/core/workflows/full_stack_story.yaml"
+  - "Design consistency enforced through cross-stack validation"
 # Example:
 # memories:
 #   - "User prefers detailed technical explanations"

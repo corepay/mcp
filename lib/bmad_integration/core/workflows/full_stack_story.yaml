@@ -1,0 +1,152 @@
+# Full-Stack Story Template for Ash + DaisyUI + BMAD Integration
+name: "full-stack-feature-story"
+description: "Template for creating unified stories that span Ash backend, DaisyUI frontend, and BMAD workflows"
+
+# Story template that generates all three layers
+story_template:
+  name: "{{feature_name}}"
+  description: "{{feature_description}}"
+
+  # Backend layer (Ash)
+  backend:
+    resource_name: "{{FeatureName}}"
+    attributes:
+      - name: "id"
+        type: "uuid"
+        primary_key: true
+      - name: "name"
+        type: "string"
+        required: true
+      - name: "email"
+        type: "string"
+        required: true
+      - name: "created_at"
+        type: "utc_datetime_usec"
+        allow_nil?: false
+      - name: "updated_at"
+        type: "utc_datetime_usec"
+        allow_nil?: false
+
+    actions:
+      - type: "read"
+        name: "show"
+        description: "Display single {{feature_name}}"
+
+      - type: "read"
+        name: "list"
+        description: "List all {{feature_name}} items"
+
+      - type: "create"
+        name: "create"
+        description: "Create new {{feature_name}}"
+
+      - type: "update"
+        name: "update"
+        description: "Update existing {{feature_name}}"
+
+      - type: "destroy"
+        name: "destroy"
+        description: "Delete {{feature_name}}"
+
+  # Frontend layer (DaisyUI)
+  frontend:
+    component_name: "{{feature_name}}-card"
+    component_type: "card"
+
+    daisyui_classes:
+      base: "card bg-base-100 shadow-xl"
+      body: "card-body"
+      title: "card-title"
+      actions: "card-actions justify-end"
+
+    fields:
+      - name: "name"
+        type: "text"
+        daisyui_class: "input input-bordered"
+
+      - name: "email"
+        type: "email"
+        daisyui_class: "input input-bordered"
+
+    buttons:
+      - name: "save"
+        class: "btn btn-primary"
+        action: "submit"
+
+      - name: "cancel"
+        class: "btn btn-ghost"
+        action: "cancel"
+
+  # Workflow layer (BMAD)
+  workflow:
+    name: "{{feature_name}}_lifecycle"
+
+    steps:
+      - number: 1
+        action: "validate_input"
+        description: "Validate {{feature_name}} data"
+
+      - number: 2
+        action: "check_permissions"
+        description: "Verify user permissions for {{feature_name}}"
+
+      - number: 3
+        action: "execute_backend"
+        description: "Execute Ash resource operation"
+
+      - number: 4
+        action: "update_frontend"
+        description: "Update DaisyUI component state"
+
+      - number: 5
+        action: "notify_user"
+        description: "Display success/error messages"
+
+# Acceptance criteria that validate all three layers
+acceptance_criteria:
+  - id: "ac-1"
+    description: "Ash resource validates and saves data correctly"
+    validation_type: "backend_test"
+
+  - id: "ac-2"
+    description: "DaisyUI component renders with proper styling"
+    validation_type: "frontend_test"
+
+  - id: "ac-3"
+    description: "BMAD workflow executes end-to-end successfully"
+    validation_type: "workflow_test"
+
+  - id: "ac-4"
+    description: "Cross-stack consistency is maintained"
+    validation_type: "integration_test"
+
+# Testing strategy across all layers
+testing_strategy:
+  backend_tests:
+    - unit_tests_for_ash_resource
+    - integration_tests_for_actions
+    - validation_rule_tests
+
+  frontend_tests:
+    - component_rendering_tests
+    - user_interaction_tests
+    - styling_consistency_tests
+
+  workflow_tests:
+    - end_to_end_workflow_tests
+    - error_handling_tests
+    - performance_tests
+
+# Quality gates for full-stack validation
+quality_gates:
+  - name: "ash_resource_compiles"
+    description: "Ash resource must compile without errors"
+
+  - name: "daisyui_component_valid"
+    description: "DaisyUI component must use valid classes"
+
+  - name: "bmad_workflow_executable"
+    description: "BMAD workflow must execute successfully"
+
+  - name: "cross_stack_consistent"
+    description: "All layers must be consistent with each other"
