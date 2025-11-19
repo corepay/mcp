@@ -31,7 +31,7 @@ defmodule Mcp.Repo.Migrations.CreateUsers do
     # Indexes
     create unique_index(:users, [:email], prefix: "platform")
     create index(:users, [:status], prefix: "platform")
-    create index(:users, [:created_at], prefix: "platform")
+    create index(:users, [:inserted_at], prefix: "platform")
 
     # Add status check constraint
     execute """

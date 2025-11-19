@@ -13,7 +13,10 @@ defmodule McpCache.Supervisor do
   @impl true
   def init(_init_arg) do
     children = [
-      {Redix, name: :redix_cache, host: System.get_env("REDIS_HOST", "localhost"), port: String.to_integer(System.get_env("REDIS_PORT", "43879"))},
+      {Redix,
+       name: :redix_cache,
+       host: System.get_env("REDIS_HOST", "localhost"),
+       port: String.to_integer(System.get_env("REDIS_PORT", "43879"))},
       McpCache.RedisClient,
       McpCache.SessionStore,
       McpCache.CacheManager

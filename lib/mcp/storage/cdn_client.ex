@@ -56,14 +56,15 @@ defmodule McpStorage.CDNClient do
   def get_cache_stats do
     if @cdn_enabled do
       # CDN stats API implementation would go here
-      {:ok, %{
-        enabled: true,
-        domain: @cdn_domain,
-        ttl: @cdn_ttl,
-        cache_hit_rate: 0.95,
-        total_requests: 1_000_000,
-        bandwidth_saved_gb: 500
-      }}
+      {:ok,
+       %{
+         enabled: true,
+         domain: @cdn_domain,
+         ttl: @cdn_ttl,
+         cache_hit_rate: 0.95,
+         total_requests: 1_000_000,
+         bandwidth_saved_gb: 500
+       }}
     else
       {:ok, %{enabled: false}}
     end

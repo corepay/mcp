@@ -57,8 +57,12 @@ defmodule Mcp.Redis do
   @impl true
   def handle_call({:get, key}, _from, %{conn: conn} = state) do
     case Redix.command(conn, ["GET", key]) do
-      {:ok, nil} -> {:reply, {:ok, nil}, state}
-      {:ok, value} -> {:reply, {:ok, value}, state}
+      {:ok, nil} ->
+        {:reply, {:ok, nil}, state}
+
+      {:ok, value} ->
+        {:reply, {:ok, value}, state}
+
       {:error, reason} ->
         Logger.error("Redis GET error for key #{key}: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -67,13 +71,16 @@ defmodule Mcp.Redis do
 
   @impl true
   def handle_call({:set, key, value, ttl_seconds}, _from, %{conn: conn} = state) do
-    command = case ttl_seconds do
-      nil -> ["SET", key, value]
-      _ttl -> ["SET", key, value, "EX", to_string(ttl_seconds)]
-    end
+    command =
+      case ttl_seconds do
+        nil -> ["SET", key, value]
+        _ttl -> ["SET", key, value, "EX", to_string(ttl_seconds)]
+      end
 
     case Redix.command(conn, command) do
-      {:ok, "OK"} -> {:reply, :ok, state}
+      {:ok, "OK"} ->
+        {:reply, :ok, state}
+
       {:error, reason} ->
         Logger.error("Redis SET error for key #{key}: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -83,7 +90,9 @@ defmodule Mcp.Redis do
   @impl true
   def handle_call({:delete, key}, _from, %{conn: conn} = state) do
     case Redix.command(conn, ["DEL", key]) do
-      {:ok, count} -> {:reply, {:ok, count}, state}
+      {:ok, count} ->
+        {:reply, {:ok, count}, state}
+
       {:error, reason} ->
         Logger.error("Redis DELETE error for key #{key}: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -93,8 +102,12 @@ defmodule Mcp.Redis do
   @impl true
   def handle_call({:exists, key}, _from, %{conn: conn} = state) do
     case Redix.command(conn, ["EXISTS", key]) do
-      {:ok, 0} -> {:reply, false, state}
-      {:ok, 1} -> {:reply, true, state}
+      {:ok, 0} ->
+        {:reply, false, state}
+
+      {:ok, 1} ->
+        {:reply, true, state}
+
       {:error, reason} ->
         Logger.error("Redis EXISTS error for key #{key}: #{inspect(reason)}")
         {:reply, false, state}
@@ -104,14 +117,19 @@ defmodule Mcp.Redis do
   @impl true
   def handle_call({:clear_pattern, pattern}, _from, %{conn: conn} = state) do
     case Redix.command(conn, ["KEYS", pattern]) do
-      {:ok, []} -> {:reply, {:ok, 0}, state}
+      {:ok, []} ->
+        {:reply, {:ok, 0}, state}
+
       {:ok, keys} ->
         case Redix.command(conn, ["DEL" | keys]) do
-          {:ok, count} -> {:reply, {:ok, count}, state}
+          {:ok, count} ->
+            {:reply, {:ok, count}, state}
+
           {:error, reason} ->
             Logger.error("Redis DELETE error for pattern #{pattern}: #{inspect(reason)}")
             {:reply, {:error, reason}, state}
         end
+
       {:error, reason} ->
         Logger.error("Redis KEYS error for pattern #{pattern}: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -128,13 +146,14 @@ defmodule Mcp.Redis do
   @impl true
   def handle_info(:reconnect, state) do
     case Redix.start_link(
-      host: state.config.host,
-      port: state.config.port,
-      database: state.config.database
-    ) do
+           host: state.config.host,
+           port: state.config.port,
+           database: state.config.database
+         ) do
       {:ok, conn} ->
         Logger.info("Redis reconnected successfully")
         {:noreply, %{state | conn: conn}}
+
       {:error, reason} ->
         Logger.error("Redis reconnection failed: #{inspect(reason)}")
         Process.send_after(self(), :reconnect, state.reconnect_interval)

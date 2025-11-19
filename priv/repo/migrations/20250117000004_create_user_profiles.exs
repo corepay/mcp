@@ -51,12 +51,16 @@ defmodule Mcp.Repo.Migrations.CreateUserProfiles do
     create index(:user_profiles, [:entity_type, :entity_id], prefix: "platform")
     create index(:user_profiles, [:status], prefix: "platform")
     create index(:user_profiles, [:is_admin], where: "is_admin = true", prefix: "platform")
-    create index(:user_profiles, [:is_developer], where: "is_developer = true", prefix: "platform")
+
+    create index(:user_profiles, [:is_developer],
+             where: "is_developer = true",
+             prefix: "platform"
+           )
 
     create index(:user_profiles, [:invitation_token],
-      where: "invitation_token IS NOT NULL",
-      prefix: "platform"
-    )
+             where: "invitation_token IS NOT NULL",
+             prefix: "platform"
+           )
 
     create unique_index(:user_profiles, [:user_id, :entity_type, :entity_id], prefix: "platform")
 

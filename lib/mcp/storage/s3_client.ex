@@ -14,15 +14,16 @@ defmodule McpStorage.S3Client do
 
     # ExAws implementation would go here
     # For now, simulate success with potential errors
-    cond do
-      not File.exists?(file_path) ->
-        {:error, :enoent}
-      true ->
-        {:ok, %{
-          url: "https://#{bucket}.s3.amazonaws.com/#{key}",
-          etag: "mock-etag-#{:crypto.strong_rand_bytes(8) |> Base.encode16()}",
-          size: :filelib.file_size(file_path)
-        }}
+    if File.exists?(file_path) do
+      # Simulate upload
+      {:ok,
+       %{
+         url: "https://#{bucket}.s3.amazonaws.com/#{key}",
+         etag: "mock-etag-#{:crypto.strong_rand_bytes(8) |> Base.encode16()}",
+         size: :filelib.file_size(file_path)
+       }}
+    else
+      {:error, :enoent}
     end
   end
 
@@ -71,12 +72,13 @@ defmodule McpStorage.S3Client do
     if String.contains?(key, "error") do
       {:error, :not_found}
     else
-      {:ok, %{
-        content_type: "application/octet-stream",
-        size: 0,
-        last_modified: DateTime.utc_now(),
-        etag: "mock-etag"
-      }}
+      {:ok,
+       %{
+         content_type: "application/octet-stream",
+         size: 0,
+         last_modified: DateTime.utc_now(),
+         etag: "mock-etag"
+       }}
     end
   end
 

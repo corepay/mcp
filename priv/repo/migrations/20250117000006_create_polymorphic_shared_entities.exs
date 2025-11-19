@@ -25,7 +25,7 @@ defmodule Mcp.Repo.Migrations.CreatePolymorphicSharedEntities do
       add :country, :text, null: false, default: "US"
 
       # Geocoding (PostGIS)
-      add :location, :geometry
+      # add :location, :geometry
 
       # Validation
       add :is_verified, :boolean, default: false
@@ -59,11 +59,11 @@ defmodule Mcp.Repo.Migrations.CreatePolymorphicSharedEntities do
     create index(:addresses, [:address_type], prefix: "platform")
 
     create index(:addresses, [:owner_type, :owner_id, :is_primary],
-      where: "is_primary = true",
-      prefix: "platform"
-    )
+             where: "is_primary = true",
+             prefix: "platform"
+           )
 
-    execute "CREATE INDEX idx_addresses_location ON platform.addresses USING GIST(location)"
+    # execute "CREATE INDEX idx_addresses_location ON platform.addresses USING GIST(location)"
 
     # Enable RLS
     execute "ALTER TABLE platform.addresses ENABLE ROW LEVEL SECURITY"
@@ -120,9 +120,9 @@ defmodule Mcp.Repo.Migrations.CreatePolymorphicSharedEntities do
     create index(:emails, [:email_type], prefix: "platform")
 
     create index(:emails, [:owner_type, :owner_id, :is_primary],
-      where: "is_primary = true",
-      prefix: "platform"
-    )
+             where: "is_primary = true",
+             prefix: "platform"
+           )
 
     # Enable RLS
     execute "ALTER TABLE platform.emails ENABLE ROW LEVEL SECURITY"
@@ -481,6 +481,7 @@ defmodule Mcp.Repo.Migrations.CreatePolymorphicSharedEntities do
     create index(:notes, [:is_pinned], where: "is_pinned = true", prefix: "platform")
 
     execute "CREATE INDEX idx_notes_tags ON platform.notes USING GIN(tags)"
+
     execute "CREATE INDEX idx_notes_content_search ON platform.notes USING GIN(to_tsvector('english', content))"
 
     # Enable RLS

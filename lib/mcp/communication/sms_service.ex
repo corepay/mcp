@@ -53,10 +53,12 @@ defmodule Mcp.Communication.SmsService do
             Logger.info("SMS sent successfully to #{mask_phone_number(to)}")
             new_state = %{state | rate_limits: new_limits}
             {:reply, {:ok, result}, new_state}
+
           {:error, reason} ->
             Logger.error("Failed to send SMS: #{inspect(reason)}")
             {:reply, {:error, reason}, state}
         end
+
       {:error, :rate_limited} ->
         {:reply, {:error, :rate_limited}, state}
     end
@@ -67,20 +69,27 @@ defmodule Mcp.Communication.SmsService do
     tenant_id = Keyword.get(opts, :tenant_id, "global")
     batch_size = Keyword.get(opts, :batch_size, 50)
 
-    results = recipients
-    |> Enum.chunk_every(batch_size)
-    |> Enum.with_index()
-    |> Enum.map(fn {batch, index} ->
-      # Check rate limits for batch
-      with {:ok, _new_limits} <- check_rate_limit_internal(state.rate_limits, tenant_id, "bulk_batch_#{index}", opts),
+    results =
+      recipients
+      |> Enum.chunk_every(batch_size)
+      |> Enum.with_index()
+      |> Enum.map(fn {batch, index} ->
+        # Check rate limits for batch
+        with {:ok, _new_limits} <-
+               check_rate_limit_internal(
+                 state.rate_limits,
+                 tenant_id,
+                 "bulk_batch_#{index}",
+                 opts
+               ),
              sms_data <- build_sms_data(batch, message, Keyword.put(opts, :batch_index, index)),
              {:ok, result} <- send_sms_via_provider(sms_data, state.provider, tenant_id) do
-            {:ok, {index, result}}
-          else
-            {:error, :rate_limited} -> {:error, {index, :rate_limited}}
-            {:error, reason} -> {:error, {index, reason}}
-          end
-    end)
+          {:ok, {index, result}}
+        else
+          {:error, :rate_limited} -> {:error, {index, :rate_limited}}
+          {:error, reason} -> {:error, {index, reason}}
+        end
+      end)
 
     successful = Enum.count(results, &match?({:ok, _}, &1))
     Logger.info("Bulk SMS sent: #{successful}/#{length(results)} batches successful")
@@ -127,19 +136,22 @@ defmodule Mcp.Communication.SmsService do
     hour_ago = DateTime.add(now, -3600, :second)
     day_ago = DateTime.add(now, -86_400, :second)
 
-    hourly_counts = Enum.filter(current_limits.hourly, &DateTime.compare(&1, hour_ago) != :lt)
-    daily_counts = Enum.filter(current_limits.daily, &DateTime.compare(&1, day_ago) != :lt)
+    hourly_counts = Enum.filter(current_limits.hourly, &(DateTime.compare(&1, hour_ago) != :lt))
+    daily_counts = Enum.filter(current_limits.daily, &(DateTime.compare(&1, day_ago) != :lt))
 
     cond do
       length(hourly_counts) >= max_per_hour ->
         {:error, :rate_limited}
+
       length(daily_counts) >= max_per_day ->
         {:error, :rate_limited}
+
       true ->
         new_limits = %{
           hourly: [now | hourly_counts],
           daily: [now | daily_counts]
         }
+
         updated_rate_limits = Map.put(rate_limits, key, new_limits)
         {:ok, updated_rate_limits}
     end

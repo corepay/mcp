@@ -84,10 +84,12 @@ defmodule Mcp.Communication.PushNotificationService do
     case Map.get(state.devices, user_key) do
       nil ->
         {:reply, {:error, :user_not_found}, state}
+
       user_devices ->
         case Map.pop(user_devices, device_id) do
           {nil, _} ->
             {:reply, {:error, :device_not_found}, state}
+
           {_device, remaining_devices} ->
             new_devices = update_user_devices(state.devices, user_key, remaining_devices)
             new_state = %{state | devices: new_devices}
@@ -105,17 +107,23 @@ defmodule Mcp.Communication.PushNotificationService do
     case Map.get(state.devices, user_key) do
       nil ->
         {:reply, {:error, :no_devices_found}, state}
-      user_devices ->
-        enabled_devices = Enum.filter(user_devices, fn {_device_id, device} ->
-          device.preferences.enabled and should_send_now?(device, notification)
-        end)
 
-        results = Enum.map(enabled_devices, fn {_device_id, device} ->
-          send_push_to_device(device, notification, opts)
-        end)
+      user_devices ->
+        enabled_devices =
+          Enum.filter(user_devices, fn {_device_id, device} ->
+            device.preferences.enabled and should_send_now?(device, notification)
+          end)
+
+        results =
+          Enum.map(enabled_devices, fn {_device_id, device} ->
+            send_push_to_device(device, notification, opts)
+          end)
 
         successful = Enum.count(results, &match?({:ok, _}, &1))
-        Logger.info("Push notification sent to #{user_id} via #{successful}/#{length(enabled_devices)} devices")
+
+        Logger.info(
+          "Push notification sent to #{user_id} via #{successful}/#{length(enabled_devices)} devices"
+        )
 
         {:reply, {:ok, results}, state}
     end
@@ -125,12 +133,17 @@ defmodule Mcp.Communication.PushNotificationService do
   def handle_call({:send_bulk_push, user_notifications, opts}, _from, state) do
     tenant_id = Keyword.get(opts, :tenant_id, "global")
 
-    results = Enum.map(user_notifications, fn {user_id, notification} ->
-      case send_push_notification(user_id, notification, Keyword.put(opts, :tenant_id, tenant_id)) do
-        {:ok, result} -> {:ok, {user_id, result}}
-        {:error, reason} -> {:error, {user_id, reason}}
-      end
-    end)
+    results =
+      Enum.map(user_notifications, fn {user_id, notification} ->
+        case send_push_notification(
+               user_id,
+               notification,
+               Keyword.put(opts, :tenant_id, tenant_id)
+             ) do
+          {:ok, result} -> {:ok, {user_id, result}}
+          {:error, reason} -> {:error, {user_id, reason}}
+        end
+      end)
 
     successful = Enum.count(results, &match?({:ok, _}, &1))
     Logger.info("Bulk push notifications sent: #{successful}/#{length(results)} users successful")
@@ -144,7 +157,9 @@ defmodule Mcp.Communication.PushNotificationService do
     user_key = "#{tenant_id}:#{user_id}"
 
     case Map.get(state.devices, user_key) do
-      nil -> {:reply, {:ok, []}, state}
+      nil ->
+        {:reply, {:ok, []}, state}
+
       user_devices ->
         device_list = Map.values(user_devices)
         {:reply, {:ok, device_list}, state}
@@ -156,16 +171,19 @@ defmodule Mcp.Communication.PushNotificationService do
     _tenant_id = Keyword.get(opts, :tenant_id, "global")
 
     # Find the device across all users
-    updated_state = Enum.reduce(state.devices, state, fn {user_key, user_devices}, acc_state ->
-      case Map.get(user_devices, device_id) do
-        nil -> acc_state
-        device ->
-          updated_device = %{device | preferences: Map.merge(device.preferences, preferences)}
-          updated_user_devices = Map.put(user_devices, device_id, updated_device)
-          updated_devices = Map.put(acc_state.devices, user_key, updated_user_devices)
-          %{acc_state | devices: updated_devices}
-      end
-    end)
+    updated_state =
+      Enum.reduce(state.devices, state, fn {user_key, user_devices}, acc_state ->
+        case Map.get(user_devices, device_id) do
+          nil ->
+            acc_state
+
+          device ->
+            updated_device = %{device | preferences: Map.merge(device.preferences, preferences)}
+            updated_user_devices = Map.put(user_devices, device_id, updated_device)
+            updated_devices = Map.put(acc_state.devices, user_key, updated_user_devices)
+            %{acc_state | devices: updated_devices}
+        end
+      end)
 
     Logger.info("Updated preferences for device: #{device_id}")
     {:reply, :ok, updated_state}
@@ -276,12 +294,14 @@ defmodule Mcp.Communication.PushNotificationService do
   end
 
   defp parse_time(nil), do: {0, 0}
+
   defp parse_time(time_string) when is_binary(time_string) do
     case String.split(time_string, ":") do
       [hour, minute] -> {String.to_integer(hour), String.to_integer(minute)}
       _ -> {0, 0}
     end
   end
+
   defp parse_time(_), do: {0, 0}
 
   defp generate_device_id(device_token, platform) do

@@ -7,7 +7,8 @@ defmodule McpCache.RedisClient do
   use GenServer
   require Logger
 
-  @default_ttl 3600  # 1 hour
+  # 1 hour
+  @default_ttl 3600
 
   def start_link(init_arg) do
     GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
@@ -61,11 +62,12 @@ defmodule McpCache.RedisClient do
     ttl = Keyword.get(opts, :ttl, @default_ttl)
     serialized_value = serialize_value(value)
 
-    command = if ttl > 0 do
-      ["SETEX", tenant_key, to_string(ttl), serialized_value]
-    else
-      ["SET", tenant_key, serialized_value]
-    end
+    command =
+      if ttl > 0 do
+        ["SETEX", tenant_key, to_string(ttl), serialized_value]
+      else
+        ["SET", tenant_key, serialized_value]
+      end
 
     case Redix.command(:redix_cache, command) do
       {:ok, _result} -> {:reply, :ok, state}
@@ -127,10 +129,10 @@ defmodule McpCache.RedisClient do
 
     with {:ok, keys} when is_list(keys) <- Redix.command(:redix_cache, ["KEYS", search_pattern]),
          {:ok, _count} <- delete_keys_if_exists(keys) do
-        {:reply, :ok, state}
-      else
-        {:error, reason} -> {:reply, {:error, reason}, state}
-      end
+      {:reply, :ok, state}
+    else
+      {:error, reason} -> {:reply, {:error, reason}, state}
+    end
   end
 
   defp build_tenant_key(key, opts) do
@@ -147,6 +149,7 @@ defmodule McpCache.RedisClient do
   end
 
   defp delete_keys_if_exists([]), do: {:ok, []}
+
   defp delete_keys_if_exists(keys) do
     Redix.command(:redix_cache, ["DEL" | keys])
   end

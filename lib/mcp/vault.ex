@@ -54,7 +54,9 @@ defmodule Mcp.Vault do
   @impl true
   def handle_call({:read_secret, path}, _from, %{vault_token: _token} = state) do
     case Vaultex.Client.read(state.vault_address, path, :token, 5000) do
-      {:ok, data} -> {:reply, {:ok, data}, state}
+      {:ok, data} ->
+        {:reply, {:ok, data}, state}
+
       {:error, reason} ->
         Logger.error("Vault read error for path #{path}: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -64,7 +66,9 @@ defmodule Mcp.Vault do
   @impl true
   def handle_call({:write_secret, path, data}, _from, %{vault_token: _token} = state) do
     case Vaultex.Client.write(state.vault_address, path, data, :token, 5000) do
-      {:ok, response} -> {:reply, {:ok, response}, state}
+      {:ok, response} ->
+        {:reply, {:ok, response}, state}
+
       {:error, reason} ->
         Logger.error("Vault write error for path #{path}: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -74,7 +78,9 @@ defmodule Mcp.Vault do
   @impl true
   def handle_call({:delete_secret, path}, _from, %{vault_token: _token} = state) do
     case Vaultex.Client.delete(state.vault_address, path, :token, 5000) do
-      {:ok, response} -> {:reply, {:ok, response}, state}
+      {:ok, response} ->
+        {:reply, {:ok, response}, state}
+
       {:error, reason} ->
         Logger.error("Vault delete error for path #{path}: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -91,7 +97,8 @@ defmodule Mcp.Vault do
 
   @impl true
   def handle_call({:generate_password, length}, _from, state) do
-    password = :crypto.strong_rand_bytes(length)
+    password =
+      :crypto.strong_rand_bytes(length)
       |> Base.encode64()
       |> binary_part(0, length)
 

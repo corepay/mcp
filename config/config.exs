@@ -11,6 +11,8 @@ config :mcp,
   ecto_repos: [Mcp.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+config :ex_cldr, default_backend: Mcp.Cldr
+
 # Configures the endpoint
 config :mcp, McpWeb.Endpoint,
   url: [host: "localhost"],

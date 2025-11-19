@@ -67,7 +67,8 @@ defmodule Mcp.Secrets.EncryptionService do
     new_state = %{state | keys: new_keys}
 
     Logger.info("Generated encryption key: #{full_key_id}")
-    {:reply, {:ok, %{key_info | key: nil}}, new_state}  # Don't return the actual key
+    # Don't return the actual key
+    {:reply, {:ok, %{key_info | key: nil}}, new_state}
   end
 
   @impl true
@@ -78,6 +79,7 @@ defmodule Mcp.Secrets.EncryptionService do
     case Map.get(state.keys, full_key_id) do
       nil ->
         {:reply, {:error, :key_not_found}, state}
+
       key_info ->
         # do_encrypt returns binary directly, not {:ok, _} tuple, so no error handling needed
         encrypted_data = do_encrypt(data, key_info.key)
@@ -93,10 +95,12 @@ defmodule Mcp.Secrets.EncryptionService do
     case Map.get(state.keys, full_key_id) do
       nil ->
         {:reply, {:error, :key_not_found}, state}
+
       key_info ->
         case do_decrypt(encrypted_data, key_info.key) do
           {:ok, data} ->
             {:reply, {:ok, data}, state}
+
           {:error, reason} ->
             Logger.error("Decryption failed: #{inspect(reason)}")
             {:reply, {:error, reason}, state}
@@ -110,11 +114,12 @@ defmodule Mcp.Secrets.EncryptionService do
     key_id = Keyword.get(opts, :key_id, "field_encryption")
     tenant_id = Keyword.get(opts, :tenant_id, "global")
 
-    case encrypt(field_value, key_id, [tenant_id: tenant_id]) do
+    case encrypt(field_value, key_id, tenant_id: tenant_id) do
       {:ok, encrypted_data} ->
         # Encode for storage
         encoded = Base.encode64(encrypted_data)
         {:reply, {:ok, encoded}, state}
+
       error ->
         {:reply, error, state}
     end
@@ -128,10 +133,11 @@ defmodule Mcp.Secrets.EncryptionService do
         key_id = Keyword.get(opts, :key_id, "field_encryption")
         tenant_id = Keyword.get(opts, :tenant_id, "global")
 
-        case decrypt(encrypted_data, key_id, [tenant_id: tenant_id]) do
+        case decrypt(encrypted_data, key_id, tenant_id: tenant_id) do
           {:ok, field_value} -> {:reply, {:ok, field_value}, state}
           error -> {:reply, error, state}
         end
+
       _error ->
         {:reply, {:error, :invalid_encoding}, state}
     end
@@ -145,12 +151,15 @@ defmodule Mcp.Secrets.EncryptionService do
     case Map.get(state.keys, full_key_id) do
       nil ->
         {:reply, {:error, :key_not_found}, state}
+
       key_info ->
         new_key = :crypto.strong_rand_bytes(@key_length)
-        new_key_info = %{key_info |
-          key: new_key,
-          version: key_info.version + 1,
-          rotated_at: DateTime.utc_now()
+
+        new_key_info = %{
+          key_info
+          | key: new_key,
+            version: key_info.version + 1,
+            rotated_at: DateTime.utc_now()
         }
 
         new_keys = Map.put(state.keys, full_key_id, new_key_info)
@@ -169,19 +178,23 @@ defmodule Mcp.Secrets.EncryptionService do
     case Map.get(state.keys, full_key_id) do
       nil ->
         {:reply, {:error, :key_not_found}, state}
+
       key_info ->
-        {:reply, {:ok, %{key_info | key: nil}}, state}  # Don't return the actual key
+        # Don't return the actual key
+        {:reply, {:ok, %{key_info | key: nil}}, state}
     end
   end
 
   defp do_encrypt(data, key) when is_binary(data) and is_binary(key) do
     iv = :crypto.strong_rand_bytes(16)
-    _aad = ""  # Additional authenticated data
+    # Additional authenticated data
+    _aad = ""
 
     case :crypto.crypto_one_time(@algorithm, key, iv, data, true) do
       ciphertext when is_binary(ciphertext) ->
         # Return iv + ciphertext + tag (AEAD support would require additional implementation)
         <<iv::binary, ciphertext::binary>>
+
       error ->
         {:error, error}
     end
@@ -191,13 +204,16 @@ defmodule Mcp.Secrets.EncryptionService do
 
   defp do_encrypt(_data, _key), do: {:error, :invalid_input}
 
-  defp do_decrypt(encrypted_data, key) when is_binary(encrypted_data) and byte_size(encrypted_data) > 16 do
+  defp do_decrypt(encrypted_data, key)
+       when is_binary(encrypted_data) and byte_size(encrypted_data) > 16 do
     <<iv::binary-16, ciphertext::binary>> = encrypted_data
-    _aad = ""  # Additional authenticated data
+    # Additional authenticated data
+    _aad = ""
 
     case :crypto.crypto_one_time(@algorithm, key, iv, ciphertext, false) do
       plaintext when is_binary(plaintext) ->
         {:ok, plaintext}
+
       error ->
         {:error, error}
     end

@@ -7,6 +7,8 @@ defmodule Mcp.Secrets.CredentialManager do
   use GenServer
   require Logger
 
+  alias Mcp.Secrets.EncryptionService
+
   @credential_types [:api_key, :database, :oauth, :certificate, :service_account]
 
   def start_link(init_arg) do
@@ -60,10 +62,10 @@ defmodule Mcp.Secrets.CredentialManager do
       }
 
       # Encrypt sensitive credential data
-      case Mcp.Secrets.EncryptionService.encrypt_field(
-            Jason.encode!(credential_data),
-            Keyword.merge(opts, [key_id: "credential_storage"])
-          ) do
+      case EncryptionService.encrypt_field(
+             Jason.encode!(credential_data),
+             Keyword.merge(opts, key_id: "credential_storage")
+           ) do
         {:ok, encrypted_data} ->
           encrypted_credential = %{credential | data: encrypted_data}
           new_credentials = Map.put(state.credentials, full_name, encrypted_credential)
@@ -71,6 +73,7 @@ defmodule Mcp.Secrets.CredentialManager do
 
           Logger.info("Stored credential: #{full_name} (type: #{type})")
           {:reply, {:ok, encrypted_credential}, new_state}
+
         error ->
           Logger.error("Failed to encrypt credential data: #{inspect(error)}")
           {:reply, error, state}
@@ -88,13 +91,15 @@ defmodule Mcp.Secrets.CredentialManager do
     case Map.get(state.credentials, full_name) do
       nil ->
         {:reply, {:error, :credential_not_found}, state}
+
       credential ->
         # Decrypt credential data
-        with {:ok, decrypted_data} <- Mcp.Secrets.EncryptionService.decrypt_field(
-              credential.data,
-              Keyword.merge(opts, [key_id: "credential_storage"])
-            ),
-         {:ok, credential_data} <- Jason.decode(decrypted_data) do
+        with {:ok, decrypted_data} <-
+               EncryptionService.decrypt_field(
+                 credential.data,
+                 Keyword.merge(opts, key_id: "credential_storage")
+               ),
+             {:ok, credential_data} <- Jason.decode(decrypted_data) do
           decrypted_credential = %{credential | data: credential_data}
           {:reply, {:ok, decrypted_credential}, state}
         else
@@ -113,12 +118,14 @@ defmodule Mcp.Secrets.CredentialManager do
     case Map.get(state.credentials, full_name) do
       nil ->
         {:reply, {:error, :credential_not_found}, state}
+
       credential ->
         # In a real implementation, this would generate new credentials
         # For now, just update the version and timestamp
-        rotated_credential = %{credential |
-          updated_at: DateTime.utc_now(),
-          version: credential.version + 1
+        rotated_credential = %{
+          credential
+          | updated_at: DateTime.utc_now(),
+            version: credential.version + 1
         }
 
         new_credentials = Map.put(state.credentials, full_name, rotated_credential)
@@ -137,6 +144,7 @@ defmodule Mcp.Secrets.CredentialManager do
     case Map.pop(state.credentials, full_name) do
       {nil, _} ->
         {:reply, {:error, :credential_not_found}, state}
+
       {_credential, new_credentials} ->
         new_state = %{state | credentials: new_credentials}
         Logger.info("Deleted credential: #{full_name}")
@@ -148,19 +156,21 @@ defmodule Mcp.Secrets.CredentialManager do
   def handle_call({:list_credentials, opts}, _from, state) do
     tenant_id = Keyword.get(opts, :tenant_id, "global")
 
-    credentials = Enum.filter(state.credentials, fn {_name, cred} ->
-      cred.tenant_id == tenant_id
-    end)
+    credentials =
+      Enum.filter(state.credentials, fn {_name, cred} ->
+        cred.tenant_id == tenant_id
+      end)
 
-    credential_list = Enum.map(credentials, fn {name, cred} ->
-      %{
-        name: name,
-        type: cred.type,
-        created_at: cred.created_at,
-        updated_at: cred.updated_at,
-        version: cred.version
-      }
-    end)
+    credential_list =
+      Enum.map(credentials, fn {name, cred} ->
+        %{
+          name: name,
+          type: cred.type,
+          created_at: cred.created_at,
+          updated_at: cred.updated_at,
+          version: cred.version
+        }
+      end)
 
     {:reply, {:ok, credential_list}, state}
   end
@@ -172,19 +182,26 @@ defmodule Mcp.Secrets.CredentialManager do
         # Perform validation based on credential type
         result = validate_credential_by_type(credential, validation_data)
         {:reply, result, state}
+
       error ->
         {:reply, error, state}
     end
   end
 
-  defp validate_credential_by_type(%{type: :api_key, data: %{"key" => stored_key}}, validation_data) do
+  defp validate_credential_by_type(
+         %{type: :api_key, data: %{"key" => stored_key}},
+         validation_data
+       ) do
     case Map.get(validation_data, "key") do
       ^stored_key -> {:ok, :valid}
       _ -> {:ok, :invalid}
     end
   end
 
-  defp validate_credential_by_type(%{type: :database, data: %{"host" => host, "database" => db}}, validation_data) do
+  defp validate_credential_by_type(
+         %{type: :database, data: %{"host" => host, "database" => db}},
+         validation_data
+       ) do
     # In a real implementation, would attempt database connection
     validation_host = Map.get(validation_data, "host")
     validation_db = Map.get(validation_data, "database")

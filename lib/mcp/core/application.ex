@@ -10,7 +10,7 @@ defmodule Mcp.Core.Application do
   def start(_type, _args) do
     children = [
       Mcp.Core.Telemetry,
-      Mcp.Core.Repo,
+      Mcp.Repo,
       {DNSCluster, query: Application.get_env(:mcp, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Mcp.PubSub}
     ]

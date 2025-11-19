@@ -69,9 +69,12 @@ defmodule BMADAsh.Generator.ResourceGenerator do
   end
 
   # Helper functions for generating specific parts
-  defp extract_resource_name(_module), do: "user" # Placeholder
-  defp extract_actions(_module), do: [:show, :list, :create, :edit] # Placeholder
-  defp extract_attributes(_module), do: [:name, :email, :role] # Placeholder
+  # Placeholder
+  defp extract_resource_name(_module), do: "user"
+  # Placeholder
+  defp extract_actions(_module), do: [:show, :list, :create, :edit]
+  # Placeholder
+  defp extract_attributes(_module), do: [:name, :email, :role]
 
   defp generate_attribute({name, type}), do: "attribute :#{name}, #{type}"
   defp generate_action(:show), do: "read :show, primary?: true"
@@ -79,10 +82,16 @@ defmodule BMADAsh.Generator.ResourceGenerator do
   defp generate_action(:create), do: "create :create"
   defp generate_action(:edit), do: "update :edit"
 
-  defp generate_component_action(:show), do: "<button class=\"btn btn-primary\">View Details</button>"
+  defp generate_component_action(:show),
+    do: "<button class=\"btn btn-primary\">View Details</button>"
+
   defp generate_component_action(:list), do: "<div class=\"flex justify-between\">List Item</div>"
-  defp generate_component_action(:create), do: "<button class=\"btn btn-success\">Create New</button>"
+
+  defp generate_component_action(:create),
+    do: "<button class=\"btn btn-success\">Create New</button>"
 
   defp generate_usage_rule(:show), do: "- show:admin_role → Require admin validation"
-  defp generate_usage_rule(:create), do: "- create:email_verification → Auto-generate verification"
+
+  defp generate_usage_rule(:create),
+    do: "- create:email_verification → Auto-generate verification"
 end

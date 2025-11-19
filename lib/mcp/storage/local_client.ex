@@ -19,11 +19,12 @@ defmodule McpStorage.LocalClient do
 
     with :ok <- File.mkdir_p(destination_dir),
          {:ok, _bytes} <- File.copy(file_path, destination) do
-      {:ok, %{
-        url: "file://#{destination}",
-        path: destination,
-        size: :filelib.file_size(file_path)
-      }}
+      {:ok,
+       %{
+         url: "file://#{destination}",
+         path: destination,
+         size: :filelib.file_size(file_path)
+       }}
     else
       error ->
         Logger.error("Failed to upload local file: #{inspect(error)}")
@@ -51,7 +52,8 @@ defmodule McpStorage.LocalClient do
 
     case File.rm(file_path) do
       :ok -> :ok
-      {:error, :enoent} -> :ok  # File already deleted
+      # File already deleted
+      {:error, :enoent} -> :ok
       error -> error
     end
   end
@@ -67,7 +69,9 @@ defmodule McpStorage.LocalClient do
         files = Enum.filter(paths, &File.regular?/1)
         relative_paths = Enum.map(files, &Path.relative_to(&1, @storage_path))
         {:ok, relative_paths}
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -79,13 +83,16 @@ defmodule McpStorage.LocalClient do
 
     case File.stat(file_path) do
       {:ok, stat} ->
-        {:ok, %{
-          content_type: MIME.from_path(file_path),
-          size: stat.size,
-          last_modified: DateTime.from_unix!(stat.mtime, :second),
-          etag: "#{stat.size}-#{stat.mtime}"
-        }}
-      error -> error
+        {:ok,
+         %{
+           content_type: MIME.from_path(file_path),
+           size: stat.size,
+           last_modified: DateTime.from_unix!(stat.mtime, :second),
+           etag: "#{stat.size}-#{stat.mtime}"
+         }}
+
+      error ->
+        error
     end
   end
 end

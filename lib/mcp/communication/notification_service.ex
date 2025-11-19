@@ -7,6 +7,9 @@ defmodule Mcp.Communication.NotificationService do
   use GenServer
   require Logger
 
+  alias Mcp.Communication.EmailService
+  alias Mcp.Communication.SmsService
+
   def start_link(init_arg) do
     GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
@@ -51,9 +54,10 @@ defmodule Mcp.Communication.NotificationService do
     # Determine which channels to use based on preferences and notification priority
     channels = determine_notification_channels(notification, preferences, opts)
 
-    results = Enum.map(channels, fn channel ->
-      send_via_channel(user_id, notification, channel, Keyword.put(opts, :tenant_id, tenant_id))
-    end)
+    results =
+      Enum.map(channels, fn channel ->
+        send_via_channel(user_id, notification, channel, Keyword.put(opts, :tenant_id, tenant_id))
+      end)
 
     # Store notification for in-app display
     notification_id = store_notification(user_id, notification, tenant_id)
@@ -68,12 +72,13 @@ defmodule Mcp.Communication.NotificationService do
   def handle_call({:send_bulk_notifications, user_notifications, opts}, _from, state) do
     tenant_id = Keyword.get(opts, :tenant_id, "global")
 
-    results = Enum.map(user_notifications, fn {user_id, notification} ->
-      case send_notification(user_id, notification, Keyword.put(opts, :tenant_id, tenant_id)) do
-        {:ok, result} -> {:ok, {user_id, result}}
-        {:error, reason} -> {:error, {user_id, reason}}
-      end
-    end)
+    results =
+      Enum.map(user_notifications, fn {user_id, notification} ->
+        case send_notification(user_id, notification, Keyword.put(opts, :tenant_id, tenant_id)) do
+          {:ok, result} -> {:ok, {user_id, result}}
+          {:error, reason} -> {:error, {user_id, reason}}
+        end
+      end)
 
     successful = Enum.count(results, &match?({:ok, _}, &1))
     Logger.info("Bulk notifications sent: #{successful}/#{length(results)} users successful")
@@ -141,13 +146,14 @@ defmodule Mcp.Communication.NotificationService do
     priority = Map.get(notification, :priority, :normal)
     force_channels = Keyword.get(opts, :channels, [])
 
-    channels = cond do
-      force_channels != [] -> force_channels
-      priority == :urgent -> [:push, :sms, :email, :in_app]
-      priority == :high -> [:push, :email, :in_app]
-      priority == :normal -> [:push, :in_app]
-      true -> [:in_app]
-    end
+    channels =
+      cond do
+        force_channels != [] -> force_channels
+        priority == :urgent -> [:push, :sms, :email, :in_app]
+        priority == :high -> [:push, :email, :in_app]
+        priority == :normal -> [:push, :in_app]
+        true -> [:in_app]
+      end
 
     # Filter based on user preferences
     Enum.filter(channels, fn channel ->
@@ -166,7 +172,12 @@ defmodule Mcp.Communication.NotificationService do
       html: Map.get(notification, :html_content, false)
     }
 
-    case Mcp.Communication.EmailService.send_email(email_data.to, email_data.subject, email_data.body, opts) do
+    case EmailService.send_email(
+           email_data.to,
+           email_data.subject,
+           email_data.body,
+           opts
+         ) do
       {:ok, result} -> {:ok, {:email, result}}
       error -> error
     end
@@ -178,7 +189,7 @@ defmodule Mcp.Communication.NotificationService do
 
     message = "#{Map.get(notification, :title, "")}: #{Map.get(notification, :message, "")}"
 
-    case Mcp.Communication.SmsService.send_sms(phone, message, opts) do
+    case SmsService.send_sms(phone, message, opts) do
       {:ok, result} -> {:ok, {:sms, result}}
       error -> error
     end

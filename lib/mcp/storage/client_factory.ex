@@ -14,6 +14,7 @@ defmodule McpStorage.ClientFactory do
 
   def get_client do
     backend = @storage_backend
+
     case backend do
       "s3" -> @s3_client
       "local" -> @local_client
@@ -68,6 +69,7 @@ defmodule McpStorage.ClientFactory do
 
   def validate_configuration do
     backend = @storage_backend
+
     case backend do
       "s3" -> validate_s3_config()
       "local" -> validate_local_config()

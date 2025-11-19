@@ -32,7 +32,10 @@ defmodule Mcp.Communication.EmailService do
   end
 
   def register_template(template_id, subject_template, body_template, opts \\ []) do
-    GenServer.call(__MODULE__, {:register_template, template_id, subject_template, body_template, opts})
+    GenServer.call(
+      __MODULE__,
+      {:register_template, template_id, subject_template, body_template, opts}
+    )
   end
 
   def get_email_status(message_id, opts \\ []) do
@@ -48,6 +51,7 @@ defmodule Mcp.Communication.EmailService do
       {:ok, result} ->
         Logger.info("Email sent successfully to #{length(to)} recipients")
         {:reply, {:ok, result}, state}
+
       {:error, reason} ->
         Logger.error("Failed to send email: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -61,6 +65,7 @@ defmodule Mcp.Communication.EmailService do
     case Map.get(state.templates, template_id) do
       nil ->
         {:reply, {:error, :template_not_found}, state}
+
       template ->
         subject = render_template(template.subject_template, template_data)
         body = render_template(template.body_template, template_data)
@@ -74,17 +79,19 @@ defmodule Mcp.Communication.EmailService do
     tenant_id = Keyword.get(opts, :tenant_id, "global")
     batch_size = Keyword.get(opts, :batch_size, 100)
 
-    results = recipients
-    |> Enum.chunk_every(batch_size)
-    |> Enum.with_index()
-    |> Enum.map(fn {batch, index} ->
-      email_data = build_email_data(batch, subject, body, Keyword.put(opts, :batch_index, index))
+    results =
+      recipients
+      |> Enum.chunk_every(batch_size)
+      |> Enum.with_index()
+      |> Enum.map(fn {batch, index} ->
+        email_data =
+          build_email_data(batch, subject, body, Keyword.put(opts, :batch_index, index))
 
-      case send_email_via_provider(email_data, state.provider, tenant_id) do
-        {:ok, result} -> {:ok, {index, result}}
-        {:error, reason} -> {:error, {index, reason}}
-      end
-    end)
+        case send_email_via_provider(email_data, state.provider, tenant_id) do
+          {:ok, result} -> {:ok, {index, result}}
+          {:error, reason} -> {:error, {index, reason}}
+        end
+      end)
 
     successful = Enum.count(results, &match?({:ok, _}, &1))
     Logger.info("Bulk email sent: #{successful}/#{length(results)} batches successful")
@@ -93,7 +100,11 @@ defmodule Mcp.Communication.EmailService do
   end
 
   @impl true
-  def handle_call({:register_template, template_id, subject_template, body_template, opts}, _from, state) do
+  def handle_call(
+        {:register_template, template_id, subject_template, body_template, opts},
+        _from,
+        state
+      ) do
     tenant_id = Keyword.get(opts, :tenant_id, "global")
     full_template_id = "#{tenant_id}:#{template_id}"
 
@@ -122,7 +133,9 @@ defmodule Mcp.Communication.EmailService do
   end
 
   defp build_email_data(recipients, subject, body, opts) do
-    from = Keyword.get(opts, :from, System.get_env("DEFAULT_FROM_EMAIL", "noreply@mcp-platform.local"))
+    from =
+      Keyword.get(opts, :from, System.get_env("DEFAULT_FROM_EMAIL", "noreply@mcp-platform.local"))
+
     reply_to = Keyword.get(opts, :reply_to)
     cc = Keyword.get(opts, :cc, [])
     bcc = Keyword.get(opts, :bcc, [])

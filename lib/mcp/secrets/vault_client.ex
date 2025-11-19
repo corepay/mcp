@@ -130,10 +130,13 @@ defmodule Mcp.Secrets.VaultClient do
   def handle_call({:get_tenant_secrets, tenant_id, opts}, _from, state) do
     if state.authenticated do
       path_prefix = "tenants/#{tenant_id}"
-      with {:ok, secret_paths} <- list_secrets(path_prefix, Keyword.put(opts, :tenant_id, tenant_id)),
-         secrets <- secret_paths
-                   |> Enum.map(&extract_secret_value(&1, opts))
-                   |> Enum.filter(&(&1 != nil)) do
+
+      with {:ok, secret_paths} <-
+             list_secrets(path_prefix, Keyword.put(opts, :tenant_id, tenant_id)),
+           secrets <-
+             secret_paths
+             |> Enum.map(&extract_secret_value(&1, opts))
+             |> Enum.filter(&(&1 != nil)) do
         {:reply, {:ok, secrets}, state}
       else
         error -> {:reply, error, state}
@@ -144,14 +147,16 @@ defmodule Mcp.Secrets.VaultClient do
   end
 
   defp create_tenant_secrets_authenticated(tenant_id, secrets, _opts, state) do
-    results = Enum.map(secrets, fn {key, value} ->
-      path = "tenants/#{tenant_id}/#{key}"
-      full_path = build_tenant_path(path, tenant_id)
-      case set_mock_secret(full_path, value) do
-        :ok -> {:ok, key}
-        error -> {:error, {key, error}}
-      end
-    end)
+    results =
+      Enum.map(secrets, fn {key, value} ->
+        path = "tenants/#{tenant_id}/#{key}"
+        full_path = build_tenant_path(path, tenant_id)
+
+        case set_mock_secret(full_path, value) do
+          :ok -> {:ok, key}
+          error -> {:error, {key, error}}
+        end
+      end)
 
     successful = Enum.count(results, &match?({:ok, _}, &1))
     Logger.info("Created #{successful}/#{length(secrets)} tenant secrets for #{tenant_id}")
@@ -159,8 +164,8 @@ defmodule Mcp.Secrets.VaultClient do
     {:reply, {:ok, results}, state}
   end
 
-  
   defp build_tenant_path(path, nil), do: path
+
   defp build_tenant_path(path, tenant_id) do
     if String.starts_with?(path, "tenants/") do
       path

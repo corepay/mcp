@@ -42,7 +42,12 @@ defmodule Mcp.Repo.Migrations.CreateTenants do
     # Indexes
     create unique_index(:tenants, [:slug], prefix: "platform")
     create unique_index(:tenants, [:subdomain], prefix: "platform")
-    create unique_index(:tenants, [:custom_domain], where: "custom_domain IS NOT NULL", prefix: "platform")
+
+    create unique_index(:tenants, [:custom_domain],
+             where: "custom_domain IS NOT NULL",
+             prefix: "platform"
+           )
+
     create unique_index(:tenants, [:company_schema], prefix: "platform")
     create index(:tenants, [:status], prefix: "platform")
     create index(:tenants, [:plan], prefix: "platform")

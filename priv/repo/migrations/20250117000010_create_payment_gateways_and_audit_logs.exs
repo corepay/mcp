@@ -40,7 +40,7 @@ defmodule Mcp.Repo.Migrations.CreatePaymentGatewaysAndAuditLogs do
       # Metadata
       add :metadata, :jsonb, default: "{}"
 
-      timestamps(type: :utc_datetime)
+      timestamps(type: :utc_datetime, default: fragment("NOW()"))
     end
 
     # Indexes

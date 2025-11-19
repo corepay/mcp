@@ -48,12 +48,14 @@ defmodule McpCache.CacheManager do
   @impl true
   def handle_call({:cache_query, query_key, query_result, opts}, _from, state) do
     cache_key = build_cache_key("query", query_key, opts)
-    ttl = Keyword.get(opts, :ttl, 1800)  # 30 minutes default
+    # 30 minutes default
+    ttl = Keyword.get(opts, :ttl, 1800)
 
     case McpCache.RedisClient.set_with_ttl(cache_key, query_result, ttl, opts) do
       :ok ->
         new_stats = update_stats(state.stats, :operations)
         {:reply, :ok, %{state | stats: new_stats}}
+
       error ->
         Logger.error("Failed to cache query result: #{inspect(error)}")
         {:reply, error, state}
@@ -69,10 +71,12 @@ defmodule McpCache.CacheManager do
         # Async hit update to avoid blocking
         GenServer.cast(__MODULE__, :increment_hit)
         {:reply, {:ok, result}, state}
+
       {:error, :not_found} ->
         # Async miss update to avoid blocking
         GenServer.cast(__MODULE__, :increment_miss)
         {:reply, {:error, :not_found}, state}
+
       error ->
         {:reply, error, state}
     end
@@ -87,6 +91,7 @@ defmodule McpCache.CacheManager do
         Logger.info("Invalidated cache pattern: #{cache_pattern}")
         new_stats = update_stats(state.stats, :operations)
         {:reply, :ok, %{state | stats: new_stats}}
+
       error ->
         Logger.error("Failed to invalidate cache pattern: #{inspect(error)}")
         {:reply, error, state}
@@ -95,15 +100,16 @@ defmodule McpCache.CacheManager do
 
   @impl true
   def handle_call({:warm_cache, cache_items, opts}, _from, state) do
-    results = Enum.map(cache_items, fn {key, value, item_opts} ->
-      merged_opts = Keyword.merge(opts, item_opts)
-      cache_key = build_cache_key("warm", key, merged_opts)
+    results =
+      Enum.map(cache_items, fn {key, value, item_opts} ->
+        merged_opts = Keyword.merge(opts, item_opts)
+        cache_key = build_cache_key("warm", key, merged_opts)
 
-      case McpCache.RedisClient.set(cache_key, value, merged_opts) do
-        :ok -> {:ok, key}
-        error -> {:error, {key, error}}
-      end
-    end)
+        case McpCache.RedisClient.set(cache_key, value, merged_opts) do
+          :ok -> {:ok, key}
+          error -> {:error, {key, error}}
+        end
+      end)
 
     successful_warms = Enum.count(results, &match?({:ok, _}, &1))
     Logger.info("Cache warming completed: #{successful_warms}/#{length(cache_items)} items")

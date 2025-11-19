@@ -10,7 +10,7 @@ defmodule Mcp.Application do
   def start(_type, _args) do
     children = [
       # Start the Ecto repository
-      Mcp.Core.Repo,
+      Mcp.Repo,
 
       # Web layer
       McpWeb.Telemetry,

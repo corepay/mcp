@@ -12,7 +12,12 @@ defmodule Mcp.Storage do
   def upload_file(key, file_path, opts \\ []) do
     case File.read(file_path) do
       {:ok, file_binary} ->
-        upload_binary(key, file_binary, Keyword.put(opts, :content_type, MIME.from_path(file_path)))
+        upload_binary(
+          key,
+          file_binary,
+          Keyword.put(opts, :content_type, MIME.from_path(file_path))
+        )
+
       {:error, reason} ->
         {:error, :file_read_error, reason}
     end

@@ -1,4 +1,4 @@
-defmodule Mcp.Core.Repo do
+defmodule Mcp.Repo do
   @moduledoc """
   Core domain repository with full technology stack support.
   Handles TimescaleDB, PostGIS, pgvector, Apache AGE operations.
@@ -13,22 +13,23 @@ defmodule Mcp.Core.Repo do
   @impl true
   def init(:runtime, config) do
     # Load environment variables for database configuration
-    config = Keyword.merge(config,
-      hostname: System.get_env("POSTGRES_HOST", "localhost"),
-      port: String.to_integer(System.get_env("POSTGRES_PORT", "41789")),
-      database: System.get_env("POSTGRES_DB", "base_mcp_dev"),
-      username: System.get_env("POSTGRES_USER", "base_mcp_dev"),
-      password: System.get_env("POSTGRES_PASSWORD", "mcp_password"),
-      pool_size: String.to_integer(System.get_env("DB_POOL_SIZE", "10")),
-      ssl: false,
-      show_sensitive_data_on_connection_error: true,
-      timeout: :timer.seconds(30),
-      connect_timeout: :timer.seconds(10),
-      prepare: :unnamed,
-      parameters: [
-        timezone: "UTC"
-      ]
-    )
+    config =
+      Keyword.merge(config,
+        hostname: System.get_env("POSTGRES_HOST", "localhost"),
+        port: String.to_integer(System.get_env("POSTGRES_PORT", "41789")),
+        database: System.get_env("POSTGRES_DB", "base_mcp_dev"),
+        username: System.get_env("POSTGRES_USER", "base_mcp_dev"),
+        password: System.get_env("POSTGRES_PASSWORD", "mcp_password"),
+        pool_size: String.to_integer(System.get_env("DB_POOL_SIZE", "10")),
+        ssl: false,
+        show_sensitive_data_on_connection_error: true,
+        timeout: :timer.seconds(30),
+        connect_timeout: :timer.seconds(10),
+        prepare: :unnamed,
+        parameters: [
+          timezone: "UTC"
+        ]
+      )
 
     {:ok, config}
   end
@@ -117,6 +118,7 @@ defmodule Mcp.Core.Repo do
       correlation
     FROM pg_stats
     """
+
     __MODULE__.query(query, [])
   end
 

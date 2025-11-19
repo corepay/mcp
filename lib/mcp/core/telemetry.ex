@@ -31,8 +31,7 @@ defmodule Mcp.Core.Telemetry do
            # Multi-tenant performance
            Mcp.Core.Telemetry.TenantMetrics
          ]
-       ],
-       name: Mcp.Core.Telemetry.Prometheus},
+       ], name: Mcp.Core.Telemetry.Prometheus},
 
       # Metrics for PostGIS, pgvector, TimescaleDB operations
       {TelemetryMetrics.Prometheus,
@@ -47,16 +46,14 @@ defmodule Mcp.Core.Telemetry do
            # Graph query performance
            Mcp.Core.Telemetry.AGEMetrics
          ]
-       ],
-       name: Mcp.Core.Telemetry.Extensions},
+       ], name: Mcp.Core.Telemetry.Extensions},
 
       # Distributed tracing with OpenTelemetry
       {OpenTelemetry,
        resource: [
          service_name: "mcp-platform",
          service_version: version()
-       ]
-       },
+       ]},
 
       # Performance logger
       {Logger, :console,
@@ -70,8 +67,7 @@ defmodule Mcp.Core.Telemetry do
            :domain,
            :operation
          ]
-       ]
-       }
+       ]}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

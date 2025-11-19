@@ -12,7 +12,7 @@ defmodule Mcp.Repo.Migrations.CreateLookupTables do
       add :sort_order, :integer, default: 0
       add :metadata, :jsonb, default: "{}"
 
-      timestamps(type: :utc_datetime)
+      timestamps(type: :utc_datetime, default: fragment("NOW()"))
     end
 
     create index(:entity_types, [:category], prefix: "platform")
@@ -263,7 +263,7 @@ defmodule Mcp.Repo.Migrations.CreateLookupTables do
       add :is_active, :boolean, default: true
       add :sort_order, :integer, default: 0
 
-      timestamps(type: :utc_datetime)
+      timestamps(type: :utc_datetime, default: fragment("NOW()"))
     end
 
     execute """

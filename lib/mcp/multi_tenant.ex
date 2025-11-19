@@ -19,8 +19,10 @@ defmodule Mcp.MultiTenant do
       {:ok, false} ->
         execute_create_tenant_schema(tenant_schema_name)
         {:ok, schema_name}
+
       {:ok, true} ->
         {:error, :schema_already_exists}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -82,6 +84,7 @@ defmodule Mcp.MultiTenant do
         after
           reset_search_path()
         end
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -175,7 +178,13 @@ defmodule Mcp.MultiTenant do
     end)
   end
 
-  def vector_similarity_search(tenant_schema_name, table_name, column_name, query_vector, limit \\ 10) do
+  def vector_similarity_search(
+        tenant_schema_name,
+        table_name,
+        column_name,
+        query_vector,
+        limit \\ 10
+      ) do
     _schema_name = @tenant_schema_prefix <> tenant_schema_name
 
     with_tenant_context(tenant_schema_name, fn ->
@@ -191,16 +200,33 @@ defmodule Mcp.MultiTenant do
   end
 
   def ai_merchant_recommendations(tenant_schema_name, merchant_vector, limit \\ 5) do
-    vector_similarity_search(tenant_schema_name, "merchants", "ai_risk_score", merchant_vector, limit)
+    vector_similarity_search(
+      tenant_schema_name,
+      "merchants",
+      "ai_risk_score",
+      merchant_vector,
+      limit
+    )
   end
 
   def ai_mid_routing_optimization(tenant_schema_name, transaction_vector, limit \\ 3) do
-    vector_similarity_search(tenant_schema_name, "mids", "processing_vector", transaction_vector, limit)
+    vector_similarity_search(
+      tenant_schema_name,
+      "mids",
+      "processing_vector",
+      transaction_vector,
+      limit
+    )
   end
 
   # Complete Time-series operations (TimescaleDB)
 
-  def create_hypertable(tenant_schema_name, table_name, time_column, chunk_time_interval \\ "1 day") do
+  def create_hypertable(
+        tenant_schema_name,
+        table_name,
+        time_column,
+        chunk_time_interval \\ "1 day"
+      ) do
     _schema_name = @tenant_schema_prefix <> tenant_schema_name
 
     with_tenant_context(tenant_schema_name, fn ->
@@ -213,7 +239,12 @@ defmodule Mcp.MultiTenant do
     end)
   end
 
-  def create_continuous_aggregate(tenant_schema_name, aggregate_name, source_table, time_bucket \\ "1 hour") do
+  def create_continuous_aggregate(
+        tenant_schema_name,
+        aggregate_name,
+        source_table,
+        time_bucket \\ "1 hour"
+      ) do
     _schema_name = @tenant_schema_prefix <> tenant_schema_name
 
     with_tenant_context(tenant_schema_name, fn ->
@@ -283,7 +314,13 @@ defmodule Mcp.MultiTenant do
 
   # Complete Geographic operations (PostGIS)
 
-  def add_geometry_column(tenant_schema_name, table_name, column_name, geometry_type, srid \\ 4326) do
+  def add_geometry_column(
+        tenant_schema_name,
+        table_name,
+        column_name,
+        geometry_type,
+        srid \\ 4326
+      ) do
     _schema_name = @tenant_schema_prefix <> tenant_schema_name
 
     with_tenant_context(tenant_schema_name, fn ->
@@ -404,7 +441,8 @@ defmodule Mcp.MultiTenant do
     with_tenant_context(tenant_schema_name, fn ->
       # This would integrate with Ecto migrations for tenant-specific schemas
       # For now, return a placeholder
-      {:ok, "Tenant migrations would run here for schema: #{@tenant_schema_prefix <> tenant_schema_name}"}
+      {:ok,
+       "Tenant migrations would run here for schema: #{@tenant_schema_prefix <> tenant_schema_name}"}
     end)
   end
 end

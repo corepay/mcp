@@ -7,7 +7,8 @@ defmodule McpCache.SessionStore do
   use GenServer
   require Logger
 
-  @session_ttl 86_400  # 24 hours
+  # 24 hours
+  @session_ttl 86_400
 
   def start_link(init_arg) do
     GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
@@ -69,15 +70,21 @@ defmodule McpCache.SessionStore do
       :ok ->
         # Also store in user session index for management
         user_sessions_key = "user_sessions:#{user_data.user_id}"
+
         case McpCache.RedisClient.get(user_sessions_key, cache_opts) do
           {:ok, sessions} ->
             updated_sessions = [session_id | sessions] |> Enum.uniq()
             McpCache.RedisClient.set(user_sessions_key, updated_sessions, cache_opts)
+
           {:error, :not_found} ->
             McpCache.RedisClient.set(user_sessions_key, [session_id], cache_opts)
-          _ -> :ok
+
+          _ ->
+            :ok
         end
+
         {:reply, {:ok, session_data}, state}
+
       error ->
         Logger.error("Failed to create session: #{inspect(error)}")
         {:reply, error, state}
@@ -95,6 +102,7 @@ defmodule McpCache.SessionStore do
         updated_session = %{session_data | last_accessed: DateTime.utc_now()}
         McpCache.RedisClient.set("session:#{session_id}", updated_session, cache_opts)
         {:reply, {:ok, updated_session}, state}
+
       error ->
         {:reply, error, state}
     end
@@ -108,14 +116,16 @@ defmodule McpCache.SessionStore do
     case McpCache.RedisClient.get("session:#{session_id}", cache_opts) do
       {:ok, session_data} ->
         updated_session = %{
-          session_data |
-          data: Map.merge(session_data.data, user_data),
-          last_accessed: DateTime.utc_now()
+          session_data
+          | data: Map.merge(session_data.data, user_data),
+            last_accessed: DateTime.utc_now()
         }
+
         case McpCache.RedisClient.set("session:#{session_id}", updated_session, cache_opts) do
           :ok -> {:reply, {:ok, updated_session}, state}
           error -> {:reply, error, state}
         end
+
       error ->
         {:reply, error, state}
     end
@@ -130,16 +140,20 @@ defmodule McpCache.SessionStore do
       {:ok, session_data} ->
         # Remove from user session index
         user_sessions_key = "user_sessions:#{session_data.user_id}"
+
         case McpCache.RedisClient.get(user_sessions_key, cache_opts) do
           {:ok, sessions} ->
             updated_sessions = List.delete(sessions, session_id)
             update_user_sessions_cache(user_sessions_key, updated_sessions, cache_opts)
-          _ -> :ok
+
+          _ ->
+            :ok
         end
 
         # Delete the session
         McpCache.RedisClient.delete("session:#{session_id}", cache_opts)
         {:reply, :ok, state}
+
       error ->
         {:reply, error, state}
     end
@@ -166,6 +180,7 @@ defmodule McpCache.SessionStore do
         updated_session = %{session_data | last_accessed: DateTime.utc_now()}
         McpCache.RedisClient.set("session:#{session_id}", updated_session, cache_opts)
         {:reply, {:ok, updated_session}, state}
+
       error ->
         {:reply, error, state}
     end
@@ -178,10 +193,13 @@ defmodule McpCache.SessionStore do
 
     case McpCache.RedisClient.get("user_sessions:#{user_id}", cache_opts) do
       {:ok, session_ids} ->
-        sessions = session_ids
-                   |> Enum.map(&get_session_data(&1, cache_opts))
-                   |> Enum.reject(&is_nil/1)
+        sessions =
+          session_ids
+          |> Enum.map(&get_session_data(&1, cache_opts))
+          |> Enum.reject(&is_nil/1)
+
         {:reply, {:ok, sessions}, state}
+
       error ->
         {:reply, error, state}
     end
