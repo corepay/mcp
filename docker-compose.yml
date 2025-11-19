@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: timescale/timescaledb:17-pg15-alpine
+    image: postgres:17-alpine
     container_name: mcp_postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -9,8 +9,8 @@ services:
       POSTGRES_HOST_AUTH_METHOD: trust
       # Required for PostgreSQL extensions
       POSTGRES_INITDB_ARGS: "--auth-host=md5"
-      # Enable TimescaleDB, PostGIS, pgvector, AGE extensions
-      POSTGRES_SHARED_PRELOAD_LIBRARIES: "timescaledb,pg_stat_statements,age"
+      # Enable pg_stat_statements (PostGIS and pgvector are built-in)
+      POSTGRES_SHARED_PRELOAD_LIBRARIES: "pg_stat_statements"
     ports:
       - "${POSTGRES_PORT}:5432"
     volumes:

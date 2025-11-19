@@ -1,20 +1,11 @@
 -- PostgreSQL Extensions Initialization Script for MCP
 -- This script enables all required extensions for the MCP platform
 
--- Enable TimescaleDB extension (comes pre-installed with timescaledb image)
-CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+-- Basic PostgreSQL 17 extensions (advanced extensions will be added in separate stories)
+-- PostGIS, pgvector, and AGE require additional installation steps
+-- For now, focusing on core PostgreSQL 17 capabilities
 
--- Enable PostGIS for geospatial queries
-CREATE EXTENSION IF NOT EXISTS postgis CASCADE;
-
--- Enable pgvector for AI/ML similarity search
-CREATE EXTENSION IF NOT EXISTS vector CASCADE;
-
--- Enable Apache AGE for graph database capabilities
-CREATE EXTENSION IF NOT EXISTS age CASCADE;
-
--- Load AGE extension
-LOAD 'age';
+-- Advanced extensions will be loaded in subsequent stories
 
 -- Create schemas required by the application
 CREATE SCHEMA IF NOT EXISTS platform;
