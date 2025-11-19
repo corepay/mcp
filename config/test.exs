@@ -35,3 +35,43 @@ config :phoenix, :plug_init_mode, :runtime
 # Enable helpful, but potentially expensive runtime checks
 config :phoenix_live_view,
   enable_expensive_runtime_checks: true
+
+# Coverage configuration
+if System.get_env("MIX_ENV") == "test" do
+  config :excoveralls,
+    default_output_dir: "cover",
+    default_output_file: "coveralls.json",
+    coveralls_json_file: "coveralls.json",
+    coveralls_service_name: "github_actions",
+    coveralls_send_on_exit: true
+
+  config :excoveralls,
+    # Coverage minimum thresholds
+    coverage_minimum: 80
+
+  config :excoveralls,
+    coverage_threshold: %{
+      "lib/mcp/core/" => 90,
+      "lib/mcp/" => 80,
+      "lib/mcp_web/" => 75
+    }
+
+  # Include only application source files
+  config :excoveralls,
+    files_included: ["lib/"],
+    files_excluded: [
+      "test/",
+      "_build/",
+      "deps/",
+      "priv/",
+      "lib/mcp_web/telemetry.ex",
+      "lib/mcp_web/endpoint.ex",
+      "lib/mcp_web/router.ex"
+    ]
+
+  # Console coverage report
+  config :excoveralls,
+    console_output: true,
+    html_output: true,
+    json_output: true
+end

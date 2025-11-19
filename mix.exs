@@ -127,6 +127,10 @@ defmodule Mcp.MixProject do
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
 
+      # Testing tools
+      {:ex_machina, "~> 2.7", only: :test},
+      {:excoveralls, "~> 0.18", only: :test},
+
       # Code quality tools (dev only)
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
