@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  MIX_ENV: test
+  POSTGRES_HOST: localhost
+  POSTGRES_DB: mcp_test
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: mcp_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        with:
+          postgres_shared_preload_libraries: timescaledb,postgis,age
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Elixir and OTP
+      uses: erlef/setup-beam@v1
+      with:
+        elixir-version: '1.17.3'
+        otp-version: '27.0'
+
+    - name: Install dependencies
+      run: mix deps.get
+
+    - name: Compile application
+      run: mix compile --warning-as-errors
+
+    - name: Check formatting
+      run: mix format --check-formatted
+
+    - name: Run Credo linter
+      run: mix credo --strict
+
+    - name: Run tests
+      run: mix test --cover
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      with:
+        files: cover/excoveralls.json

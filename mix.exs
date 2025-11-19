@@ -5,7 +5,7 @@ defmodule Mcp.MixProject do
     [
       app: :mcp,
       version: "0.1.0",
-      elixir: "~> 1.15",
+      elixir: "~> 1.17",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -154,9 +154,16 @@ defmodule Mcp.MixProject do
         "esbuild mcp --minify",
         "phx.digest"
       ],
-      precommit: ["compile --warning-as-errors", "credo --strict", "deps.unlock --unused", "format --check-formatted", "test"],
+      precommit: [
+        "compile --warning-as-errors",
+        "credo --strict",
+        "deps.unlock --unused",
+        "format --check-formatted",
+        "test",
+        "validate.stack"
+      ],
       quality: ["compile --warning-as-errors", "credo", "dialyzer"],
-      check: ["compile", "credo --strict", "dialyzer", "test"]
+      check: ["compile", "credo --strict", "dialyzer", "test", "validate.stack"]
     ]
   end
 end
