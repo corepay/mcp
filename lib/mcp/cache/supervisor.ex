@@ -1,4 +1,4 @@
-defmodule McpCache.Supervisor do
+defmodule Mcp.Cache.Supervisor do
   @moduledoc """
   Cache domain supervisor.
   Manages Redis clients, session stores, and cache managers.

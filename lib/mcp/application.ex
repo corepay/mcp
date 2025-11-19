@@ -1,7 +1,7 @@
 defmodule Mcp.Application do
   @moduledoc """
   Main application supervisor for AI-powered MSP platform.
-  Orchestrates all domain services: Core, Storage, Cache, Secrets, Communication.
+  Orchestrates all domain supervisors: Infrastructure, Domains, Services, Jobs, Platform, Web.
   """
 
   use Application
@@ -9,16 +9,23 @@ defmodule Mcp.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Start the Ecto repository
-      Mcp.Repo,
+      # Platform-level services (shared resources)
+      Mcp.Platform.Supervisor,
 
-      # Web layer
-      McpWeb.Telemetry,
-      {DNSCluster, query: Application.get_env(:mcp, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: Mcp.PubSub},
+      # Infrastructure services (with dependencies)
+      Mcp.Infrastructure.Supervisor,
 
-      # Start the web endpoint last
-      McpWeb.Endpoint
+      # Domain services (Ash domains)
+      Mcp.Domains.Supervisor,
+
+      # Application services (GenServers)
+      Mcp.Services.Supervisor,
+
+      # Background job processing
+      Mcp.Jobs.Supervisor,
+
+      # Web layer (must start after platform services)
+      Mcp.Web.Supervisor
     ]
 
     opts = [strategy: :one_for_one, name: Mcp.Supervisor]
