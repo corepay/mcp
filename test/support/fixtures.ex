@@ -100,6 +100,7 @@ defmodule Mcp.TestFixtures do
   # Auth fixtures
   def auth_headers(user) do
     token = generate_jwt_token(user)
+
     %{
       "Authorization" => "Bearer #{token}",
       "Content-Type" => "application/json"

@@ -72,7 +72,6 @@ defmodule Mcp.MixProject do
       {:ash_typescript, "~> 0.7"},
       {:usage_rules, "~> 0.1", only: [:dev]},
       {:ash_cloak, "~> 0.1"},
-      {:cloak, "~> 1.0"},
       {:ash_ai, "~> 0.3"},
       {:ash_paper_trail, "~> 0.5"},
       {:tidewave, "~> 0.5", only: [:dev]},
@@ -98,6 +97,7 @@ defmodule Mcp.MixProject do
       {:phoenix, "~> 1.8.1"},
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.13"},
+      {:uuid, "~> 1.1"},
       {:postgrex, ">= 0.0.0"},
       {:ex_aws, "~> 2.4"},
       {:ex_aws_s3, "~> 2.4"},
@@ -130,6 +130,20 @@ defmodule Mcp.MixProject do
       # Testing tools
       {:ex_machina, "~> 2.7", only: :test},
       {:excoveralls, "~> 0.18", only: :test},
+
+      # OAuth and Authentication
+      {:ueberauth, "~> 0.10"},
+      {:ueberauth_google, "~> 0.10"},
+      {:ueberauth_github, "~> 0.8"},
+      {:oauth2, "~> 2.1"},
+
+      # 2FA and Authentication
+      {:nimble_totp, "~> 0.2"},
+      {:eqrcode, "~> 0.2"},
+      {:cloak, "~> 1.0"},
+
+      # JWT tokens
+      {:joken, "~> 2.6"},
 
       # Code quality tools (dev only)
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},

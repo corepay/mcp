@@ -1,10 +1,10 @@
-defmodule McpStorage.LocalClient do
+defmodule Mcp.Storage.LocalClient do
   @moduledoc """
   Local filesystem storage client.
   Handles file operations on local disk for development/testing.
   """
 
-  @behaviour McpStorage.StorageBehaviour
+  @behaviour Mcp.Storage.StorageBehaviour
 
   require Logger
 

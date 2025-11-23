@@ -9,7 +9,9 @@ import Config
 
 config :mcp,
   ecto_repos: [Mcp.Repo],
-  generators: [timestamp_type: :utc_datetime]
+  generators: [timestamp_type: :utc_datetime],
+  ash_domains: [Mcp.Accounts, Mcp.Platform],
+  base_domain: "localhost"
 
 config :ex_cldr, default_backend: Mcp.Cldr
 
@@ -68,6 +70,17 @@ config :finch,
   pools: %{
     default: [size: 10, count: 2]
   }
+
+# JWT Configuration
+config :mcp, Mcp.Accounts.JWT,
+  # Token lifespans
+  access_token_ttl: {24, :hour},
+  refresh_token_ttl: {30, :day},
+  sliding_refresh_threshold: {12, :hour},
+
+  # JWT settings
+  issuer: "mcp-platform",
+  audience: "mcp-users"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

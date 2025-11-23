@@ -49,8 +49,6 @@
     #
     # included: ["lib/", "src/", "test/"],
     #
-    excluded: [~r"/_build/", ~r"/deps/", ~r"/node_modules/"],
-    #
     # You can also set the file extensions you care about.
     #
     # crawlable_extensions: [".ex", ".exs", ".erl", ".hrl", ".eex", ".leex", ".heex"],

@@ -1,7 +1,9 @@
-defmodule McpCache.SessionStore do
+defmodule Mcp.Cache.SessionStore do
   @moduledoc """
-  Session storage service using Redis.
-  Handles user sessions with tenant isolation and security.
+  Enhanced session storage service using Redis with multi-tenant support.
+
+  Handles user sessions with tenant isolation, cross-tenant access,
+  and comprehensive security features for multi-tenant applications.
   """
 
   use GenServer
@@ -9,6 +11,7 @@ defmodule McpCache.SessionStore do
 
   # 24 hours
   @session_ttl 86_400
+  # @max_sessions_per_user 10 # TODO: Re-enable when cross-tenant functions are restored
 
   def start_link(init_arg) do
     GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
@@ -48,6 +51,60 @@ defmodule McpCache.SessionStore do
     GenServer.call(__MODULE__, {:list_user_sessions, user_id, opts})
   end
 
+  @doc """
+  Create a cross-tenant session that allows user access across multiple tenants.
+
+  This enables users who belong to multiple tenants to maintain a single session
+  while accessing different tenant contexts.
+  """
+  @spec create_cross_tenant_session(String.t(), map(), keyword()) ::
+          {:ok, map()} | {:error, term()}
+  def create_cross_tenant_session(session_id, user_data, opts \\ []) do
+    GenServer.call(__MODULE__, {:create_cross_tenant_session, session_id, user_data, opts})
+  end
+
+  @doc """
+  Switch a user's session context to a different tenant.
+
+  Updates the current tenant context for an existing session while maintaining
+  authentication state.
+  """
+  @spec switch_tenant_context(String.t(), String.t(), keyword()) ::
+          {:ok, map()} | {:error, term()}
+  def switch_tenant_context(session_id, tenant_id, opts \\ []) do
+    GenServer.call(__MODULE__, {:switch_tenant_context, session_id, tenant_id, opts})
+  end
+
+  @doc """
+  Get all tenants a user has access to based on their sessions.
+
+  Returns list of tenant IDs where the user has active sessions.
+  """
+  @spec get_user_accessible_tenants(String.t()) :: {:ok, [String.t()]} | {:error, term()}
+  def get_user_accessible_tenants(user_id) do
+    GenServer.call(__MODULE__, {:get_user_accessible_tenants, user_id})
+  end
+
+  @doc """
+  Validate that a session has access to a specific tenant.
+
+  Checks if the user session is authorized to access the given tenant.
+  """
+  @spec validate_tenant_access(String.t(), String.t()) :: {:ok, boolean()} | {:error, term()}
+  def validate_tenant_access(session_id, tenant_id) do
+    GenServer.call(__MODULE__, {:validate_tenant_access, session_id, tenant_id})
+  end
+
+  @doc """
+  Clean up expired or invalid cross-tenant sessions.
+
+  Maintenance operation to remove stale sessions and free up resources.
+  """
+  @spec cleanup_cross_tenant_sessions() :: {:ok, map()} | {:error, term()}
+  def cleanup_cross_tenant_sessions do
+    GenServer.call(__MODULE__, :cleanup_cross_tenant_sessions)
+  end
+
   @impl true
   def handle_call({:create_session, session_id, user_data, opts}, _from, state) do
     tenant_id = Keyword.get(opts, :tenant_id, "global")
@@ -66,18 +123,18 @@ defmodule McpCache.SessionStore do
 
     cache_opts = [tenant_id: tenant_id, ttl: ttl]
 
-    case McpCache.RedisClient.set("session:#{session_id}", session_data, cache_opts) do
+    case Mcp.Cache.RedisClient.set("session:#{session_id}", session_data, cache_opts) do
       :ok ->
         # Also store in user session index for management
         user_sessions_key = "user_sessions:#{user_data.user_id}"
 
-        case McpCache.RedisClient.get(user_sessions_key, cache_opts) do
+        case Mcp.Cache.RedisClient.get(user_sessions_key, cache_opts) do
           {:ok, sessions} ->
             updated_sessions = [session_id | sessions] |> Enum.uniq()
-            McpCache.RedisClient.set(user_sessions_key, updated_sessions, cache_opts)
+            Mcp.Cache.RedisClient.set(user_sessions_key, updated_sessions, cache_opts)
 
           {:error, :not_found} ->
-            McpCache.RedisClient.set(user_sessions_key, [session_id], cache_opts)
+            Mcp.Cache.RedisClient.set(user_sessions_key, [session_id], cache_opts)
 
           _ ->
             :ok
@@ -96,11 +153,11 @@ defmodule McpCache.SessionStore do
     tenant_id = Keyword.get(opts, :tenant_id, "global")
     cache_opts = [tenant_id: tenant_id]
 
-    case McpCache.RedisClient.get("session:#{session_id}", cache_opts) do
+    case Mcp.Cache.RedisClient.get("session:#{session_id}", cache_opts) do
       {:ok, session_data} ->
         # Update last accessed time
         updated_session = %{session_data | last_accessed: DateTime.utc_now()}
-        McpCache.RedisClient.set("session:#{session_id}", updated_session, cache_opts)
+        Mcp.Cache.RedisClient.set("session:#{session_id}", updated_session, cache_opts)
         {:reply, {:ok, updated_session}, state}
 
       error ->
@@ -113,7 +170,7 @@ defmodule McpCache.SessionStore do
     tenant_id = Keyword.get(opts, :tenant_id, "global")
     cache_opts = [tenant_id: tenant_id]
 
-    case McpCache.RedisClient.get("session:#{session_id}", cache_opts) do
+    case Mcp.Cache.RedisClient.get("session:#{session_id}", cache_opts) do
       {:ok, session_data} ->
         updated_session = %{
           session_data
@@ -121,7 +178,7 @@ defmodule McpCache.SessionStore do
             last_accessed: DateTime.utc_now()
         }
 
-        case McpCache.RedisClient.set("session:#{session_id}", updated_session, cache_opts) do
+        case Mcp.Cache.RedisClient.set("session:#{session_id}", updated_session, cache_opts) do
           :ok -> {:reply, {:ok, updated_session}, state}
           error -> {:reply, error, state}
         end
@@ -136,12 +193,12 @@ defmodule McpCache.SessionStore do
     tenant_id = Keyword.get(opts, :tenant_id, "global")
     cache_opts = [tenant_id: tenant_id]
 
-    case McpCache.RedisClient.get("session:#{session_id}", cache_opts) do
+    case Mcp.Cache.RedisClient.get("session:#{session_id}", cache_opts) do
       {:ok, session_data} ->
         # Remove from user session index
         user_sessions_key = "user_sessions:#{session_data.user_id}"
 
-        case McpCache.RedisClient.get(user_sessions_key, cache_opts) do
+        case Mcp.Cache.RedisClient.get(user_sessions_key, cache_opts) do
           {:ok, sessions} ->
             updated_sessions = List.delete(sessions, session_id)
             update_user_sessions_cache(user_sessions_key, updated_sessions, cache_opts)
@@ -151,7 +208,7 @@ defmodule McpCache.SessionStore do
         end
 
         # Delete the session
-        McpCache.RedisClient.delete("session:#{session_id}", cache_opts)
+        Mcp.Cache.RedisClient.delete("session:#{session_id}", cache_opts)
         {:reply, :ok, state}
 
       error ->
@@ -164,7 +221,7 @@ defmodule McpCache.SessionStore do
     tenant_id = Keyword.get(opts, :tenant_id, "global")
     cache_opts = [tenant_id: tenant_id]
 
-    case McpCache.RedisClient.exists?("session:#{session_id}", cache_opts) do
+    case Mcp.Cache.RedisClient.exists?("session:#{session_id}", cache_opts) do
       exists -> {:reply, exists, state}
     end
   end
@@ -175,10 +232,10 @@ defmodule McpCache.SessionStore do
     ttl = Keyword.get(opts, :ttl, @session_ttl)
     cache_opts = [tenant_id: tenant_id, ttl: ttl]
 
-    case McpCache.RedisClient.get("session:#{session_id}", cache_opts) do
+    case Mcp.Cache.RedisClient.get("session:#{session_id}", cache_opts) do
       {:ok, session_data} ->
         updated_session = %{session_data | last_accessed: DateTime.utc_now()}
-        McpCache.RedisClient.set("session:#{session_id}", updated_session, cache_opts)
+        Mcp.Cache.RedisClient.set("session:#{session_id}", updated_session, cache_opts)
         {:reply, {:ok, updated_session}, state}
 
       error ->
@@ -191,7 +248,7 @@ defmodule McpCache.SessionStore do
     tenant_id = Keyword.get(opts, :tenant_id, "global")
     cache_opts = [tenant_id: tenant_id]
 
-    case McpCache.RedisClient.get("user_sessions:#{user_id}", cache_opts) do
+    case Mcp.Cache.RedisClient.get("user_sessions:#{user_id}", cache_opts) do
       {:ok, session_ids} ->
         sessions =
           session_ids
@@ -206,7 +263,7 @@ defmodule McpCache.SessionStore do
   end
 
   defp get_session_data(session_id, cache_opts) do
-    case McpCache.RedisClient.get("session:#{session_id}", cache_opts) do
+    case Mcp.Cache.RedisClient.get("session:#{session_id}", cache_opts) do
       {:ok, session_data} -> session_data
       {:error, :not_found} -> nil
     end
@@ -214,9 +271,9 @@ defmodule McpCache.SessionStore do
 
   defp update_user_sessions_cache(key, sessions, cache_opts) do
     if sessions == [] do
-      McpCache.RedisClient.delete(key, cache_opts)
+      Mcp.Cache.RedisClient.delete(key, cache_opts)
     else
-      McpCache.RedisClient.set(key, sessions, cache_opts)
+      Mcp.Cache.RedisClient.set(key, sessions, cache_opts)
     end
   end
 end

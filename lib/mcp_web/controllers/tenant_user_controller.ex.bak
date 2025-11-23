@@ -1,0 +1,377 @@
+defmodule McpWeb.TenantUserController do
+  @moduledoc """
+  Controller for managing tenant users within tenant contexts.
+
+  This controller handles CRUD operations for tenant users,
+  user invitations, role management, and user administration.
+  """
+
+  use McpWeb, :controller
+  require Logger
+
+  alias Mcp.Platform.TenantUserManager
+  alias Mcp.Platform.TenantPermissions
+  alias McpWeb.Plugs.TenantAuthorization
+
+  plug :put_layout, {McpWeb.Layouts, :tenant}
+  plug TenantAuthorization, [required_permissions: [:user_management]] when action in [:new, :create, :edit, :update, :delete, :invite, :resend_invitation, :revoke_invitation]
+  plug TenantAuthorization, [required_permissions: [:view_users]] when action in [:index, :show]
+
+  def index(conn, %{"tenant" => tenant_schema} = params) do
+    filters = build_filters(params)
+
+    case TenantUserManager.list_tenant_users(tenant_schema, filters) do
+      {:ok, users} ->
+        render(conn, :index,
+          users: users,
+          filters: filters,
+          current_user: conn.assigns.current_tenant_user
+        )
+
+      {:error, reason} ->
+        Logger.error("Failed to list tenant users: #{inspect(reason)}")
+        conn
+        |> put_flash(:error, "Failed to load users")
+        |> redirect(to: tenant_path(conn, :dashboard, tenant_schema))
+    end
+  end
+
+  def show(conn, %{"tenant" => tenant_schema, "id" => user_id}) do
+    case TenantUserManager.get_tenant_user(tenant_schema, user_id) do
+      {:ok, user} ->
+        current_user = conn.assigns.current_tenant_user
+
+        # Check if current user can view this user's details
+        if TenantUserManager.can_manage_user?(current_user, user) or current_user.id == user.id do
+          render(conn, :show, user: user, current_user: current_user)
+        else
+          conn
+          |> put_flash(:error, "You don't have permission to view this user")
+          |> redirect(to: tenant_user_path(conn, :index, tenant_schema))
+        end
+
+      {:error, :not_found} ->
+        conn
+        |> put_flash(:error, "User not found")
+        |> redirect(to: tenant_user_path(conn, :index, tenant_schema))
+
+      {:error, reason} ->
+        Logger.error("Failed to get user: #{inspect(reason)}")
+        conn
+        |> put_flash(:error, "Failed to load user")
+        |> redirect(to: tenant_user_path(conn, :index, tenant_schema))
+    end
+  end
+
+  def new(conn, %{"tenant" => tenant_schema}) do
+    current_user = conn.assigns.current_tenant_user
+
+    # Check if user can invite new users
+    if TenantUserManager.can_manage_user?(current_user, %{role: :viewer}) do
+      changeset = build_user_changeset()
+      render(conn, :new,
+        changeset: changeset,
+        roles: available_roles(current_user),
+        current_user: current_user
+      )
+    else
+      conn
+      |> put_flash(:error, "You don't have permission to invite users")
+      |> redirect(to: tenant_user_path(conn, :index, tenant_schema))
+    end
+  end
+
+  def create(conn, %{"tenant" => tenant_schema, "user" => user_params}) do
+    current_user = conn.assigns.current_tenant_user
+
+    # Check permissions
+    if TenantUserManager.can_manage_user?(current_user, %{role: String.to_atom(user_params["role"] || "viewer")}) do
+      case TenantUserManager.invite_user(tenant_schema, user_params, current_user) do
+        {:ok, user_id} ->
+          conn
+          |> put_flash(:info, "User invited successfully")
+          |> redirect(to: tenant_user_path(conn, :show, tenant_schema, user_id))
+
+        {:error, reason} ->
+          Logger.error("Failed to invite user: #{inspect(reason)}")
+          changeset = build_user_changeset(user_params)
+
+          conn
+          |> put_flash(:error, format_error_message(reason))
+          |> render(:new,
+            changeset: changeset,
+            roles: available_roles(current_user),
+            current_user: current_user
+          )
+      end
+    else
+      conn
+      |> put_flash(:error, "You don't have permission to invite users with this role")
+      |> redirect(to: tenant_user_path(conn, :new, tenant_schema))
+    end
+  end
+
+  def edit(conn, %{"tenant" => tenant_schema, "id" => user_id}) do
+    current_user = conn.assigns.current_tenant_user
+
+    case TenantUserManager.get_tenant_user(tenant_schema, user_id) do
+      {:ok, user} ->
+        # Check if current user can edit this user
+        if TenantUserManager.can_manage_user?(current_user, user) do
+          changeset = build_user_changeset(user)
+          render(conn, :edit,
+            user: user,
+            changeset: changeset,
+            roles: editable_roles(current_user, user),
+            current_user: current_user
+          )
+        else
+          conn
+          |> put_flash(:error, "You don't have permission to edit this user")
+          |> redirect(to: tenant_user_path(conn, :show, tenant_schema, user_id))
+        end
+
+      {:error, reason} ->
+        Logger.error("Failed to get user for editing: #{inspect(reason)}")
+        conn
+        |> put_flash(:error, "User not found")
+        |> redirect(to: tenant_user_path(conn, :index, tenant_schema))
+    end
+  end
+
+  def update(conn, %{"tenant" => tenant_schema, "id" => user_id, "user" => user_params}) do
+    current_user = conn.assigns.current_tenant_user
+
+    case TenantUserManager.get_tenant_user(tenant_schema, user_id) do
+      {:ok, user} ->
+        # Check permissions
+        if TenantUserManager.can_manage_user?(current_user, user) do
+          # Prepare updates
+          updates = prepare_user_updates(user_params, current_user, user)
+
+          case TenantUserManager.update_tenant_user(tenant_schema, user_id, updates, current_user) do
+            {:ok, :updated} ->
+              conn
+              |> put_flash(:info, "User updated successfully")
+              |> redirect(to: tenant_user_path(conn, :show, tenant_schema, user_id))
+
+            {:error, :insufficient_permissions} ->
+              conn
+              |> put_flash(:error, "You don't have permission to make these changes")
+              |> render(:edit,
+                user: user,
+                changeset: build_user_changeset(user_params),
+                roles: editable_roles(current_user, user),
+                current_user: current_user
+              )
+
+            {:error, reason} ->
+              Logger.error("Failed to update user: #{inspect(reason)}")
+              changeset = build_user_changeset(user_params, user)
+
+              conn
+              |> put_flash(:error, format_error_message(reason))
+              |> render(:edit,
+                user: user,
+                changeset: changeset,
+                roles: editable_roles(current_user, user),
+                current_user: current_user
+              )
+          end
+        else
+          conn
+          |> put_flash(:error, "You don't have permission to edit this user")
+          |> redirect(to: tenant_user_path(conn, :show, tenant_schema, user_id))
+        end
+
+      {:error, reason} ->
+        Logger.error("Failed to get user for updating: #{inspect(reason)}")
+        conn
+        |> put_flash(:error, "User not found")
+        |> redirect(to: tenant_user_path(conn, :index, tenant_schema))
+    end
+  end
+
+  def delete(conn, %{"tenant" => tenant_schema, "id" => user_id}) do
+    current_user = conn.assigns.current_tenant_user
+
+    case TenantUserManager.get_tenant_user(tenant_schema, user_id) do
+      {:ok, user} ->
+        # Can't delete tenant owners or yourself
+        if user.is_tenant_owner or user.id == current_user.id do
+          conn
+          |> put_flash(:error, "Cannot delete tenant owners or yourself")
+          |> redirect(to: tenant_user_path(conn, :index, tenant_schema))
+        else
+          case TenantUserManager.update_tenant_user(tenant_schema, user_id, %{status: :deactivated}, current_user) do
+            {:ok, :updated} ->
+              conn
+              |> put_flash(:info, "User deactivated successfully")
+              |> redirect(to: tenant_user_path(conn, :index, tenant_schema))
+
+            {:error, reason} ->
+              Logger.error("Failed to deactivate user: #{inspect(reason)}")
+              conn
+              |> put_flash(:error, format_error_message(reason))
+              |> redirect(to: tenant_user_path(conn, :show, tenant_schema, user_id))
+          end
+        end
+
+      {:error, reason} ->
+        Logger.error("Failed to get user for deletion: #{inspect(reason)}")
+        conn
+        |> put_flash(:error, "User not found")
+        |> redirect(to: tenant_user_path(conn, :index, tenant_schema))
+    end
+  end
+
+  def suspend(conn, %{"tenant" => tenant_schema, "id" => user_id}) do
+    current_user = conn.assigns.current_tenant_user
+
+    case TenantUserManager.suspend_tenant_user(tenant_schema, user_id, current_user) do
+      {:ok, :updated} ->
+        conn
+        |> put_flash(:info, "User suspended successfully")
+        |> redirect(to: tenant_user_path(conn, :show, tenant_schema, user_id))
+
+      {:error, reason} ->
+        Logger.error("Failed to suspend user: #{inspect(reason)}")
+        conn
+        |> put_flash(:error, format_error_message(reason))
+        |> redirect(to: tenant_user_path(conn, :show, tenant_schema, user_id))
+    end
+  end
+
+  def activate(conn, %{"tenant" => tenant_schema, "id" => user_id}) do
+    current_user = conn.assigns.current_tenant_user
+
+    case TenantUserManager.activate_tenant_user(tenant_schema, user_id, current_user) do
+      {:ok, :updated} ->
+        conn
+        |> put_flash(:info, "User activated successfully")
+        |> redirect(to: tenant_user_path(conn, :show, tenant_schema, user_id))
+
+      {:error, reason} ->
+        Logger.error("Failed to activate user: #{inspect(reason)}")
+        conn
+        |> put_flash(:error, format_error_message(reason))
+        |> redirect(to: tenant_user_path(conn, :show, tenant_schema, user_id))
+    end
+  end
+
+  def resend_invitation(conn, %{"tenant" => tenant_schema, "id" => user_id}) do
+    current_user = conn.assigns.current_tenant_user
+
+    case TenantUserManager.resend_invitation(tenant_schema, user_id, current_user) do
+      {:ok, _token} ->
+        conn
+        |> put_flash(:info, "Invitation resent successfully")
+        |> redirect(to: tenant_user_path(conn, :show, tenant_schema, user_id))
+
+      {:error, :user_not_pending} ->
+        conn
+        |> put_flash(:error, "User has already accepted the invitation")
+        |> redirect(to: tenant_user_path(conn, :show, tenant_schema, user_id))
+
+      {:error, reason} ->
+        Logger.error("Failed to resend invitation: #{inspect(reason)}")
+        conn
+        |> put_flash(:error, format_error_message(reason))
+        |> redirect(to: tenant_user_path(conn, :show, tenant_schema, user_id))
+    end
+  end
+
+  def invitations(conn, %{"tenant" => tenant_schema}) do
+    case TenantUserManager.list_pending_invitations(tenant_schema) do
+      {:ok, invitations} ->
+        render(conn, :invitations,
+          invitations: invitations,
+          current_user: conn.assigns.current_tenant_user
+        )
+
+      {:error, reason} ->
+        Logger.error("Failed to list invitations: #{inspect(reason)}")
+        conn
+        |> put_flash(:error, "Failed to load invitations")
+        |> redirect(to: tenant_user_path(conn, :index, tenant_schema))
+    end
+  end
+
+  # Private helper functions
+
+  defp build_filters(params) do
+    %{}
+    |> maybe_add_filter(:role, params["role"])
+    |> maybe_add_filter(:status, params["status"])
+    |> maybe_add_filter(:search, params["search"])
+  end
+
+  defp maybe_add_filter(filters, _key, nil), do: filters
+  defp maybe_add_filter(filters, _key, ""), do: filters
+  defp maybe_add_filter(filters, key, value), do: Map.put(filters, key, value)
+
+  defp build_user_changeset(attrs \\ %{}) do
+    %{
+      email: Map.get(attrs, "email", ""),
+      first_name: Map.get(attrs, "first_name", ""),
+      last_name: Map.get(attrs, "last_name", ""),
+      role: Map.get(attrs, "role", "viewer"),
+      department: Map.get(attrs, "department", ""),
+      job_title: Map.get(attrs, "job_title", ""),
+      phone_number: Map.get(attrs, "phone_number", ""),
+      invitation_message: Map.get(attrs, "invitation_message", "")
+    }
+  end
+
+  defp available_roles(current_user) do
+    case current_user.role do
+      :admin -> [:admin, :billing_admin, :support_admin, :operator, :viewer]
+      :billing_admin -> [:billing_admin, :operator, :viewer]
+      :support_admin -> [:support_admin, :operator, :viewer]
+      :operator -> [:operator, :viewer]
+      _ -> [:viewer]
+    end
+  end
+
+  defp editable_roles(current_user, target_user) do
+    # Cannot edit tenant owner role
+    if target_user.is_tenant_owner do
+      []
+    else
+      available_roles(current_user)
+    end
+  end
+
+  defp prepare_user_updates(user_params, current_user, target_user) do
+    allowed_updates = %{}
+
+    # Only admin can change roles
+    allowed_updates =
+      if current_user.role == :admin and user_params["role"] and not target_user.is_tenant_owner do
+        Map.put(allowed_updates, :role, String.to_atom(user_params["role"]))
+      else
+        allowed_updates
+      end
+
+    # Basic profile updates
+    allowed_updates =
+      allowed_updates
+      |> maybe_add_update(:first_name, user_params["first_name"])
+      |> maybe_add_update(:last_name, user_params["last_name"])
+      |> maybe_add_update(:phone_number, user_params["phone_number"])
+      |> maybe_add_update(:department, user_params["department"])
+      |> maybe_add_update(:job_title, user_params["job_title"])
+
+    allowed_updates
+  end
+
+  defp maybe_add_update(updates, _key, nil), do: updates
+  defp maybe_add_update(updates, _key, ""), do: updates
+  defp maybe_add_update(updates, key, value), do: Map.put(updates, key, value)
+
+  defp format_error_message(:insufficient_permissions), do: "You don't have permission to perform this action"
+  defp format_error_message(:user_not_found), do: "User not found"
+  defp format_error_message(:already_exists), do: "A user with this email already exists"
+  defp format_error_message(:invalid_role), do: "Invalid role specified"
+  defp format_error_message(reason), do: "Error: #{inspect(reason)}"
+end

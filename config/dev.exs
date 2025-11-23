@@ -18,6 +18,22 @@ config :mcp, Mcp.Repo,
   pool_size: 10,
   ssl: false
 
+# Override JWT settings for development
+config :mcp, McpWeb.Endpoint,
+  # Development-specific session options (less secure for convenience)
+  session_options: [
+    store: :cookie,
+    key: "_mcp_key",
+    signing_salt: "ATUG2KBX",
+    encryption_salt: "SOME_ENCRYPTION_SALT",
+    same_site: "Lax",
+    # Allow HTTP in development
+    secure: false,
+    http_only: true,
+    # 30 days
+    max_age: 30 * 24 * 60 * 60
+  ]
+
 # Configure Redis for caching
 config :mcp, Mcp.Redis,
   host: "localhost",

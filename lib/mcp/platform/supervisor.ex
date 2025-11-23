@@ -23,7 +23,19 @@ defmodule Mcp.Platform.Supervisor do
       {Registry, keys: :unique, name: Mcp.Registry},
 
       # PartitionSupervisor for dynamic supervision
-      {PartitionSupervisor, child_spec: Mcp.DynamicSupervisor, name: Mcp.DynamicSupervisor}
+      {PartitionSupervisor, child_spec: DynamicSupervisor, name: Mcp.DynamicSupervisor},
+
+      # Schema Provisioner for tenant schema management
+      Mcp.Platform.SchemaProvisioner,
+
+      # Tenant Migration Manager for schema migrations
+      Mcp.Platform.TenantMigrationManager,
+
+      # Tenant Backup Manager for backup and recovery
+      Mcp.Platform.TenantBackupManager,
+
+      # Task.Supervisor for async tenant operations
+      {Task.Supervisor, name: Mcp.TaskSupervisor}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

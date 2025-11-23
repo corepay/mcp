@@ -44,7 +44,7 @@ defmodule Mcp.Storage.FileManager do
 
     File.write!(temp_path, file_data)
 
-    case McpStorage.ClientFactory.get_primary_client().upload_file(bucket, key, temp_path, opts) do
+    case Mcp.Storage.ClientFactory.get_primary_client().upload_file(bucket, key, temp_path, opts) do
       {:ok, result} ->
         # Clean up temp file
         File.rm(temp_path)
@@ -70,7 +70,12 @@ defmodule Mcp.Storage.FileManager do
       System.tmp_dir!()
       |> Path.join("download_#{:crypto.strong_rand_bytes(8) |> Base.encode16()}")
 
-    case McpStorage.ClientFactory.get_primary_client().download_file(bucket, key, temp_path, opts) do
+    case Mcp.Storage.ClientFactory.get_primary_client().download_file(
+           bucket,
+           key,
+           temp_path,
+           opts
+         ) do
       {:ok, path} ->
         file_data = File.read!(path)
         File.rm(temp_path)
@@ -88,7 +93,7 @@ defmodule Mcp.Storage.FileManager do
     # Simplified - would decode file_id to actual key
     key = file_id
 
-    case McpStorage.ClientFactory.get_primary_client().delete_file(bucket, key, opts) do
+    case Mcp.Storage.ClientFactory.get_primary_client().delete_file(bucket, key, opts) do
       :ok ->
         # Delete metadata from database would go here
         {:reply, :ok, state}
@@ -104,7 +109,7 @@ defmodule Mcp.Storage.FileManager do
     bucket = get_tenant_bucket(tenant_id)
     prefix = Keyword.get(opts, :prefix, "")
 
-    case McpStorage.ClientFactory.get_primary_client().list_files(bucket, prefix, opts) do
+    case Mcp.Storage.ClientFactory.get_primary_client().list_files(bucket, prefix, opts) do
       {:ok, files} ->
         # Enrich with metadata from database would go here
         file_info =

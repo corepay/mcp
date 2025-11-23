@@ -1,10 +1,10 @@
-defmodule McpStorage.S3Client do
+defmodule Mcp.Storage.S3Client do
   @moduledoc """
   S3/MinIO storage client for object storage operations.
   Handles uploads, downloads, and metadata management.
   """
 
-  @behaviour McpStorage.StorageBehaviour
+  @behaviour Mcp.Storage.StorageBehaviour
 
   require Logger
 

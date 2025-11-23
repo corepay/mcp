@@ -1,0 +1,575 @@
+<!--
+  MCP Platform Login Page - Production-Ready LiveView Implementation
+
+  This template implements a stunning, professional login interface with:
+  - Modern glass-morphism design with gradient accents
+  - Comprehensive form validation and error handling
+  - OAuth integration with animated loading states
+  - Full accessibility compliance (ARIA labels, keyboard navigation)
+  - Mobile-responsive design with DaisyUI components
+  - Security features and rate limiting awareness
+  - Password recovery modal integration
+-->
+
+<div
+  class="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4"
+  phx-window-keydown="keydown"
+  phx-hook="Auth"
+  id="auth-login-container"
+  role="main"
+  aria-label="Login page"
+>
+  
+<!-- Background decorative elements -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse">
+    </div>
+    <div
+      class="absolute -bottom-40 -left-40 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"
+      style="animation-delay: 2s;"
+    >
+    </div>
+    <div
+      class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse"
+      style="animation-delay: 4s;"
+    >
+    </div>
+  </div>
+  
+<!-- Accessibility announcements for screen readers -->
+  <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+    <%= for {announcement, index} <- Enum.with_index(@announcements) do %>
+      <div
+        id={"announcement-#{index}"}
+        phx-mounted={JS.dispatch("auto-remove-announcement", detail: %{index: index})}
+      >
+        {announcement}
+      </div>
+    <% end %>
+  </div>
+  
+<!-- Main login container -->
+  <div class="relative w-full max-w-md">
+    
+<!-- Logo/Branding section -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl shadow-2xl mb-4 transform hover:scale-105 transition-transform duration-200">
+        <.icon name="hero-shield-check" class="w-10 h-10 text-white" />
+      </div>
+      <h1 class="text-3xl font-bold text-white mb-2">Welcome to MCP</h1>
+      <p class="text-gray-300 text-sm">Sign in to access your AI-powered MSP platform</p>
+    </div>
+    
+<!-- Flash messages -->
+    <%= for {kind, message} <- @flash_messages do %>
+      <div
+        class={[
+          "alert mb-6 shadow-lg transform transition-all duration-300",
+          kind == :info && "alert-info",
+          kind == :error && "alert-error",
+          kind == :warning && "alert-warning"
+        ]}
+        role="alert"
+      >
+        <.icon
+          name={
+            (kind == :info && "hero-information-circle") ||
+              (kind == :error && "hero-exclamation-triangle") || "hero-exclamation-circle"
+          }
+          class="shrink-0 w-5 h-5"
+        />
+        <span>{message}</span>
+        <button
+          type="button"
+          class="btn btn-sm btn-ghost btn-square"
+          phx-click={
+            JS.remove_class("transform", "scale-100")
+            |> JS.add_class("scale-95")
+            |> JS.transition("opacity-0", duration: 300)
+            |> JS.hide()
+          }
+        >
+          <.icon name="hero-x-mark" class="w-4 h-4" />
+        </button>
+      </div>
+    <% end %>
+    
+<!-- Main login form -->
+    <div class="backdrop-blur-xl bg-white/10 rounded-3xl shadow-2xl border border-white/20 p-8 transform transition-all duration-300 hover:shadow-3xl">
+      <.form for={@form} phx-submit="login" phx-change="validate" class="space-y-6">
+        
+<!-- Email field -->
+        <div class="form-control w-full">
+          <label class="label" for="email">
+            <span class="label-text text-white font-medium">Email Address</span>
+            <span class="label-text-alt text-gray-300">Required</span>
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <.icon name="hero-envelope" class="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="email"
+              id="email"
+              name="login[email]"
+              value={@email}
+              class={[
+                "input input-bordered w-full pl-10 bg-white/10 border-white/20 text-white placeholder-gray-400",
+                "focus:bg-white/20 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50",
+                @errors[:email] &&
+                  "input-error border-red-400 focus:border-red-400 focus:ring-red-400/50"
+              ]}
+              placeholder="Enter your email"
+              required
+              aria-invalid={if @errors[:email], do: "true", else: "false"}
+              aria-describedby={if @errors[:email], do: "email-error", else: ""}
+              autocomplete="email"
+              disabled={@loading}
+            />
+          </div>
+          <%= if @errors[:email] do %>
+            <label class="label" id="email-error">
+              <span class="label-text-alt text-error flex items-center gap-2">
+                <.icon name="hero-exclamation-circle" class="w-4 h-4" />
+                {@errors[:email]}
+              </span>
+            </label>
+          <% end %>
+        </div>
+        
+<!-- Password field -->
+        <div class="form-control w-full">
+          <label class="label" for="password">
+            <span class="label-text text-white font-medium">Password</span>
+            <span class="label-text-alt flex gap-3">
+              <button
+                type="button"
+                class="link link-info text-xs no-underline"
+                phx-click="show_recovery"
+                tabindex="0"
+              >
+                Forgot password?
+              </button>
+              <button
+                type="button"
+                class="link link-warning text-xs no-underline"
+                phx-click="show_verification"
+                tabindex="0"
+              >
+                Resend verification
+              </button>
+            </span>
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <.icon name="hero-lock-closed" class="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type={if @show_password, do: "text", else: "password"}
+              id="password"
+              name="login[password]"
+              value={@password}
+              class={[
+                "input input-bordered w-full pl-10 pr-12 bg-white/10 border-white/20 text-white placeholder-gray-400",
+                "focus:bg-white/20 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50",
+                @errors[:password] &&
+                  "input-error border-red-400 focus:border-red-400 focus:ring-red-400/50"
+              ]}
+              placeholder="Enter your password"
+              required
+              aria-invalid={if @errors[:password], do: "true", else: "false"}
+              aria-describedby={if @errors[:password], do: "password-error", else: ""}
+              autocomplete="current-password"
+              disabled={@loading}
+            />
+            <button
+              type="button"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
+              phx-click="toggle_password"
+              aria-label={if @show_password, do: "Hide password", else: "Show password"}
+              disabled={@loading}
+            >
+              <.icon
+                name={if @show_password, do: "hero-eye-slash", else: "hero-eye"}
+                class="h-5 w-5"
+              />
+            </button>
+          </div>
+          <%= if @errors[:password] do %>
+            <label class="label" id="password-error">
+              <span class="label-text-alt text-error flex items-center gap-2">
+                <.icon name="hero-exclamation-circle" class="w-4 h-4" />
+                {@errors[:password]}
+              </span>
+            </label>
+          <% end %>
+          
+<!-- Password strength indicator -->
+          <%= if @password_strength && String.length(@password) > 0 do %>
+            <div class="mt-2 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-white/70">Password Strength</span>
+                <span class={[
+                  "text-xs font-medium",
+                  @password_strength.strength == :strong && "text-success",
+                  @password_strength.strength == :medium && "text-warning",
+                  @password_strength.strength in [:weak, :very_weak] && "text-error"
+                ]}>
+                  {@password_strength.text}
+                </span>
+              </div>
+              <div class="w-full bg-white/10 rounded-full h-1.5">
+                <div class={[
+                  "h-1.5 rounded-full transition-all duration-300",
+                  @password_strength.strength == :strong && "bg-success w-full",
+                  @password_strength.strength == :medium && "bg-warning w-3/4",
+                  @password_strength.strength == :weak && "bg-error w-1/2",
+                  @password_strength.strength == :very_weak && "bg-error w-1/4"
+                ]}>
+                </div>
+              </div>
+              <div class="text-xs text-white/60">
+                <%= case @password_strength.strength do %>
+                  <% :strong -> %>
+                    <.icon name="hero-check-circle" class="w-3 h-3 inline mr-1" />
+                    Excellent password
+                  <% :medium -> %>
+                    <.icon name="hero-shield-check" class="w-3 h-3 inline mr-1" />
+                    Good password, consider adding more complexity
+                  <% :weak -> %>
+                    <.icon name="hero-exclamation-triangle" class="w-3 h-3 inline mr-1" />
+                    Add more characters and complexity
+                  <% :very_weak -> %>
+                    <.icon name="hero-x-circle" class="w-3 h-3 inline mr-1" />
+                    Very weak - use a longer, more complex password
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+        
+<!-- Remember me checkbox -->
+        <div class="form-control">
+          <label class="label items-center justify-start cursor-pointer gap-3">
+            <input
+              type="checkbox"
+              name="login[remember_me]"
+              checked={@remember_me}
+              class="checkbox checkbox-sm checkbox-primary bg-white/10 border-white/20 checked:bg-purple-600"
+              phx-click={JS.dispatch("toggle-checkbox")}
+              disabled={@loading}
+            />
+            <span class="label-text text-white">Remember me for 30 days</span>
+          </label>
+        </div>
+        
+<!-- Login button -->
+        <div class="form-control">
+          <button
+            type="submit"
+            class={[
+              "btn btn-primary w-full text-white font-semibold",
+              "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700",
+              "border-0 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200",
+              (@loading || rate_limited?(@locked_until)) &&
+                "btn-disabled opacity-50 cursor-not-allowed"
+            ]}
+            disabled={@loading || rate_limited?(@locked_until)}
+            aria-describedby={if @locked_until, do: "lockout-info", else: ""}
+          >
+            <%= if @loading do %>
+              <span class="loading loading-spinner loading-sm"></span> Signing in...
+            <% else %>
+              <.icon name="hero-arrow-right-end-on-rectangle" class="w-5 h-5 mr-2" /> Sign In
+            <% end %>
+          </button>
+        </div>
+        
+<!-- Rate limiting info -->
+        <%= if @locked_until do %>
+          <div class="alert alert-warning" id="lockout-info">
+            <.icon name="hero-clock" class="w-5 h-5" />
+            <div>
+              <h3 class="font-bold">Account Temporarily Locked</h3>
+              <div class="text-xs">Too many failed attempts. Please try again later.</div>
+            </div>
+          </div>
+        <% end %>
+      </.form>
+      
+<!-- Divider -->
+      <div class="divider divider-neutral text-white/70 my-8">OR</div>
+      
+<!-- OAuth buttons -->
+      <div class="space-y-3">
+        <h3 class="text-center text-white/80 text-sm font-medium mb-4">Continue with</h3>
+        
+<!-- Google OAuth -->
+        <button
+          type="button"
+          class={[
+            "btn w-full bg-white text-gray-800 hover:bg-gray-50 border-0 shadow-md hover:shadow-lg",
+            "transform hover:scale-[1.02] transition-all duration-200",
+            Map.get(@oauth_loading, "google") && "btn-disabled"
+          ]}
+          phx-click="oauth_login"
+          phx-value-provider="google"
+          disabled={@loading || Map.get(@oauth_loading, "google")}
+          aria-label="Sign in with Google"
+        >
+          <%= if Map.get(@oauth_loading, "google") do %>
+            <span class="loading loading-spinner loading-sm"></span> Connecting to Google...
+          <% else %>
+            <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
+            </svg>
+            Google
+          <% end %>
+        </button>
+        
+<!-- GitHub OAuth -->
+        <button
+          type="button"
+          class={[
+            "btn w-full bg-gray-900 text-white hover:bg-gray-800 border-0 shadow-md hover:shadow-lg",
+            "transform hover:scale-[1.02] transition-all duration-200",
+            Map.get(@oauth_loading, "github") && "btn-disabled"
+          ]}
+          phx-click="oauth_login"
+          phx-value-provider="github"
+          disabled={@loading || Map.get(@oauth_loading, "github")}
+          aria-label="Sign in with GitHub"
+        >
+          <%= if Map.get(@oauth_loading, "github") do %>
+            <span class="loading loading-spinner loading-sm"></span> Connecting to GitHub...
+          <% else %>
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+            </svg>
+            GitHub
+          <% end %>
+        </button>
+      </div>
+      
+<!-- Sign up link -->
+      <div class="text-center mt-8">
+        <p class="text-white/70 text-sm">
+          Don't have an account?
+          <a
+            href="/sign_up"
+            class="link link-info text-purple-300 hover:text-purple-200 no-underline font-medium"
+          >
+            Sign up for free
+          </a>
+        </p>
+      </div>
+    </div>
+    
+<!-- Security and compliance badges -->
+    <div class="mt-6 flex items-center justify-center space-x-4 text-white/50 text-xs">
+      <div class="flex items-center gap-1" title="Secure Connection">
+        <.icon name="hero-lock-closed" class="w-3 h-3" />
+        <span>HTTPS</span>
+      </div>
+      <div class="flex items-center gap-1" title="GDPR Compliant">
+        <.icon name="hero-shield-check" class="w-3 h-3" />
+        <span>GDPR</span>
+      </div>
+      <div class="flex items-center gap-1" title="2FA Available">
+        <.icon name="hero-finger-print" class="w-3 h-3" />
+        <span>2FA</span>
+      </div>
+    </div>
+  </div>
+  
+<!-- Password Recovery Modal -->
+  <%= if @show_recovery_modal do %>
+    <div class="modal modal-open" role="dialog" aria-labelledby="recovery-title" aria-modal="true">
+      <div class="modal-box backdrop-blur-xl bg-white/10 border border-white/20">
+        <h3 class="font-bold text-lg text-white mb-4" id="recovery-title">Password Recovery</h3>
+
+        <p class="text-white/80 mb-6">
+          Enter your email address and we'll send you instructions to reset your password.
+        </p>
+
+        <form phx-submit="request_recovery" class="space-y-4">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-white">Email Address</span>
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={@recovery_email}
+              class="input input-bordered bg-white/10 border-white/20 text-white placeholder-gray-400"
+              placeholder="Enter your email"
+              required
+              disabled={@loading}
+            />
+          </div>
+
+          <div class="modal-action">
+            <button
+              type="submit"
+              class={[
+                "btn btn-primary",
+                @loading && "btn-disabled"
+              ]}
+              disabled={@loading}
+            >
+              <%= if @loading do %>
+                <span class="loading loading-spinner loading-sm"></span> Sending...
+              <% else %>
+                Send Reset Link
+              <% end %>
+            </button>
+            <button
+              type="button"
+              class="btn btn-ghost"
+              phx-click="hide_recovery"
+              disabled={@loading}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+      
+<!-- Modal backdrop -->
+      <div class="modal-backdrop" phx-click="hide_recovery"></div>
+    </div>
+  <% end %>
+  
+<!-- Email Verification Modal -->
+  <%= if @show_verification_modal do %>
+    <div
+      class="modal modal-open"
+      role="dialog"
+      aria-labelledby="verification-title"
+      aria-modal="true"
+    >
+      <div class="modal-box backdrop-blur-xl bg-white/10 border border-white/20">
+        <h3 class="font-bold text-lg text-white mb-4" id="verification-title">
+          Resend Verification Email
+        </h3>
+
+        <p class="text-white/80 mb-6">
+          Enter your email address and we'll send you a verification link to confirm your account.
+        </p>
+
+        <form phx-submit="request_verification" class="space-y-4">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-white">Email Address</span>
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={@verification_email}
+              class="input input-bordered bg-white/10 border-white/20 text-white placeholder-gray-400"
+              placeholder="Enter your email"
+              required
+              disabled={@loading}
+            />
+          </div>
+
+          <div class="modal-action">
+            <button
+              type="submit"
+              class={[
+                "btn btn-primary",
+                @loading && "btn-disabled"
+              ]}
+              disabled={@loading}
+            >
+              <%= if @loading do %>
+                <span class="loading loading-spinner loading-sm"></span> Sending...
+              <% else %>
+                Send Verification
+              <% end %>
+            </button>
+            <button
+              type="button"
+              class="btn btn-ghost"
+              phx-click="hide_verification"
+              disabled={@loading}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+      
+<!-- Modal backdrop -->
+      <div class="modal-backdrop" phx-click="hide_verification"></div>
+    </div>
+  <% end %>
+</div>
+
+<!-- CSS for custom animations and glassmorphism effect -->
+<style>
+  /* Custom animations for background elements */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  /* Custom focus styles for better accessibility */
+  input:focus, button:focus {
+    outline: 2px solid rgba(168, 85, 247, 0.5);
+    outline-offset: 2px;
+  }
+
+  /* Enhanced button hover effects */
+  .btn:hover {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Smooth transitions for form elements */
+  .input, .checkbox, .btn {
+    transition: all 0.2s ease-in-out;
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .glass-effect {
+      background: rgba(255, 255, 255, 0.95);
+      border: 2px solid #000;
+    }
+
+    .text-white {
+      color: #000 !important;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>

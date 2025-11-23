@@ -32,21 +32,21 @@ defmodule Mcp.Storage.CDNManager do
   @impl true
   def handle_call({:invalidate_urls, urls}, _from, state) do
     # McpStorage.CDNClient.purge_cache always returns {:ok, _}, so no error handling needed
-    McpStorage.CDNClient.purge_cache(urls)
+    Mcp.Storage.CDNClient.purge_cache(urls)
     {:reply, :ok, state}
   end
 
   @impl true
   def handle_call({:warm_urls, urls}, _from, state) do
     # McpStorage.CDNClient.warm_cache always returns {:ok, _}, so no error handling needed
-    McpStorage.CDNClient.warm_cache(urls)
+    Mcp.Storage.CDNClient.warm_cache(urls)
     {:reply, :ok, state}
   end
 
   @impl true
   def handle_call(:get_stats, _from, state) do
     # McpStorage.CDNClient.get_cache_stats always returns {:ok, _}, so no error handling needed
-    stats = McpStorage.CDNClient.get_cache_stats()
+    stats = Mcp.Storage.CDNClient.get_cache_stats()
     {:reply, {:ok, stats}, state}
   end
 end

@@ -1,0 +1,308 @@
+<div class="min-h-screen bg-base-200 p-4">
+  <div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="bg-base-100 rounded-lg shadow-lg p-6 mb-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-base-content">
+            <.icon name="settings-2" class="inline-block w-8 h-8 mr-3" /> Registration Settings
+          </h1>
+          <p class="text-base-content/70 mt-2">
+            Manage self-registration controls and security policies
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <button
+            phx-click="reset_defaults"
+            class="btn btn-outline btn-sm"
+            onclick="return confirm('This will reset all settings to secure defaults. Are you sure?')"
+          >
+            <.icon name="refresh-ccw" class="w-4 h-4" /> Reset to Defaults
+          </button>
+          <button
+            phx-click="save_settings"
+            phx-value={@settings}
+            class={"btn btn-primary " <> if(!@form_changed, do: "btn-disabled", else: "")}
+            disabled={!@form_changed}
+          >
+            <.icon name="save" class="w-4 h-4" /> Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+    
+<!-- Important Notice -->
+    <div class="alert alert-warning mb-6">
+      <.icon name="shield-alert" class="w-6 h-6" />
+      <div>
+        <h3 class="font-bold">IMPORTANT: Security Notice</h3>
+        <div class="text-sm">
+          By default, all self-registration is <strong>disabled</strong> for security.
+          Only enable self-registration if you understand the security implications.
+          Other entity types (partners, employees, etc.) are invitation-only by design.
+        </div>
+      </div>
+    </div>
+    
+<!-- Self-Registration Control Section -->
+    <div class="bg-base-100 rounded-lg shadow-lg p-6 mb-6">
+      <h2 class="text-xl font-bold text-base-content mb-4 flex items-center">
+        <.icon name="user-plus" class="w-6 h-6 mr-2" /> Self-Registration Control
+      </h2>
+      <p class="text-base-content/70 mb-6">
+        Control who can register without an invitation. Only customers and vendors can self-register.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Customer Registration -->
+        <div class="card bg-base-200 border-2 border-base-300">
+          <div class="card-body">
+            <h3 class="card-title text-lg flex items-center">
+              <.icon name="users" class="w-5 h-5 mr-2 text-blue-500" /> Customer Self-Registration
+            </h3>
+            <div class="form-control">
+              <label class="label cursor-pointer">
+                <span class="label-text">Enable customer self-registration</span>
+                <input
+                  type="checkbox"
+                  class="toggle toggle-lg toggle-primary"
+                  checked={@settings.customer_registration_enabled}
+                  phx-click="toggle_setting"
+                  phx-value-field="customer_registration_enabled"
+                  phx-value-value={@settings.customer_registration_enabled}
+                />
+              </label>
+            </div>
+            <p class="text-sm text-base-content/60 mt-2">
+              When enabled, customers can register without invitations.
+              Disabling requires invitations for all new customers.
+            </p>
+          </div>
+        </div>
+        
+<!-- Vendor Registration -->
+        <div class="card bg-base-200 border-2 border-base-300">
+          <div class="card-body">
+            <h3 class="card-title text-lg flex items-center">
+              <.icon name="building-2" class="w-5 h-5 mr-2 text-green-500" />
+              Vendor Self-Registration
+            </h3>
+            <div class="form-control">
+              <label class="label cursor-pointer">
+                <span class="label-text">Enable vendor self-registration</span>
+                <input
+                  type="checkbox"
+                  class="toggle toggle-lg toggle-success"
+                  checked={@settings.vendor_registration_enabled}
+                  phx-click="toggle_setting"
+                  phx-value-field="vendor_registration_enabled"
+                  phx-value-value={@settings.vendor_registration_enabled}
+                />
+              </label>
+            </div>
+            <p class="text-sm text-base-content/60 mt-2">
+              When enabled, vendors can register without invitations.
+              Disabling requires invitations for all new vendors.
+            </p>
+          </div>
+        </div>
+      </div>
+      
+<!-- Status Summary -->
+      <div class="mt-6 p-4 bg-base-200 rounded-lg">
+        <div class="flex items-center justify-between">
+          <span class="font-medium">Current Status:</span>
+          <div class="flex gap-4">
+            <span class={"badge badge-lg " <> if(@settings.customer_registration_enabled, do: "badge-success", else: "badge-error")}>
+              Customers: {if(@settings.customer_registration_enabled,
+                do: "Enabled",
+                else: "Disabled"
+              )}
+            </span>
+            <span class={"badge badge-lg " <> if(@settings.vendor_registration_enabled, do: "badge-success", else: "badge-error")}>
+              Vendors: {if(@settings.vendor_registration_enabled, do: "Enabled", else: "Disabled")}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+<!-- Verification Requirements Section -->
+    <div class="bg-base-100 rounded-lg shadow-lg p-6 mb-6">
+      <h2 class="text-xl font-bold text-base-content mb-4 flex items-center">
+        <.icon name="shield-check" class="w-6 h-6 mr-2" /> Verification Requirements
+      </h2>
+      <p class="text-base-content/70 mb-6">
+        Configure verification steps required for registration.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Email Verification -->
+        <div class="form-control">
+          <label class="label cursor-pointer">
+            <span class="label-text font-medium">Email Verification</span>
+            <input
+              type="checkbox"
+              class="toggle toggle-primary"
+              checked={@settings.email_verification_required}
+              phx-click="toggle_setting"
+              phx-value-field="email_verification_required"
+              phx-value-value={@settings.email_verification_required}
+            />
+          </label>
+          <label class="label">
+            <span class="label-text-alt">Require email verification for all registrations</span>
+          </label>
+        </div>
+        
+<!-- Phone Verification -->
+        <div class="form-control">
+          <label class="label cursor-pointer">
+            <span class="label-text font-medium">Phone Verification</span>
+            <input
+              type="checkbox"
+              class="toggle toggle-info"
+              checked={@settings.phone_verification_required}
+              phx-click="toggle_setting"
+              phx-value-field="phone_verification_required"
+              phx-value-value={@settings.phone_verification_required}
+            />
+          </label>
+          <label class="label">
+            <span class="label-text-alt">Require phone verification for registrations</span>
+          </label>
+        </div>
+        
+<!-- Business Verification -->
+        <div class="form-control">
+          <label class="label cursor-pointer">
+            <span class="label-text font-medium">Business Verification</span>
+            <input
+              type="checkbox"
+              class="toggle toggle-warning"
+              checked={@settings.business_verification_required}
+              phx-click="toggle_setting"
+              phx-value-field="business_verification_required"
+              phx-value-value={@settings.business_verification_required}
+            />
+          </label>
+          <label class="label">
+            <span class="label-text-alt">Require business documents for vendors</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    
+<!-- Approval Requirements Section -->
+    <div class="bg-base-100 rounded-lg shadow-lg p-6 mb-6">
+      <h2 class="text-xl font-bold text-base-content mb-4 flex items-center">
+        <.icon name="user-check" class="w-6 h-6 mr-2" /> Approval Requirements
+      </h2>
+      <p class="text-base-content/70 mb-6">
+        Configure manual approval requirements for different registration types.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Customer Approval -->
+        <div class="card bg-base-200 border border-base-300">
+          <div class="card-body">
+            <h3 class="card-title flex items-center">
+              <.icon name="user-check" class="w-5 h-5 mr-2" /> Customer Approval
+            </h3>
+            <div class="form-control">
+              <label class="label cursor-pointer">
+                <span class="label-text">Require manual approval</span>
+                <input
+                  type="checkbox"
+                  class="toggle toggle-primary"
+                  checked={@settings.customer_approval_required}
+                  phx-click="toggle_setting"
+                  phx-value-field="customer_approval_required"
+                  phx-value-value={@settings.customer_approval_required}
+                />
+              </label>
+            </div>
+            <p class="text-sm text-base-content/60">
+              When enabled, all customer registrations require admin review and approval.
+            </p>
+          </div>
+        </div>
+        
+<!-- Vendor Approval -->
+        <div class="card bg-base-200 border border-base-300">
+          <div class="card-body">
+            <h3 class="card-title flex items-center">
+              <.icon name="building" class="w-5 h-5 mr-2" /> Vendor Approval
+            </h3>
+            <div class="form-control">
+              <label class="label cursor-pointer">
+                <span class="label-text">Require manual approval</span>
+                <input
+                  type="checkbox"
+                  class="toggle toggle-success"
+                  checked={@settings.vendor_approval_required}
+                  phx-click="toggle_setting"
+                  phx-value-field="vendor_approval_required"
+                  phx-value-value={@settings.vendor_approval_required}
+                />
+              </label>
+            </div>
+            <p class="text-sm text-base-content/60">
+              When enabled, all vendor registrations require admin review and approval.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+<!-- Security Settings Section -->
+    <div class="bg-base-100 rounded-lg shadow-lg p-6">
+      <h2 class="text-xl font-bold text-base-content mb-4 flex items-center">
+        <.icon name="shield" class="w-6 h-6 mr-2" /> Security Settings
+      </h2>
+      <p class="text-base-content/70 mb-6">
+        Advanced security configuration for registration protection.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- CAPTCHA -->
+        <div class="form-control">
+          <label class="label cursor-pointer">
+            <span class="label-text font-medium">CAPTCHA Protection</span>
+            <input
+              type="checkbox"
+              class="toggle toggle-secondary"
+              checked={@settings.require_captcha}
+              phx-click="toggle_setting"
+              phx-value-field="require_captcha"
+              phx-value-value={@settings.require_captcha}
+            />
+          </label>
+          <label class="label">
+            <span class="label-text-alt">
+              Require CAPTCHA verification to prevent bot registrations
+            </span>
+          </label>
+        </div>
+        
+<!-- Fraud Detection -->
+        <div class="form-control">
+          <label class="label cursor-pointer">
+            <span class="label-text font-medium">Fraud Detection</span>
+            <input
+              type="checkbox"
+              class="toggle toggle-error"
+              checked={@settings.fraud_detection_enabled}
+              phx-click="toggle_setting"
+              phx-value-field="fraud_detection_enabled"
+              phx-value-value={@settings.fraud_detection_enabled}
+            />
+          </label>
+          <label class="label">
+            <span class="label-text-alt">Enable advanced fraud detection and risk scoring</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

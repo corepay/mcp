@@ -18,6 +18,10 @@ defmodule Mcp.Application do
       # Domain services (Ash domains)
       Mcp.Domains.Supervisor,
 
+      
+      # GDPR compliance module
+      Mcp.Gdpr,
+
       # Application services (GenServers)
       Mcp.Services.Supervisor,
 

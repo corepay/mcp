@@ -1,4 +1,4 @@
-defmodule McpStorage.StorageBehaviour do
+defmodule Mcp.Storage.StorageBehaviour do
   @moduledoc """
   Behaviour for storage clients.
   Defines the interface that all storage implementations must follow.

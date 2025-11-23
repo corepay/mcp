@@ -34,7 +34,8 @@
 
   # Filter coverage by module patterns
   filter_by: [
-    {".*", nil} # Default: include all modules
+    # Default: include all modules
+    {".*", nil}
   ],
 
   # Ignore files with specific patterns

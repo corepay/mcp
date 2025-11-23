@@ -1,4 +1,4 @@
-defmodule McpCache.RedisClient do
+defmodule Mcp.Cache.RedisClient do
   @moduledoc """
   Redis client wrapper with connection pooling and tenant isolation.
   Handles caching operations for AI-powered MSP platform.
@@ -50,6 +50,11 @@ defmodule McpCache.RedisClient do
       {:error, :not_found} -> {:ok, nil, set(key, value, opts)}
       error -> error
     end
+  end
+
+  # Alias for set_with_ttl for compatibility
+  def setex(key, ttl, value, opts \\ []) do
+    set_with_ttl(key, value, ttl, opts)
   end
 
   def clear_pattern(pattern, opts \\ []) do

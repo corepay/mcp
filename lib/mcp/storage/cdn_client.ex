@@ -1,4 +1,4 @@
-defmodule McpStorage.CDNClient do
+defmodule Mcp.Storage.CDNClient do
   @moduledoc """
   CDN client for content delivery and edge caching.
   Integrates with storage backends for global content distribution.

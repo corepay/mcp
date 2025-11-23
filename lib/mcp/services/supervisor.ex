@@ -13,6 +13,12 @@ defmodule Mcp.Services.Supervisor do
   @impl true
   def init(_init_arg) do
     children = [
+      # Session management and cleanup
+      Mcp.Accounts.SessionScheduler,
+
+      # Data migration services
+      Mcp.Services.MigrationSupervisor
+
       # Core services will be added as they're implemented
       # SchemaManager, ConversationManager, ModelRouter, ProcessorPool, etc.
     ]

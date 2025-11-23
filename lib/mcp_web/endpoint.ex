@@ -8,8 +8,18 @@ defmodule McpWeb.Endpoint do
     store: :cookie,
     key: "_mcp_key",
     signing_salt: "ATUG2KBX",
-    same_site: "Lax"
+    encryption_salt: "SOME_ENCRYPTION_SALT",
+    same_site: "Lax",
+    # Only send over HTTPS in production
+    secure: true,
+    http_only: true,
+    # 30 days
+    max_age: 30 * 24 * 60 * 60
   ]
+
+  # Override with environment-specific settings if available
+  @session_options Application.compile_env(:mcp, McpWeb.Endpoint, [])
+                   |> Keyword.get(:session_options, @session_options)
 
   socket "/live", Phoenix.LiveView.Socket,
     websocket: [connect_info: [session: @session_options]],
@@ -50,5 +60,7 @@ defmodule McpWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+  plug McpWeb.TenantRouting
+  plug McpWeb.TenantContext
   plug McpWeb.Router
 end

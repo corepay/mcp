@@ -74,7 +74,7 @@ defmodule Mcp.Repo.Migrations.CreateTenants do
     execute """
     ALTER TABLE platform.tenants
     ADD CONSTRAINT tenants_status_check
-    CHECK (status IN ('active', 'trial', 'suspended', 'canceled'))
+    CHECK (status IN ('active', 'trial', 'suspended', 'canceled', 'deleted'))
     """
   end
 

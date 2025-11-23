@@ -28,6 +28,22 @@ defmodule Mcp.MultiTenant do
     end
   end
 
+  def drop_tenant_schema(tenant_schema_name) when is_binary(tenant_schema_name) do
+    schema_name = @tenant_schema_prefix <> tenant_schema_name
+
+    case check_schema_exists(tenant_schema_name) do
+      {:ok, true} ->
+        execute_drop_tenant_schema(tenant_schema_name)
+        {:ok, schema_name}
+
+      {:ok, false} ->
+        {:error, :schema_not_found}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
   def tenant_schema_exists?(tenant_schema_name) when is_binary(tenant_schema_name) do
     case check_schema_exists(tenant_schema_name) do
       {:ok, exists} -> exists
@@ -58,6 +74,15 @@ defmodule Mcp.MultiTenant do
 
   defp execute_create_tenant_schema(tenant_schema_name) do
     query = "SELECT create_tenant_schema($1)"
+
+    case Repo.query(query, [tenant_schema_name]) do
+      {:ok, _} -> :ok
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp execute_drop_tenant_schema(tenant_schema_name) do
+    query = "SELECT drop_tenant_schema($1)"
 
     case Repo.query(query, [tenant_schema_name]) do
       {:ok, _} -> :ok

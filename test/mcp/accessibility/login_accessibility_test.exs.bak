@@ -1,0 +1,508 @@
+defmodule Mcp.Accessibility.LoginAccessibilityTest do
+  use ExUnit.Case, async: true
+  use Phoenix.ConnTest
+  use Phoenix.LiveViewTest
+
+  alias McpWeb.AuthLive.Login
+  alias Mcp.Accounts.{User, Auth}
+
+  @endpoint McpWeb.Endpoint
+
+  setup %{conn: conn} do
+    {:ok, conn: conn}
+  end
+
+  describe "WCAG 2.1 AA Compliance" do
+    test "login page has proper semantic HTML structure", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Check for proper semantic elements
+      assert html =~ ~s(<main)
+      assert html =~ ~s(role="main")
+      assert html =~ ~s(aria-label="Login page")
+
+      # Check for proper heading structure
+      assert html =~ ~s(<h1)
+      assert html =~ "Welcome to MCP"
+
+      # Check for proper form structure
+      assert html =~ ~s(<form)
+      assert html =~ ~s(<label)
+      assert html =~ ~s(<input)
+      assert html =~ ~s(<button)
+    end
+
+    test "form inputs have proper accessibility attributes", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Email field accessibility
+      assert html =~ ~s(id="email")
+      assert html =~ ~s(for="email")
+      assert html =~ ~s(type="email")
+      assert html =~ ~s(autocomplete="email")
+      assert html =~ ~s(aria-invalid="false")
+      assert html =~ ~s(required)
+
+      # Password field accessibility
+      assert html =~ ~s(id="password")
+      assert html =~ ~s(for="password")
+      assert html =~ ~s(type="password")
+      assert html =~ ~s(autocomplete="current-password")
+      assert html =~ ~s(aria-invalid="false")
+      assert html =~ ~s(required)
+
+      # Remember me checkbox accessibility
+      assert html =~ ~s(type="checkbox")
+      assert html =~ ~s(aria-label)  # For screen reader description
+    end
+
+    test "buttons have proper accessibility attributes", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Main login button
+      assert html =~ ~s(type="submit")
+      assert html =~ "Sign In"
+
+      # OAuth buttons
+      assert html =~ ~s(aria-label="Sign in with Google")
+      assert html =~ ~s(aria-label="Sign in with GitHub")
+
+      # Password visibility toggle
+      assert html =~ ~s(aria-label="Show password")
+      assert html =~ ~s(aria-label="Hide password")
+
+      # Password recovery link
+      assert html =~ ~s(Forgot password?)
+      assert html =~ ~s(tabindex="0")  # Keyboard accessible
+    end
+
+    test "error handling is accessible", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Test form validation errors
+      view
+      |> form("#login-form", login: %{email: "invalid", password: ""})
+      |> render_change()
+
+      updated_html = render(view)
+
+      # Error messages should be properly associated with inputs
+      assert updated_html =~ ~s(id="email-error")
+      assert updated_html =~ ~s(aria-describedby="email-error")
+      assert updated_html =~ ~s(aria-invalid="true")
+
+      assert updated_html =~ ~s(id="password-error")
+      assert updated_html =~ ~s(aria-describedby="password-error")
+      assert updated_html =~ ~s(aria-invalid="true")
+
+      # Error messages should be descriptive
+      assert updated_html =~ "Please enter a valid email address"
+      assert updated_html =~ "Password is required"
+    end
+
+    test "includes ARIA live regions for dynamic content", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Screen reader announcements
+      assert html =~ ~s(role="status")
+      assert html =~ ~s(aria-live="polite")
+      assert html =~ ~s(aria-atomic="true")
+
+      # Test password visibility announcement
+      view
+      |> element("button[phx-click=\"toggle_password\"]")
+      |> render_click()
+
+      updated_html = render(view)
+      # Should trigger announcement for screen readers
+      assert updated_html =~ ~s(announcement-)
+    end
+  end
+
+  describe "Keyboard Navigation" do
+    test "all interactive elements are keyboard accessible", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Check that all interactive elements can receive focus
+      focusable_elements = [
+        "input[type='email']",
+        "input[type='password']",
+        "input[type='checkbox']",
+        "button[type='submit']",
+        "button[phx-click]",
+        "a[href]"
+      ]
+
+      Enum.each(focusable_elements, fn selector ->
+        assert html =~ selector, "Missing focusable element: #{selector}"
+      end)
+    end
+
+    test "maintains logical tab order", %{conn: conn} do {
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Check DOM order matches visual order
+      # This is a basic check - in practice, you'd use accessibility testing tools
+      email_pos = String.index(html, "id=\"email\"")
+      password_pos = String.index(html, "id=\"password\"")
+      submit_pos = String.index(html, "Sign In")
+
+      assert email_pos < password_pos, "Email field should come before password field"
+      assert password_pos < submit_pos, "Password field should come before submit button"
+    end
+
+    test "handles keyboard shortcuts", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/sign_in")
+
+      # Test Enter key submission
+      view
+      |> form("#login-form", login: %{
+        email: "test@example.com",
+        password: "Password123!"
+      })
+      |> render_keydown(%{"key" => "Enter"})
+
+      # Should trigger form submission
+      # This would normally redirect, but in test we check the event was handled
+      assert render(view)  # Verify no errors occurred
+    end
+
+    test "handles Escape key for modal dismissal", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/sign_in")
+
+      # Show recovery modal
+      view
+      |> element("button[phx-click=\"show_recovery\"]")
+      |> render_click()
+
+      assert render(view) =~ "Password Recovery"
+
+      # Press Escape to close modal
+      view
+      |> render_keydown(%{"key" => "Escape"})
+
+      # Modal should be hidden
+      refute render(view) =~ "Password Recovery"
+    end
+
+    test "focus management during form interactions", %{conn: conn} do {
+      :ok, view, _html} = live(conn, "/sign_in")
+
+      # Test focus remains in appropriate areas during validation
+      view
+      |> form("#login-form", login: %{email: "invalid-email"})
+      |> render_change()
+
+      # Focus should remain accessible (this would need browser testing tools)
+      # For now, we verify no JavaScript errors occur
+      assert render(view)
+    end
+  end
+
+  describe "Screen Reader Support" do
+    test "provides comprehensive form labels", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Check that all form inputs have associated labels
+      assert html =~ ~s(<label for="email")
+      assert html =~ ~s(<label for="password")
+
+      # Check label text is descriptive
+      assert html =~ "Email Address"
+      assert html =~ "Password"
+      assert html =~ "Required"  # Required field indicators
+    end
+
+    test "includes descriptive page titles and headings", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Main heading
+      assert html =~ "<h1"
+      assert html =~ "Welcome to MCP"
+
+      # Subheading/description
+      assert html =~ "Sign in to access your AI-powered MSP platform"
+
+      # Section headings
+      assert html =~ "OR"  # Divider between form and OAuth
+    end
+
+    test "announces state changes to screen readers", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/sign_in")
+
+      # Test loading state announcement
+      view
+      |> form("#login-form", login: %{
+        email: "test@example.com",
+        password: "password"
+      })
+      |> render_submit()
+
+      updated_html = render(view)
+
+      # Should show loading indicators that are accessible
+      assert updated_html =~ "loading"
+      assert updated_html =~ "Signing in..."
+
+      # Test OAuth loading announcement
+      view
+      |> element("button[phx-click=\"oauth_login\"][phx-value-provider=\"google\"]")
+      |> render_click()
+
+      updated_html = render(view)
+      assert updated_html =~ "Connecting to Google..."
+    end
+
+    test "provides alt text for visual elements", %{conn: conn} do {
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Icon accessibility
+      assert html =~ ~s(<.icon)  # Icon components should be properly implemented
+      # Icons should have aria-hidden="true" or be part of button labels
+    end
+  end
+
+  describe "Color Contrast and Visual Accessibility" do
+    test "uses sufficient color contrast", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # This test would require actual CSS analysis tools
+      # For now, we check that contrast-aware classes are used
+      assert html =~ "text-white"
+      assert html =~ "text-gray-300"
+      assert html =~ "text-purple-300"
+
+      # Check for high contrast mode support in CSS
+      # This would be in the <style> section
+      assert html =~ "@media (prefers-contrast: high)"
+    end
+
+    test "respects user's color scheme preferences", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Check for dark mode support (the page appears to be dark by default)
+      assert html =~ "bg-slate-900"
+      assert html =~ "text-white"
+
+      # Should work with both light and dark preferences
+      # This would be tested with actual browser tools
+    end
+
+    test "provides focus indicators", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Check CSS includes focus styles
+      assert html =~ "input:focus"
+      assert html =~ "button:focus"
+      assert html =~ "outline: 2px solid"
+      assert html =~ "outline-offset: 2px"
+    end
+
+    test "supports reduced motion preferences", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Check for reduced motion support
+      assert html =~ "@media (prefers-reduced-motion: reduce)"
+      assert html =~ "animation-duration: 0.01ms"
+      assert html =~ "transition-duration: 0.01ms"
+    end
+  end
+
+  describe "Mobile and Touch Accessibility" do
+    test "has appropriate touch targets", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Check button sizes are appropriate for touch (44px minimum)
+      assert html =~ "btn"  # DaisyUI buttons should be appropriately sized
+
+      # Check spacing between touch targets
+      assert html =~ "space-y-6"  # Proper spacing between form elements
+    end
+
+    test "supports zoom and text resizing", %{conn: conn} do {
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Check that layout is responsive
+      assert html =~ "min-h-screen"
+      assert html =~ "max-w-md"
+      assert html =~ "p-4"  # Responsive padding
+
+      # Text should be resizable up to 200%
+      # This would need actual browser testing
+    end
+
+    test "works in landscape and portrait orientations", %{conn: conn} do {
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Flexible layout should work in both orientations
+      assert html =~ "flex items-center justify-center"
+      assert html =~ "w-full"
+    end
+  end
+
+  describe "Cognitive Accessibility" do
+    test "provides clear error messages", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/sign_in")
+
+      # Test validation error clarity
+      view
+      |> form("#login-form", login: %{email: "invalid-email"})
+      |> render_change()
+
+      updated_html = render(view)
+
+      # Error messages should be specific and actionable
+      assert updated_html =~ "Please enter a valid email address"
+      assert updated_html =~ "Password is required"
+
+      # Should include error icons for visual clarity
+      assert updated_html =~ "hero-exclamation-circle"
+    end
+
+    test "maintains consistent layout and navigation", %{conn: conn} do {
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Consistent form layout
+      assert html =~ "form-control"
+      assert html =~ "input input-bordered"
+
+      # Consistent button styling
+      assert html =~ "btn btn-primary"
+      assert html =~ "btn w-full"
+
+      # Consistent spacing and typography
+      assert html =~ "text-3xl font-bold"  # Main heading
+      assert html =~ "text-sm"  # Helper text
+    end
+
+    test "provides help text and instructions", %{conn: conn} do {
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Form instructions
+      assert html =~ "Sign in to access your AI-powered MSP platform"
+
+      # Field labels with requirements
+      assert html =~ "Email Address"
+      assert html =~ "Required"
+
+      # Password recovery help
+      assert html =~ "Forgot password?"
+    end
+
+    test "uses simple and clear language", %{conn: conn} do {
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Avoid technical jargon
+      assert html =~ "Sign In"  # Simple action
+      assert html =~ "Remember me for 30 days"  # Clear benefit description
+
+      # OAuth options are clearly labeled
+      assert html =~ "Continue with"
+      assert html =~ "Google"
+      assert html =~ "GitHub"
+    end
+  end
+
+  describe "Browser Compatibility" do
+    test "uses modern but widely supported HTML5", %{conn: conn} do {
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # HTML5 semantic elements
+      assert html =~ "<main"
+      assert html =~ "<form"
+      assert html =~ "<button"
+
+      # Modern input types with fallbacks
+      assert html =~ ~s(type="email")
+      assert html =~ ~s(type="password")
+
+      # ARIA attributes for older browsers
+      assert html =~ "role="
+      assert html =~ "aria-"
+    end
+
+    test "includes appropriate CSS prefixes", %{conn: conn} => {
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Check for vendor prefixes in CSS
+      assert html =~ "-webkit-backdrop-filter"  # WebKit support
+      assert html =~ "backdrop-filter"  # Standard property
+
+      # Graceful degradation for older browsers
+      assert html =~ "@media (prefers-contrast: high)"  # Fallback support
+    end
+
+    test "works without JavaScript (basic functionality)", %{conn: conn} => {
+      # Test that the basic form structure is present
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # Form should work with basic HTML submission
+      assert html =~ ~s(<form)
+      assert html =~ ~s(phx-submit="login")  # LiveView enhancement
+      # The form should have a fallback action for no-JS environments
+    end
+  end
+
+  describe "Accessibility Testing Tools Integration" do
+    test "passes automated accessibility checks", %{conn: conn} do {
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # This would integrate with tools like axe-core, lighthouse, etc.
+      # For now, we check for common accessibility issues
+
+      # No missing alt text (icons should be decorative or have labels)
+      # No skipped heading levels
+      assert html =~ "<h1"  # Should start with h1
+      refute html =~ "<h3"  # Should not skip from h1 to h3
+
+      # Form controls have labels
+      assert String.contains?(html, "for=") == String.contains?(html, "id=")
+
+      # No duplicate IDs
+      ids = Regex.scan(~r/id="([^"]+)"/, html) |> Enum.map(fn [_, id] -> id end)
+      unique_ids = Enum.uniq(ids)
+      assert length(ids) == length(unique_ids), "Found duplicate IDs"
+    end
+
+    test "meets WCAG 2.1 AA success criteria", %{conn: conn} => {
+      {:ok, view, html} = live(conn, "/sign_in")
+
+      # 1.1.1 Non-text Content - Icons have labels or are decorative
+      # 1.3.1 Info and Relationships - Proper heading structure and form labels
+      # 1.3.2 Meaningful Sequence - Logical tab order
+      # 1.4.1 Use of Color - Information not conveyed by color alone
+      # 1.4.3 Contrast (Minimum) - Sufficient color contrast
+      # 2.1.1 Keyboard - All functionality available via keyboard
+      # 2.1.2 No Keyboard Trap - Focus can move away from all elements
+      # 2.4.1 Bypass Blocks - Main content is directly accessible
+      # 2.4.2 Page Titled - Appropriate page title
+      # 2.4.3 Focus Order - Logical focus order
+      # 2.4.4 Link Purpose - Link text is descriptive
+      # 3.1.1 Language of Page - Page language is specified
+      # 3.2.1 On Focus - No unexpected context changes on focus
+      # 3.2.2 On Input - No unexpected context changes on input
+      # 3.3.1 Error Identification - Errors are clearly identified
+      # 3.3.2 Labels or Instructions - Form controls have labels
+      # 3.3.3 Error Suggestion - Suggestions for fixing errors
+      # 3.3.4 Error Prevention - Important actions have confirmation
+
+      # This would be verified with actual accessibility testing tools
+      # For now, we ensure basic requirements are met
+      assert html =~ ~s(lang="en")  # Page language
+    end
+  end
+
+  # Helper functions
+  defp create_test_user(attrs \\ %{}) do
+    default_attrs = %{
+      first_name: "Accessibility",
+      last_name: "Test",
+      email: "a11y_test@example.com",
+      password: "Password123!",
+      password_confirmation: "Password123!",
+      status: :active
+    }
+
+    User.register(Map.merge(default_attrs, attrs))
+  end
+end

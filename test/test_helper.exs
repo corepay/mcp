@@ -1,7 +1,7 @@
 ExUnit.start(
   max_failures: 1,
   seed: 0,
-  timeout: 60000,
+  timeout: 60_000,
   trace: System.get_env("TRACE", "false") == "true"
 )
 
@@ -28,7 +28,7 @@ Application.put_env(:mcp, Mcp.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 10,
   show_sensitive_data_on_connection_error: true,
-  ownership_timeout: 60000
+  ownership_timeout: 60_000
 )
 
 # Configure test environment
@@ -59,41 +59,26 @@ Application.put_env(:telemetry_poller, :default, [])
 Application.put_env(:telemetry_poller, :metrics, [])
 
 # Custom ExUnit formatters for better output
-ExUnit.formatters([ExUnit.CLIFormatter])
+ExUnit.configure(formatters: [ExUnit.CLIFormatter])
 
 # Test tags configuration
 ExUnit.configure(
   exclude: [
-    :slow,          # Slow tests that should be run separately
-    :integration,   # Integration tests that require full setup
-    :external_api,  # Tests that hit external APIs
-    :performance   # Performance benchmarks
+    # Slow tests that should be run separately
+    :slow,
+    # Integration tests that require full setup
+    :integration,
+    # Tests that hit external APIs
+    :external_api,
+    # Performance benchmarks
+    :performance
   ]
 )
 
-# Before suite setup
-ExUnit.before_suite(fn ->
-  # Ensure database exists and is migrated
-  Ecto.Adapters.SQL.Sandbox.checkout(Mcp.Repo, sandbox: :manual)
+# Before suite setup - Migrate before running tests
+unless System.get_env("SKIP_MIGRATIONS", "false") == "true" do
+  Mix.Task.run("ecto.create", ["--quiet"])
+  Mix.Task.run("ecto.migrate", ["--quiet"])
+end
 
-  # Run migrations if needed
-  unless System.get_env("SKIP_MIGRATIONS", "false") == "true" do
-    Mix.Task.run("ecto.create", ["--quiet"])
-    Mix.Task.run("ecto.migrate", ["--quiet"])
-  end
-
-  Ecto.Adapters.SQL.Sandbox.checkin(Mcp.Repo)
-end)
-
-# After suite cleanup
-ExUnit.after_suite(fn ->
-  # Clean up test database
-  Ecto.Adapters.SQL.Sandbox.checkout(Mcp.Repo, sandbox: :manual)
-
-  # Optionally drop test database
-  if System.get_env("DROP_TEST_DB", "false") == "true" do
-    Mix.Task.run("ecto.drop", ["--quiet"])
-  end
-
-  Ecto.Adapters.SQL.Sandbox.checkin(Mcp.Repo)
-end)
+# Note: ExUnit.after_suite/1 would be used here if needed for cleanup

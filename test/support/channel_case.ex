@@ -21,6 +21,6 @@ defmodule McpWeb.ChannelCase do
 
   setup _tags do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Mcp.Repo)
-    {:ok, socket: Phoenix.ChannelTest.socket()}
+    {:ok, socket: Phoenix.ChannelTest.__socket__(McpWeb.UserSocket, %{}, %{})}
   end
 end

@@ -17,9 +17,9 @@ defmodule Mcp.Cache.Supervisor do
        name: :redix_cache,
        host: System.get_env("REDIS_HOST", "localhost"),
        port: String.to_integer(System.get_env("REDIS_PORT", "43879"))},
-      McpCache.RedisClient,
-      McpCache.SessionStore,
-      McpCache.CacheManager
+      Mcp.Cache.RedisClient,
+      Mcp.Cache.SessionStore,
+      Mcp.Cache.CacheManager
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

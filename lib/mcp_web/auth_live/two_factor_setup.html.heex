@@ -1,0 +1,510 @@
+<!--
+  MCP Platform 2FA Setup Page - Comprehensive TOTP Setup Experience
+
+  This template implements a step-by-step 2FA setup wizard with:
+  - Interactive setup progress with step indicators
+  - QR code display for authenticator app setup
+  - Verification code input with real-time validation
+  - Backup codes generation, display, and download
+  - Security guidance and best practices
+  - Accessibility compliance and mobile-responsive design
+  - 2FA management interface for existing users
+-->
+
+<div
+  class="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4"
+  phx-hook="TwoFactorSetup"
+  id="twofactor-setup-container"
+  role="main"
+  aria-label="Two-factor authentication setup"
+>
+  
+<!-- Background decorative elements -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse">
+    </div>
+    <div
+      class="absolute -bottom-40 -left-40 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"
+      style="animation-delay: 2s;"
+    >
+    </div>
+    <div
+      class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse"
+      style="animation-delay: 4s;"
+    >
+    </div>
+  </div>
+  
+<!-- Accessibility announcements -->
+  <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+    <%= for {announcement, index} <- Enum.with_index(@announcements) do %>
+      <div id={"announcement-#{index}"}>
+        {announcement}
+      </div>
+    <% end %>
+  </div>
+
+  <div class="relative max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-600 to-teal-600 rounded-2xl shadow-2xl mb-4">
+        <.icon name="hero-shield-check" class="w-10 h-10 text-white" />
+      </div>
+      <h1 class="text-3xl font-bold text-white mb-2">
+        {if @totp_enabled,
+          do: "Manage Two-Factor Authentication",
+          else: "Setup Two-Factor Authentication"}
+      </h1>
+      <p class="text-gray-300 text-sm">
+        {if @totp_enabled,
+          do: "Manage your 2FA settings and backup codes",
+          else: "Add an extra layer of security to your account"}
+      </p>
+    </div>
+    
+<!-- Flash messages -->
+    <%= for {kind, message} <- @flash_messages do %>
+      <div
+        class={[
+          "alert mb-6 shadow-lg transform transition-all duration-300",
+          kind == :info && "alert-info",
+          kind == :error && "alert-error",
+          kind == :warning && "alert-warning",
+          kind == :success && "alert-success"
+        ]}
+        role="alert"
+      >
+        <.icon
+          name={
+            (kind == :info && "hero-information-circle") ||
+              (kind == :error && "hero-exclamation-triangle") ||
+              (kind == :warning && "hero-exclamation-triangle") || "hero-check-circle"
+          }
+          class="shrink-0 w-5 h-5"
+        />
+        <span>{message}</span>
+        <button
+          type="button"
+          class="btn btn-sm btn-ghost btn-square"
+          phx-click={
+            JS.remove_class("transform", "scale-100")
+            |> JS.add_class("scale-95")
+            |> JS.transition("opacity-0", duration: 300)
+            |> JS.hide()
+          }
+        >
+          <.icon name="hero-x-mark" class="w-4 h-4" />
+        </button>
+      </div>
+    <% end %>
+    
+<!-- Main content area -->
+    <div class="backdrop-blur-xl bg-white/10 rounded-3xl shadow-2xl border border-white/20 p-8">
+      <%= if @totp_enabled do %>
+        <!-- 2FA Management Interface -->
+        <.live_component
+          module={McpWeb.AuthLive.TwoFactorManagement}
+          id="twofactor-management"
+          current_user={@current_user}
+          backup_codes={@backup_codes}
+        />
+      <% else %>
+        <!-- Setup Progress Indicator -->
+        <div class="mb-8">
+          <div class="flex items-center justify-between mb-4">
+            <%= for {step_info, index} <- Enum.with_index(setup_steps()) do %>
+              <div class="flex items-center">
+                <div class={[
+                  "w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300",
+                  index < @step_index && "bg-success text-white",
+                  index == @step_index && "bg-primary text-white ring-4 ring-primary/30",
+                  index > @step_index && "bg-white/20 text-gray-400"
+                ]}>
+                  <%= if index < @step_index do %>
+                    <.icon name="hero-check" class="w-5 h-5" />
+                  <% else %>
+                    {step_info.step}
+                  <% end %>
+                </div>
+                <%= if index < length(setup_steps()) - 1 do %>
+                  <div class={[
+                    "w-full h-1 mx-2 transition-all duration-300",
+                    index < @step_index && "bg-success",
+                    index >= @step_index && "bg-white/20"
+                  ]}>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+          <div class="grid grid-cols-4 gap-2 text-center">
+            <%= for step_info <- setup_steps() do %>
+              <div class="text-xs text-gray-300">
+                <div class="font-medium">{step_info.title}</div>
+                <div class="text-gray-400">{step_info.description}</div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+        
+<!-- Setup Steps Content -->
+        <%= case @setup_state do %>
+          <% :intro -> %>
+            <div class="text-center space-y-6">
+              <div class="max-w-md mx-auto">
+                <h2 class="text-2xl font-bold text-white mb-4">Enhance Your Account Security</h2>
+                <p class="text-gray-300 mb-6">
+                  Two-factor authentication (2FA) adds an extra layer of security by requiring a verification code
+                  from your mobile device in addition to your password.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                  <div class="bg-white/10 rounded-xl p-4 text-center">
+                    <.icon name="hero-shield-check" class="w-8 h-8 text-success mx-auto mb-2" />
+                    <h3 class="font-semibold text-white mb-1">Enhanced Security</h3>
+                    <p class="text-sm text-gray-300">Protects against unauthorized access</p>
+                  </div>
+                  <div class="bg-white/10 rounded-xl p-4 text-center">
+                    <.icon
+                      name="hero-device-phone-mobile"
+                      class="w-8 h-8 text-primary mx-auto mb-2"
+                    />
+                    <h3 class="font-semibold text-white mb-1">Mobile App</h3>
+                    <p class="text-sm text-gray-300">Works with authenticator apps</p>
+                  </div>
+                  <div class="bg-white/10 rounded-xl p-4 text-center">
+                    <.icon name="hero-key" class="w-8 h-8 text-warning mx-auto mb-2" />
+                    <h3 class="font-semibold text-white mb-1">Backup Codes</h3>
+                    <p class="text-sm text-gray-300">Recovery options if you lose access</p>
+                  </div>
+                </div>
+
+                <div class="bg-yellow-500/20 border border-yellow-500/30 rounded-xl p-4 mb-6">
+                  <h3 class="font-semibold text-yellow-300 mb-2">Before You Start</h3>
+                  <ul class="text-sm text-yellow-200 space-y-1 text-left">
+                    <li>• Install an authenticator app (Google Authenticator, Authy, etc.)</li>
+                    <li>• Ensure you have access to your mobile device</li>
+                    <li>• Have a secure place to store backup codes</li>
+                  </ul>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                class="btn btn-primary btn-lg"
+                phx-click="start_setup"
+                disabled={@loading}
+              >
+                <%= if @loading do %>
+                  <span class="loading loading-spinner loading-md"></span> Setting up 2FA...
+                <% else %>
+                  <.icon name="hero-arrow-right" class="w-5 h-5 mr-2" /> Start Setup
+                <% end %>
+              </button>
+            </div>
+          <% :qr_code -> %>
+            <div class="max-w-md mx-auto space-y-6">
+              <h2 class="text-2xl font-bold text-white text-center mb-6">Step 1: Scan QR Code</h2>
+
+              <div class="bg-white rounded-xl p-6 text-center">
+                <p class="text-gray-700 mb-4">Scan this QR code with your authenticator app:</p>
+
+                <div class="flex justify-center mb-4">
+                  <%= if @qr_code do %>
+                    <div class="bg-white p-4 rounded-lg shadow-lg">
+                      {@qr_code |> raw}
+                    </div>
+                  <% else %>
+                    <div class="w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <span class="text-gray-500">Generating QR code...</span>
+                    </div>
+                  <% end %>
+                </div>
+
+                <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <p class="text-sm text-blue-700">
+                    <strong>Can't scan?</strong> Enter this code manually in your app:
+                  </p>
+                  <div class="mt-2 font-mono text-xs bg-blue-100 p-2 rounded select-all">
+                    {@totp_secret}
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-xs btn-ghost mt-2"
+                    phx-click="copy_to_clipboard"
+                    phx-value-text={@totp_secret}
+                  >
+                    <.icon name="hero-clipboard-document" class="w-4 h-4 mr-1" />
+                    {if @copied_to_clipboard, do: "Copied!", else: "Copy"}
+                  </button>
+                </div>
+              </div>
+
+              <div class="text-center">
+                <p class="text-gray-300 mb-4">
+                  Once you've added the account to your authenticator app, click Next to verify.
+                </p>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  phx-click={JS.push("navigate", value: %{state: "verification"})}
+                >
+                  Next <.icon name="hero-arrow-right" class="w-5 h-5 ml-2" />
+                </button>
+              </div>
+            </div>
+          <% :verification -> %>
+            <div class="max-w-md mx-auto space-y-6">
+              <h2 class="text-2xl font-bold text-white text-center mb-6">Step 2: Verify Setup</h2>
+
+              <p class="text-gray-300 text-center">
+                Enter the 6-digit verification code from your authenticator app:
+              </p>
+
+              <form phx-submit="verify_totp" class="space-y-4">
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text text-white">Verification Code</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="verification_code"
+                    pattern="[0-9]{6}"
+                    maxlength="6"
+                    class="input input-bordered text-center text-2xl font-mono bg-white/10 border-white/20 text-white placeholder-gray-400"
+                    placeholder="000000"
+                    required
+                    autocomplete="one-time-code"
+                    disabled={@loading}
+                    autofocus
+                  />
+                  <label class="label">
+                    <span class="label-text-alt text-gray-400">
+                      <.icon name="hero-clock" class="w-3 h-3 inline mr-1" />
+                      Code refreshes every 30 seconds
+                    </span>
+                  </label>
+                </div>
+
+                <div class="flex gap-3">
+                  <button
+                    type="submit"
+                    class={[
+                      "btn btn-primary flex-1",
+                      @loading && "btn-disabled"
+                    ]}
+                    disabled={@loading}
+                  >
+                    <%= if @loading do %>
+                      <span class="loading loading-spinner loading-sm"></span> Verifying...
+                    <% else %>
+                      <.icon name="hero-shield-check" class="w-5 h-5 mr-2" />
+                      Verify and Enable 2FA
+                    <% end %>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-ghost"
+                    phx-click={JS.push("navigate", value: %{state: "qr_code"})}
+                    disabled={@loading}
+                  >
+                    Back
+                  </button>
+                </div>
+              </form>
+
+              <div class="bg-blue-500/20 border border-blue-500/30 rounded-xl p-4">
+                <h3 class="font-semibold text-blue-300 mb-2">
+                  <.icon name="hero-information-circle" class="w-4 h-4 inline mr-1" />
+                  Having trouble?
+                </h3>
+                <ul class="text-sm text-blue-200 space-y-1">
+                  <li>• Make sure your device's time is correct</li>
+                  <li>• Wait for a new code if the current one doesn't work</li>
+                  <li>• Double-check that you're using the correct account in your app</li>
+                </ul>
+              </div>
+            </div>
+          <% :backup_codes -> %>
+            <div class="max-w-2xl mx-auto space-y-6">
+              <h2 class="text-2xl font-bold text-white text-center mb-6">
+                Step 3: Save Backup Codes
+              </h2>
+
+              <div class="bg-yellow-500/20 border border-yellow-500/30 rounded-xl p-4 mb-6">
+                <h3 class="font-semibold text-yellow-300 mb-2">
+                  <.icon name="hero-exclamation-triangle" class="w-5 h-5 inline mr-2" />
+                  Important: Save Your Backup Codes
+                </h3>
+                <p class="text-yellow-200 text-sm">
+                  These backup codes allow you to access your account if you lose your authenticator device.
+                  Store them in a secure, offline location. Each code can only be used once.
+                </p>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="form-control">
+                  <button
+                    type="button"
+                    class="btn btn-outline btn-primary"
+                    phx-click="download_backup_codes"
+                  >
+                    <.icon name="hero-document-arrow-down" class="w-5 h-5 mr-2" /> Download Codes
+                  </button>
+                </div>
+                <div class="form-control">
+                  <button
+                    type="button"
+                    class={[
+                      "btn",
+                      (@show_backup_codes && "btn-secondary") || "btn-outline"
+                    ]}
+                    phx-click="show_backup_codes"
+                  >
+                    <%= if @show_backup_codes do %>
+                      <.icon name="hero-eye-slash" class="w-5 h-5 mr-2" /> Hide Codes
+                    <% else %>
+                      <.icon name="hero-eye" class="w-5 h-5 mr-2" /> Show Codes
+                    <% end %>
+                  </button>
+                </div>
+              </div>
+
+              <%= if @show_backup_codes do %>
+                <div class="bg-white/10 rounded-xl p-6 mb-6">
+                  <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-semibold text-white">Your Backup Codes</h3>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-ghost"
+                      phx-click="copy_to_clipboard"
+                      phx-value-text={Enum.join(@backup_codes, "\n")}
+                    >
+                      <.icon name="hero-clipboard-document" class="w-4 h-4 mr-1" />
+                      {if @copied_to_clipboard, do: "Copied!", else: "Copy All"}
+                    </button>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <%= for {code, index} <- Enum.with_index(@backup_codes) do %>
+                      <div class="bg-black/30 rounded-lg p-3 font-mono text-sm text-white select-all">
+                        <span class="text-gray-400 mr-2">
+                          {String.pad_leading("#{index + 1}", 2)}.
+                        </span>
+                        {code}
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+
+              <div class="text-center space-y-4">
+                <div class={[
+                  "badge",
+                  (@backup_codes_downloaded && "badge-success") || "badge-warning"
+                ]}>
+                  <%= if @backup_codes_downloaded do %>
+                    <.icon name="hero-check-circle" class="w-4 h-4 mr-1" /> Backup codes saved
+                  <% else %>
+                    <.icon name="hero-exclamation-triangle" class="w-4 h-4 mr-1" />
+                    Please save backup codes
+                  <% end %>
+                </div>
+
+                <button
+                  type="button"
+                  class={[
+                    "btn btn-primary btn-lg",
+                    not @backup_codes_downloaded && "btn-disabled opacity-50"
+                  ]}
+                  phx-click="confirm_backup_codes_saved"
+                  disabled={not @backup_codes_downloaded}
+                >
+                  <.icon name="hero-check" class="w-5 h-5 mr-2" /> Complete Setup
+                </button>
+              </div>
+            </div>
+          <% :complete -> %>
+            <div class="text-center space-y-6">
+              <div class="inline-flex items-center justify-center w-20 h-20 bg-success rounded-full mb-4">
+                <.icon name="hero-check-circle" class="w-12 h-12 text-white" />
+              </div>
+
+              <h2 class="text-3xl font-bold text-white mb-4">2FA Setup Complete!</h2>
+
+              <p class="text-gray-300 text-lg mb-8">
+                Your account is now protected with two-factor authentication.
+                You'll be prompted for a verification code when signing in.
+              </p>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 max-w-lg mx-auto">
+                <div class="bg-white/10 rounded-xl p-4">
+                  <.icon name="hero-shield-check" class="w-8 h-8 text-success mx-auto mb-2" />
+                  <h3 class="font-semibold text-white mb-1">Enhanced Security</h3>
+                  <p class="text-sm text-gray-300">Your account is now much more secure</p>
+                </div>
+                <div class="bg-white/10 rounded-xl p-4">
+                  <.icon name="hero-finger-print" class="w-8 h-8 text-primary mx-auto mb-2" />
+                  <h3 class="font-semibold text-white mb-1">Easy Access</h3>
+                  <p class="text-sm text-gray-300">Use your authenticator app for quick access</p>
+                </div>
+              </div>
+
+              <div class="bg-blue-500/20 border border-blue-500/30 rounded-xl p-4 mb-8 max-w-lg mx-auto">
+                <h3 class="font-semibold text-blue-300 mb-2">Next Steps</h3>
+                <ul class="text-sm text-blue-200 space-y-1 text-left">
+                  <li>• Test your 2FA setup by signing out and back in</li>
+                  <li>• Keep your backup codes in a safe, offline location</li>
+                  <li>• Consider enabling 2FA on other important accounts</li>
+                </ul>
+              </div>
+
+              <div class="flex gap-3 justify-center">
+                <button
+                  type="button"
+                  class="btn btn-primary btn-lg"
+                  phx-click="finish_setup"
+                >
+                  <.icon name="hero-arrow-right" class="w-5 h-5 mr-2" /> Go to Security Settings
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline"
+                  phx-click={JS.navigate("/dashboard")}
+                >
+                  Dashboard
+                </button>
+              </div>
+            </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript hook for clipboard and download functionality -->
+<script>
+  // This will be loaded via the LiveView hook
+  window.TwoFactorSetupHook = {
+    mounted() {
+      this.handleEvent("copy-to-clipboard", ({ text }) => {
+        navigator.clipboard.writeText(text).then(() => {
+          console.log("Copied to clipboard");
+        }).catch(err => {
+          console.error("Failed to copy: ", err);
+        });
+      });
+
+      this.handleEvent("download-backup-codes", ({ content }) => {
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'mcp-backup-codes.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      });
+    }
+  };
+</script>

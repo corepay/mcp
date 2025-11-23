@@ -444,6 +444,33 @@ defmodule McpWeb.CoreComponents do
   end
 
   @doc """
+  Renders a card component with content.
+
+  ## Examples
+
+      <.card class="p-6">
+        <p>Card content here</p>
+      </.card>
+  """
+  attr :class, :string, default: "", doc: "the additional CSS classes for the card"
+  attr :rest, :global, doc: "the arbitrary HTML attributes to add to the card"
+
+  slot :inner_block, doc: "the inner block that renders the card content"
+
+  def card(assigns) do
+    ~H"""
+    <div class={[
+      "card bg-base-100 shadow-sm border border-base-200 rounded-lg",
+      @class
+    ]} {@rest}>
+      <div class="card-body">
+        <%= render_slot(@inner_block) %>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
   Translates an error message using gettext.
   """
   def translate_error({msg, opts}) do
