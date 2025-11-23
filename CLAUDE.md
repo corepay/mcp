@@ -127,6 +127,7 @@ The application follows Phoenix conventions with domain-driven modules in `lib/m
 
 Web layer is in `lib/mcp_web/` following standard Phoenix structure.
 
+
 ### Database Architecture
 **Repo**: `Mcp.Core.Repo` with advanced PostgreSQL features:
 - **Multi-tenancy**: Schema-based isolation with `with_tenant_schema/2`
@@ -166,6 +167,7 @@ Environment variables (see `.env` file):
 - **Tailwind CSS v4** with new import syntax (no `tailwind.config.js`)
 - **DaisyUI components** for UI patterns
 - **Phoenix LiveView** for real-time interactions
+- **Component-Driven Architecture**: Reusable components in `lib/mcp_web/components/`
 - **esbuild** for JS bundling (ES2022 target)
 
 Asset source paths configured in `config/config.exs`:
@@ -174,6 +176,21 @@ Asset source paths configured in `config/config.exs`:
 @source "../js"
 @source "../../lib/mcp_web"
 ```
+
+#### Component-Driven UI Development
+**PREFERRED APPROACH**: Always create reusable components rather than dashboard-style LiveViews.
+
+- **Components Directory**: `lib/mcp_web/components/` - Contains all reusable UI components
+- **Core Components**: `McpWeb.CoreComponents` - Base components (buttons, forms, flash, icons)
+- **Domain Components**: Domain-specific components (e.g., `McpWeb.GdprComponents`)
+- **LiveView Composition**: Use components to build interfaces, not monolithic dashboard views
+
+**Component Creation Guidelines**:
+1. Create domain-specific component modules for complex features
+2. Use Phoenix.Component with proper attrs and slots
+3. Import/reuse CoreComponents functions (icon, flash, etc.)
+4. Keep components focused and composable
+5. Use proper assigns documentation with @doc and @attr
 
 ## Project-Specific Guidelines
 
@@ -205,3 +222,10 @@ When working across Ash resources and DaisyUI components:
 Always warn when context is running low before starting new tasks. If insufficient context remains, ask user to:
 - Use compact mode, or
 - Create agent handoff document for remaining tasks
+
+### Agent Reading Requirements
+**MANDATORY READING BEFORE ANY CODING TASKS:**
+- **CLAUDE.md**: This file - Primary project guidelines and architecture
+- **AGENTS.md**: Phoenix/LiveView/Elixir/Ash Framework specific patterns and technology stack requirements
+
+All agents MUST read both files before starting any development work to ensure compliance with project architecture and prevent conflicting implementations.

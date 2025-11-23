@@ -30,7 +30,7 @@ custom classes must fully style the input
 
 - **Always use and maintain this import syntax** in the app.css file for projects generated with `phx.new`
 - **Never** use `@apply` when writing raw css
-- **Always** manually write your own tailwind-based components instead of using daisyUI for a unique, world-class design
+- **Project Specific**: Use DaisyUI components as the core UI system with custom styling for unique design
 - Out of the box **only the app.js and app.css bundles are supported**
   - You cannot reference an external vendor'd script `src` or link `href` in the layouts
   - You must import the vendor deps into app.js and app.css to use them
@@ -42,6 +42,38 @@ custom classes must fully style the input
 - Implement **subtle micro-interactions** (e.g., button hover effects, and smooth transitions)
 - Ensure **clean typography, spacing, and layout balance** for a refined, premium look
 - Focus on **delightful details** like hover effects, loading states, and smooth page transitions
+- **Project Architecture**: Use **DaisyUI + Tailwind CSS** as the core component system (explicitly required by project)
+- **BMAD Integration**: Follow unified pattern language across Ash ↔ DaisyUI ↔ BMAD layers
+- **Component Patterns**: Use DaisyUI components for consistent UI patterns with custom styling as needed
+
+### Component-Driven Architecture Guidelines ⭐ PREFERRED
+
+- **ALWAYS** create reusable components rather than dashboard-style LiveViews
+- **Components Directory**: `lib/mcp_web/components/` - All reusable UI components
+- **Core Components**: `McpWeb.CoreComponents` - Base components (buttons, forms, flash, icons)
+- **Domain Components**: Create domain-specific components (e.g., `McpWeb.GdprComponents`)
+- **Phoenix.Component**: Use proper attrs and slots with @doc documentation
+- **Component Reuse**: Import CoreComponents functions (icon, flash, button, etc.)
+- **LiveView Composition**: Build interfaces from reusable components, not monolithic views
+- **AVOID**: Dashboard-style LiveViews with mixed concerns in single templates
+
+#### Component Creation Pattern:
+```elixir
+defmodule McpWeb.FeatureComponents do
+  use Phoenix.Component
+  import McpWeb.CoreComponents, only: [icon: 1]
+
+  @doc "Renders a feature-specific component"
+  attr :data, :map, required: true
+  attr :loading, :boolean, default: false
+
+  def feature_component(assigns) do
+    ~H"""
+    <!-- Reusable component markup -->
+    """
+  end
+end
+```
 
 
 <!-- usage-rules-start -->
@@ -84,6 +116,22 @@ custom classes must fully style the input
 - Predicate function names should not start with `is_` and should end in a question mark. Names like `is_thing` should be reserved for guards
 - Elixir's builtin OTP primitives like `DynamicSupervisor` and `Registry`, require names in the child spec, such as `{DynamicSupervisor, name: MyApp.MyDynamicSup}`, then you can use `DynamicSupervisor.start_child(MyApp.MyDynamicSup, child_spec)`
 - Use `Task.async_stream(collection, callback, options)` for concurrent enumeration with back-pressure. The majority of times you will want to pass `timeout: :infinity` as option
+
+## Ash Framework Guidelines (PROJECT CORE)
+
+- **Ash Framework is CORE**: ALWAYS use Ash Framework patterns - this is mandatory
+- **No Ecto Patterns**: Never use Ecto schemas, queries, or patterns directly. Use Ash resources instead
+- **No Stubs/Regressions**: Never create stub implementations or regress existing functionality
+- **Resource-Based Architecture**: Use Ash resources with proper domains for all data operations
+- **Ash.Reactor**: For complex workflows, use Ash.Reactor instead of generic Reactor patterns
+- **Evidence-Based**: All development must be evidence-based with actual compilation/test output
+
+## Reactor Guidelines
+
+- **Ash.Reactor Preferred**: Use `use Ash.Reactor` for all workflow implementations
+- **Complex Workflows**: Reactor is perfect for complicated workflows with compensation patterns
+- **Saga Pattern**: Use Reactor's compensation steps for handling rollbacks and error recovery
+- **No Generic Reactor**: Avoid generic Reactor patterns when Ash.Reactor is available
 
 ## Mix guidelines
 

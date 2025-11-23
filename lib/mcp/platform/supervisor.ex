@@ -25,14 +25,14 @@ defmodule Mcp.Platform.Supervisor do
       # PartitionSupervisor for dynamic supervision
       {PartitionSupervisor, child_spec: DynamicSupervisor, name: Mcp.DynamicSupervisor},
 
-      # Schema Provisioner for tenant schema management
-      Mcp.Platform.SchemaProvisioner,
+      # Schema Provisioner is handled by TenantMigrationManager
+      # Mcp.Platform.SchemaProvisioner,
 
       # Tenant Migration Manager for schema migrations
-      Mcp.Platform.TenantMigrationManager,
+      # Mcp.Platform.TenantMigrationManager,
 
       # Tenant Backup Manager for backup and recovery
-      Mcp.Platform.TenantBackupManager,
+      # Mcp.Platform.TenantBackupManager,
 
       # Task.Supervisor for async tenant operations
       {Task.Supervisor, name: Mcp.TaskSupervisor}

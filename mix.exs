@@ -68,6 +68,7 @@ defmodule Mcp.MixProject do
       {:absinthe_phoenix, "~> 2.0"},
       {:sourceror, "~> 1.8", only: [:dev, :test]},
       {:oban, "~> 2.0"},
+      {:reactor, "~> 0.17"},
       {:open_api_spex, "~> 3.0"},
       {:ash_typescript, "~> 0.7"},
       {:usage_rules, "~> 0.1", only: [:dev]},

@@ -1,8 +1,6 @@
 defmodule Mcp.Gdpr.Supervisor do
   @moduledoc """
-  Main GDPR domain supervisor.
-
-  Coordinates all GDPR compliance services and manages their lifecycle.
+  Main GDPR supervisor managing all compliance-related processes.
   """
 
   use Supervisor
@@ -15,16 +13,12 @@ defmodule Mcp.Gdpr.Supervisor do
   @impl true
   def init(_init_arg) do
     children = [
-      # GDPR Core Services
-      Mcp.Gdpr.ConsentManager,
+      # Core GDPR Services
       Mcp.Gdpr.AuditTrail,
+      Mcp.Gdpr.Consent,
       Mcp.Gdpr.DataRetention,
       Mcp.Gdpr.Anonymizer,
-      Mcp.Gdpr.ExportGenerator,
-      Mcp.Gdpr.ComplianceMonitor,
-
-      # Background Job Processors
-      {Oban, Application.get_env(:mcp, Oban)}
+      Mcp.Gdpr.Export
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

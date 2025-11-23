@@ -15,8 +15,30 @@ defmodule McpWeb.Router do
     plug McpWeb.Auth.SessionPlug, protected_routes: ["/dashboard", "/settings"]
   end
 
+  pipeline :gdpr_auth do
+    plug McpWeb.Auth.GdprAuthPlug,
+      require_auth: true,
+      audit_action: "GDPR_ACCESS",
+      rate_limit: true
+  end
+
+  pipeline :gdpr_admin_auth do
+    plug McpWeb.Auth.GdprAuthPlug,
+      require_auth: true,
+      require_admin: true,
+      audit_action: "GDPR_ADMIN_ACCESS",
+      rate_limit: true
+  end
+
   pipeline :api do
     plug :accepts, ["json"]
+    plug McpWeb.ApiSecurityHeaders
+  end
+
+  pipeline :api_csrf do
+    plug :accepts, ["json"]
+    plug :protect_from_forgery
+    plug McpWeb.ApiSecurityHeaders
   end
 
   scope "/", McpWeb do
@@ -60,15 +82,22 @@ defmodule McpWeb.Router do
     get "/oauth/providers", OAuthController, :linked_providers
     post "/oauth/refresh/:provider", OAuthController, :refresh_token
 
-    # GDPR routes
-    get "/gdpr/data-export", GdprController, :request_data_export
-    post "/gdpr/data-export", GdprController, :request_data_export
-    post "/gdpr/request-deletion", GdprController, :request_deletion
-    post "/gdpr/cancel-deletion", GdprController, :cancel_deletion
-    get "/gdpr/deletion-status", GdprController, :get_deletion_status
-    get "/gdpr/consent", GdprController, :get_consent
-    post "/gdpr/consent", GdprController, :update_consent
-    get "/gdpr/audit-trail", GdprController, :get_audit_trail
+    # GDPR routes (require authentication and audit logging)
+    scope "/gdpr" do
+      pipe_through :gdpr_auth
+
+      live "/", GdprLive, :index
+      get "/data-export", GdprController, :request_data_export
+      post "/data-export", GdprController, :request_data_export
+      get "/export/:export_id/status", GdprController, :get_export_status
+      get "/export/:export_id/download", GdprController, :download_export
+      post "/request-deletion", GdprController, :request_deletion
+      post "/cancel-deletion", GdprController, :cancel_deletion
+      get "/deletion-status", GdprController, :get_deletion_status
+      get "/consent", GdprController, :get_consent
+      post "/consent", GdprController, :update_consent
+      get "/audit-trail", GdprController, :get_audit_trail
+    end
   end
 
   # Tenant-specific routes (require tenant context)
@@ -89,20 +118,42 @@ defmodule McpWeb.Router do
     get "/oauth/provider/:provider", OAuthController, :provider_info
     post "/oauth/refresh/:provider", OAuthController, :refresh_token
 
-    # GDPR API endpoints
-    scope "/gdpr" do
-      post "/data-export", GdprController, :request_data_export
-      post "/request-deletion", GdprController, :request_deletion
-      post "/cancel-deletion", GdprController, :cancel_deletion
+    # GDPR API endpoints (require authentication and audit logging)
+    scope "/gdpr", McpWeb do
+      pipe_through [:gdpr_auth]
+
+      # Read-only operations (no CSRF required)
+      get "/export/:export_id/status", GdprController, :get_export_status
+      get "/export/:export_id/download", GdprController, :download_export
       get "/deletion-status", GdprController, :get_deletion_status
       get "/consent", GdprController, :get_consent
-      post "/consent", GdprController, :update_consent
       get "/audit-trail", GdprController, :get_audit_trail
 
-      # Admin endpoints (would need admin auth middleware)
+      # State-changing operations (require CSRF protection and input validation)
+      scope "/" do
+        pipe_through :api_csrf
+
+        post "/data-export", GdprController, :request_data_export
+        post "/request-deletion", GdprController, :request_deletion
+        post "/cancel-deletion", GdprController, :cancel_deletion
+        post "/consent", GdprController, :update_consent
+      end
+
+      # Admin endpoints (require admin authentication and enhanced audit logging)
       scope "/admin" do
-        post "/users/:user_id/delete", GdprController, :admin_delete_user
+        pipe_through :gdpr_admin_auth
+
+        # Admin read-only operations (no CSRF required)
         get "/compliance-report", GdprController, :admin_get_compliance_report
+        get "/users/:user_id/data", GdprController, :admin_get_user_data
+
+        # Admin state-changing operations (require CSRF protection and input validation)
+        scope "/" do
+          pipe_through :api_csrf
+
+          post "/users/:user_id/delete", GdprController, :admin_delete_user
+          post "/anonymize-overdue", GdprController, :admin_anonymize_overdue_users
+        end
       end
     end
   end

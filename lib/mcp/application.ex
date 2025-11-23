@@ -1,7 +1,6 @@
 defmodule Mcp.Application do
   @moduledoc """
   Main application supervisor for AI-powered MSP platform.
-  Orchestrates all domain supervisors: Infrastructure, Domains, Services, Jobs, Platform, Web.
   """
 
   use Application
@@ -18,9 +17,8 @@ defmodule Mcp.Application do
       # Domain services (Ash domains)
       Mcp.Domains.Supervisor,
 
-      
-      # GDPR compliance module
-      Mcp.Gdpr,
+      # GDPR compliance module (comprehensive implementation)
+      Mcp.Gdpr.Application,
 
       # Application services (GenServers)
       Mcp.Services.Supervisor,

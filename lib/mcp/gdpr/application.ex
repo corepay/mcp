@@ -30,4 +30,14 @@ defmodule Mcp.Gdpr.Application do
   def config_change(_changed, _new, _removed) do
     :ok
   end
+
+  def child_spec(opts) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start, [opts]},
+      type: :supervisor,
+      restart: :permanent,
+      shutdown: 5000
+    }
+  end
 end

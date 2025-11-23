@@ -168,7 +168,12 @@ This architecture defines a **10-portal multi-tenant payment processing and merc
   - `ash_archival` - Soft deletes
 
 ### Frontend
-- **Phoenix LiveView** - Real-time UI
+- **Phoenix LiveView** - Real-time UI with component-driven architecture
+- **Component-Driven Development**: Reusable components in `lib/mcp_web/components/`
+- **Phoenix.Component**: Modern component system with proper attrs and slots
+- **Core Components**: `McpWeb.CoreComponents` - Base components (buttons, forms, flash, icons)
+- **Domain Components**: Domain-specific components (e.g., `McpWeb.GdprComponents`)
+- **LiveView Composition**: Component-based interface construction, not monolithic dashboards
 - **DaisyUI** - Component library
 - **Tailwind CSS v4** - Styling (new import syntax)
 - **Alpine.js** - Client-side interactivity

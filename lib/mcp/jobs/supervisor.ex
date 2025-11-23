@@ -1,7 +1,7 @@
 defmodule Mcp.Jobs.Supervisor do
   @moduledoc """
   Jobs supervisor.
-  Manages Oban background job processing.
+  Manages Oban background job processing for GDPR compliance and other async tasks.
   """
 
   use Supervisor
@@ -13,8 +13,7 @@ defmodule Mcp.Jobs.Supervisor do
   @impl true
   def init(_init_arg) do
     children = [
-      # Oban configuration will be added when job processing is implemented
-      # For now, this supervisor is ready for Oban integration
+      {Oban, Application.get_env(:mcp, Oban)}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

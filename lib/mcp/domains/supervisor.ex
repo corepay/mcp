@@ -13,8 +13,8 @@ defmodule Mcp.Domains.Supervisor do
   @impl true
   def init(_init_arg) do
     children = [
-      # Ash domains will be added when implemented
-      # For now, this supervisor is ready for domain services
+      # GDPR compliance domain - Ash domains don't need to be started as processes
+      # Mcp.Domains.Gdpr
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

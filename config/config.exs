@@ -10,8 +10,30 @@ import Config
 config :mcp,
   ecto_repos: [Mcp.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Mcp.Accounts, Mcp.Platform],
+  ash_domains: [Mcp.Accounts, Mcp.Platform, Mcp.Domains.Gdpr],
   base_domain: "localhost"
+
+# Oban configuration
+config :mcp, Oban,
+  repo: Mcp.Repo,
+  queues: [
+    gdpr_exports: 10,     # Data export processing
+    gdpr_cleanup: 5,      # Data retention cleanup
+    gdpr_anonymize: 3,    # Data anonymization
+    gdpr_compliance: 2    # Compliance monitoring
+  ],
+  plugins: [
+    # Prune completed jobs after 24 hours
+    {Oban.Plugins.Pruner, max_age: 60 * 60 * 24},
+    # Cron job for daily retention cleanup
+    {Oban.Plugins.Cron,
+     crontab: [
+       {"0 2 * * *", Mcp.Jobs.Gdpr.RetentionCleanup},  # Daily at 2 AM
+       {"0 3 * * 0", Mcp.Jobs.Gdpr.WeeklyCompliance} # Weekly on Sunday at 3 AM
+     ]},
+    # Lifeline for stuck jobs
+    {Oban.Plugins.Lifeline, rescue_after: 30 * 60}
+  ]
 
 config :ex_cldr, default_backend: Mcp.Cldr
 
