@@ -77,7 +77,7 @@ defmodule McpWeb.Router do
 
     # Tenant settings
     live "/settings/live", TenantSettingsLive, :index
-    live "/settings/live?tab=*tab", TenantSettingsLive, :index
+    live "/settings/live/:tab", TenantSettingsLive, :index
   end
 
   # API routes

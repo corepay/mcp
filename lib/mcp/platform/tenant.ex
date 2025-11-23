@@ -6,7 +6,7 @@ defmodule Mcp.Platform.Tenant do
   defstruct [:id, :name, :company_schema, :status, :inserted_at, :updated_at]
 
   # Generate UUIDs for stub implementations
-  defp uuid, do: System.uuid()
+  defp uuid, do: Ecto.UUID.generate()
 
   @doc """
   Gets all tenants.

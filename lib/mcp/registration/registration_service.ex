@@ -3,7 +3,7 @@ defmodule Mcp.Registration.RegistrationService do
   Registration service for managing registration requests.
   """
 
-  alias Mcp.Accounts.RegistrationSettings
+  # alias Mcp.Accounts.RegistrationSettings
 
   @doc """
   Initializes a new registration request.
@@ -11,7 +11,7 @@ defmodule Mcp.Registration.RegistrationService do
   def initialize_registration(tenant_id, type, registration_data, context \\ %{}) do
     # Stub implementation
     request = %{
-      id: System.uuid(),
+      id: Ecto.UUID.generate(),
       tenant_id: tenant_id,
       type: type,
       data: registration_data,
@@ -78,7 +78,7 @@ defmodule Mcp.Registration.RegistrationService do
   @doc """
   Lists pending registration requests.
   """
-  def list_pending_registrations(tenant_id) do
+  def list_pending_registrations(_tenant_id) do
     # Stub implementation
     {:ok, []}
   end
