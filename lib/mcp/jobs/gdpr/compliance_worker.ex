@@ -42,16 +42,14 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
     check_legal_holds()
   end
 
+  def perform(%Oban.Job{args: args}) when args == %{} do
+    # Called by Oban Cron plugin with empty args
+    perform_daily_compliance_check()
+  end
+
   def perform(%Oban.Job{args: args}) do
     Logger.error("Invalid arguments for ComplianceWorker: #{inspect(args)}")
     {:error, :invalid_arguments}
-  end
-
-  # Cron job implementations
-
-  def perform(%Oban.Job{args: %{}}) do
-    # Called by Oban Cron plugin
-    perform_daily_compliance_check()
   end
 
   # Private functions

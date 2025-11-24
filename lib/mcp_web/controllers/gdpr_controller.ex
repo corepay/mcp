@@ -104,10 +104,7 @@ defmodule McpWeb.GdprController do
     end
   end
 
-  def request_data_export(conn, _params) do
-    request_data_export(conn, %{"format" => "json"})
-  end
-
+  
   @doc """
   Get the status of a data export request.
   """

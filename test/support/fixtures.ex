@@ -3,11 +3,7 @@ defmodule Mcp.TestFixtures do
   Common test fixtures and test data for reuse across tests.
   """
 
-  # Import ExMachina if available
-  if Code.ensure_loaded?(ExMachina) do
-    import ExMachina
-  end
-
+  
   # Common test data
   @valid_user_attrs %{
     email: "test@example.com",
