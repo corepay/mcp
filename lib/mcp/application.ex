@@ -18,7 +18,7 @@ defmodule Mcp.Application do
       Mcp.Domains.Supervisor,
 
       # GDPR compliance module (comprehensive implementation)
-      Mcp.Gdpr.Application,
+      Mcp.Gdpr.Supervisor,
 
       # Application services (GenServers)
       Mcp.Services.Supervisor,

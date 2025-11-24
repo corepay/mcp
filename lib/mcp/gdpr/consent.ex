@@ -3,6 +3,8 @@ defmodule Mcp.Gdpr.Consent do
   GDPR consent management functionality.
   """
 
+  use GenServer
+
   alias Mcp.Gdpr.Schemas.GdprConsent
   alias Mcp.Repo
   import Ecto.Query
@@ -10,7 +12,7 @@ defmodule Mcp.Gdpr.Consent do
   @doc """
   Records user consent for a specific purpose.
   """
-  def record_consent(user_id, purpose, legal_basis, actor_id \\ nil, opts \\ []) do
+  def record_consent(user_id, purpose, legal_basis, _actor_id \\ nil, opts \\ []) do
     consent_attrs = %{
       user_id: user_id,
       purpose: purpose,
@@ -31,7 +33,7 @@ defmodule Mcp.Gdpr.Consent do
   """
   def get_user_consents(user_id) do
     GdprConsent
-    |> Ecto.Query.where([c], c.user_id == ^user_id and c.status == "active")
+    |> where([c], c.user_id == ^user_id and c.status == "active")
     |> Repo.all()
   end
 

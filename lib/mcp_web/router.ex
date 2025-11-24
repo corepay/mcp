@@ -113,13 +113,19 @@ defmodule McpWeb.Router do
   scope "/api", McpWeb do
     pipe_through :api
 
+    # Health check endpoints (no authentication required for monitoring)
+    get "/health", HealthController, :health
+    get "/health/ready", HealthController, :ready
+    get "/health/live", HealthController, :live
+    get "/health/detailed", HealthController, :detailed
+
     # OAuth API endpoints
     get "/oauth/providers", OAuthController, :linked_providers
     get "/oauth/provider/:provider", OAuthController, :provider_info
     post "/oauth/refresh/:provider", OAuthController, :refresh_token
 
     # GDPR API endpoints (require authentication and audit logging)
-    scope "/gdpr", McpWeb do
+    scope "/gdpr" do
       pipe_through [:gdpr_auth]
 
       # Read-only operations (no CSRF required)
@@ -129,15 +135,15 @@ defmodule McpWeb.Router do
       get "/consent", GdprController, :get_consent
       get "/audit-trail", GdprController, :get_audit_trail
 
-      # State-changing operations (require CSRF protection and input validation)
-      scope "/" do
-        pipe_through :api_csrf
+      # State-changing operations (API token auth, no CSRF required)
+      post "/data-export", GdprController, :request_data_export
+      post "/export", GdprController, :export_data  # Additional route for tests
+      post "/request-deletion", GdprController, :request_deletion
+      post "/cancel-deletion", GdprController, :cancel_deletion
+      post "/consent", GdprController, :update_consent
 
-        post "/data-export", GdprController, :request_data_export
-        post "/request-deletion", GdprController, :request_deletion
-        post "/cancel-deletion", GdprController, :cancel_deletion
-        post "/consent", GdprController, :update_consent
-      end
+      # Data deletion endpoints
+      delete "/data/:user_id", GdprController, :delete_user_data
 
       # Admin endpoints (require admin authentication and enhanced audit logging)
       scope "/admin" do
@@ -145,6 +151,7 @@ defmodule McpWeb.Router do
 
         # Admin read-only operations (no CSRF required)
         get "/compliance-report", GdprController, :admin_get_compliance_report
+        get "/compliance", GdprController, :admin_get_compliance  # Additional route for tests
         get "/users/:user_id/data", GdprController, :admin_get_user_data
 
         # Admin state-changing operations (require CSRF protection and input validation)

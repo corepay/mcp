@@ -27,12 +27,17 @@ defmodule Mcp.Registration.RegistrationService do
   Submits a registration request for processing.
   """
   def submit_registration(request_id) do
-    # Stub implementation - simulate successful submission
-    {:ok, %{
-      id: request_id,
-      status: :submitted,
-      submitted_at: DateTime.utc_now()
-    }}
+    try do
+      # Stub implementation - simulate successful submission
+      result = %{
+        id: request_id,
+        status: :submitted,
+        submitted_at: DateTime.utc_now()
+      }
+      {:ok, result}
+    rescue
+      error -> {:error, {:submission_failed, error}}
+    end
   end
 
   @doc """

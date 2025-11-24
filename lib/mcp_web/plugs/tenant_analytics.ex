@@ -72,7 +72,7 @@ defmodule McpWeb.Plugs.TenantAnalytics do
 
     if subdomain && subdomain != "www" do
       case Tenant.by_subdomain(subdomain) do
-        {:ok, [tenant | _]} -> tenant
+        [tenant | _] -> tenant
         _ -> nil
       end
     else
@@ -82,7 +82,7 @@ defmodule McpWeb.Plugs.TenantAnalytics do
 
   defp get_tenant_by_custom_domain(host) do
     case Tenant.by_custom_domain(host) do
-      {:ok, [tenant | _]} -> tenant
+      {:ok, tenant} -> tenant
       _ -> nil
     end
   end

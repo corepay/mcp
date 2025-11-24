@@ -107,7 +107,7 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
   Validates that the user exists.
   """
   def validate_user(%{user_id: user_id}) do
-    case Mcp.Gdpr.Resources.User.by_id(user_id) do
+    case Ash.get(Mcp.Gdpr.Resources.User, user_id, domain: Mcp.Domains.Gdpr) do
       {:ok, user} ->
         {:ok, user}
       {:error, _} ->
@@ -140,7 +140,7 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
   @doc """
   Checks for existing consent records.
   """
-  def check_existing_consent(%{user_id: user_id, purpose: purpose}) do
+  def check_existing_consent(%{user_id: _user_id, purpose: _purpose}) do
     # Implementation would check for existing consent records
     # For now, return no existing consent
     {:ok, nil}
@@ -149,7 +149,7 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
   @doc """
   Validates the legal basis for consent.
   """
-  def validate_legal_basis(%{legal_basis: basis, purpose: purpose}) do
+  def validate_legal_basis(%{legal_basis: basis, purpose: _purpose}) do
     valid_bases = ["consent", "contract", "legal_obligation", "vital_interests", "public_task", "legitimate_interests"]
 
     if basis in valid_bases do
@@ -200,17 +200,17 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
 
     case purpose do
       "marketing" ->
-        Mcp.Gdpr.Resources.User.update_consent(%{
-          id: user_id,
+        Ash.get!(Mcp.Gdpr.Resources.User, user_id, domain: Mcp.Domains.Gdpr)
+        |> Ash.update!(%{
           gdpr_marketing_consent: value,
           gdpr_consent_record: %{marketing: consent_record}
-        })
+        }, action: :update_consent, domain: Mcp.Domains.Gdpr)
       "analytics" ->
-        Mcp.Gdpr.Resources.User.update_consent(%{
-          id: user_id,
+        Ash.get!(Mcp.Gdpr.Resources.User, user_id, domain: Mcp.Domains.Gdpr)
+        |> Ash.update!(%{
           gdpr_analytics_consent: value,
           gdpr_consent_record: %{analytics: consent_record}
-        })
+        }, action: :update_consent, domain: Mcp.Domains.Gdpr)
       _ ->
         {:ok, :consent_updated}
     end
@@ -234,7 +234,7 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
   Creates an audit trail entry for the consent change.
   """
   def create_consent_audit_entry(%{user_id: user_id, purpose: purpose, consent_value: value, actor_id: actor_id, ip_address: ip, user_agent: ua}) do
-    Mcp.Gdpr.Resources.AuditTrail.create_entry(%{
+    Ash.create(Mcp.Gdpr.Resources.AuditTrail, %{
       user_id: user_id,
       action_type: "consent_updated",
       actor_type: "user",
@@ -247,7 +247,7 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
         purpose: purpose,
         consent_value: value
       }
-    })
+    }, action: :create_entry, domain: Mcp.Domains.Gdpr)
   end
 
   @doc """
@@ -299,30 +299,30 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
 
   defp schedule_marketing_data_cleanup(user_id) do
     # Schedule background job to clean up marketing data
-    %{user_id: user_id, cleanup_type: "marketing"}
-    |> Mcp.Jobs.Gdpr.DataCleanupWorker.new()
+    %{user_id: user_id, type: "marketing_cleanup"}
+    |> Mcp.Jobs.Gdpr.RetentionCleanupWorker.new()
     |> Oban.insert()
   end
 
-  defp disable_analytics_tracking(user_id) do
+  defp disable_analytics_tracking(_user_id) do
     # Update user preferences to disable analytics
     # Implementation would update analytics tracking settings
     :ok
   end
 
-  defp revoke_third_party_access(user_id) do
+  defp revoke_third_party_access(_user_id) do
     # Revoke any third-party access based on user consent
     # Implementation would handle third-party integrations
     :ok
   end
 
-  defp enable_marketing_communications(user_id) do
+  defp enable_marketing_communications(_user_id) do
     # Enable marketing communications for the user
     # Implementation would update marketing preferences
     :ok
   end
 
-  defp enable_analytics_tracking(user_id) do
+  defp enable_analytics_tracking(_user_id) do
     # Enable analytics tracking for the user
     # Implementation would update analytics preferences
     :ok

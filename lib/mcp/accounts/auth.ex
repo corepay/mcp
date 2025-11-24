@@ -15,8 +15,14 @@ defmodule Mcp.Accounts.Auth do
   Creates a user session.
   """
   def create_user_session(user, _ip_address \\ nil) do
-    # Stub implementation
-    {:ok, %{session_id: UUID.uuid4(), user_id: user.id}}
+    # Stub implementation - in real implementation this would check
+    # if password change is required based on user status
+    cond do
+      user.password_changed_at == nil ->
+        {:password_change_required, user}
+      true ->
+        {:ok, %{session_id: UUID.uuid4(), user_id: user.id}}
+    end
   end
 
   @doc """

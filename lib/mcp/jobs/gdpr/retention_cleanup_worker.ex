@@ -11,9 +11,8 @@ defmodule Mcp.Jobs.Gdpr.RetentionCleanupWorker do
   """
 
   use Oban.Worker, queue: :gdpr_cleanup, max_attempts: 1
+  require Logger
 
-  alias Mcp.Gdpr.Compliance
-  alias Mcp.Gdpr.Anonymizer
   alias Mcp.Repo
   alias Mcp.Accounts.UserSchema
   import Ecto.Query
@@ -128,9 +127,6 @@ defmodule Mcp.Jobs.Gdpr.RetentionCleanupWorker do
           :ok ->
             delete_audit_entry(audit_entry.id)
             true
-          {:error, reason} ->
-            Logger.error("Failed to archive audit entry #{audit_entry.id}: #{inspect(reason)}")
-            false
         end
       end)
 

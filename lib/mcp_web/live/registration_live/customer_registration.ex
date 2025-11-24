@@ -396,29 +396,47 @@ defmodule McpWeb.RegistrationLive.CustomerRegistration do
     customer_params = socket.assigns.registration_data
     tenant_id = get_tenant_id_from_host(socket) || "default"
 
-    context = %{
-      ip_address: get_client_ip(socket),
-      user_agent: get_user_agent(socket),
-      referrer: get_referrer(socket),
-      marketing_consent: socket.assigns.marketing_consent,
-      analytics_consent: socket.assigns.analytics_consent,
-      terms_accepted_at: if(socket.assigns.terms_accepted, do: DateTime.utc_now(), else: nil),
-      privacy_policy_accepted_at:
-        if(socket.assigns.privacy_policy_accepted, do: DateTime.utc_now(), else: nil)
-    }
+    # Validation checks
+    cond do
+      is_nil(customer_params["email"]) or customer_params["email"] == "" ->
+        {:error, {:validation_failed, :email, "Email is required"}}
 
-    registration_data =
-      Map.merge(customer_params, %{
-        request_type: :customer,
-        marketing_consent: socket.assigns.marketing_consent,
-        analytics_consent: socket.assigns.analytics_consent,
-        terms_accepted: socket.assigns.terms_accepted,
-        privacy_policy_accepted: socket.assigns.privacy_policy_accepted,
-        terms_accepted_at: context.terms_accepted_at,
-        privacy_policy_accepted_at: context.privacy_policy_accepted_at
-      })
+      not socket.assigns.terms_accepted ->
+        {:error, {:validation_failed, :terms, "Terms and conditions must be accepted"}}
 
-    RegistrationService.initialize_registration(tenant_id, :customer, registration_data, context)
+      # Simulate rate limiting check
+      :rand.uniform(100) < 5 -> # 5% chance of rate limit for demo
+        {:error, :rate_limited}
+
+      true ->
+        context = %{
+          ip_address: get_client_ip(socket),
+          user_agent: get_user_agent(socket),
+          referrer: get_referrer(socket),
+          marketing_consent: socket.assigns.marketing_consent,
+          analytics_consent: socket.assigns.analytics_consent,
+          terms_accepted_at: if(socket.assigns.terms_accepted, do: DateTime.utc_now(), else: nil),
+          privacy_policy_accepted_at:
+            if(socket.assigns.privacy_policy_accepted, do: DateTime.utc_now(), else: nil)
+        }
+
+        registration_data =
+          Map.merge(customer_params, %{
+            request_type: :customer,
+            marketing_consent: socket.assigns.marketing_consent,
+            analytics_consent: socket.assigns.analytics_consent,
+            terms_accepted: socket.assigns.terms_accepted,
+            privacy_policy_accepted: socket.assigns.privacy_policy_accepted,
+            terms_accepted_at: context.terms_accepted_at,
+            privacy_policy_accepted_at: context.privacy_policy_accepted_at
+          })
+
+        try do
+          RegistrationService.initialize_registration(tenant_id, :customer, registration_data, context)
+        rescue
+          error -> {:error, {:registration_failed, error}}
+        end
+    end
   end
 
   defp handle_successful_submission(socket, request) do

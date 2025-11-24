@@ -7,16 +7,23 @@ defmodule Mcp.Accounts.RegistrationSettings do
   Gets current registration settings for a tenant.
   """
   def get_current_settings(tenant_id) do
-    # Stub implementation
-    {:ok, %{
-      tenant_id: tenant_id,
-      allow_self_registration: true,
-      require_approval: false,
-      default_role: :user,
-      registration_fields: [:email, :password, :company_name],
-      created_at: DateTime.utc_now(),
-      updated_at: DateTime.utc_now()
-    }}
+    try do
+      # Stub implementation
+      settings = %{
+        tenant_id: tenant_id,
+        allow_self_registration: true,
+        require_approval: false,
+        default_role: :user,
+        registration_fields: [:email, :password, :company_name],
+        require_captcha: Application.get_env(:mcp, :require_captcha, false),
+        business_verification_required: Application.get_env(:mcp, :business_verification_required, false),
+        created_at: DateTime.utc_now(),
+        updated_at: DateTime.utc_now()
+      }
+      {:ok, settings}
+    rescue
+      error -> {:error, {:settings_load_failed, error}}
+    end
   end
 
   @doc """

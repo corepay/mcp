@@ -13,14 +13,12 @@ defmodule Mcp.Gdpr.Compliance do
   audit logging and compliance tracking.
   """
 
-  alias Mcp.Gdpr.{AuditTrail, DataRetention, Anonymizer, Export, Consent, Jobs}
+  alias Mcp.Gdpr.{AuditTrail, DataRetention, Anonymizer, Export, Consent}
   alias Mcp.Accounts.UserSchema
   alias Mcp.Repo
   import Ecto.Query
 
   @deletion_retention_days 90
-  @export_retention_days 7
-  @anonymization_retention_days 365
 
   @doc """
   Initiates user deletion request with soft delete and retention scheduling.
@@ -177,8 +175,8 @@ defmodule Mcp.Gdpr.Compliance do
   """
   def get_users_overdue_for_anonymization do
     UserSchema
-    |> Ecto.Query.where([u], u.status == "deleted")
-    |> Ecto.Query.where([u], u.gdpr_retention_expires_at < ^DateTime.utc_now())
+    |> where([u], u.status == "deleted")
+    |> where([u], u.gdpr_retention_expires_at < ^DateTime.utc_now())
     |> Repo.all()
   end
 
@@ -193,16 +191,21 @@ defmodule Mcp.Gdpr.Compliance do
   - {:error, reason} on failure
   """
   def generate_compliance_report(_opts \\ []) do
-    # TODO: Implement comprehensive compliance report
-    {:ok, %{
-      total_users: 0,
-      deleted_users: 0,
-      anonymized_users: 0,
-      active_consents: 0,
-      pending_exports: 0,
-      compliance_score: 100.0,
-      generated_at: DateTime.utc_now()
-    }}
+    try do
+      # TODO: Implement comprehensive compliance report
+      report = %{
+        total_users: 0,
+        deleted_users: 0,
+        anonymized_users: 0,
+        active_consents: 0,
+        pending_exports: 0,
+        compliance_score: 100.0,
+        generated_at: DateTime.utc_now()
+      }
+      {:ok, report}
+    rescue
+      error -> {:error, {:compliance_report_failed, error}}
+    end
   end
 
   @doc """
@@ -279,41 +282,5 @@ defmodule Mcp.Gdpr.Compliance do
 
   defp generate_final_data_export(user_id) do
     Export.create_export(user_id, "json", purpose: "deletion_backup")
-  end
-
-  defp restore_user(user_id) do
-    user = Repo.get(UserSchema, user_id)
-
-    case user do
-      nil ->
-        {:error, :user_not_found}
-      %UserSchema{status: "deleted"} = user ->
-        changeset = Ecto.Changeset.change(user, %{
-          status: "active",
-          deleted_at: nil,
-          deletion_reason: nil,
-          gdpr_retention_expires_at: nil
-        })
-
-        Repo.update(changeset)
-      _ ->
-        {:ok, user}  # Already active
-    end
-  end
-
-  defp update_user_anonymization_status(user_id) do
-    user = Repo.get(UserSchema, user_id)
-
-    case user do
-      nil ->
-        {:error, :user_not_found}
-      %UserSchema{} = user ->
-        changeset = Ecto.Changeset.change(user, %{
-          status: "anonymized",
-          anonymized_at: DateTime.utc_now()
-        })
-
-        Repo.update(changeset)
-    end
   end
 end

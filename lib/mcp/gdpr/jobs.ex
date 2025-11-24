@@ -9,6 +9,8 @@ defmodule Mcp.Gdpr.Jobs do
   - Compliance monitoring and reporting
   """
 
+  use GenServer
+
   alias Mcp.Repo
   import Ecto.Query
 

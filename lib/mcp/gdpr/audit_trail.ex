@@ -3,6 +3,8 @@ defmodule Mcp.Gdpr.AuditTrail do
   GDPR audit trail functionality.
   """
 
+  use GenServer
+
   alias Mcp.Gdpr.Schemas.GdprAuditLog
   alias Mcp.Repo
   import Ecto.Query
@@ -23,13 +25,20 @@ defmodule Mcp.Gdpr.AuditTrail do
   end
 
   @doc """
+  Logs a GDPR event for audit purposes (alias for log_action).
+  """
+  def log_event(user_id, action, actor_id \\ nil, metadata \\ %{}) do
+    log_action(user_id, action, actor_id, metadata)
+  end
+
+  @doc """
   Retrieves user actions from audit trail.
   """
   def get_user_actions(user_id, limit \\ 100) do
     GdprAuditLog
-    |> Ecto.Query.where([a], a.user_id == ^user_id)
-    |> Ecto.Query.order_by([a], desc: a.timestamp)
-    |> Ecto.Query.limit(^limit)
+    |> where([a], a.user_id == ^user_id)
+    |> order_by([a], desc: a.timestamp)
+    |> limit(^limit)
     |> Repo.all()
   end
 

@@ -3,7 +3,7 @@ defmodule Mcp.Gdpr.Anonymizer do
   GDPR data anonymization functionality.
   """
 
-  alias Mcp.Repo
+  use GenServer
 
   @doc """
   Anonymizes user data.
@@ -20,10 +20,10 @@ defmodule Mcp.Gdpr.Anonymizer do
   @doc """
   Anonymizes a field value.
   """
-  def anonymize_field(value, field_type, user_id, opts \\ []) do
+  def anonymize_field(value, field_type, user_id, _opts \\ []) do
     case field_type do
       :email ->
-        {:ok, "user#{System.hash(:md5, "#{user_id}#{value}")}@deleted.local"}
+        {:ok, "user#{:crypto.hash(:md5, "#{user_id}#{value}")|>Base.encode16()}@deleted.local"}
       :name ->
         {:ok, "Deleted User"}
       :phone ->
@@ -36,7 +36,7 @@ defmodule Mcp.Gdpr.Anonymizer do
   @doc """
   Restores anonymized user data (if reversible).
   """
-  def restore_user_data(user_id, anonymized_data) do
+  def restore_user_data(user_id, _anonymized_data) do
     # TODO: Implement data restoration if needed
     {:ok, %{user_id: user_id, status: "not_reversible"}}
   end

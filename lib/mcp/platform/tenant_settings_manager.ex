@@ -15,8 +15,13 @@ defmodule Mcp.Platform.TenantSettingsManager do
   Gets enabled features for a tenant.
   """
   def get_enabled_features(_tenant_id) do
-    # Stub implementation
-    {:ok, []}
+    try do
+      # Stub implementation
+      features = []
+      {:ok, features}
+    rescue
+      error -> {:error, {:features_load_failed, error}}
+    end
   end
 
   @doc """

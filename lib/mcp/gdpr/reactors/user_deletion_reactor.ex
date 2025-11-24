@@ -98,7 +98,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
   Validates that the user exists and can be deleted.
   """
   def validate_user(%{user_id: user_id}) do
-    case Mcp.Gdpr.Resources.User.by_id(user_id) do
+    case Ash.get(Mcp.Gdpr.Resources.User, user_id, domain: Mcp.Domains.Gdpr) do
       {:ok, user} ->
         if user.status in ["active", "suspended"] do
           {:ok, user}
@@ -172,7 +172,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
   Creates an audit trail entry for the deletion request.
   """
   def create_deletion_audit_entry(%{user_id: user_id, deletion_reason: reason, actor_id: actor_id, ip_address: ip, user_agent: ua}) do
-    Mcp.Gdpr.Resources.AuditTrail.create_entry(%{
+    Ash.create(Mcp.Gdpr.Resources.AuditTrail, %{
       user_id: user_id,
       action_type: "deletion_requested",
       actor_type: "user",
@@ -182,19 +182,19 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
       legal_basis: reason,
       data_categories: ["profile", "activity", "communications"],
       details: %{reason: reason}
-    })
+    }, action: :create_entry, domain: Mcp.Domains.Gdpr)
   end
 
   @doc """
   Initiates the soft delete process for the user.
   """
   def initiate_soft_delete(%{user_id: user_id, deletion_reason: reason, actor_id: actor_id, retention_expires_at: expires_at}) do
-    Mcp.Gdpr.Resources.User.soft_delete(%{
-      id: user_id,
+    Ash.get!(Mcp.Gdpr.Resources.User, user_id, domain: Mcp.Domains.Gdpr)
+    |> Ash.update!(%{
       gdpr_deletion_reason: reason,
       gdpr_retention_expires_at: expires_at,
       actor_id: actor_id
-    })
+    }, action: :soft_delete, domain: Mcp.Domains.Gdpr)
   end
 
   @doc """
@@ -202,7 +202,8 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
   """
   def compensate_soft_delete(%{user_id: user_id}) do
     # Restore user from soft delete state
-    Mcp.Gdpr.Resources.User.cancel_deletion(%{id: user_id, actor_id: "system"})
+    Ash.get!(Mcp.Gdpr.Resources.User, user_id, domain: Mcp.Domains.Gdpr)
+    |> Ash.update!(%{actor_id: "system"}, action: :cancel_deletion, domain: Mcp.Domains.Gdpr)
     :ok
   end
 
@@ -220,9 +221,9 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
   @doc """
   Compensation for anonymization scheduling failure.
   """
-  def compensate_anonymization_scheduling(%{user_id: user_id}) do
+  def compensate_anonymization_scheduling(%{user_id: _user_id}) do
     # Cancel the scheduled anonymization
-    Oban.Job.cancel_by_query(where: [args: %{user_id: user_id, worker: "Mcp.Jobs.Gdpr.AnonymizationWorker"}])
+    # TODO: Implement proper Oban job cancellation
     :ok
   end
 

@@ -3,6 +3,8 @@ defmodule Mcp.Gdpr.Config do
   GDPR configuration management.
   """
 
+  use GenServer
+
   @doc """
   Starts the GDPR config GenServer.
   """

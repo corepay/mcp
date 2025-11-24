@@ -71,9 +71,6 @@ defmodule McpWeb.InputValidation do
 
   def validate_consent_params(_), do: {:error, :invalid_params}
 
-  @doc """
-  Validate consent purposes array.
-  """
   defp validate_consent_purposes(purposes) when is_list(purposes) do
     valid_purposes = ["marketing", "analytics", "personalization", "third_party_sharing"]
 
@@ -97,9 +94,6 @@ defmodule McpWeb.InputValidation do
 
   defp validate_consent_purposes(_), do: {:error, :invalid_purposes}
 
-  @doc """
-  Validate legal basis.
-  """
   defp validate_legal_basis(legal_basis) when is_binary(legal_basis) do
     valid_bases = ["consent", "contract", "legal_obligation", "vital_interests", "public_task", "legitimate_interests"]
 
@@ -114,9 +108,6 @@ defmodule McpWeb.InputValidation do
 
   defp validate_legal_basis(_), do: {:error, :invalid_legal_basis}
 
-  @doc """
-  Validate consent_given boolean.
-  """
   defp validate_consent_given(value) when is_boolean(value) do
     {:ok, value}
   end
@@ -128,9 +119,6 @@ defmodule McpWeb.InputValidation do
 
   defp validate_consent_given(_), do: {:error, :invalid_consent_value}
 
-  @doc """
-  Get default consent expiry (1 year from now).
-  """
   defp get_default_expiry do
     DateTime.add(DateTime.utc_now(), 365, :day)
   end
@@ -151,9 +139,6 @@ defmodule McpWeb.InputValidation do
 
   def validate_pagination_params(_), do: {:ok, %{page: 1, limit: 10, offset: 0}}
 
-  @doc """
-  Validate integer parameter with default and range.
-  """
   defp validate_integer_param(value, default, max) when is_binary(value) do
     case Integer.parse(value) do
       {int, ""} when int > 0 and int <= max -> int
@@ -216,9 +201,6 @@ defmodule McpWeb.InputValidation do
     |> halt()
   end
 
-  @doc """
-  Log validation errors for security monitoring.
-  """
   defp log_validation_error(conn, reason, params) do
     sanitized_params = sanitize_for_logging(params)
 
@@ -233,9 +215,6 @@ defmodule McpWeb.InputValidation do
     })
   end
 
-  @doc """
-  Format validation error for user response.
-  """
   defp format_validation_error(:invalid_uuid), do: "Invalid user ID format"
   defp format_validation_error(:unsupported_format), do: "Unsupported export format. Supported: json, csv, xml"
   defp format_validation_error(:empty_reason), do: "Deletion reason cannot be empty"
@@ -252,7 +231,8 @@ defmodule McpWeb.InputValidation do
   Validate export request parameters.
   """
   def validate_export_params(params) when is_map(params) do
-    with {:ok, format} <- validate_export_format(params["format"]) do
+    with {:ok, format} <- validate_export_format(params["format"]),
+         :ok <- validate_safety_of_params(params, ["format", "purpose"]) do
       {:ok, %{
         format: format
       }}
@@ -291,6 +271,25 @@ defmodule McpWeb.InputValidation do
   end
 
   def validate_admin_deletion_params(_), do: {:error, :invalid_params}
+
+  defp validate_safety_of_params(params, allowed_keys) when is_map(params) and is_list(allowed_keys) do
+    Enum.each(allowed_keys, fn key ->
+      case Map.get(params, key) do
+        nil -> :ok
+        value when is_binary(value) ->
+          if contains_dangerous_content?(value) do
+            throw {:error, :potentially_dangerous_content}
+          end
+        _ -> :ok
+      end
+    end)
+
+    :ok
+  catch
+    {:error, reason} -> {:error, reason}
+  end
+
+  defp validate_safety_of_params(_, _), do: {:error, :invalid_params}
 
   @doc """
   Check if a string contains potentially dangerous content.

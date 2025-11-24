@@ -12,8 +12,8 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
   """
 
   use Oban.Worker, queue: :gdpr_compliance, max_attempts: 1
+  require Logger
 
-  alias Mcp.Gdpr.Compliance
   alias Mcp.Repo
   import Ecto.Query
 
@@ -120,7 +120,7 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
     overdue_count = get_overdue_retention_count()
 
     if overdue_count > 0 do
-      Logger.warn("Found #{overdue_count} overdue anonymizations")
+      Logger.warning("Found #{overdue_count} overdue anonymizations")
       schedule_anonymization_jobs()
     end
 
@@ -164,7 +164,7 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
     }
 
     if length(expired_holds) > 0 do
-      Logger.warn("Found #{length(expired_holds)} legal holds that expired but weren't released")
+      Logger.warning("Found #{length(expired_holds)} legal holds that expired but weren't released")
     end
 
     {:ok, legal_hold_summary}
@@ -278,7 +278,7 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
     Enum.each(issues, &Logger.error("  - #{&1}"))
   end
 
-  defp store_compliance_metrics(metrics, score) do
+  defp store_compliance_metrics(_metrics, score) do
     # Store metrics for reporting and analysis
     # In a real implementation, this would store to a metrics table
     Logger.debug("Storing compliance metrics: score #{score}")
@@ -308,7 +308,7 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
     end
   end
 
-  defp deduct_legal_hold_duration(score, data) do
+  defp deduct_legal_hold_duration(score, _data) do
     # Check if legal holds are resolved within reasonable time
     score  # Placeholder for more complex logic
   end
@@ -342,7 +342,7 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
     recommendations
   end
 
-  defp store_compliance_report(report) do
+  defp store_compliance_report(_report) do
     # Store the weekly compliance report
     Logger.debug("Storing weekly compliance report")
     :ok
@@ -412,13 +412,13 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
     |> Repo.aggregate(:count, :id)
   end
 
-  defp get_export_count(since \\ nil) do
+  defp get_export_count(since) do
     query = from(e in "gdpr_exports", where: e.status == "completed")
     query = if since, do: where(query, [e], e.completed_at >= ^since), else: query
     Repo.aggregate(query, :count, :id)
   end
 
-  defp get_consent_changes_count(since \\ nil) do
+  defp get_consent_changes_count(since) do
     query = from(c in "gdpr_consent")
     query = if since, do: where(query, [c], c.updated_at >= ^since), else: query
     Repo.aggregate(query, :count, :id)

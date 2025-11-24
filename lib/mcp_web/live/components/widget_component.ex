@@ -146,7 +146,8 @@ defmodule McpWeb.WidgetComponent do
       trend: trend,
       trend_color: trend_color,
       trend_icon: trend_icon,
-      config: config
+      config: config,
+      data: data
     }
 
     ~H"""

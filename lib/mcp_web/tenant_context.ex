@@ -322,11 +322,8 @@ defmodule McpWeb.TenantContext do
 
       true ->
         # Try as subdomain first (most common use case)
-        case Mcp.Platform.Tenant.by_subdomain!(tenant_id) do
-          [tenant] -> tenant
-          tenants when is_list(tenants) and length(tenants) > 0 -> hd(tenants)
-          _ -> nil
-        end
+        tenant = Mcp.Platform.Tenant.by_subdomain!(tenant_id)
+        tenant
     end
   end
 

@@ -16,11 +16,11 @@ defmodule McpWeb.Auth.GdprAuthPlug do
   require Logger
 
   alias Mcp.Gdpr.AuditTrail
-  alias McpWeb.Auth.SessionPlug
   alias McpWeb.Auth.AuthorizationPlug
 
   @gdpr_rate_limit_window 60 * 60  # 1 hour window
   @gdpr_rate_limit_max 50          # Max 50 GDPR requests per hour per user
+  @max_request_body_size 5 * 1024 * 1024  # 5MB max request body size for GDPR endpoints
 
   @doc """
   Initialize the plug with options.
@@ -48,15 +48,13 @@ defmodule McpWeb.Auth.GdprAuthPlug do
     |> extract_client_info()
     |> add_security_headers()
     |> validate_request_method()
+    |> check_request_size_limit()
     |> check_rate_limit(opts)
     |> authenticate_user(opts)
     |> authorize_access(opts)
     |> log_access_attempt(opts)
   end
 
-  @doc """
-  Generate unique request ID for audit tracking.
-  """
   defp generate_unique_request_id do
     "gdpr_" <>
     (:crypto.strong_rand_bytes(16) |> Base.encode64(case: :lower))
@@ -69,13 +67,13 @@ defmodule McpWeb.Auth.GdprAuthPlug do
   """
   def add_security_headers(conn) do
     conn
-    |> put_resp_header("X-Content-Type-Options", "nosniff")
-    |> put_resp_header("X-Frame-Options", "DENY")
-    |> put_resp_header("X-XSS-Protection", "1; mode=block")
-    |> put_resp_header("Referrer-Policy", "strict-origin-when-cross-origin")
-    |> put_resp_header("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
-    |> put_resp_header("Cache-Control", "no-store, no-cache, must-revalidate")
-    |> put_resp_header("Pragma", "no-cache")
+    |> put_resp_header("x-content-type-options", "nosniff")
+    |> put_resp_header("x-frame-options", "DENY")
+    |> put_resp_header("x-xss-protection", "1; mode=block")
+    |> put_resp_header("referrer-policy", "strict-origin-when-cross-origin")
+    |> put_resp_header("permissions-policy", "geolocation=(), microphone=(), camera=()")
+    |> put_resp_header("cache-control", "no-store, no-cache, must-revalidate")
+    |> put_resp_header("pragma", "no-cache")
   end
 
   @doc """
@@ -131,6 +129,40 @@ defmodule McpWeb.Auth.GdprAuthPlug do
     conn
     |> assign(:gdpr_ip_address, ip_address)
     |> assign(:gdpr_user_agent, user_agent)
+  end
+
+  @doc """
+  Check request body size limits for GDPR operations.
+  """
+  def check_request_size_limit(conn) do
+    case get_req_header(conn, "content-length") do
+      [content_length_str] ->
+        case Integer.parse(content_length_str) do
+          {content_length, ""} when content_length > @max_request_body_size ->
+            log_audit_event(conn, "REQUEST_SIZE_EXCEEDED", %{
+              content_length: content_length,
+              max_size: @max_request_body_size
+            })
+
+            conn
+            |> put_status(:payload_too_large)
+            |> json(%{
+              error: "Request entity too large",
+              message: "Request body size (#{content_length} bytes) exceeds maximum allowed size (#{@max_request_body_size} bytes)",
+              max_size: @max_request_body_size
+            })
+            |> halt()
+
+          {_content_length, ""} ->
+            conn  # Within limits, continue
+
+          _ ->
+            conn  # Invalid content-length header, continue (will be caught by Plug.Parsers)
+        end
+
+      [] ->
+        conn  # No content-length header, continue
+    end
   end
 
   @doc """
@@ -290,9 +322,11 @@ defmodule McpWeb.Auth.GdprAuthPlug do
           AuditTrail.log_event(
             updated_audit_data.user_id,
             action,
-            updated_audit_data,
-            conn.assigns[:gdpr_ip_address],
-            conn.assigns[:gdpr_user_agent]
+            updated_audit_data.actor_id,
+            Map.merge(updated_audit_data, %{
+              ip_address: conn.assigns[:gdpr_ip_address],
+              user_agent: conn.assigns[:gdpr_user_agent]
+            })
           )
         rescue
           _ ->
@@ -305,16 +339,26 @@ defmodule McpWeb.Auth.GdprAuthPlug do
   # Private helper functions
 
   defp get_current_user(conn) do
-    # Try to get user from session
-    case get_session(conn, :current_user) do
-      nil ->
+    # Try to get user from session (safe check for API endpoints)
+    try do
+      case get_session(conn, :current_user) do
+        nil ->
+          # Try to get from assigns (set by other plugs)
+          case conn.assigns[:current_user] do
+            nil -> {:error, :no_user_in_session}
+            user -> {:ok, user}
+          end
+        user ->
+          {:ok, user}
+      end
+    rescue
+      # Session not available (API endpoints)
+      ArgumentError ->
         # Try to get from assigns (set by other plugs)
         case conn.assigns[:current_user] do
           nil -> {:error, :no_user_in_session}
           user -> {:ok, user}
         end
-      user ->
-        {:ok, user}
     end
   end
 
@@ -326,18 +370,32 @@ defmodule McpWeb.Auth.GdprAuthPlug do
   end
 
   defp get_session_id(conn) do
-    get_session(conn, :session_id) ||
-    conn.cookies["_mcp_session_id"] ||
-    conn.assigns[:gdpr_request_id]
+    try do
+      get_session(conn, :session_id) ||
+      conn.cookies["_mcp_session_id"] ||
+      conn.assigns[:gdpr_request_id]
+    rescue
+      # Session not available (API endpoints)
+      ArgumentError ->
+        conn.cookies["_mcp_session_id"] ||
+        conn.assigns[:gdpr_request_id]
+    end
   end
 
   defp get_current_tenant(conn) do
     conn.assigns[:current_tenant] ||
-    AuthorizationPlug.current_tenant(conn)
+    try do
+      AuthorizationPlug.current_tenant(conn)
+    rescue
+      # Session not available (API endpoints)
+      ArgumentError ->
+        nil
+    end
   end
 
   defp admin_user?(user) do
-    user.role in ["admin", "super_admin"]
+    # GREEN: Support both atom and string roles for admin access
+    user.role in ["admin", "super_admin"] or user.role in [:admin, :super_admin]
   end
 
   defp check_rate_limit_key(key) do

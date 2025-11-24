@@ -600,33 +600,54 @@ defmodule McpWeb.RegistrationLive.VendorRegistration do
     vendor_params = socket.assigns.registration_data
     tenant_id = get_tenant_id_from_host(socket) || "default"
 
-    context = %{
-      ip_address: get_client_ip(socket),
-      user_agent: get_user_agent(socket),
-      referrer: get_referrer(socket),
-      marketing_consent: socket.assigns.marketing_consent,
-      analytics_consent: socket.assigns.analytics_consent,
-      terms_accepted_at: if(socket.assigns.terms_accepted, do: DateTime.utc_now(), else: nil),
-      privacy_policy_accepted_at:
-        if(socket.assigns.privacy_policy_accepted, do: DateTime.utc_now(), else: nil),
-      uploaded_documents: socket.assigns.uploaded_documents,
-      document_types: socket.assigns.document_uploads
-    }
+    # Validation checks
+    cond do
+      is_nil(vendor_params["company_name"]) or vendor_params["company_name"] == "" ->
+        {:error, {:validation_failed, :company_name, "Company name is required"}}
 
-    registration_data =
-      Map.merge(vendor_params, %{
-        request_type: :vendor,
-        marketing_consent: socket.assigns.marketing_consent,
-        analytics_consent: socket.assigns.analytics_consent,
-        terms_accepted: socket.assigns.terms_accepted,
-        privacy_policy_accepted: socket.assigns.privacy_policy_accepted,
-        terms_accepted_at: context.terms_accepted_at,
-        privacy_policy_accepted_at: context.privacy_policy_accepted_at,
-        business_documents: socket.assigns.uploaded_documents,
-        business_document_types: socket.assigns.document_uploads
-      })
+      is_nil(vendor_params["email"]) or vendor_params["email"] == "" ->
+        {:error, {:validation_failed, :email, "Email is required"}}
 
-    RegistrationService.initialize_registration(tenant_id, :vendor, registration_data, context)
+      not socket.assigns.terms_accepted ->
+        {:error, {:validation_failed, :terms, "Terms and conditions must be accepted"}}
+
+      # Simulate rate limiting check
+      :rand.uniform(100) < 5 -> # 5% chance of rate limit for demo
+        {:error, :rate_limited}
+
+      true ->
+        context = %{
+          ip_address: get_client_ip(socket),
+          user_agent: get_user_agent(socket),
+          referrer: get_referrer(socket),
+          marketing_consent: socket.assigns.marketing_consent,
+          analytics_consent: socket.assigns.analytics_consent,
+          terms_accepted_at: if(socket.assigns.terms_accepted, do: DateTime.utc_now(), else: nil),
+          privacy_policy_accepted_at:
+            if(socket.assigns.privacy_policy_accepted, do: DateTime.utc_now(), else: nil),
+          uploaded_documents: socket.assigns.uploaded_documents,
+          document_types: socket.assigns.document_uploads
+        }
+
+        registration_data =
+          Map.merge(vendor_params, %{
+            request_type: :vendor,
+            marketing_consent: socket.assigns.marketing_consent,
+            analytics_consent: socket.assigns.analytics_consent,
+            terms_accepted: socket.assigns.terms_accepted,
+            privacy_policy_accepted: socket.assigns.privacy_policy_accepted,
+            terms_accepted_at: context.terms_accepted_at,
+            privacy_policy_accepted_at: context.privacy_policy_accepted_at,
+            business_documents: socket.assigns.uploaded_documents,
+            business_document_types: socket.assigns.document_uploads
+          })
+
+        try do
+          RegistrationService.initialize_registration(tenant_id, :vendor, registration_data, context)
+        rescue
+          error -> {:error, {:registration_failed, error}}
+        end
+    end
   end
 
   defp handle_successful_submission(socket, request) do

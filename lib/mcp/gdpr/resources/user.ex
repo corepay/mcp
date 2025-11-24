@@ -74,6 +74,13 @@ defmodule Mcp.Gdpr.Resources.User do
       get_by [:email]
     end
 
+    read :by_id do
+      argument :id, :uuid do
+        allow_nil? false
+      end
+      get_by [:id]
+    end
+
     read :active_users do
       filter expr(status == "active")
     end

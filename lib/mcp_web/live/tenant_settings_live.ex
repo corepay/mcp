@@ -309,7 +309,7 @@ defmodule McpWeb.TenantSettingsLive do
                    import_data,
                    current_user.id
                  ) do
-              {:ok, %{imported: true} = result} ->
+              {:ok, %{imported: true} = _result} ->
                 # Reload data
                 {:ok, settings} = TenantSettingsManager.get_all_tenant_settings(tenant_id)
                 {:ok, enabled_features} = TenantSettingsManager.get_enabled_features(tenant_id)

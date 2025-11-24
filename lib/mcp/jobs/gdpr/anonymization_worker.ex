@@ -11,6 +11,7 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
   """
 
   use Oban.Worker, queue: :gdpr_anonymize, max_attempts: 3
+  require Logger
 
   alias Mcp.Gdpr.Anonymizer
   alias Mcp.Repo
@@ -92,7 +93,7 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
     end
   end
 
-  defp perform_partial_anonymization(user_id, fields) do
+  defp perform_partial_anonymization(_user_id, _fields) do
     {:error, :invalid_fields_parameter}
   end
 
@@ -177,12 +178,8 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
   defp anonymize_table_field(user_id, table, field, method) do
     case get_field_value(user_id, table, field) do
       {:ok, current_value} ->
-        case Anonymizer.anonymize_field(current_value, method, user_id) do
-          {:ok, anonymized_value} ->
-            update_field_value(user_id, table, field, anonymized_value)
-          {:error, reason} ->
-            {:error, reason}
-        end
+        {:ok, anonymized_value} = Anonymizer.anonymize_field(current_value, method, user_id)
+        update_field_value(user_id, table, field, anonymized_value)
       {:error, reason} ->
         {:error, reason}
     end
@@ -196,9 +193,12 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
           "mcp_users" ->
             from(r in Mcp.Accounts.UserSchema, where: r.id == type(^user_id, :binary))
           "gdpr_audit_trail" ->
-            from(r in Mcp.Gdpr.AuditTrail, where: r.user_id == type(^user_id, :binary))
+            # Use Ecto for AuditTrail queries
+            from(r in Mcp.Gdpr.Resources.AuditTrail, where: r.user_id == ^user_id)
+            |> limit(1)
           "gdpr_consent" ->
-            from(r in Mcp.Gdpr.Consent, where: r.user_id == type(^user_id, :binary))
+            # Consent data is stored in the user resource as gdpr_consent_record
+            from(r in Mcp.Accounts.UserSchema, where: r.id == type(^user_id, :binary))
           _ ->
             {:error, :table_not_allowed}
         end
@@ -207,9 +207,9 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
           {:error, _} = error -> error
           query ->
             try do
-              case Repo.select_one(query, [{String.to_atom(field), String.to_atom(field)}]) do
+              case Repo.one(query) do
                 nil -> {:ok, nil}
-                value -> {:ok, value}
+                record -> {:ok, Map.get(record, String.to_atom(field))}
               end
             rescue
               _ -> {:error, :field_not_found}
@@ -228,9 +228,12 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
           "mcp_users" ->
             from(r in Mcp.Accounts.UserSchema, where: r.id == type(^user_id, :binary))
           "gdpr_audit_trail" ->
-            from(r in Mcp.Gdpr.AuditTrail, where: r.user_id == type(^user_id, :binary))
+            # Use Ecto for AuditTrail queries
+            from(r in Mcp.Gdpr.Resources.AuditTrail, where: r.user_id == ^user_id)
+            |> limit(1)
           "gdpr_consent" ->
-            from(r in Mcp.Gdpr.Consent, where: r.user_id == type(^user_id, :binary))
+            # Consent data is stored in the user resource as gdpr_consent_record
+            from(r in Mcp.Accounts.UserSchema, where: r.id == type(^user_id, :binary))
           _ ->
             {:error, :table_not_allowed}
         end
@@ -279,8 +282,8 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
     # Use hardcoded table queries for security
     query = case table do
       "mcp_users" -> from(r in Mcp.Accounts.UserSchema)
-      "gdpr_audit_trail" -> from(r in Mcp.Gdpr.AuditTrail)
-      "gdpr_consent" -> from(r in Mcp.Gdpr.Consent)
+      "gdpr_audit_trail" -> from(r in Mcp.Gdpr.Resources.AuditTrail)
+      "gdpr_consent" -> from(r in Mcp.Accounts.UserSchema)  # Consent in user table
       _ -> {:error, :table_not_allowed}
     end
 
@@ -292,10 +295,7 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
             where(acc, ^[String.to_atom(field)] == ^value)
           end)
 
-          case Repo.all(query) do
-            records -> {:ok, records}
-            error -> {:error, error}
-          end
+          {:ok, Repo.all(query)}
         rescue
           _ -> {:error, :query_failed}
         end
@@ -304,17 +304,13 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
 
   defp anonymize_batch_records(records, mode) do
     Enum.reduce(records, 0, fn record, count ->
-      case anonymize_record(record, mode) do
-        :ok -> count + 1
-        {:error, reason} ->
-          Logger.error("Failed to anonymize record: #{inspect(reason)}")
-          count
-      end
+      anonymize_record(record, mode)
+      count + 1
     end)
     |> then(&{:ok, &1})
   end
 
-  defp anonymize_record(record, mode) do
+  defp anonymize_record(_record, _mode) do
     # This would implement record-level anonymization
     # For now, we'll return success for all records
     :ok

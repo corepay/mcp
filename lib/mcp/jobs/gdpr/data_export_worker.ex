@@ -11,7 +11,8 @@ defmodule Mcp.Jobs.Gdpr.DataExportWorker do
 
   use Oban.Worker, queue: :gdpr_exports, max_attempts: 3
 
-  alias Mcp.Gdpr.Compliance
+  require Logger
+
   alias Mcp.Gdpr.Export
   alias Mcp.Repo
   alias Mcp.Accounts.UserSchema
@@ -157,13 +158,13 @@ defmodule Mcp.Jobs.Gdpr.DataExportWorker do
     }
   end
 
-  defp get_login_count(user_id) do
+  defp get_login_count(_user_id) do
     # This would query login logs when available
     # For now, return a placeholder
     0
   end
 
-  defp get_last_activity(user_id) do
+  defp get_last_activity(_user_id) do
     # This would query activity logs when available
     # For now, return nil
     nil
@@ -176,7 +177,7 @@ defmodule Mcp.Jobs.Gdpr.DataExportWorker do
 
   defp generate_export_file(export, user_data) do
     temp_dir = System.tmp_dir!()
-    timestamp = DateTime.utc_now() |> DateTime.to_string(:basic)
+    timestamp = DateTime.to_iso8601(DateTime.utc_now(), :basic)
     filename = "user_data_export_#{export.user_id}_#{timestamp}.#{export.format}"
     file_path = Path.join(temp_dir, filename)
 
@@ -217,7 +218,7 @@ defmodule Mcp.Jobs.Gdpr.DataExportWorker do
     xml_content
   end
 
-  defp upload_export_file(file_path, export) do
+  defp upload_export_file(file_path, _export) do
     # In a real implementation, this would upload to S3/MinIO
     # For now, we'll simulate the upload and return a local URL
 
@@ -239,17 +240,15 @@ defmodule Mcp.Jobs.Gdpr.DataExportWorker do
     now = DateTime.utc_now()
     expires_at = DateTime.add(now, 7, :day)  # 7 days expiration
 
-    changeset = Export.changeset(export, %{
+    case Ash.update(export, %{
       status: "completed",
       download_url: download_url,
       completed_at: now,
       expires_at: expires_at,
       updated_at: now
-    })
-
-    case Repo.update(changeset) do
-      {:ok, updated_export} -> :ok
-      {:error, changeset} -> {:error, changeset.errors}
+    }, action: :mark_completed, domain: Mcp.Domains.Gdpr) do
+      {:ok, _updated_export} -> :ok
+      {:error, reason} -> {:error, reason}
     end
   end
 

@@ -28,8 +28,8 @@ config :mcp, Oban,
     # Cron job for daily retention cleanup
     {Oban.Plugins.Cron,
      crontab: [
-       {"0 2 * * *", Mcp.Jobs.Gdpr.RetentionCleanup},  # Daily at 2 AM
-       {"0 3 * * 0", Mcp.Jobs.Gdpr.WeeklyCompliance} # Weekly on Sunday at 3 AM
+       {"0 2 * * *", Mcp.Jobs.Gdpr.ComplianceWorker},  # Daily at 2 AM
+       {"0 3 * * 0", Mcp.Jobs.Gdpr.ComplianceWorker} # Weekly on Sunday at 3 AM
      ]},
     # Lifeline for stuck jobs
     {Oban.Plugins.Lifeline, rescue_after: 30 * 60}

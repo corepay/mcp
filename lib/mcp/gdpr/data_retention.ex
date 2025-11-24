@@ -3,7 +3,7 @@ defmodule Mcp.Gdpr.DataRetention do
   GDPR data retention functionality.
   """
 
-  alias Mcp.Repo
+  use GenServer
 
   @doc """
   Schedules data retention cleanup.
@@ -24,15 +24,24 @@ defmodule Mcp.Gdpr.DataRetention do
   @doc """
   Gets user retention schedules.
   """
-  def get_user_schedules(user_id) do
+  def get_user_schedules(_user_id) do
     # TODO: Implement proper schedule retrieval
+    []
+  end
+
+  @doc """
+  Checks for active legal holds on user data.
+  """
+  def check_legal_holds(_user_id) do
+    # TODO: Implement proper legal hold checking
+    # For now, return empty list (no holds)
     []
   end
 
   @doc """
   Places legal hold on user data.
   """
-  def place_legal_hold(user_id, case_reference, reason, placed_by) do
+  def place_legal_hold(user_id, case_reference, _reason, _placed_by) do
     # TODO: Implement proper legal hold functionality
     {:ok, %{
       user_id: user_id,

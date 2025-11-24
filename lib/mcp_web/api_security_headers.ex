@@ -15,18 +15,18 @@ defmodule McpWeb.ApiSecurityHeaders do
   """
   def call(conn, _opts) do
     conn
-    |> put_resp_header("X-Content-Type-Options", "nosniff")
-    |> put_resp_header("X-Frame-Options", "DENY")
-    |> put_resp_header("X-XSS-Protection", "1; mode=block")
-    |> put_resp_header("Referrer-Policy", "strict-origin-when-cross-origin")
-    |> put_resp_header("Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=()")
-    |> put_resp_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-    |> put_resp_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'")
-    |> put_resp_header("Access-Control-Allow-Origin", get_allowed_origin(conn))
-    |> put_resp_header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-    |> put_resp_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, X-CSRF-Token")
-    |> put_resp_header("Access-Control-Max-Age", "86400")
-    |> put_resp_header("Access-Control-Allow-Credentials", "true")
+    |> put_resp_header("x-content-type-options", "nosniff")
+    |> put_resp_header("x-frame-options", "DENY")
+    |> put_resp_header("x-xss-protection", "1; mode=block")
+    |> put_resp_header("referrer-policy", "strict-origin-when-cross-origin")
+    |> put_resp_header("permissions-policy", "geolocation=(), microphone=(), camera=(), payment=()")
+    |> put_resp_header("strict-transport-security", "max-age=31536000; includeSubDomains")
+    |> put_resp_header("content-security-policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'")
+    |> put_resp_header("access-control-allow-origin", get_allowed_origin(conn))
+    |> put_resp_header("access-control-allow-methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+    |> put_resp_header("access-control-allow-headers", "Content-Type, Authorization, X-Requested-With, X-CSRF-Token")
+    |> put_resp_header("access-control-max-age", "86400")
+    |> put_resp_header("access-control-allow-credentials", "true")
   end
 
   defp get_allowed_origin(conn) do

@@ -881,10 +881,9 @@ defmodule Mcp.Services.BackupService do
     to_date = if date_to, do: DateTime.from_iso8601(date_to) |> elem(1), else: nil
 
     Enum.filter(backups, fn backup ->
-      date_check = true
-      date_check = if from_date, do: date_check and DateTime.compare(backup.created_at, from_date) != :lt, else: date_check
-      date_check = if to_date, do: date_check and DateTime.compare(backup.created_at, to_date) != :gt, else: date_check
-      date_check
+      from_date_check = if from_date, do: DateTime.compare(backup.created_at, from_date) != :lt, else: true
+      to_date_check = if to_date, do: DateTime.compare(backup.created_at, to_date) != :gt, else: true
+      from_date_check and to_date_check
     end)
   end
 

@@ -3,6 +3,8 @@ defmodule Mcp.Gdpr.Export do
   GDPR data export functionality.
   """
 
+  use GenServer
+
   alias Mcp.Gdpr.Schemas.GdprExport
   alias Mcp.Repo
 
