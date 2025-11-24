@@ -16,5 +16,6 @@ defmodule Mcp.Domains.Gdpr do
     resource Mcp.Gdpr.Resources.User
     resource Mcp.Gdpr.Resources.DataExport
     resource Mcp.Gdpr.Resources.AuditTrail
+    resource Mcp.Gdpr.Resources.RetentionPolicy
   end
 end

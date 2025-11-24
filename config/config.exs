@@ -18,7 +18,6 @@ config :mcp, Oban,
   repo: Mcp.Repo,
   queues: [
     gdpr_exports: 10,     # Data export processing
-    gdpr_cleanup: 5,      # Data retention cleanup
     gdpr_anonymize: 3,    # Data anonymization
     gdpr_compliance: 2    # Compliance monitoring
   ],
