@@ -30,6 +30,7 @@ defmodule Mcp.Accounts.User do
         hashed_password_field :hashed_password
         hash_provider AshAuthentication.BcryptProvider
         confirmation_required? false
+        sign_in_tokens_enabled? false  # Disable sign-in tokens
       end
     end
 
@@ -144,14 +145,15 @@ defmodule Mcp.Accounts.User do
     update :update_sign_in do
       accept []
       argument :ip_address, :string
+      require_atomic? false
 
       change fn changeset, _ ->
         ip = Ash.Changeset.get_argument(changeset, :ip_address)
-        
+
         changeset
         |> Ash.Changeset.change_attribute(:last_sign_in_at, DateTime.utc_now())
         |> Ash.Changeset.change_attribute(:last_sign_in_ip, ip)
-        |> Ash.Changeset.change_attribute(:sign_in_count, 
+        |> Ash.Changeset.change_attribute(:sign_in_count,
           (Ash.Changeset.get_attribute(changeset, :sign_in_count) || 0) + 1)
       end
     end

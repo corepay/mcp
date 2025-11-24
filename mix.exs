@@ -42,7 +42,7 @@ defmodule Mcp.MixProject do
   def application do
     [
       mod: {Mcp.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :os_mon]
     ]
   end
 
@@ -131,6 +131,7 @@ defmodule Mcp.MixProject do
       # Testing tools
       {:ex_machina, "~> 2.7", only: :test},
       {:excoveralls, "~> 0.18", only: :test},
+      {:mox, "~> 1.2", only: :test},
 
       # OAuth and Authentication
       {:ueberauth, "~> 0.10"},

@@ -128,4 +128,13 @@ defmodule Mcp.Repo do
       {:error, _} -> nil
     end
   end
+
+  # Ash PostgreSQL support
+  def disable_atomic_actions? do
+    System.get_env("DISABLE_ATOMIC_ACTIONS", "false") == "true"
+  end
+
+  def prefer_transaction? do
+    System.get_env("PREFER_TRANSACTION", "true") == "true"
+  end
 end

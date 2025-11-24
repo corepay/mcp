@@ -15,9 +15,7 @@ end
 # Configure ExUnit for parallel testing where safe
 ExUnit.configure(exclude: [:slow, :integration])
 
-# Test utilities
-alias Mcp.TestFixtures
-alias Mcp.IntegrationHelpers
+# Test utilities - Remove unused aliases to prevent warnings
 
 # Configure test database
 Application.put_env(:mcp, Mcp.Repo,

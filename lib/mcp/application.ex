@@ -7,6 +7,9 @@ defmodule Mcp.Application do
 
   @impl true
   def start(_type, _args) do
+    # Ensure OS monitoring applications are started
+    ensure_os_mon_apps()
+
     children = [
       # Platform-level services (shared resources)
       Mcp.Platform.Supervisor,
@@ -38,5 +41,18 @@ defmodule Mcp.Application do
   def config_change(changed, _new, removed) do
     McpWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  # Ensure any available OS monitoring applications are started
+  defp ensure_os_mon_apps do
+    # Try to start os_mon if available, but don't fail if it's not
+    try do
+      Application.start(:os_mon)
+      :cpu_sup.start_link()
+      :memsup.start_link()
+      :disksup.start_link()
+    rescue
+      _ -> :ok  # OS monitoring not available, continue without it
+    end
   end
 end

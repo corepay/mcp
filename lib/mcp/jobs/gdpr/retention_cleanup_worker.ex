@@ -13,7 +13,6 @@ defmodule Mcp.Jobs.Gdpr.RetentionCleanupWorker do
   use Oban.Worker, queue: :gdpr_retention, max_attempts: 3
   require Logger
 
-  alias Mcp.Gdpr.RetentionReactor
   alias Mcp.Gdpr.Anonymizer
   alias Mcp.Repo
   import Ecto.Query
@@ -313,19 +312,6 @@ defmodule Mcp.Jobs.Gdpr.RetentionCleanupWorker do
   end
 
   # Helper functions
-
-  defp find_policy_result(reactor_result, policy_id) do
-    # Extract results for the specific policy from reactor result
-    case reactor_result do
-      %{results: results} ->
-        Enum.find(results, fn %{policy: policy} ->
-          policy.id == policy_id
-        end) || %{status: :not_found, message: "Policy not processed"}
-
-      _ ->
-        %{status: :error, message: "Invalid reactor result format"}
-    end
-  end
 
   defp create_cleanup_audit(record_id, action, details) do
     # For now, just log the audit entry

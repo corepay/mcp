@@ -10,7 +10,6 @@ defmodule Mcp.Gdpr.RetentionReactor do
 
   alias Mcp.Gdpr.Resources.RetentionPolicy
   alias Mcp.Gdpr.Anonymizer
-  alias Mcp.Gdpr.Resources.AuditTrail
   alias Mcp.Repo
   require Logger
   import Ecto.Query
@@ -312,7 +311,7 @@ defmodule Mcp.Gdpr.RetentionReactor do
   
   # Create audit trail entry for retention actions
   defp create_retention_audit(record_id, action, policy_id, details) do
-    audit_entry = %{
+    _audit_entry = %{
       user_id: record_id,
       action_type: action,
       actor_type: "retention_policy",

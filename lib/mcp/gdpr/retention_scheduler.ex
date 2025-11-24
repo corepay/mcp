@@ -13,8 +13,6 @@ defmodule Mcp.Gdpr.RetentionScheduler do
   require Logger
 
   alias Mcp.Jobs.Gdpr.RetentionCleanupWorker
-  alias Mcp.Repo
-  import Ecto.Query
 
   @renewal_interval :timer.hours(24)  # Check every 24 hours
 
