@@ -1,143 +1,129 @@
 defmodule Mcp.Platform.Tenant do
   @moduledoc """
-  Tenant schema and operations.
+  Tenant resource for managing multi-tenancy.
   """
 
-  defstruct [:id, :name, :company_schema, :status, :inserted_at, :updated_at]
+  use Ash.Resource,
+    domain: Mcp.Platform,
+    data_layer: AshPostgres.DataLayer,
+    extensions: [AshJsonApi.Resource]
 
-  # Generate UUIDs for stub implementations
-  defp uuid, do: Ecto.UUID.generate()
+  postgres do
+    table "tenants"
+    schema "platform"
+    repo Mcp.Repo
 
-  @doc """
-  Gets all tenants.
-  """
-  def read() do
-    # Stub implementation
-    {:ok, []}
+    custom_indexes do
+      index [:slug], unique: true
+      index [:subdomain], unique: true
+      index [:custom_domain], unique: true, where: "custom_domain IS NOT NULL"
+      index [:company_schema], unique: true
+    end
   end
 
-  @doc """
-  Gets a tenant by ID.
-  """
-  def get(tenant_id) do
-    # Stub implementation
-    {:ok, %__MODULE__{id: tenant_id, name: "Test Tenant", company_schema: "acq_#{tenant_id}", status: :active}}
+  json_api do
+    type "tenant"
   end
 
-  @doc """
-  Creates a new tenant.
-  """
-  def create(attrs) do
-    # Stub implementation
-    tenant = %__MODULE__{
-      id: uuid(),
-      name: attrs["name"],
-      company_schema: "acq_#{uuid()}",
-      status: :active,
-      inserted_at: DateTime.utc_now(),
-      updated_at: DateTime.utc_now()
-    }
-    {:ok, tenant}
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      primary? true
+      accept [:name, :slug, :subdomain, :custom_domain, :plan, :settings, :branding]
+      
+      change fn changeset, _ ->
+        Ash.Changeset.force_change_attribute(changeset, :company_schema, "acq_#{Ecto.UUID.generate()}")
+      end
+    end
+
+    update :update do
+      primary? true
+      accept [:name, :slug, :subdomain, :custom_domain, :plan, :settings, :branding, :status]
+    end
+
+    read :by_subdomain do
+      argument :subdomain, :string, allow_nil?: false
+      filter expr(subdomain == ^arg(:subdomain))
+    end
+
+    read :by_custom_domain do
+      argument :domain, :string, allow_nil?: false
+      filter expr(custom_domain == ^arg(:domain))
+    end
+
+    read :get_by_schema do
+      argument :schema, :string, allow_nil?: false
+      filter expr(company_schema == ^arg(:schema))
+    end
   end
 
-  @doc """
-  Updates a tenant.
-  """
-  def update(tenant, attrs) do
-    # Stub implementation
-    updated_tenant = struct(tenant, Map.put(attrs, "updated_at", DateTime.utc_now()))
-    {:ok, updated_tenant}
+  attributes do
+    uuid_primary_key :id
+
+    attribute :name, :string do
+      allow_nil? false
+      source :company_name
+    end
+
+    attribute :slug, :string do
+      allow_nil? false
+    end
+
+    attribute :company_schema, :string do
+      allow_nil? false
+      writable? false 
+    end
+
+    attribute :subdomain, :string do
+      allow_nil? false
+    end
+
+    attribute :custom_domain, :string
+
+    attribute :plan, :atom do
+      constraints [one_of: [:starter, :professional, :enterprise]]
+      default :starter
+      allow_nil? false
+    end
+
+    attribute :status, :atom do
+      constraints [one_of: [:active, :trial, :suspended, :canceled, :deleted]]
+      default :active
+      allow_nil? false
+    end
+
+    attribute :settings, :map do
+      default %{}
+    end
+
+    attribute :branding, :map do
+      default %{}
+    end
+
+    timestamps()
   end
 
-  @doc """
-  Deletes a tenant.
-  """
-  def delete(tenant) do
-    # Stub implementation
-    {:ok, tenant}
+  code_interface do
+    define :read
+    define :create
+    define :update
+    define :destroy
+    define :get_by_id, action: :read, get_by: [:id]
+    define :by_subdomain, action: :by_subdomain, args: [:subdomain]
+    define :by_custom_domain, action: :by_custom_domain, args: [:domain]
+    define :get_by_schema, action: :get_by_schema, args: [:schema], get?: true
   end
 
-  @doc """
-  Gets tenant by schema.
-  """
-  def get_by_schema(schema) do
-    # Stub implementation
-    tenant_id = String.replace_prefix(schema, "acq_", "")
-    {:ok, %__MODULE__{id: tenant_id, name: "Test Tenant", company_schema: schema, status: :active}}
-  end
-
-  @doc """
-  Gets tenant by subdomain (returns list for wildcard subdomains).
-  """
-  def by_subdomain(subdomain) do
-    # Stub implementation
-    tenant = %__MODULE__{
-      id: uuid(),
-      name: "Test Tenant - #{subdomain}",
-      company_schema: "acq_#{uuid()}",
-      status: :active
-    }
-    [tenant]
-  end
-
-  @doc """
-  Gets tenant by subdomain (bang version).
-  """
-  def by_subdomain!(subdomain) do
-    # Stub implementation
-    %__MODULE__{
-      id: uuid(),
-      name: "Test Tenant - #{subdomain}",
-      company_schema: "acq_#{uuid()}",
-      status: :active
-    }
-  end
-
-  @doc """
-  Gets tenant by custom domain.
-  """
-  def by_custom_domain(domain) do
-    # Stub implementation
-    tenant = %__MODULE__{
-      id: uuid(),
-      name: "Test Tenant - #{domain}",
-      company_schema: "acq_#{uuid()}",
-      status: :active
-    }
-    {:ok, tenant}
-  end
-
-  @doc """
-  Gets tenant by custom domain (bang version).
-  """
-  def by_custom_domain!(domain) do
-    # Stub implementation
-    %__MODULE__{
-      id: uuid(),
-      name: "Test Tenant - #{domain}",
-      company_schema: "acq_#{uuid()}",
-      status: :active
-    }
-  end
-
-  @doc """
-  Gets tenant by ID (bang version).
-  """
-  def by_id!(tenant_id) do
-    # Stub implementation
-    %__MODULE__{
-      id: tenant_id,
-      name: "Test Tenant",
-      company_schema: "acq_#{tenant_id}",
-      status: :active
-    }
-  end
-
-  @doc """
-  Creates a changeset for tenant.
-  """
-  def changeset(tenant, attrs) do
-    # Stub implementation - return the tenant with attrs applied
-    struct(tenant, attrs)
-  end
+  # Compatibility wrappers for existing code
+  def get(id), do: get_by_id(id)
+  def delete(tenant), do: destroy(tenant)
+  def by_subdomain!(subdomain), do: by_subdomain(subdomain) |> handle_bang()
+  def by_custom_domain!(domain), do: by_custom_domain(domain) |> handle_bang()
+  def by_id!(id), do: get_by_id!(id)
+  
+  # Helper for bang methods
+  defp handle_bang({:ok, result}), do: result
+  defp handle_bang({:error, error}), do: raise Ash.Error.to_error_class(error)
+  defp handle_bang(result), do: result
 end

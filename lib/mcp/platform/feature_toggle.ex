@@ -7,7 +7,7 @@ defmodule Mcp.Platform.FeatureToggle do
   Gets all feature definitions.
   """
   def feature_definitions() do
-    # Stub implementation with common features
+    # Common feature definitions
     %{
       "analytics" => %{
         name: "Analytics",
@@ -54,7 +54,7 @@ defmodule Mcp.Platform.FeatureToggle do
   Checks if a feature is enabled for a tenant.
   """
   def feature_enabled?(tenant_id, feature_name) do
-    # Stub implementation - checks with TenantSettingsManager
+    # Checks with TenantSettingsManager
     case Mcp.Platform.TenantSettingsManager.get_enabled_features(tenant_id) do
       {:ok, features} -> feature_name in features
       {:error, _} -> false

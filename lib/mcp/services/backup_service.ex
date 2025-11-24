@@ -840,9 +840,7 @@ defmodule Mcp.Services.BackupService do
     case configuration["tenant"] do
       nil -> :ok
       tenant_config ->
-        tenant
-        |> Tenant.changeset(tenant_config)
-        |> Repo.update()
+        Tenant.update(tenant, tenant_config)
     end
   end
 

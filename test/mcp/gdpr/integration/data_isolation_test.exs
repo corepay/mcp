@@ -137,7 +137,7 @@ defmodule Mcp.Gdpr.Integration.DataIsolationTest do
         entry["tenant_id"] != nil and entry["tenant_id"] != tenant
       end)
 
-      assert length(other_tenant_entries) == 0
+      assert Enum.empty?(other_tenant_entries)
     end
   end
 
