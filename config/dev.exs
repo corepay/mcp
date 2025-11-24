@@ -7,6 +7,9 @@ config :ex_cldr,
 config :ex_money,
   default_cldr_backend: Mcp.Cldr
 
+# JWT signing secret for development
+config :mcp, :token_signing_secret, "dev-secret-change-in-production-use-env-var"
+
 # Configure your database with environment variables
 config :mcp, Mcp.Repo,
   username: System.get_env("POSTGRES_USER", "base_mcp_dev"),
