@@ -10,6 +10,13 @@ config :ex_money,
 # JWT signing secret for development
 config :mcp, :token_signing_secret, "dev-secret-change-in-production-use-env-var"
 
+# Configure Oban for development - use testing mode to prevent job processing
+config :mcp, Oban,
+  repo: Mcp.Repo,
+  testing: :manual,  # This prevents automatic job processing
+  queues: false,       # Don't start queues in development
+  plugins: false      # Don't start plugins in development
+
 # Configure your database with environment variables
 config :mcp, Mcp.Repo,
   username: System.get_env("POSTGRES_USER", "base_mcp_dev"),

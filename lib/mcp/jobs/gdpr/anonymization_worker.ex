@@ -186,73 +186,63 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
   end
 
   defp get_field_value(user_id, table, field) do
-    case validate_table_access(table) do
-      :ok ->
-        # Use hardcoded table queries for security
-        query = case table do
-          "mcp_users" ->
-            from(r in Mcp.Accounts.UserSchema, where: r.id == type(^user_id, :binary))
-          "gdpr_audit_trail" ->
-            # Use Ecto for AuditTrail queries
-            from(r in Mcp.Gdpr.Resources.AuditTrail, where: r.user_id == ^user_id)
-            |> limit(1)
-          "gdpr_consent" ->
-            # Consent data is stored in the user resource as gdpr_consent_record
-            from(r in Mcp.Accounts.UserSchema, where: r.id == type(^user_id, :binary))
-          _ ->
-            {:error, :table_not_allowed}
-        end
+    with :ok <- validate_table_access(table),
+         {:ok, query} <- build_table_query(table, user_id),
+         {:ok, record} <- execute_query_safely(query) do
+      {:ok, Map.get(record, String.to_atom(field))}
+    else
+      {:error, reason} -> {:error, reason}
+      :error -> {:error, :query_failed}
+    end
+  end
 
-        case query do
-          {:error, _} = error -> error
-          query ->
-            try do
-              case Repo.one(query) do
-                nil -> {:ok, nil}
-                record -> {:ok, Map.get(record, String.to_atom(field))}
-              end
-            rescue
-              _ -> {:error, :field_not_found}
-            end
-        end
-      {:error, reason} ->
-        {:error, reason}
+  defp build_table_query("mcp_users", user_id) do
+    {:ok, from(r in Mcp.Accounts.UserSchema, where: r.id == type(^user_id, :binary))}
+  end
+
+  defp build_table_query("gdpr_audit_trail", user_id) do
+    query = from(r in Mcp.Gdpr.Resources.AuditTrail, where: r.user_id == ^user_id)
+            |> limit(1)
+    {:ok, query}
+  end
+
+  defp build_table_query("gdpr_consent", user_id) do
+    {:ok, from(r in Mcp.Accounts.UserSchema, where: r.id == type(^user_id, :binary))}
+  end
+
+  defp build_table_query(_, _), do: {:error, :table_not_allowed}
+
+  defp execute_query_safely(query) do
+    try do
+      case Repo.one(query) do
+        nil -> {:ok, nil}
+        record -> {:ok, record}
+      end
+    rescue
+      _ -> {:error, :field_not_found}
     end
   end
 
   defp update_field_value(user_id, table, field, value) do
-    case validate_table_access(table) do
-      :ok ->
-        # Use hardcoded table queries for security
-        query = case table do
-          "mcp_users" ->
-            from(r in Mcp.Accounts.UserSchema, where: r.id == type(^user_id, :binary))
-          "gdpr_audit_trail" ->
-            # Use Ecto for AuditTrail queries
-            from(r in Mcp.Gdpr.Resources.AuditTrail, where: r.user_id == ^user_id)
-            |> limit(1)
-          "gdpr_consent" ->
-            # Consent data is stored in the user resource as gdpr_consent_record
-            from(r in Mcp.Accounts.UserSchema, where: r.id == type(^user_id, :binary))
-          _ ->
-            {:error, :table_not_allowed}
-        end
+    with :ok <- validate_table_access(table),
+         {:ok, query} <- build_table_query(table, user_id),
+         :ok <- update_record_safely(query, field, value) do
+      :ok
+    else
+      {:error, reason} -> {:error, reason}
+      :error -> {:error, :update_failed}
+    end
+  end
 
-        case query do
-          {:error, _} = error -> error
-          query ->
-            try do
-              field_atom = String.to_atom(field)
-              case Repo.update_all(query, [set: [{field_atom, value}]]) do
-                {1, _} -> :ok
-                {0, _} -> {:error, :no_records_updated}
-              end
-            rescue
-              _ -> {:error, :update_failed}
-            end
-        end
-      {:error, _reason} ->
-        {:error, :table_not_allowed}
+  defp update_record_safely(query, field, value) do
+    try do
+      field_atom = String.to_atom(field)
+      case Repo.update_all(query, [set: [{field_atom, value}]]) do
+        {1, _} -> :ok
+        {0, _} -> {:error, :no_records_updated}
+      end
+    rescue
+      _ -> {:error, :update_failed}
     end
   end
 

@@ -4,5 +4,7 @@ defmodule Mcp.Platform do
 
   resources do
     resource Mcp.Platform.Tenant
+    resource Mcp.Platform.TenantSettings
+    resource Mcp.Platform.TenantBranding
   end
 end

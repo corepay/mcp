@@ -22,7 +22,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
       # Measure initial load time
       {time, {:ok, _view, _html}} =
         :timer.tc(fn ->
-          live(conn, "/sign_in")
+          get(conn, "/sign_in")
         end)
 
       # Should load within 100ms
@@ -53,7 +53,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
 
             {time, result} =
               :timer.tc(fn ->
-                live(conn, "/sign_in")
+                get(conn, "/sign_in")
               end)
 
             {time, result, i}

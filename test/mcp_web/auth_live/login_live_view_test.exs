@@ -404,7 +404,7 @@ defmodule McpWeb.AuthLive.LoginLiveViewTest do
       assert render(view) =~ "Sign in to your account"
     end
 
-    test "handles JavaScript being disabled", %{conn: conn} =
+    test "handles JavaScript being disabled", %{conn: conn} do
       # Test fallback behavior when JavaScript is disabled
       conn = get(conn, ~p"/login", _format: "html")
 

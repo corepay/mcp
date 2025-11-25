@@ -11,6 +11,13 @@ defmodule Mcp.Gdpr.Jobs do
 
   use GenServer
 
+  alias Mcp.Gdpr.AuditTrail
+  alias Mcp.Gdpr.Schemas.GdprExport
+  alias Mcp.Gdpr.Schemas.GdprRequest
+  alias Mcp.Jobs.Gdpr.AnonymizationWorker
+  alias Mcp.Jobs.Gdpr.ComplianceWorker
+  alias Mcp.Jobs.Gdpr.DataExportWorker
+  alias Mcp.Jobs.Gdpr.RetentionCleanupWorker
   alias Mcp.Repo
   import Ecto.Query
 
@@ -42,7 +49,7 @@ defmodule Mcp.Gdpr.Jobs do
       expires_at: DateTime.add(DateTime.utc_now(), 7, :day)
     }
 
-    request_changeset = Mcp.Gdpr.Schemas.GdprRequest.changeset(%Mcp.Gdpr.Schemas.GdprRequest{}, request_attrs)
+    request_changeset = GdprRequest.changeset(%GdprRequest{}, request_attrs)
 
     case Repo.insert(request_changeset) do
       {:ok, request} ->
@@ -56,12 +63,12 @@ defmodule Mcp.Gdpr.Jobs do
           metadata: %{requested_by: actor_id}
         }
 
-        export_changeset = Mcp.Gdpr.Schemas.GdprExport.changeset(%Mcp.Gdpr.Schemas.GdprExport{}, export_attrs)
+        export_changeset = GdprExport.changeset(%GdprExport{}, export_attrs)
 
         case Repo.insert(export_changeset) do
           {:ok, export} ->
             # Enqueue the background job
-            Mcp.Jobs.Gdpr.DataExportWorker.new(%{
+            DataExportWorker.new(%{
               "export_id" => export.id
             })
             |> Oban.insert()
@@ -81,7 +88,7 @@ defmodule Mcp.Gdpr.Jobs do
   Get the status of a data export request.
   """
   def get_export_status(export_id) do
-    case Repo.get(Mcp.Gdpr.Schemas.GdprExport, export_id) do
+    case Repo.get(GdprExport, export_id) do
       nil -> {:error, :not_found}
       export -> {:ok, export}
     end
@@ -103,14 +110,14 @@ defmodule Mcp.Gdpr.Jobs do
     end
 
     # Log the anonymization request for audit trail
-    Mcp.Gdpr.AuditTrail.log_action(
+    AuditTrail.log_action(
       user_id,
       "anonymization_requested",
       actor_id,
       %{mode: mode, scheduled_at: DateTime.utc_now()}
     )
 
-    Mcp.Jobs.Gdpr.AnonymizationWorker.new(args)
+    AnonymizationWorker.new(args)
     |> Oban.insert()
   end
 
@@ -123,7 +130,7 @@ defmodule Mcp.Gdpr.Jobs do
     types = if is_list(type), do: type, else: [type]
 
     Enum.each(types, fn cleanup_type ->
-      Mcp.Jobs.Gdpr.RetentionCleanupWorker.new(%{
+      RetentionCleanupWorker.new(%{
         "type" => cleanup_type
       })
       |> Oban.insert()
@@ -144,7 +151,7 @@ defmodule Mcp.Gdpr.Jobs do
       _ -> %{"type" => "daily_monitoring"}
     end
 
-    Mcp.Jobs.Gdpr.ComplianceWorker.new(args)
+    ComplianceWorker.new(args)
     |> Oban.insert()
   end
 

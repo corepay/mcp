@@ -8,6 +8,10 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
 
   use Ash.Reactor
 
+  alias Mcp.Gdpr.AuditTrail
+  alias Mcp.Gdpr.DataRetention
+  alias Mcp.Jobs.Gdpr.AnonymizationWorker
+
   # Input arguments for the deletion workflow
   input :user_id
   input :deletion_reason
@@ -18,29 +22,29 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
   step :validate_user do
     argument :user_id, input(:user_id)
 
-    run &Mcp.Gdpr.UserDeletionReactor.validate_user/1
+    run &__MODULE__.validate_user/1
     async? false
   end
 
   step :check_legal_holds do
     argument :user_id, input(:user_id)
 
-    run &Mcp.Gdpr.UserDeletionReactor.check_legal_holds/1
+    run &__MODULE__.check_legal_holds/1
     async? false
-    compensate &Mcp.Gdpr.UserDeletionReactor.compensate_legal_hold_check/1
+    compensate &__MODULE__.compensate_legal_hold_check/1
   end
 
   step :check_active_exports do
     argument :user_id, input(:user_id)
 
-    run &Mcp.Gdpr.UserDeletionReactor.check_active_exports/1
+    run &__MODULE__.check_active_exports/1
     async? false
   end
 
   step :check_pending_consent_changes do
     argument :user_id, input(:user_id)
 
-    run &Mcp.Gdpr.UserDeletionReactor.check_pending_consent_changes/1
+    run &__MODULE__.check_pending_consent_changes/1
     async? false
   end
 
@@ -48,7 +52,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
     argument :user_id, input(:user_id)
     argument :deletion_reason, input(:deletion_reason)
 
-    run &Mcp.Gdpr.UserDeletionReactor.calculate_retention_schedule/1
+    run &__MODULE__.calculate_retention_schedule/1
     async? false
   end
 
@@ -59,7 +63,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
     argument :ip_address, input(:ip_address)
     argument :user_agent, input(:user_agent)
 
-    run &Mcp.Gdpr.UserDeletionReactor.create_deletion_audit_entry/1
+    run &__MODULE__.create_deletion_audit_entry/1
     async? false
   end
 
@@ -69,18 +73,18 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
     argument :actor_id, input(:actor_id)
     argument :retention_expires_at, result(:calculate_retention_schedule)
 
-    run &Mcp.Gdpr.UserDeletionReactor.initiate_soft_delete/1
+    run &__MODULE__.initiate_soft_delete/1
     async? false
-    compensate &Mcp.Gdpr.UserDeletionReactor.compensate_soft_delete/1
+    compensate &__MODULE__.compensate_soft_delete/1
   end
 
   step :schedule_anonymization do
     argument :user_id, input(:user_id)
     argument :anonymization_date, result(:calculate_retention_schedule)
 
-    run &Mcp.Gdpr.UserDeletionReactor.schedule_anonymization/1
+    run &__MODULE__.schedule_anonymization/1
     async? false
-    compensate &Mcp.Gdpr.UserDeletionReactor.compensate_anonymization_scheduling/1
+    compensate &__MODULE__.compensate_anonymization_scheduling/1
   end
 
   step :notify_stakeholders do
@@ -88,7 +92,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
     argument :deletion_reason, input(:deletion_reason)
     argument :anonymization_date, result(:calculate_retention_schedule)
 
-    run &Mcp.Gdpr.UserDeletionReactor.notify_deletion_stakeholders/1
+    run &__MODULE__.notify_deletion_stakeholders/1
     async? true
   end
 
@@ -114,7 +118,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
   Checks for any active legal holds on the user's data.
   """
   def check_legal_holds(%{user_id: user_id}) do
-    case Mcp.Gdpr.DataRetention.check_legal_holds(user_id) do
+    case DataRetention.check_legal_holds(user_id) do
       [] ->
         {:ok, :no_holds}
       holds ->
@@ -127,7 +131,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
   """
   def compensate_legal_hold_check(%{user_id: user_id}) do
     # Log the blocked deletion attempt
-    Mcp.Gdpr.AuditTrail.log_event(
+    AuditTrail.log_event(
       user_id,
       "deletion_blocked_legal_hold",
       %{},
@@ -211,20 +215,56 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
   Schedules the final anonymization job.
   """
   def schedule_anonymization(%{user_id: user_id, anonymization_date: date}) do
-    %{user_id: user_id, anonymization_date: date}
-    |> Mcp.Jobs.Gdpr.AnonymizationWorker.new(scheduled_at: date)
-    |> Oban.insert()
+    job_args = %{user_id: user_id, mode: "full"}
 
-    {:ok, :scheduled}
+    case job_args
+         |> AnonymizationWorker.new(scheduled_at: date)
+         |> Oban.insert() do
+      {:ok, job} ->
+        # Store the job ID in user metadata for potential cancellation
+        store_anonymization_job_id(user_id, job.id)
+
+        AuditTrail.log_event(
+          user_id,
+          "anonymization_scheduled",
+          %{
+            job_id: job.id,
+            scheduled_date: DateTime.to_iso8601(date)
+          },
+          "system"
+        )
+
+        {:ok, %{job_id: job.id, scheduled_at: date}}
+
+      {:error, reason} ->
+        {:error, {:scheduling_failed, reason}}
+    end
   end
 
   @doc """
   Compensation for anonymization scheduling failure.
   """
-  def compensate_anonymization_scheduling(%{user_id: _user_id}) do
-    # Cancel the scheduled anonymization
-    # TODO: Implement proper Oban job cancellation
-    :ok
+  def compensate_anonymization_scheduling(%{user_id: user_id}) do
+    # Get the stored anonymization job ID
+    case get_anonymization_job_id(user_id) do
+      {:ok, job_id} when not is_nil(job_id) ->
+        # Cancel the scheduled job
+        cancel_anonymization_job(user_id, job_id)
+
+      {:ok, nil} ->
+        # No job to cancel
+        :ok
+
+      {:error, reason} ->
+        # Log the error but don't fail the compensation
+        AuditTrail.log_event(
+          user_id,
+          "anonymization_cancellation_failed",
+          %{reason: inspect(reason)},
+          "system"
+        )
+        :ok
+    end
   end
 
   @doc """
@@ -234,7 +274,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
     # Send notifications to compliance team, legal team, etc.
     # Implementation would depend on notification system
 
-    Mcp.Gdpr.AuditTrail.log_event(
+    AuditTrail.log_event(
       user_id,
       "deletion_stakeholders_notified",
       %{
@@ -245,5 +285,86 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
     )
 
     {:ok, :notified}
+  end
+
+  # Helper functions for job tracking and cancellation
+
+  defp store_anonymization_job_id(user_id, job_id) do
+    # Store the job ID in the user metadata or a tracking table
+    # For now, we'll use audit trail to track job IDs
+    AuditTrail.log_event(
+      user_id,
+      "anonymization_job_tracked",
+      %{
+        job_id: job_id,
+        tracked_at: DateTime.utc_now() |> DateTime.to_iso8601()
+      },
+      "system"
+    )
+
+    :ok
+  end
+
+  defp get_anonymization_job_id(user_id) do
+    import Ash.Query
+
+    # Query the audit trail for the most recent job tracking entry
+    case Mcp.Gdpr.Resources.AuditTrail
+         |> filter(user_id == ^user_id)
+         |> filter(action_type == "anonymization_job_tracked")
+         |> sort(inserted_at: :desc)
+         |> limit(1)
+         |> Ash.read() do
+      {:ok, [audit_entry]} ->
+        {:ok, Map.get(audit_entry.details || %{}, "job_id")}
+
+      {:ok, []} ->
+        {:ok, nil}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp cancel_anonymization_job(user_id, job_id) do
+    # Cancel the job using Oban's API
+    case Oban.cancel_job(job_id) do
+      :ok ->
+        AuditTrail.log_event(
+          user_id,
+          "anonymization_job_cancelled",
+          %{
+            job_id: job_id,
+            cancelled_at: DateTime.utc_now() |> DateTime.to_iso8601()
+          },
+          "system"
+        )
+        :ok
+
+      {:error, reason} ->
+        # If cancellation fails, log it
+        AuditTrail.log_event(
+          user_id,
+          "anonymization_job_cancellation_failed",
+          %{
+            job_id: job_id,
+            cancel_reason: inspect(reason)
+          },
+          "system"
+        )
+        :ok
+    end
+  rescue
+    error ->
+      AuditTrail.log_event(
+        user_id,
+        "anonymization_job_cancellation_error",
+        %{
+          job_id: job_id,
+          error: inspect(error)
+        },
+        "system"
+      )
+      :ok
   end
 end

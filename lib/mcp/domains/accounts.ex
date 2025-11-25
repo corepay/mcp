@@ -16,5 +16,6 @@ defmodule Mcp.Accounts do
   resources do
     resource Mcp.Accounts.User
     resource Mcp.Accounts.AuthToken
+    resource Mcp.Accounts.RegistrationRequest
   end
 end

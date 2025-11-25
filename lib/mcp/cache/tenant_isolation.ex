@@ -65,7 +65,7 @@ defmodule Mcp.Cache.TenantIsolation do
   defmacro with_tenant_cache(tenant_id_or_conn, do: block) do
     quote do
       tenant_id =
-        Mcp.Cache.TenantIsolation.resolve_tenant_id_from_input(unquote(tenant_id_or_conn))
+        resolve_tenant_id_from_input(unquote(tenant_id_or_conn))
 
       Process.put(:current_tenant_id, tenant_id)
 

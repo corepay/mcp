@@ -12,6 +12,16 @@ defmodule Mcp.Cache.CacheManager do
 
   alias Mcp.Cache.RedisClient
 
+  # Define behaviour for mocking
+  @callback get(String.t(), keyword()) :: {:ok, term()} | {:error, term()}
+  @callback set(String.t(), term(), keyword()) :: :ok | {:error, term()}
+  @callback delete(String.t(), keyword()) :: :ok | {:error, term()}
+  @callback exists?(String.t(), keyword()) :: boolean()
+  @callback increment(String.t(), integer(), keyword()) :: {:ok, integer()} | {:error, term()}
+  @callback setex(String.t(), integer(), term(), keyword()) :: :ok | {:error, term()}
+  @callback clear_pattern(String.t(), keyword()) :: :ok | {:error, term()}
+  @callback get_stats() :: {:ok, map()}
+
   # Default TTL values for different cache types
   @default_ttls %{
     # 1 hour

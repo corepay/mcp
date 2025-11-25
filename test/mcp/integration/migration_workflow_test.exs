@@ -423,7 +423,7 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
 
   defp setup_test_data(tenant) do
     # Create test tables and data in tenant schema
-    MultiTenant.with_tenant_context(tenant.company_schema, fn
+    MultiTenant.with_tenant_context(tenant.company_schema, fn ->
       # This would create actual tables and insert test data
       # For now, we just verify the schema exists
       assert true

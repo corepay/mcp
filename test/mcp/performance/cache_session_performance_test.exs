@@ -60,8 +60,9 @@ defmodule Mcp.Performance.CacheSessionPerformanceTest do
         for i <- 1..operations do
           key = "#{base_key}_#{i}"
 
+          expected_value = "value_#{i}"
           case CacheManager.get(key) do
-            {:ok, "value_#{i}"} -> 1
+            {:ok, ^expected_value} -> 1
             _ -> 0
           end
         end

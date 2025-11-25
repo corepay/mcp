@@ -137,4 +137,32 @@ defmodule Mcp.Repo do
   def prefer_transaction? do
     System.get_env("PREFER_TRANSACTION", "true") == "true"
   end
+
+  # Ash callback for transaction tracking
+  def on_transaction_begin(_context) do
+    # No-op for now - can be used for telemetry later
+    :ok
+  end
+
+  # Ash callback for installed extensions
+  def installed_extensions do
+    # Return list of installed PostgreSQL extensions
+    # This can be dynamic by querying the database
+    ["uuid-ossp", "pgcrypto", "btree_gist", "citext"]
+  end
+
+  # Ash callback for expression errors
+  def disable_expr_error? do
+    # Return whether to disable expression errors
+    System.get_env("DISABLE_EXPR_ERROR", "false") == "true"
+  end
+
+  # Ash callback for constraint matching
+  def default_constraint_match_type(:custom, _constraint_name) do
+    :unique
+  end
+
+  def default_constraint_match_type(_type, _constraint_name) do
+    :exact
+  end
 end

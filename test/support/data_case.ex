@@ -26,6 +26,7 @@ defmodule Mcp.DataCase do
       import Ecto.Changeset
       import Ecto.Query
       import Mcp.DataCase
+      import Mcp.TestFactories
     end
   end
 

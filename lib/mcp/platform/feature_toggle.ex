@@ -3,6 +3,8 @@ defmodule Mcp.Platform.FeatureToggle do
   Feature toggle definitions and management.
   """
 
+  alias Mcp.Platform.TenantSettingsManager
+
   @doc """
   Gets all feature definitions.
   """
@@ -55,7 +57,7 @@ defmodule Mcp.Platform.FeatureToggle do
   """
   def feature_enabled?(tenant_id, feature_name) do
     # Checks with TenantSettingsManager
-    case Mcp.Platform.TenantSettingsManager.get_enabled_features(tenant_id) do
+    case TenantSettingsManager.get_enabled_features(tenant_id) do
       {:ok, features} -> feature_name in features
       {:error, _} -> false
     end

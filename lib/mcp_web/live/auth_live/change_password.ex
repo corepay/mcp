@@ -9,6 +9,7 @@ defmodule McpWeb.AuthLive.ChangePassword do
   use McpWeb, :live_view
   # import Phoenix.HTML.Form  # Unused
   # alias Mcp.Accounts.User    # Unused
+  alias Mcp.Accounts.Auth
 
   @impl true
   def mount(_params, %{"current_user" => current_user, "temp_user_token" => temp_token}, socket) do
@@ -195,6 +196,6 @@ defmodule McpWeb.AuthLive.ChangePassword do
 
   defp create_session_after_password_change(user) do
     # Create a new session after password change
-    Mcp.Accounts.Auth.create_user_session(user, nil)
+    Auth.create_user_session(user, nil)
   end
 end

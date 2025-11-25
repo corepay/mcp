@@ -14,6 +14,7 @@ defmodule Mcp.Jobs.Gdpr.RetentionCleanupWorker do
   require Logger
 
   alias Mcp.Gdpr.Anonymizer
+  alias Mcp.Gdpr.AuditTrail
   alias Mcp.Repo
   import Ecto.Query
 
@@ -97,15 +98,22 @@ defmodule Mcp.Jobs.Gdpr.RetentionCleanupWorker do
 
   defp process_all_retention_policies do
     try do
-      # For now, return a placeholder result
-      # TODO: Integrate with RetentionReactor once we figure out the correct invocation pattern
-      Logger.info("Processing retention policies (placeholder implementation)")
+      Logger.info("Processing all retention policies with RetentionReactor")
 
-      {:ok, %{
-        action: "process_retention_policies",
-        message: "Placeholder implementation - RetentionReactor integration pending",
-        processed_at: DateTime.utc_now()
-      }}
+      # Trigger the RetentionReactor to process all due policies
+      case Reactor.run(Mcp.Gdpr.RetentionReactor, %{}, async?: false) do
+        {:ok, result} ->
+          Logger.info("Successfully completed retention policy processing: #{inspect(result)}")
+          {:ok, result}
+
+        {:error, reason} ->
+          Logger.error("RetentionReactor failed: #{inspect(reason)}")
+          {:error, {:reactor_failed, reason}}
+
+        {:error, steps, errors} ->
+          Logger.error("RetentionReactor step errors: #{inspect(errors)}")
+          {:error, {:reactor_steps_failed, steps, errors}}
+      end
     rescue
       error ->
         Logger.error("Error processing retention policies: #{inspect(error)}")
@@ -115,20 +123,56 @@ defmodule Mcp.Jobs.Gdpr.RetentionCleanupWorker do
 
   defp process_specific_policy(policy_id) do
     try do
-      # For now, return a placeholder result
-      # TODO: Integrate with RetentionReactor once we figure out the correct invocation pattern
-      Logger.info("Processing retention policy #{policy_id} (placeholder implementation)")
+      Logger.info("Processing retention policy #{policy_id}")
 
-      {:ok, %{
-        action: "process_policy",
-        policy_id: policy_id,
-        message: "Placeholder implementation - RetentionReactor integration pending",
-        processed_at: DateTime.utc_now()
-      }}
+      # Get the specific policy to validate it exists
+      policy = Ash.get!(Mcp.Gdpr.Resources.RetentionPolicy, policy_id)
+
+      if policy do
+        Logger.info("Found policy #{policy_id}, triggering RetentionReactor")
+
+        # Trigger the RetentionReactor - it will find all due policies including this one
+        case Reactor.run(Mcp.Gdpr.RetentionReactor, %{}, async?: false) do
+          {:ok, result} ->
+            # Filter results for this specific policy
+            policy_result = extract_policy_result(result, policy_id)
+
+            Logger.info("Successfully processed retention policy #{policy_id}")
+            {:ok, %{
+              action: "process_policy",
+              policy_id: policy_id,
+              result: policy_result,
+              processed_at: DateTime.utc_now()
+            }}
+
+          {:error, reason} ->
+            Logger.error("RetentionReactor failed for policy #{policy_id}: #{inspect(reason)}")
+            {:error, {:reactor_failed, reason}}
+
+          {:error, steps, errors} ->
+            Logger.error("RetentionReactor step errors for policy #{policy_id}: #{inspect(errors)}")
+            {:error, {:reactor_steps_failed, steps, errors}}
+        end
+      else
+        {:error, :policy_not_found}
+      end
     rescue
       error ->
         Logger.error("Error processing policy #{policy_id}: #{inspect(error)}")
         {:error, {:exception, error}}
+    end
+  end
+
+  # Extract results for a specific policy from the reactor result
+  defp extract_policy_result(result, policy_id) do
+    case result do
+      %{results: policy_results} when is_list(policy_results) ->
+        Enum.find(policy_results, fn pr ->
+          get_in(pr, [:policy, :id]) == policy_id
+        end) || %{policy_id: policy_id, status: "not_processed"}
+
+      _ ->
+        %{policy_id: policy_id, status: "unknown_result"}
     end
   end
 
@@ -314,11 +358,20 @@ defmodule Mcp.Jobs.Gdpr.RetentionCleanupWorker do
   # Helper functions
 
   defp create_cleanup_audit(record_id, action, details) do
-    # For now, just log the audit entry
-    Logger.info("GDPR Cleanup Audit: #{action} for record #{record_id} - #{inspect(details)}")
+    # Extract user_id and actor_id from details if available
+    user_id = Map.get(details, "user_id") || Map.get(details, :user_id) || record_id
+    actor_id = Map.get(details, "actor_id") || Map.get(details, :actor_id) || "system"
 
-    # TODO: Integrate with Ash AuditTrail resource once domain actions are properly set up
-    :ok
+    # Integrate with Ash AuditTrail resource
+    case AuditTrail.log_event(user_id, action, details, actor_id) do
+      :ok ->
+        Logger.debug("GDPR Cleanup Audit logged: #{action} for record #{record_id}")
+        :ok
+      {:error, reason} ->
+        Logger.warning("Failed to log cleanup audit: #{inspect(reason)}")
+        # Continue execution even if audit logging fails
+        :ok
+    end
   rescue
     error ->
       Logger.error("Failed to create cleanup audit: #{inspect(error)}")

@@ -9,6 +9,7 @@ defmodule Mcp.Gdpr.RetentionReactor do
   use Ash.Reactor
 
   alias Mcp.Gdpr.Resources.RetentionPolicy
+  alias Mcp.Gdpr.Resources.AuditTrail
   alias Mcp.Gdpr.Anonymizer
   alias Mcp.Repo
   require Logger
@@ -30,10 +31,12 @@ defmodule Mcp.Gdpr.RetentionReactor do
       all_policies = Repo.all(policies_query)
 
       # Filter policies that are actually due for processing
-      policies = Enum.filter(all_policies, fn policy ->
-        is_nil(policy.last_processed_at) or
-        DateTime.diff(current_time, policy.last_processed_at) >= policy.processing_frequency_hours * 3600
-      end)
+      policies =
+        Enum.filter(all_policies, fn policy ->
+          is_nil(policy.last_processed_at) or
+            DateTime.diff(current_time, policy.last_processed_at) >=
+              policy.processing_frequency_hours * 3600
+        end)
 
       Logger.info("Found #{length(policies)} retention policies to process")
 
@@ -46,30 +49,35 @@ defmodule Mcp.Gdpr.RetentionReactor do
     run fn %{load_policies: policies} ->
       results =
         Enum.map(policies, fn policy ->
-          cutoff_date = DateTime.utc_now() |> DateTime.add(-policy.retention_days * 86_400, :second)
+          cutoff_date =
+            DateTime.utc_now() |> DateTime.add(-policy.retention_days * 86_400, :second)
 
           case find_overdue_records(policy.entity_type, cutoff_date) do
             {:ok, overdue_ids} ->
-              Logger.info("Policy #{policy.id} (#{policy.entity_type}): #{length(overdue_ids)} overdue records")
+              Logger.info(
+                "Policy #{policy.id} (#{policy.entity_type}): #{length(overdue_ids)} overdue records"
+              )
 
-              {:ok, %{
-                policy: policy,
-                cutoff_date: cutoff_date,
-                overdue_ids: overdue_ids,
-                records_processed: 0,
-                errors: []
-              }}
+              {:ok,
+               %{
+                 policy: policy,
+                 cutoff_date: cutoff_date,
+                 overdue_ids: overdue_ids,
+                 records_processed: 0,
+                 errors: []
+               }}
 
             {:error, reason} ->
               Logger.error("Error processing policy #{policy.id}: #{inspect(reason)}")
 
-              {:ok, %{
-                policy: policy,
-                cutoff_date: cutoff_date,
-                overdue_ids: [],
-                records_processed: 0,
-                errors: [reason]
-              }}
+              {:ok,
+               %{
+                 policy: policy,
+                 cutoff_date: cutoff_date,
+                 overdue_ids: [],
+                 records_processed: 0,
+                 errors: [reason]
+               }}
           end
         end)
 
@@ -89,20 +97,22 @@ defmodule Mcp.Gdpr.RetentionReactor do
           }
         end)
 
-      total_processed = Enum.reduce(processing_results, 0, fn %{result: result}, acc ->
-        case result do
-          {:ok, %{records_processed: count}} -> acc + count
-          {:error, _} -> acc
-        end
-      end)
+      total_processed =
+        Enum.reduce(processing_results, 0, fn %{result: result}, acc ->
+          case result do
+            {:ok, %{records_processed: count}} -> acc + count
+            {:error, _} -> acc
+          end
+        end)
 
       Logger.info("Retention processing complete: #{total_processed} records processed")
 
-      {:ok, %{
-        total_policies: length(processing_results),
-        total_processed: total_processed,
-        results: processing_results
-      }}
+      {:ok,
+       %{
+         total_policies: length(processing_results),
+         total_processed: total_processed,
+         results: processing_results
+       }}
     end
   end
 
@@ -117,7 +127,9 @@ defmodule Mcp.Gdpr.RetentionReactor do
         case result do
           {:ok, policy_result} ->
             if length(policy_result.errors) > 0 do
-              Logger.warning("Policy #{policy.id} completed with #{length(policy_result.errors)} errors")
+              Logger.warning(
+                "Policy #{policy.id} completed with #{length(policy_result.errors)} errors"
+              )
             end
 
           {:error, reason} ->
@@ -136,8 +148,10 @@ defmodule Mcp.Gdpr.RetentionReactor do
       overdue_query =
         from(u in Mcp.Gdpr.Resources.User,
           where: u.inserted_at <= ^cutoff_date,
-          where: is_nil(u.gdpr_anonymized_at),  # Not already anonymized
-          where: u.status in ["active", "deleted"],  # Only process active or soft-deleted users
+          # Not already anonymized
+          where: is_nil(u.gdpr_anonymized_at),
+          # Only process active or soft-deleted users
+          where: u.status in ["active", "deleted"],
           select: u.id
         )
 
@@ -183,7 +197,8 @@ defmodule Mcp.Gdpr.RetentionReactor do
       overdue_query =
         from(e in "gdpr_data_exports",
           where: e.inserted_at <= ^cutoff_date,
-          where: not is_nil(e.downloaded_at),  # Only remove exported files that have been downloaded
+          # Only remove exported files that have been downloaded
+          where: not is_nil(e.downloaded_at),
           select: e.id
         )
 
@@ -222,32 +237,36 @@ defmodule Mcp.Gdpr.RetentionReactor do
   defp process_anonymization(policy, user_ids) when policy.entity_type == "user" do
     Logger.info("Anonymizing #{length(user_ids)} users for policy #{policy.id}")
 
-    results = Enum.map(user_ids, fn user_id ->
-      case Anonymizer.anonymize_user(user_id, strategy: :hash) do
-        {:ok, result} ->
-          # Create audit trail
-          create_retention_audit(user_id, "anonymize_user", policy.id, result)
-          {:ok, user_id}
+    results =
+      Enum.map(user_ids, fn user_id ->
+        case Anonymizer.anonymize_user(user_id, strategy: :hash) do
+          {:ok, result} ->
+            # Create audit trail
+            create_retention_audit(user_id, "anonymize_user", policy.id, result)
+            {:ok, user_id}
 
-        {:error, reason} ->
-          Logger.error("Failed to anonymize user #{user_id}: #{inspect(reason)}")
-          {:error, user_id, reason}
-      end
-    end)
+          {:error, reason} ->
+            Logger.error("Failed to anonymize user #{user_id}: #{inspect(reason)}")
+            {:error, user_id, reason}
+        end
+      end)
 
     success_count = Enum.count(results, fn {status, _} -> status == :ok end)
     errors = Enum.filter(results, fn {status, _} -> status == :error end)
 
-    {:ok, %{
-      action: "anonymize",
-      records_processed: success_count,
-      errors: errors
-    }}
+    {:ok,
+     %{
+       action: "anonymize",
+       records_processed: success_count,
+       errors: errors
+     }}
   end
 
   # Process deletion for various entity types
   defp process_deletion(policy, record_ids) do
-    Logger.info("Deleting #{length(record_ids)} #{policy.entity_type} records for policy #{policy.id}")
+    Logger.info(
+      "Deleting #{length(record_ids)} #{policy.entity_type} records for policy #{policy.id}"
+    )
 
     try do
       case policy.entity_type do
@@ -276,11 +295,12 @@ defmodule Mcp.Gdpr.RetentionReactor do
         })
       end)
 
-      {:ok, %{
-        action: "delete",
-        records_processed: length(record_ids),
-        errors: []
-      }}
+      {:ok,
+       %{
+         action: "delete",
+         records_processed: length(record_ids),
+         errors: []
+       }}
     rescue
       error ->
         Logger.error("Error deleting records: #{inspect(error)}")
@@ -290,7 +310,9 @@ defmodule Mcp.Gdpr.RetentionReactor do
 
   # Process archiving (placeholder for future implementation)
   defp process_archiving(policy, record_ids) do
-    Logger.info("Archiving #{length(record_ids)} #{policy.entity_type} records for policy #{policy.id}")
+    Logger.info(
+      "Archiving #{length(record_ids)} #{policy.entity_type} records for policy #{policy.id}"
+    )
 
     # For now, just create audit entries
     Enum.each(record_ids, fn record_id ->
@@ -301,36 +323,76 @@ defmodule Mcp.Gdpr.RetentionReactor do
       })
     end)
 
-    {:ok, %{
-      action: "archive",
-      records_processed: length(record_ids),
-      errors: []
-    }}
+    {:ok,
+     %{
+       action: "archive",
+       records_processed: length(record_ids),
+       errors: []
+     }}
   end
 
-  
   # Create audit trail entry for retention actions
   defp create_retention_audit(record_id, action, policy_id, details) do
-    _audit_entry = %{
-      user_id: record_id,
-      action_type: action,
-      actor_type: "retention_policy",
-      actor_id: policy_id,
-      details: Map.merge(details, %{
-        policy_id: policy_id,
-        processed_at: DateTime.utc_now()
-      }),
-      data_categories: ["user_data"],
-      processed_at: DateTime.utc_now()
-    }
+    try do
+      Ash.create!(
+        AuditTrail,
+        %{
+          user_id: record_id,
+          action_type: action,
+          actor_type: "retention_policy",
+          actor_id: policy_id,
+          details:
+            Map.merge(details, %{
+              policy_id: policy_id,
+              processed_at: DateTime.utc_now()
+            }),
+          data_categories: determine_data_categories(action, details),
+          processed_at: DateTime.utc_now()
+        },
+        action: :create_entry
+      )
 
-    # For now, just log the audit entry since the audit trail needs proper Ash integration
-    Logger.info("GDPR Audit: #{action} for record #{record_id} - #{inspect(details)}")
+      Logger.info("GDPR Audit: #{action} for record #{record_id} - audit entry created")
+      :ok
+    rescue
+      error ->
+        Logger.error("Failed to create retention audit: #{inspect(error)}")
+        # Continue processing even if audit fails - don't break the reactor
+        :ok
+    end
+  end
 
-    # TODO: Integrate with Ash AuditTrail resource once domain actions are properly set up
-    :ok
-  rescue
-    error ->
-      Logger.error("Failed to create retention audit: #{inspect(error)}")
+  # Determine appropriate data categories based on action and details
+  defp determine_data_categories(action, details) do
+    base_categories = ["user_data"]
+    additional_categories = extract_entity_type(details)
+
+    categories_for_action(action, base_categories, additional_categories)
+  end
+
+  defp extract_entity_type(%{entity_type: entity_type}) when not is_nil(entity_type),
+    do: [entity_type]
+
+  defp extract_entity_type(%{"entity_type" => entity_type}) when not is_nil(entity_type),
+    do: [entity_type]
+
+  defp extract_entity_type(_), do: []
+
+  defp categories_for_action("anonymize_user", base_categories, additional_categories) do
+    ["core_identity", "personal_data"] ++ base_categories ++ additional_categories
+  end
+
+  defp categories_for_action(action, base_categories, additional_categories)
+       when action in ["delete_record", "archive_record"] do
+    base_categories ++ additional_categories
+  end
+
+  defp categories_for_action(action, base_categories, _additional_categories)
+       when action in ["place_legal_hold", "remove_legal_hold"] do
+    ["legal_hold"] ++ base_categories
+  end
+
+  defp categories_for_action(_action, base_categories, additional_categories) do
+    base_categories ++ additional_categories
   end
 end

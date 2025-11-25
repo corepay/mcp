@@ -13,7 +13,7 @@ defmodule Mcp.Jobs.Supervisor do
   @impl true
   def init(_init_arg) do
     children = [
-      {Oban, Application.get_env(:mcp, Oban)}
+      # Oban is started in Mcp.Application, not here
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

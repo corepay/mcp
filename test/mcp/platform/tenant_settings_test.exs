@@ -3,7 +3,7 @@ defmodule Mcp.Platform.TenantSettingsTest do
 
   alias Mcp.Platform.{TenantSettings, TenantSettingsManager, FeatureToggle, TenantBranding}
 
-  import Mcp.AccountsFixtures
+
 
   describe "TenantSettings resource" do
     test "creates a setting with valid attributes" do

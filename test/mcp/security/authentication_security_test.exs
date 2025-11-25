@@ -1,8 +1,8 @@
 defmodule Mcp.Security.AuthenticationSecurityTest do
   use ExUnit.Case, async: true
-  use Phoenix.ConnTest
 
-  import Mox
+  import Plug.Conn
+  import Phoenix.ConnTest
 
   alias Mcp.Accounts.{User, Auth, Token}
   alias Mcp.Cache.SessionStore
@@ -10,18 +10,17 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
 
   @endpoint McpWeb.Endpoint
 
-  # Setup Mox for test isolation
-  setup :verify_on_exit!
-
-  setup %{conn: conn} do
+  
+  setup do
     # Clean up any existing sessions
     SessionStore.flush_all()
 
-    {:ok,
-     conn:
-       conn
+    conn =
+       build_conn()
        |> Map.put(:remote_ip, {127, 0, 0, 1})
-       |> put_req_header("user-agent", "Security Test Browser")}
+       |> put_req_header("user-agent", "Security Test Browser")
+
+    {:ok, conn: conn}
   end
 
   describe "CSRF Protection" do
@@ -194,14 +193,14 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
         })
 
       # Check that encrypted tokens are set
-      assert get_resp_cookie(conn, "_mcp_access_token") != nil
-      assert get_resp_cookie(conn, "_mcp_refresh_token") != nil
-      assert get_resp_cookie(conn, "_mcp_session_id") != nil
+      assert conn.resp_cookies["_mcp_access_token"] != nil
+      assert conn.resp_cookies["_mcp_refresh_token"] != nil
+      assert conn.resp_cookies["_mcp_session_id"] != nil
 
       # Tokens should be encrypted (not raw JWT)
-      access_token = get_resp_cookie(conn, "_mcp_access_token")
+      access_token = conn.resp_cookies["_mcp_access_token"]
       # JWT header
-      refute String.starts_with?(access_token, "eyJ")
+      refute String.starts_with?(access_token.value, "eyJ")
     end
 
     test "implements secure cookie settings", %{conn: conn} do

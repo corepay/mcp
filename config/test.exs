@@ -1,4 +1,5 @@
 import Config
+config :mcp, Oban, testing: :manual
 
 # Configure your database
 #

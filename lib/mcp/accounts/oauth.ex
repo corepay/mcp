@@ -160,36 +160,43 @@ defmodule Mcp.Accounts.OAuth do
   # Private helpers
 
   defp create_user_from_oauth(provider, auth_info, user_info) do
-    email = get_email_from_auth(user_info)
-    
-    # Generate a random password for OAuth users
-    random_password = :crypto.strong_rand_bytes(32) |> Base.encode64()
-    
-    attrs = %{
-      email: email,
-      password: random_password,
-      password_confirmation: random_password,
-      oauth_tokens: %{
-        to_string(provider) => %{
-          "provider" => to_string(provider),
-          "uid" => user_info.uid,
-          "access_token" => auth_info.token,
-          "refresh_token" => auth_info.refresh_token,
-          "expires_at" => auth_info.expires_at,
-          "linked_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
-          "user_info" => %{
-            "name" => user_info.name,
-            "email" => user_info.email,
-            "image" => user_info.image
+    case get_email_from_auth(user_info) do
+      {:error, :email_missing} ->
+        {:error, :oauth_email_required}
+
+      {:ok, email} ->
+        # Generate a random password for OAuth users
+        random_password = :crypto.strong_rand_bytes(32) |> Base.encode64()
+
+        attrs = %{
+          email: email,
+          password: random_password,
+          password_confirmation: random_password,
+          oauth_tokens: %{
+            to_string(provider) => %{
+              "provider" => to_string(provider),
+              "uid" => user_info.uid,
+              "access_token" => auth_info.token,
+              "refresh_token" => auth_info.refresh_token,
+              "expires_at" => auth_info.expires_at,
+              "linked_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+              "user_info" => %{
+                "name" => user_info.name,
+                "email" => user_info.email,
+                "image" => user_info.image
+              }
+            }
           }
         }
-      }
-    }
-    
-    User.register(attrs.email, attrs.password, attrs.password_confirmation)
+
+        User.register(attrs.email, attrs.password, attrs.password_confirmation)
+    end
   end
 
   defp get_email_from_auth(user_info) do
-    user_info.email || raise "OAuth provider did not return email"
+    case user_info.email do
+      nil -> {:error, :email_missing}
+      email -> {:ok, email}
+    end
   end
 end

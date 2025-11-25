@@ -279,7 +279,7 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
 
         # Should either succeed with proper Unicode handling
         # or fail with appropriate validation
-        assert result == {:ok, _} or match?({:error, _}, result)
+        assert match?({:ok, _}, result) or match?({:error, _}, result)
       end)
     end
   end
@@ -478,8 +478,8 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
         :user_registration,
         :password_change,
         :login_attempt,
-        :2fa_enabled,
-        :2fa_disabled
+        :"2fa_enabled",
+        :"2fa_disabled"
       ]
 
       Enum.each(audit_actions, fn action ->

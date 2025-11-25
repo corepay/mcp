@@ -8,6 +8,8 @@ defmodule McpWeb.TenantRouting do
 
   import Plug.Conn
 
+  alias Mcp.Platform.Tenant
+
   @doc """
   Initialize the plug with configuration options.
   """
@@ -99,7 +101,7 @@ defmodule McpWeb.TenantRouting do
     cond do
       # Check for custom domain first
       tenant_by_custom_domain =
-          Mcp.Platform.Tenant.by_custom_domain!(host_without_port)
+          Tenant.by_custom_domain!(host_without_port)
           |> Enum.at(0) ->
         {:ok, tenant_by_custom_domain}
 
@@ -107,7 +109,7 @@ defmodule McpWeb.TenantRouting do
       matches_subdomain_pattern?(host_without_port) ->
         subdomain = extract_subdomain_from_host(host_without_port)
 
-        case Mcp.Platform.Tenant.by_subdomain!(subdomain) |> Enum.at(0) do
+        case Tenant.by_subdomain!(subdomain) |> Enum.at(0) do
           nil -> {:error, :tenant_not_found}
           tenant -> {:ok, tenant}
         end

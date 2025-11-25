@@ -74,10 +74,10 @@ defmodule McpWeb.AuthController do
         with :ok <- validate_user_status(user),
              :ok <- verify_user_password(user, password) do
           reset_failed_attempts_if_needed(user)
-          Mcp.Accounts.Auth.create_user_session(user, ip_address)
+          Auth.create_user_session(user, ip_address)
         else
           {:error, :invalid_password} ->
-            Mcp.Accounts.Auth.record_failed_attempt(user)
+            Auth.record_failed_attempt(user)
             {:error, :invalid_credentials}
 
           {:error, reason} ->

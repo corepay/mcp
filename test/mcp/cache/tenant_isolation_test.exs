@@ -243,7 +243,7 @@ defmodule Mcp.Cache.TenantIsolationTest do
   describe "warm_tenant_cache/2" do
     test "warms cache with default and custom items" do
       default_items = %{
-        "tenant:config" => %{tenant_id: "test-tenant", cache_warmed_at: _, version: "1.0.0"},
+        "tenant:config" => %{tenant_id: "test-tenant", cache_warmed_at: "timestamp", version: "1.0.0"},
         "tenant:features" => %{
           multi_tenant: true,
           cache_isolation: true,

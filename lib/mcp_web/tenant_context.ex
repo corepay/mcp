@@ -8,6 +8,7 @@ defmodule McpWeb.TenantContext do
 
   import Plug.Conn
   require Logger
+  alias Mcp.Platform.Tenant
   alias Mcp.Repo
   alias McpWeb.TenantRouting
 
@@ -313,17 +314,15 @@ defmodule McpWeb.TenantContext do
   end
 
   defp resolve_tenant(tenant_id) when is_binary(tenant_id) do
-    cond do
-      String.starts_with?(tenant_id, "acq_") ->
-        # It's a schema name, remove prefix and look up by company_schema
-        _schema_name = String.replace_prefix(tenant_id, "acq_", "")
-        # Simplified approach - use existing action if available, otherwise nil
-        nil
-
-      true ->
-        # Try as subdomain first (most common use case)
-        tenant = Mcp.Platform.Tenant.by_subdomain!(tenant_id)
-        tenant
+    if String.starts_with?(tenant_id, "acq_") do
+      # It's a schema name, remove prefix and look up by company_schema
+      _schema_name = String.replace_prefix(tenant_id, "acq_", "")
+      # Simplified approach - use existing action if available, otherwise nil
+      nil
+    else
+      # Try as subdomain first (most common use case)
+      tenant = Tenant.by_subdomain!(tenant_id)
+      tenant
     end
   end
 

@@ -17,6 +17,7 @@ defmodule McpWeb.RegistrationLive.VendorRegistration do
   use McpWeb, :live_view
   import Phoenix.Component
 
+  alias Mcp.Accounts.RegistrationSettings
   alias Mcp.Registration.RegistrationService
 
   # Extended form structure for vendor registration
@@ -356,7 +357,7 @@ defmodule McpWeb.RegistrationLive.VendorRegistration do
         check_registration_enabled(socket, settings)
 
       id ->
-        case Mcp.Accounts.RegistrationSettings.get_current_settings(id) do
+        case RegistrationSettings.get_current_settings(id) do
           {:ok, settings} ->
             socket
             |> assign(:tenant_settings, settings)

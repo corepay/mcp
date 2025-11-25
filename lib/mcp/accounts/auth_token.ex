@@ -69,49 +69,14 @@ defmodule Mcp.Accounts.AuthToken do
   actions do
     defaults [:read, :destroy]
 
-    create :generate_access_token do
-      accept [:user_id, :context, :device_info]
-      
-      change fn changeset, _ ->
-        # Generate JWT token
-        user_id = Ash.Changeset.get_attribute(changeset, :user_id)
-        
-        claims = %{
-          "sub" => user_id,
-          "type" => "access",
-          "iat" => DateTime.utc_now() |> DateTime.to_unix(),
-          "exp" => DateTime.utc_now() |> DateTime.add(24, :hour) |> DateTime.to_unix()
-        }
-        
-        {:ok, token} = Mcp.Accounts.JWT.generate_token(claims)
-        
-        changeset
-        |> Ash.Changeset.change_attribute(:token, token)
-        |> Ash.Changeset.change_attribute(:type, :access)
-        |> Ash.Changeset.change_attribute(:expires_at, DateTime.add(DateTime.utc_now(), 24, :hour))
-      end
+    create :create_access_token do
+      accept [:user_id, :token, :expires_at, :context, :device_info]
+      change set_attribute(:type, :access)
     end
 
-    create :generate_refresh_token do
-      accept [:user_id, :context, :device_info]
-      
-      change fn changeset, _ ->
-        user_id = Ash.Changeset.get_attribute(changeset, :user_id)
-        
-        claims = %{
-          "sub" => user_id,
-          "type" => "refresh",
-          "iat" => DateTime.utc_now() |> DateTime.to_unix(),
-          "exp" => DateTime.utc_now() |> DateTime.add(30, :day) |> DateTime.to_unix()
-        }
-        
-        {:ok, token} = Mcp.Accounts.JWT.generate_token(claims)
-        
-        changeset
-        |> Ash.Changeset.change_attribute(:token, token)
-        |> Ash.Changeset.change_attribute(:type, :refresh)
-        |> Ash.Changeset.change_attribute(:expires_at, DateTime.add(DateTime.utc_now(), 30, :day))
-      end
+    create :create_refresh_token do
+      accept [:user_id, :token, :expires_at, :context, :device_info]
+      change set_attribute(:type, :refresh)
     end
 
     read :by_token do
@@ -148,8 +113,8 @@ defmodule Mcp.Accounts.AuthToken do
 
   code_interface do
     define :read
-    define :generate_access_token, args: [:user_id, :context, :device_info]
-    define :generate_refresh_token, args: [:user_id, :context, :device_info]
+    define :create_access_token
+    define :create_refresh_token
     define :by_token, args: [:token], get?: true
     define :by_user, args: [:user_id]
     define :active_tokens
@@ -158,11 +123,11 @@ defmodule Mcp.Accounts.AuthToken do
     define :destroy
   end
 
-  # Helper functions for token pair generation
-  def generate_token_pair(user_id, context \\ %{}, device_info \\ %{}) do
-    with {:ok, access_token} <- generate_access_token(user_id, context, device_info),
-         {:ok, refresh_token} <- generate_refresh_token(user_id, context, device_info) do
-      {:ok, %{access_token: access_token, refresh_token: refresh_token}}
+  # Helper function to find tokens by user
+  def find_tokens_by_user(user_id) do
+    case by_user(user_id) do
+      {:ok, tokens} -> tokens
+      _ -> []
     end
   end
 

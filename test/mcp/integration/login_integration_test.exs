@@ -55,7 +55,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       # Step 6: Verify session is properly set
       assert get_session(conn, :user_token) != nil
       assert get_session(conn, :current_user) != nil
-      assert get_session(conn, :current_user").email == user.email
+      assert get_session(conn, :current_user).email == user.email
     end
 
     test "login flow with remember me functionality", %{conn: conn} do

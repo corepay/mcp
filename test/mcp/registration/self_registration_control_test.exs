@@ -34,12 +34,12 @@ defmodule Mcp.Registration.SelfRegistrationControlTest do
 
     test "LiveView components use secure defaults" do
       # Test CustomerRegistration LiveView
-      customer_defaults = apply(CustomerRegistration, :get_default_tenant_settings, [])
+      customer_defaults = CustomerRegistration.get_default_tenant_settings()
       assert customer_defaults.customer_registration_enabled == false
       assert customer_defaults.vendor_registration_enabled == false
 
       # Test VendorRegistration LiveView
-      vendor_defaults = apply(VendorRegistration, :get_default_tenant_settings, [])
+      vendor_defaults = VendorRegistration.get_default_tenant_settings()
       assert vendor_defaults.customer_registration_enabled == false
       assert vendor_defaults.vendor_registration_enabled == false
     end
@@ -300,16 +300,16 @@ defmodule Mcp.Registration.SelfRegistrationControlTest do
       }
 
       # Customer registration should fail
-      assert PolicyValidator.validate_registration_enabled(settings, :customer) ==
-               {:error, {:validation_failed, :customer_registration_disabled, _}}
+      assert {:error, {:validation_failed, :customer_registration_disabled, _}} =
+               PolicyValidator.validate_registration_enabled(settings, :customer)
 
       # Vendor registration should fail
-      assert PolicyValidator.validate_registration_enabled(settings, :vendor) ==
-               {:error, {:validation_failed, :vendor_registration_disabled, _}}
+      assert {:error, {:validation_failed, :vendor_registration_disabled, _}} =
+               PolicyValidator.validate_registration_enabled(settings, :vendor)
 
       # Other entity types should fail with invitation-only message
-      assert PolicyValidator.validate_registration_enabled(settings, :partner) ==
-               {:error, {:validation_failed, :invitation_only_registration, _}}
+      assert {:error, {:validation_failed, :invitation_only_registration, _}} =
+               PolicyValidator.validate_registration_enabled(settings, :partner)
     end
   end
 

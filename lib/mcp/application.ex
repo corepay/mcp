@@ -11,6 +11,7 @@ defmodule Mcp.Application do
     ensure_os_mon_apps()
 
     children = [
+      {Oban, Application.fetch_env!(:mcp, Oban)},
       # Platform-level services (shared resources)
       Mcp.Platform.Supervisor,
 
@@ -52,7 +53,8 @@ defmodule Mcp.Application do
       :memsup.start_link()
       :disksup.start_link()
     rescue
-      _ -> :ok  # OS monitoring not available, continue without it
+      # OS monitoring not available, continue without it
+      _ -> :ok
     end
   end
 end

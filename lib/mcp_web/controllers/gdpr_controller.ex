@@ -799,33 +799,31 @@ defmodule McpWeb.GdprController do
         # For test simulation, we check if this is a cross-tenant scenario by looking at test context
         target_user_tenant = get_target_user_tenant_for_testing(user_id, conn)
 
-        cond do
+        if target_user_tenant != nil and target_user_tenant != current_tenant do
           # Cross-tenant access - block it
-          target_user_tenant != nil and target_user_tenant != current_tenant ->
-            GdprAuthPlug.log_audit_event(conn, "CROSS_TENANT_ACCESS_BLOCKED", %{
-              current_user_id: current_user.id,
-              target_user_id: user_id,
-              current_tenant: current_tenant,
-              target_tenant: target_user_tenant,
-              request_id: request_id
-            })
+          GdprAuthPlug.log_audit_event(conn, "CROSS_TENANT_ACCESS_BLOCKED", %{
+            current_user_id: current_user.id,
+            target_user_id: user_id,
+            current_tenant: current_tenant,
+            target_tenant: target_user_tenant,
+            request_id: request_id
+          })
 
-            conn
-            |> put_status(:forbidden)
-            |> json(%{error: "Access to user data from another tenant is forbidden"})
-
+          conn
+          |> put_status(:forbidden)
+          |> json(%{error: "Access to user data from another tenant is forbidden"})
+        else
           # Same tenant access - allow it
-          true ->
-            GdprAuthPlug.log_audit_event(conn, "USER_DATA_DELETION_INITIATED", %{
-              current_user_id: current_user.id,
-              target_user_id: user_id,
-              tenant: current_tenant,
-              request_id: request_id
-            })
+          GdprAuthPlug.log_audit_event(conn, "USER_DATA_DELETION_INITIATED", %{
+            current_user_id: current_user.id,
+            target_user_id: user_id,
+            tenant: current_tenant,
+            request_id: request_id
+          })
 
-            conn
-            |> put_status(:ok)
-            |> json(%{message: "User data deletion initiated", user_id: user_id})
+          conn
+          |> put_status(:ok)
+          |> json(%{message: "User data deletion initiated", user_id: user_id})
         end
 
       {:error, :invalid_uuid} ->

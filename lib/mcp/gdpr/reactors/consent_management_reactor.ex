@@ -8,6 +8,8 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
 
   use Ash.Reactor
 
+  alias Mcp.Jobs.Gdpr.RetentionCleanupWorker
+
   # Input arguments for consent management
   input :user_id
   input :purpose
@@ -21,14 +23,14 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
   step :validate_user do
     argument :user_id, input(:user_id)
 
-    run &Mcp.Gdpr.ConsentManagementReactor.validate_user/1
+    run &__MODULE__.validate_user/1
     async? false
   end
 
   step :validate_purpose do
     argument :purpose, input(:purpose)
 
-    run &Mcp.Gdpr.ConsentManagementReactor.validate_purpose/1
+    run &__MODULE__.validate_purpose/1
     async? false
   end
 
@@ -36,7 +38,7 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
     argument :user_id, input(:user_id)
     argument :purpose, input(:purpose)
 
-    run &Mcp.Gdpr.ConsentManagementReactor.check_existing_consent/1
+    run &__MODULE__.check_existing_consent/1
     async? false
   end
 
@@ -44,7 +46,7 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
     argument :legal_basis, input(:legal_basis)
     argument :purpose, input(:purpose)
 
-    run &Mcp.Gdpr.ConsentManagementReactor.validate_legal_basis/1
+    run &__MODULE__.validate_legal_basis/1
     async? false
   end
 
@@ -55,9 +57,9 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
     argument :consent_value, input(:consent_value)
     argument :metadata, input(:metadata)
 
-    run &Mcp.Gdpr.ConsentManagementReactor.create_consent_record/1
+    run &__MODULE__.create_consent_record/1
     async? false
-    compensate &Mcp.Gdpr.ConsentManagementReactor.compensate_consent_creation/1
+    compensate &__MODULE__.compensate_consent_creation/1
   end
 
   step :update_user_consent_status do
@@ -65,9 +67,9 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
     argument :purpose, input(:purpose)
     argument :consent_value, input(:consent_value)
 
-    run &Mcp.Gdpr.ConsentManagementReactor.update_user_consent_status/1
+    run &__MODULE__.update_user_consent_status/1
     async? false
-    compensate &Mcp.Gdpr.ConsentManagementReactor.compensate_user_consent_update/1
+    compensate &__MODULE__.compensate_user_consent_update/1
   end
 
   step :create_audit_entry do
@@ -78,7 +80,7 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
     argument :ip_address, input(:ip_address)
     argument :user_agent, input(:user_agent)
 
-    run &Mcp.Gdpr.ConsentManagementReactor.create_consent_audit_entry/1
+    run &__MODULE__.create_consent_audit_entry/1
     async? false
   end
 
@@ -88,7 +90,7 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
     argument :consent_value, input(:consent_value)
     argument :previous_consent, result(:check_existing_consent)
 
-    run &Mcp.Gdpr.ConsentManagementReactor.handle_consent_implications/1
+    run &__MODULE__.handle_consent_implications/1
     async? true
   end
 
@@ -97,7 +99,7 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
     argument :purpose, input(:purpose)
     argument :consent_value, input(:consent_value)
 
-    run &Mcp.Gdpr.ConsentManagementReactor.notify_consent_change/1
+    run &__MODULE__.notify_consent_change/1
     async? true
   end
 
@@ -300,7 +302,7 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
   defp schedule_marketing_data_cleanup(user_id) do
     # Schedule background job to clean up marketing data
     %{user_id: user_id, type: "marketing_cleanup"}
-    |> Mcp.Jobs.Gdpr.RetentionCleanupWorker.new()
+    |> RetentionCleanupWorker.new()
     |> Oban.insert()
   end
 

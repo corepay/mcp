@@ -17,18 +17,32 @@ config :mcp,
 config :mcp, Oban,
   repo: Mcp.Repo,
   queues: [
-    gdpr_exports: 10,     # Data export processing
-    gdpr_anonymize: 3,    # Data anonymization
-    gdpr_compliance: 2    # Compliance monitoring
+    # Data export processing
+    gdpr_exports: 10,
+    # Data anonymization
+    gdpr_anonymize: 3,
+    # Compliance monitoring
+    gdpr_compliance: 2,
+    # Data retention processing
+    gdpr_retention: 5
   ],
   plugins: [
     # Prune completed jobs after 24 hours
     {Oban.Plugins.Pruner, max_age: 60 * 60 * 24},
-    # Cron job for daily retention cleanup
+    # Cron job for GDPR data processing
     {Oban.Plugins.Cron,
      crontab: [
-       {"0 2 * * *", Mcp.Jobs.Gdpr.ComplianceWorker},  # Daily at 2 AM
-       {"0 3 * * 0", Mcp.Jobs.Gdpr.ComplianceWorker} # Weekly on Sunday at 3 AM
+       # Daily at 1 AM
+       {"0 1 * * *", Mcp.Jobs.Gdpr.RetentionCleanupWorker,
+        args: %{"action" => "process_retention_policies"}},
+       # Daily at 2 AM
+       {"0 2 * * *", Mcp.Jobs.Gdpr.ComplianceWorker, args: %{"action" => "verify_compliance"}},
+       # Weekly on Sunday at 3 AM
+       {"0 3 * * 0", Mcp.Jobs.Gdpr.ComplianceWorker,
+        args: %{"action" => "weekly_compliance_report"}},
+       # Daily at 4 AM
+       {"0 4 * * *", Mcp.Jobs.Gdpr.RetentionCleanupWorker,
+        args: %{"action" => "cleanup_expired_exports"}}
      ]},
     # Lifeline for stuck jobs
     {Oban.Plugins.Lifeline, rescue_after: 30 * 60}
@@ -80,7 +94,22 @@ config :tailwind,
 # Configures Elixir's Logger
 config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id, :tenant_id, :backup_id, :error, :config, :deleted, :retention_days, :exit_code, :output, :path, :size, :type, :since, :reason]
+  metadata: [
+    :request_id,
+    :tenant_id,
+    :backup_id,
+    :error,
+    :config,
+    :deleted,
+    :retention_days,
+    :exit_code,
+    :output,
+    :path,
+    :size,
+    :type,
+    :since,
+    :reason
+  ]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason

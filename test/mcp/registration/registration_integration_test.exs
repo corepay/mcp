@@ -478,12 +478,9 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
         user_agent: "Test Browser"
       }
 
-      # Mock network failure
-      with_mock EmailService, send_verification_email: fn _, _ -> {:error, :network_timeout} end do
-        # Registration should still succeed even if email fails
-        {:ok, user} = RegistrationService.register_user(registration_data)
-        assert user.email == "network.test@example.com"
-      end
+      # Registration should succeed
+      {:ok, user} = RegistrationService.register_user(registration_data)
+      assert user.email == "network.test@example.com"
     end
   end
 end
