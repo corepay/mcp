@@ -26,10 +26,13 @@ defmodule Mcp.Registration.RegistrationService do
       tenant_id: tenant_id,
       type: type,
       email: Map.get(registration_data, "email") || Map.get(registration_data, :email),
-      first_name: Map.get(registration_data, "first_name") || Map.get(registration_data, :first_name),
-      last_name: Map.get(registration_data, "last_name") || Map.get(registration_data, :last_name),
+      first_name:
+        Map.get(registration_data, "first_name") || Map.get(registration_data, :first_name),
+      last_name:
+        Map.get(registration_data, "last_name") || Map.get(registration_data, :last_name),
       phone: Map.get(registration_data, "phone") || Map.get(registration_data, :phone),
-      company_name: Map.get(registration_data, "company_name") || Map.get(registration_data, :company_name),
+      company_name:
+        Map.get(registration_data, "company_name") || Map.get(registration_data, :company_name),
       registration_data: registration_data,
       context: context
     }
@@ -106,7 +109,11 @@ defmodule Mcp.Registration.RegistrationService do
         }
 
         # Create the user account
-        case User.register(user_attrs["email"], user_attrs["password"], user_attrs["password_confirmation"]) do
+        case User.register(
+               user_attrs["email"],
+               user_attrs["password"],
+               user_attrs["password_confirmation"]
+             ) do
           {:ok, user} ->
             # Link user to tenant if needed
             {:ok, user}
@@ -205,21 +212,26 @@ defmodule Mcp.Registration.RegistrationService do
   - `{:error, reason}` on failure
   """
   def list_pending_registrations(tenant_id \\ nil) do
-    case tenant_id do
-      nil ->
-        RegistrationRequest.pending()
-        |> Ash.read()
+    if is_nil(tenant_id) do
+      list_all_pending_registrations()
+    else
+      list_tenant_pending_registrations(tenant_id)
+    end
+  end
 
-      tenant_id ->
-        # Get all for tenant and filter manually
-        case RegistrationRequest.by_tenant(tenant_id) do
-          {:ok, requests} ->
-            pending = Enum.filter(requests, fn r -> r.status == :pending end)
-            {:ok, pending}
+  defp list_all_pending_registrations do
+    RegistrationRequest.pending()
+    |> Ash.read()
+  end
 
-          {:error, reason} ->
-            {:error, reason}
-        end
+  defp list_tenant_pending_registrations(tenant_id) do
+    case RegistrationRequest.by_tenant(tenant_id) do
+      {:ok, requests} ->
+        pending = Enum.filter(requests, fn r -> r.status == :pending end)
+        {:ok, pending}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -236,16 +248,17 @@ defmodule Mcp.Registration.RegistrationService do
   def get_registration_status(request_id) do
     case get_registration(request_id) do
       {:ok, request} ->
-        {:ok, %{
-          id: request.id,
-          status: request.status,
-          email: request.email,
-          type: request.type,
-          submitted_at: request.submitted_at,
-          approved_at: request.approved_at,
-          rejected_at: request.rejected_at,
-          rejection_reason: request.rejection_reason
-        }}
+        {:ok,
+         %{
+           id: request.id,
+           status: request.status,
+           email: request.email,
+           type: request.type,
+           submitted_at: request.submitted_at,
+           approved_at: request.approved_at,
+           rejected_at: request.rejected_at,
+           rejection_reason: request.rejection_reason
+         }}
 
       {:error, reason} ->
         {:error, reason}

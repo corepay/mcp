@@ -28,7 +28,9 @@ defmodule McpWeb.GdprComponents do
         <.icon name="hero-information-circle" class="w-6 h-6" />
         <div>
           <h3 class="font-bold">Your Right to Data Portability</h3>
-          <div class="text-sm">You can request a copy of all your personal data in a machine-readable format.</div>
+          <div class="text-sm">
+            You can request a copy of all your personal data in a machine-readable format.
+          </div>
         </div>
       </div>
 
@@ -55,7 +57,7 @@ defmodule McpWeb.GdprComponents do
 
         <button type="submit" class="btn btn-primary" disabled={@loading}>
           <.icon name="hero-arrow-down-tray" class="w-4 h-4" />
-          <%= if @loading, do: "Processing...", else: "Request Data Export" %>
+          {if @loading, do: "Processing...", else: "Request Data Export"}
         </button>
       </.form>
     </div>
@@ -102,7 +104,7 @@ defmodule McpWeb.GdprComponents do
           disabled={@loading}
         >
           <.icon name="hero-arrow-uturn-left" class="w-4 h-4" />
-          <%= if @loading, do: "Cancelling...", else: "Cancel Deletion Request" %>
+          {if @loading, do: "Cancelling...", else: "Cancel Deletion Request"}
         </button>
       </div>
     </div>
@@ -144,7 +146,7 @@ defmodule McpWeb.GdprComponents do
             onclick="return confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.')"
           >
             <.icon name="hero-trash" class="w-5 h-5" />
-            <%= if @loading, do: "Processing...", else: "Delete My Account" %>
+            {if @loading, do: "Processing...", else: "Delete My Account"}
           </button>
         </.form>
       </div>
@@ -157,12 +159,36 @@ defmodule McpWeb.GdprComponents do
     <div class="bg-base-200 p-6 rounded-lg">
       <h3 class="font-semibold mb-4">What happens when you delete your account:</h3>
       <ul class="space-y-2 text-base-content/80">
-        <.impact_item icon="hero-check-circle" color="success" text="Your account will be immediately deactivated" />
-        <.impact_item icon="hero-check-circle" color="success" text="Your personal data will be retained for 90 days (legal requirement)" />
-        <.impact_item icon="hero-check-circle" color="success" text="After 90 days, your data will be permanently deleted" />
-        <.impact_item icon="hero-check-circle" color="success" text="You can cancel the deletion request within the 90-day period" />
-        <.impact_item icon="hero-x-circle" color="error" text="You will lose access to all services and data" />
-        <.impact_item icon="hero-x-circle" color="error" text="This action cannot be undone after the retention period" />
+        <.impact_item
+          icon="hero-check-circle"
+          color="success"
+          text="Your account will be immediately deactivated"
+        />
+        <.impact_item
+          icon="hero-check-circle"
+          color="success"
+          text="Your personal data will be retained for 90 days (legal requirement)"
+        />
+        <.impact_item
+          icon="hero-check-circle"
+          color="success"
+          text="After 90 days, your data will be permanently deleted"
+        />
+        <.impact_item
+          icon="hero-check-circle"
+          color="success"
+          text="You can cancel the deletion request within the 90-day period"
+        />
+        <.impact_item
+          icon="hero-x-circle"
+          color="error"
+          text="You will lose access to all services and data"
+        />
+        <.impact_item
+          icon="hero-x-circle"
+          color="error"
+          text="This action cannot be undone after the retention period"
+        />
       </ul>
     </div>
     """
@@ -184,7 +210,8 @@ defmodule McpWeb.GdprComponents do
       <p class="text-lg font-semibold mb-2">Deletion in Progress</p>
       <p class="text-base-content/70">
         Your account will be permanently deleted in
-        <span class="font-bold text-warning">{calculate_days_until(@expires_at)}</span> days
+        <span class="font-bold text-warning">{calculate_days_until(@expires_at)}</span>
+        days
       </p>
     </div>
     """
@@ -214,7 +241,7 @@ defmodule McpWeb.GdprComponents do
         <div class="text-center">
           <button type="submit" class="btn btn-primary btn-lg" disabled={@loading}>
             <.icon name="hero-check" class="w-5 h-5" />
-            <%= if @loading, do: "Updating...", else: "Update Consent Preferences" %>
+            {if @loading, do: "Updating...", else: "Update Consent Preferences"}
           </button>
         </div>
       </.form>
@@ -369,15 +396,15 @@ defmodule McpWeb.GdprComponents do
           <% end %>
         </div>
       </div>
-
-      <!-- Consents Count -->
+      
+    <!-- Consents Count -->
       <div class="stat bg-base-200 rounded-lg p-6">
         <div class="stat-figure text-secondary">
           <.icon name="hero-shield-check" class="w-8 h-8" />
         </div>
         <div class="stat-title">Active Consents</div>
         <div class="stat-value text-secondary">
-          <%= length(@consents) %>
+          {length(@consents)}
         </div>
         <div class="stat-desc">
           Privacy consents managed
@@ -402,8 +429,7 @@ defmodule McpWeb.GdprComponents do
         phx-value-tab="data_export"
         disabled={@loading}
       >
-        <.icon name="hero-arrow-down-tray" class="w-4 h-4" />
-        Export My Data
+        <.icon name="hero-arrow-down-tray" class="w-4 h-4" /> Export My Data
       </button>
 
       <button
@@ -412,8 +438,7 @@ defmodule McpWeb.GdprComponents do
         phx-value-tab="account_deletion"
         disabled={@loading}
       >
-        <.icon name="hero-trash" class="w-4 h-4" />
-        Manage Deletion
+        <.icon name="hero-trash" class="w-4 h-4" /> Manage Deletion
       </button>
 
       <button
@@ -422,8 +447,7 @@ defmodule McpWeb.GdprComponents do
         phx-value-tab="consents"
         disabled={@loading}
       >
-        <.icon name="hero-adjustments-horizontal" class="w-4 h-4" />
-        Update Consents
+        <.icon name="hero-adjustments-horizontal" class="w-4 h-4" /> Update Consents
       </button>
     </div>
     """
@@ -487,6 +511,7 @@ defmodule McpWeb.GdprComponents do
 
   defp calculate_days_until(future_date) do
     now = DateTime.utc_now()
+
     DateTime.diff(future_date, now, :day)
     |> max(0)
   end

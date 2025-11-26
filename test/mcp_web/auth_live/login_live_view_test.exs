@@ -42,13 +42,14 @@ defmodule McpWeb.AuthLive.LoginLiveViewTest do
 
     test "redirects on successful login", %{conn: conn} do
       # Create a test user
-      {:ok, user} = User.register(%{
-        first_name: "Test",
-        last_name: "User",
-        email: "test@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user} =
+        User.register(%{
+          first_name: "Test",
+          last_name: "User",
+          email: "test@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       {:ok, view, _html} = live(conn, ~p"/login")
 
@@ -62,13 +63,14 @@ defmodule McpWeb.AuthLive.LoginLiveViewTest do
     end
 
     test "handles case-insensitive email login", %{conn: conn} do
-      {:ok, _user} = User.register(%{
-        first_name: "Case",
-        last_name: "Test",
-        email: "case.test@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, _user} =
+        User.register(%{
+          first_name: "Case",
+          last_name: "Test",
+          email: "case.test@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       {:ok, view, _html} = live(conn, ~p"/login")
 
@@ -82,19 +84,21 @@ defmodule McpWeb.AuthLive.LoginLiveViewTest do
 
     test "shows 2FA form when user has TOTP enabled", %{conn: conn} do
       # Create user with TOTP enabled
-      {:ok, user} = User.register(%{
-        first_name: "2FA",
-        last_name: "User",
-        email: "2fa.user@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user} =
+        User.register(%{
+          first_name: "2FA",
+          last_name: "User",
+          email: "2fa.user@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       # Simulate TOTP being enabled
-      {:ok, user_with_totp} = Ash.update(user, %{
-        otp_verified_at: DateTime.utc_now(),
-        otp_last_used_at: DateTime.utc_now()
-      })
+      {:ok, user_with_totp} =
+        Ash.update(user, %{
+          otp_verified_at: DateTime.utc_now(),
+          otp_last_used_at: DateTime.utc_now()
+        })
 
       {:ok, view, _html} = live(conn, ~p"/login")
 
@@ -113,20 +117,22 @@ defmodule McpWeb.AuthLive.LoginLiveViewTest do
 
   describe "2FA verification" do
     test "shows backup code option", %{conn: conn} do
-      {:ok, user} = User.register(%{
-        first_name: "Backup",
-        last_name: "User",
-        email: "backup.user@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user} =
+        User.register(%{
+          first_name: "Backup",
+          last_name: "User",
+          email: "backup.user@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       # Simulate TOTP with backup codes
-      {:ok, user_with_totp} = Ash.update(user, %{
-        otp_verified_at: DateTime.utc_now(),
-        otp_last_used_at: DateTime.utc_now(),
-        backup_codes: ["hashed_code_1", "hashed_code_2"]
-      })
+      {:ok, user_with_totp} =
+        Ash.update(user, %{
+          otp_verified_at: DateTime.utc_now(),
+          otp_last_used_at: DateTime.utc_now(),
+          backup_codes: ["hashed_code_1", "hashed_code_2"]
+        })
 
       {:ok, view, _html} = live(conn, ~p"/login")
 
@@ -140,19 +146,21 @@ defmodule McpWeb.AuthLive.LoginLiveViewTest do
     end
 
     test "handles 2FA code verification", %{conn: conn} do
-      {:ok, user} = User.register(%{
-        first_name: "2FA",
-        last_name: "Verify",
-        email: "2fa.verify@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user} =
+        User.register(%{
+          first_name: "2FA",
+          last_name: "Verify",
+          email: "2fa.verify@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       # Simulate TOTP being enabled
-      {:ok, user_with_totp} = Ash.update(user, %{
-        otp_verified_at: DateTime.utc_now(),
-        otp_last_used_at: DateTime.utc_now()
-      })
+      {:ok, user_with_totp} =
+        Ash.update(user, %{
+          otp_verified_at: DateTime.utc_now(),
+          otp_last_used_at: DateTime.utc_now()
+        })
 
       {:ok, view, _html} = live(conn, ~p"/login")
 
@@ -289,7 +297,12 @@ defmodule McpWeb.AuthLive.LoginLiveViewTest do
   describe "mobile and responsive design" do
     test "is responsive on mobile devices", %{conn: conn} do
       # Simulate mobile device
-      conn = put_req_header(conn, "user-agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)")
+      conn =
+        put_req_header(
+          conn,
+          "user-agent",
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)"
+        )
 
       {:ok, view, html} = live(conn, ~p"/login")
 
@@ -298,7 +311,12 @@ defmodule McpWeb.AuthLive.LoginLiveViewTest do
     end
 
     test "handles touch events", %{conn: conn} do
-      conn = put_req_header(conn, "user-agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)")
+      conn =
+        put_req_header(
+          conn,
+          "user-agent",
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)"
+        )
 
       {:ok, view, _html} = live(conn, ~p"/login")
 
@@ -310,19 +328,21 @@ defmodule McpWeb.AuthLive.LoginLiveViewTest do
   describe "redirects and navigation" do
     test "redirects authenticated users away from login", %{conn: conn} do
       # Create and authenticate user
-      {:ok, user} = User.register(%{
-        first_name: "Auth",
-        last_name: "User",
-        email: "auth.user@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user} =
+        User.register(%{
+          first_name: "Auth",
+          last_name: "User",
+          email: "auth.user@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       # Simulate authenticated session
-      conn = Plug.Test.init_test_session(conn, %{
-        user_id: user.id,
-        current_user: user
-      })
+      conn =
+        Plug.Test.init_test_session(conn, %{
+          user_id: user.id,
+          current_user: user
+        })
 
       conn = get(conn, ~p"/login")
 
@@ -386,12 +406,14 @@ defmodule McpWeb.AuthLive.LoginLiveViewTest do
 
     test "loads quickly", %{conn: conn} do
       # Test page load performance
-      {time, {:ok, _view, _html}} = :timer.tc(fn ->
-        live(conn, ~p"/login")
-      end)
+      {time, {:ok, _view, _html}} =
+        :timer.tc(fn ->
+          live(conn, ~p"/login")
+        end)
 
       # Should load within reasonable time (less than 1 second)
-      assert time < 1_000_000  # 1 second in microseconds
+      # 1 second in microseconds
+      assert time < 1_000_000
     end
   end
 

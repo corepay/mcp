@@ -15,23 +15,27 @@ defmodule Mcp.Platform.Tenant.Changes.ProvisionSchema do
   Provision tenant schema after tenant creation.
   """
   def change(changeset, opts, _context) do
-    # Only provision schema if tenant is being created and has a valid slug
-    if changeset.action_type == :create do
-      slug = Ash.Changeset.get_attribute(changeset, :slug)
-
-      if slug do
-        # Queue schema provisioning to run after the tenant is successfully created
-        Ash.Changeset.after_action(changeset, fn _changeset, tenant ->
-          provision_schema_async(tenant.slug, opts)
-          # Schema provisioning is async, don't fail tenant creation if it has issues
-          {:ok, tenant}
-        end)
-      else
-        changeset
-      end
+    if create_action?(changeset) && has_slug?(changeset) do
+      setup_schema_provisioning(changeset, opts)
     else
       changeset
     end
+  end
+
+  defp create_action?(changeset), do: changeset.action_type == :create
+
+  defp has_slug?(changeset) do
+    Ash.Changeset.get_attribute(changeset, :slug) != nil
+  end
+
+  defp setup_schema_provisioning(changeset, opts) do
+    slug = Ash.Changeset.get_attribute(changeset, :slug)
+
+    Ash.Changeset.after_action(changeset, fn _changeset, tenant ->
+      provision_schema_async(slug, opts)
+      # Schema provisioning is async, don't fail tenant creation if it has issues
+      {:ok, tenant}
+    end)
   end
 
   defp provision_schema_async(tenant_slug, opts) do

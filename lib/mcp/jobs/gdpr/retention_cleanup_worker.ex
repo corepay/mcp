@@ -70,7 +70,10 @@ defmodule Mcp.Jobs.Gdpr.RetentionCleanupWorker do
         {:ok, result}
 
       {:error, reason} ->
-        Logger.error("Failed GDPR compliance verification for tenant #{tenant_id}: #{inspect(reason)}")
+        Logger.error(
+          "Failed GDPR compliance verification for tenant #{tenant_id}: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -97,70 +100,69 @@ defmodule Mcp.Jobs.Gdpr.RetentionCleanupWorker do
   # Private functions
 
   defp process_all_retention_policies do
-    try do
-      Logger.info("Processing all retention policies with RetentionReactor")
+    Logger.info("Processing all retention policies with RetentionReactor")
 
-      # Trigger the RetentionReactor to process all due policies
-      case Reactor.run(Mcp.Gdpr.RetentionReactor, %{}, async?: false) do
-        {:ok, result} ->
-          Logger.info("Successfully completed retention policy processing: #{inspect(result)}")
-          {:ok, result}
+    # Trigger the RetentionReactor to process all due policies
+    case Reactor.run(Mcp.Gdpr.RetentionReactor, %{}, async?: false) do
+      {:ok, result} ->
+        Logger.info("Successfully completed retention policy processing: #{inspect(result)}")
+        {:ok, result}
 
-        {:error, reason} ->
-          Logger.error("RetentionReactor failed: #{inspect(reason)}")
-          {:error, {:reactor_failed, reason}}
+      {:error, reason} ->
+        Logger.error("RetentionReactor failed: #{inspect(reason)}")
+        {:error, {:reactor_failed, reason}}
 
-        {:error, steps, errors} ->
-          Logger.error("RetentionReactor step errors: #{inspect(errors)}")
-          {:error, {:reactor_steps_failed, steps, errors}}
-      end
-    rescue
-      error ->
-        Logger.error("Error processing retention policies: #{inspect(error)}")
-        {:error, {:exception, error}}
+      {:error, steps, errors} ->
+        Logger.error("RetentionReactor step errors: #{inspect(errors)}")
+        {:error, {:reactor_steps_failed, steps, errors}}
     end
+  rescue
+    error ->
+      Logger.error("Error processing retention policies: #{inspect(error)}")
+      {:error, {:exception, error}}
   end
 
   defp process_specific_policy(policy_id) do
-    try do
-      Logger.info("Processing retention policy #{policy_id}")
+    Logger.info("Processing retention policy #{policy_id}")
 
-      # Get the specific policy to validate it exists
-      policy = Ash.get!(Mcp.Gdpr.Resources.RetentionPolicy, policy_id)
+    # Get the specific policy to validate it exists
+    policy = Ash.get!(Mcp.Gdpr.Resources.RetentionPolicy, policy_id)
 
-      if policy do
-        Logger.info("Found policy #{policy_id}, triggering RetentionReactor")
+    if policy do
+      Logger.info("Found policy #{policy_id}, triggering RetentionReactor")
 
-        # Trigger the RetentionReactor - it will find all due policies including this one
-        case Reactor.run(Mcp.Gdpr.RetentionReactor, %{}, async?: false) do
-          {:ok, result} ->
-            # Filter results for this specific policy
-            policy_result = extract_policy_result(result, policy_id)
+      # Trigger the RetentionReactor - it will find all due policies including this one
+      case Reactor.run(Mcp.Gdpr.RetentionReactor, %{}, async?: false) do
+        {:ok, result} ->
+          # Filter results for this specific policy
+          policy_result = extract_policy_result(result, policy_id)
 
-            Logger.info("Successfully processed retention policy #{policy_id}")
-            {:ok, %{
-              action: "process_policy",
-              policy_id: policy_id,
-              result: policy_result,
-              processed_at: DateTime.utc_now()
-            }}
+          Logger.info("Successfully processed retention policy #{policy_id}")
 
-          {:error, reason} ->
-            Logger.error("RetentionReactor failed for policy #{policy_id}: #{inspect(reason)}")
-            {:error, {:reactor_failed, reason}}
+          {:ok,
+           %{
+             action: "process_policy",
+             policy_id: policy_id,
+             result: policy_result,
+             processed_at: DateTime.utc_now()
+           }}
 
-          {:error, steps, errors} ->
-            Logger.error("RetentionReactor step errors for policy #{policy_id}: #{inspect(errors)}")
-            {:error, {:reactor_steps_failed, steps, errors}}
-        end
-      else
-        {:error, :policy_not_found}
+        {:error, reason} ->
+          Logger.error("RetentionReactor failed for policy #{policy_id}: #{inspect(reason)}")
+          {:error, {:reactor_failed, reason}}
+
+        {:error, steps, errors} ->
+          Logger.error("RetentionReactor step errors for policy #{policy_id}: #{inspect(errors)}")
+
+          {:error, {:reactor_steps_failed, steps, errors}}
       end
-    rescue
-      error ->
-        Logger.error("Error processing policy #{policy_id}: #{inspect(error)}")
-        {:error, {:exception, error}}
+    else
+      {:error, :policy_not_found}
     end
+  rescue
+    error ->
+      Logger.error("Error processing policy #{policy_id}: #{inspect(error)}")
+      {:error, {:exception, error}}
   end
 
   # Extract results for a specific policy from the reactor result
@@ -177,182 +179,177 @@ defmodule Mcp.Jobs.Gdpr.RetentionCleanupWorker do
   end
 
   defp cleanup_user_data(user_id) do
-    try do
-      # Use the Anonymizer to completely clean up user data
-      case Anonymizer.anonymize_user(user_id, strategy: :hash, preserve_metadata: false) do
-        {:ok, result} ->
-          # Create audit entry for manual cleanup
-          create_cleanup_audit(user_id, "user_data_cleanup", result)
+    # Use the Anonymizer to completely clean up user data
+    case Anonymizer.anonymize_user(user_id, strategy: :hash, preserve_metadata: false) do
+      {:ok, result} ->
+        # Create audit entry for manual cleanup
+        create_cleanup_audit(user_id, "user_data_cleanup", result)
 
-          {:ok, %{
-            action: "cleanup_user_data",
-            user_id: user_id,
-            anonymized_at: DateTime.utc_now(),
-            fields_anonymized: result.fields_anonymized
-          }}
+        {:ok,
+         %{
+           action: "cleanup_user_data",
+           user_id: user_id,
+           anonymized_at: DateTime.utc_now(),
+           fields_anonymized: result.fields_anonymized
+         }}
 
-        {:error, reason} ->
-          {:error, reason}
-      end
-    rescue
-      error ->
-        Logger.error("Error cleaning up user data #{user_id}: #{inspect(error)}")
-        {:error, {:exception, error}}
+      {:error, reason} ->
+        {:error, reason}
     end
+  rescue
+    error ->
+      Logger.error("Error cleaning up user data #{user_id}: #{inspect(error)}")
+      {:error, {:exception, error}}
   end
 
   defp verify_gdpr_compliance(tenant_id) do
-    try do
-      compliance_checks = [
-        verify_retention_policies_active(tenant_id),
-        verify_no_overdue_data(tenant_id),
-        verify_legal_holds_respected(tenant_id),
-        verify_audit_trail_complete(tenant_id)
-      ]
+    compliance_checks = [
+      verify_retention_policies_active(tenant_id),
+      verify_no_overdue_data(tenant_id),
+      verify_legal_holds_respected(tenant_id),
+      verify_audit_trail_complete(tenant_id)
+    ]
 
-      results = Enum.map(compliance_checks, fn check ->
+    results =
+      Enum.map(compliance_checks, fn check ->
         case check do
           {:ok, result} -> result
           {:error, reason} -> %{status: :error, reason: reason}
         end
       end)
 
-      all_passed = Enum.all?(results, &(&1.status == :ok))
+    all_passed = Enum.all?(results, &(&1.status == :ok))
 
-      {:ok, %{
-        action: "verify_compliance",
-        tenant_id: tenant_id,
-        compliance_passed: all_passed,
-        checks: results,
-        verified_at: DateTime.utc_now()
-      }}
-    rescue
-      error ->
-        Logger.error("Error verifying GDPR compliance for tenant #{tenant_id}: #{inspect(error)}")
-        {:error, {:exception, error}}
-    end
+    {:ok,
+     %{
+       action: "verify_compliance",
+       tenant_id: tenant_id,
+       compliance_passed: all_passed,
+       checks: results,
+       verified_at: DateTime.utc_now()
+     }}
+  rescue
+    error ->
+      Logger.error("Error verifying GDPR compliance for tenant #{tenant_id}: #{inspect(error)}")
+      {:error, {:exception, error}}
   end
 
   defp cleanup_expired_data_exports do
-    try do
-      # Find and delete data exports that are older than retention period
-      cutoff_date = DateTime.utc_now() |> DateTime.add(-30 * 24 * 3600, :second)  # 30 days
+    # Find and delete data exports that are older than retention period
+    # 30 days
+    cutoff_date = DateTime.utc_now() |> DateTime.add(-30 * 24 * 3600, :second)
 
-      expired_exports_query =
-        from(e in "gdpr_data_exports",
-          where: e.inserted_at < ^cutoff_date,
-          where: not is_nil(e.downloaded_at),  # Only remove downloaded exports
-          select: e.id)
+    expired_exports_query =
+      from(e in "gdpr_data_exports",
+        where: e.inserted_at < ^cutoff_date,
+        # Only remove downloaded exports
+        where: not is_nil(e.downloaded_at),
+        select: e.id
+      )
 
-      expired_ids = Repo.all(expired_exports_query)
+    expired_ids = Repo.all(expired_exports_query)
 
-      if length(expired_ids) > 0 do
-        # Delete the expired exports
-        {deleted_count, _} =
-          from(e in "gdpr_data_exports", where: e.id in ^expired_ids)
-          |> Repo.delete_all()
+    if length(expired_ids) > 0 do
+      # Delete the expired exports
+      {deleted_count, _} =
+        from(e in "gdpr_data_exports", where: e.id in ^expired_ids)
+        |> Repo.delete_all()
 
-        # Create audit entries
-        Enum.each(expired_ids, fn export_id ->
-          create_cleanup_audit(export_id, "expired_data_export_cleanup", %{
-            export_id: export_id,
-            cutoff_date: cutoff_date
-          })
-        end)
-
-        Logger.info("Cleaned up #{deleted_count} expired data exports")
-
-        {:ok, %{
-          action: "cleanup_expired_exports",
-          deleted_count: deleted_count,
+      # Create audit entries
+      Enum.each(expired_ids, fn export_id ->
+        create_cleanup_audit(export_id, "expired_data_export_cleanup", %{
+          export_id: export_id,
           cutoff_date: cutoff_date
-        }}
-      else
-        {:ok, %{
-          action: "cleanup_expired_exports",
-          deleted_count: 0,
-          cutoff_date: cutoff_date
-        }}
-      end
-    rescue
-      error ->
-        Logger.error("Error cleaning up expired data exports: #{inspect(error)}")
-        {:error, {:exception, error}}
+        })
+      end)
+
+      Logger.info("Cleaned up #{deleted_count} expired data exports")
+
+      {:ok,
+       %{
+         action: "cleanup_expired_exports",
+         deleted_count: deleted_count,
+         cutoff_date: cutoff_date
+       }}
+    else
+      {:ok,
+       %{
+         action: "cleanup_expired_exports",
+         deleted_count: 0,
+         cutoff_date: cutoff_date
+       }}
     end
+  rescue
+    error ->
+      Logger.error("Error cleaning up expired data exports: #{inspect(error)}")
+      {:error, {:exception, error}}
   end
 
   # Helper functions for compliance verification
 
   defp verify_retention_policies_active(tenant_id) do
-    try do
-      policies_query =
-        from(p in "gdpr_retention_policies",
-          where: p.tenant_id == ^tenant_id,
-          where: p.active == true,
-          select: count(p.id))
+    policies_query =
+      from(p in "gdpr_retention_policies",
+        where: p.tenant_id == ^tenant_id,
+        where: p.active == true,
+        select: count(p.id)
+      )
 
-      active_policy_count = Repo.one(policies_query) || 0
+    active_policy_count = Repo.one(policies_query) || 0
 
-      result = %{
-        check: "retention_policies_active",
-        status: if(active_policy_count > 0, do: :ok, else: :warning),
-        details: %{active_policy_count: active_policy_count}
-      }
+    result = %{
+      check: "retention_policies_active",
+      status: if(active_policy_count > 0, do: :ok, else: :warning),
+      details: %{active_policy_count: active_policy_count}
+    }
 
-      {:ok, result}
-    rescue
-      error ->
-        {:error, "Failed to verify retention policies: #{inspect(error)}"}
-    end
+    {:ok, result}
+  rescue
+    error ->
+      {:error, "Failed to verify retention policies: #{inspect(error)}"}
   end
 
   defp verify_no_overdue_data(_tenant_id) do
-    try do
-      # This would check if there's data that exceeds retention periods
-      # For now, return success
-      result = %{
-        check: "no_overdue_data",
-        status: :ok,
-        details: %{message: "Overdue data check not yet implemented"}
-      }
+    # This would check if there's data that exceeds retention periods
+    # For now, return success
+    result = %{
+      check: "no_overdue_data",
+      status: :ok,
+      details: %{message: "Overdue data check not yet implemented"}
+    }
 
-      {:ok, result}
-    rescue
-      error ->
-        {:error, "Failed to check overdue data: #{inspect(error)}"}
-    end
+    {:ok, result}
+  rescue
+    error ->
+      {:error, "Failed to check overdue data: #{inspect(error)}"}
   end
 
   defp verify_legal_holds_respected(_tenant_id) do
-    try do
-      # Check if legal holds are being respected
-      result = %{
-        check: "legal_holds_respected",
-        status: :ok,
-        details: %{message: "Legal hold verification not yet implemented"}
-      }
+    # Check if legal holds are being respected
+    result = %{
+      check: "legal_holds_respected",
+      status: :ok,
+      details: %{message: "Legal hold verification not yet implemented"}
+    }
 
-      {:ok, result}
-    rescue
-      error ->
-        {:error, "Failed to verify legal holds: #{inspect(error)}"}
-    end
+    {:ok, result}
+  rescue
+    error ->
+      {:error, "Failed to verify legal holds: #{inspect(error)}"}
   end
 
   defp verify_audit_trail_complete(_tenant_id) do
-    try do
-      # Check if audit trail is complete for recent actions
-      result = %{
-        check: "audit_trail_complete",
-        status: :ok,
-        details: %{message: "Audit trail verification not yet implemented"}
-      }
+    # Check if audit trail is complete for recent actions
+    result = %{
+      check: "audit_trail_complete",
+      status: :ok,
+      details: %{message: "Audit trail verification not yet implemented"}
+    }
 
-      {:ok, result}
-    rescue
-      error ->
-        {:error, "Failed to verify audit trail: #{inspect(error)}"}
-    end
+    {:ok, result}
+  rescue
+    error ->
+      {:error, "Failed to verify audit trail: #{inspect(error)}"}
   end
 
   # Helper functions
@@ -367,6 +364,7 @@ defmodule Mcp.Jobs.Gdpr.RetentionCleanupWorker do
       :ok ->
         Logger.debug("GDPR Cleanup Audit logged: #{action} for record #{record_id}")
         :ok
+
       {:error, reason} ->
         Logger.warning("Failed to log cleanup audit: #{inspect(reason)}")
         # Continue execution even if audit logging fails

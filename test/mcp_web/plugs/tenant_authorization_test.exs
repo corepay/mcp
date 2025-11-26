@@ -9,8 +9,8 @@ defmodule McpWeb.Plugs.TenantAuthorizationTest do
   use ExUnit.Case, async: false
   use Plug.Test
 
-  alias McpWeb.Plugs.TenantAuthorization
   alias Mcp.Platform.TenantPermissions
+  alias McpWeb.Plugs.TenantAuthorization
 
   @opts [required_permissions: [:user_management]]
 

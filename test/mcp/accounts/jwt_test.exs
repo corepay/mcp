@@ -1,8 +1,8 @@
 defmodule Mcp.Accounts.JWTTest do
   use Mcp.DataCase, async: true
 
-  alias Mcp.Accounts.{User, Token, JWT, Auth}
-  alias Mcp.Accounts.Security
+  alias Mcp.Accounts
+  alias Mcp.Accounts.{Auth, JWT, Token, User}
 
   describe "JWT token creation" do
     test "creates valid access token with current context" do

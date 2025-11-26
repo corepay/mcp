@@ -25,9 +25,26 @@ defmodule Mcp.Gdpr.Schemas.GdprConsent do
   @doc false
   def changeset(gdpr_consent, attrs) do
     gdpr_consent
-    |> cast(attrs, [:user_id, :purpose, :legal_basis, :status, :withdrawn_at, :version, :scope, :valid_until, :metadata])
+    |> cast(attrs, [
+      :user_id,
+      :purpose,
+      :legal_basis,
+      :status,
+      :withdrawn_at,
+      :version,
+      :scope,
+      :valid_until,
+      :metadata
+    ])
     |> validate_required([:user_id, :purpose, :legal_basis, :status])
-    |> validate_inclusion(:legal_basis, ["consent", "contract", "legal_obligation", "vital_interests", "public_task", "legitimate_interests"])
+    |> validate_inclusion(:legal_basis, [
+      "consent",
+      "contract",
+      "legal_obligation",
+      "vital_interests",
+      "public_task",
+      "legitimate_interests"
+    ])
     |> validate_inclusion(:status, ["active", "withdrawn", "expired"])
     |> validate_number(:version, greater_than: 0)
   end

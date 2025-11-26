@@ -108,28 +108,33 @@ defmodule McpWeb.TenantContext do
         conn
 
       tenant ->
-        # Validate tenant status before setting up context
-        if tenant.status in [:active, :trial] do
-          # Establish tenant database context
-          case establish_tenant_database_context(tenant) do
-            :ok ->
-              conn
-              |> put_private(:tenant_context_set, true)
-              |> assign(:tenant_context_active, true)
-              |> put_private(:tenant_database_context, true)
-              |> assign(:tenant_cache_prefix, build_tenant_cache_prefix(tenant.id))
-
-            {:error, reason} ->
-              Logger.error(
-                "Failed to establish tenant database context for #{tenant.subdomain}: #{inspect(reason)}"
-              )
-
-              handle_tenant_context_error(conn, tenant, reason)
-          end
-        else
-          handle_inactive_tenant(conn, tenant)
-        end
+        setup_tenant_for_active_tenant(conn, tenant)
     end
+  end
+
+  defp setup_tenant_for_active_tenant(conn, tenant) do
+    if tenant.status in [:active, :trial] do
+      establish_tenant_database_context(tenant)
+      |> handle_database_context_result(conn, tenant)
+    else
+      handle_inactive_tenant(conn, tenant)
+    end
+  end
+
+  defp handle_database_context_result(:ok, conn, tenant) do
+    conn
+    |> put_private(:tenant_context_set, true)
+    |> assign(:tenant_context_active, true)
+    |> put_private(:tenant_database_context, true)
+    |> assign(:tenant_cache_prefix, build_tenant_cache_prefix(tenant.id))
+  end
+
+  defp handle_database_context_result({:error, reason}, conn, tenant) do
+    Logger.error(
+      "Failed to establish tenant database context for #{tenant.subdomain}: #{inspect(reason)}"
+    )
+
+    handle_tenant_context_error(conn, tenant, reason)
   end
 
   defp handle_inactive_tenant(conn, tenant) do
@@ -231,46 +236,44 @@ defmodule McpWeb.TenantContext do
   # Enhanced helper functions for robust context switching
 
   defp establish_tenant_database_context(tenant) do
-    try do
-      # Verify tenant schema exists and is accessible
-      case Repo.query(
-             "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'acq_#{tenant.company_schema}'"
-           ) do
-        {:ok, %{rows: [_ | _]}} ->
-          # Schema exists, establish context by setting search path
-          original_search_path = Repo.get_search_path()
+    # Verify tenant schema exists and is accessible
+    case Repo.query(
+           "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'acq_#{tenant.company_schema}'"
+         ) do
+      {:ok, %{rows: [_ | _]}} ->
+        # Schema exists, establish context by setting search path
+        original_search_path = Repo.get_search_path()
 
-          case Repo.query(
-                 "SET search_path TO acq_#{tenant.company_schema}, public, platform, shared, ag_catalog"
-               ) do
-            {:ok, _} ->
-              # Store original path for cleanup
-              Process.put(:original_search_path, original_search_path)
-              Process.put(:current_tenant_schema, tenant.company_schema)
-              Process.put(:current_tenant_id, tenant.id)
-              :ok
+        case Repo.query(
+               "SET search_path TO acq_#{tenant.company_schema}, public, platform, shared, ag_catalog"
+             ) do
+          {:ok, _} ->
+            # Store original path for cleanup
+            Process.put(:original_search_path, original_search_path)
+            Process.put(:current_tenant_schema, tenant.company_schema)
+            Process.put(:current_tenant_id, tenant.id)
+            :ok
 
-            {:error, reason} ->
-              Logger.error(
-                "Failed to set search path for tenant #{tenant.subdomain}: #{inspect(reason)}"
-              )
+          {:error, reason} ->
+            Logger.error(
+              "Failed to set search path for tenant #{tenant.subdomain}: #{inspect(reason)}"
+            )
 
-              {:error, :database_context_failed}
-          end
+            {:error, :database_context_failed}
+        end
 
-        {:ok, _} ->
-          Logger.error("Tenant schema not found: acq_#{tenant.company_schema}")
-          {:error, :schema_not_found}
+      {:ok, _} ->
+        Logger.error("Tenant schema not found: acq_#{tenant.company_schema}")
+        {:error, :schema_not_found}
 
-        {:error, reason} ->
-          Logger.error("Database error verifying tenant schema: #{inspect(reason)}")
-          {:error, :database_error}
-      end
-    rescue
-      error ->
-        Logger.error("Exception establishing tenant database context: #{inspect(error)}")
-        {:error, :exception}
+      {:error, reason} ->
+        Logger.error("Database error verifying tenant schema: #{inspect(reason)}")
+        {:error, :database_error}
     end
+  rescue
+    error ->
+      Logger.error("Exception establishing tenant database context: #{inspect(error)}")
+      {:error, :exception}
   end
 
   defp execute_with_tenant_isolation(tenant, fun, _conn) do

@@ -1,8 +1,8 @@
 defmodule Mcp.Performance.CacheSessionPerformanceTest do
   use ExUnit.Case, async: false
 
-  alias Mcp.Accounts.{User, Token}
-  alias Mcp.Cache.{RedisClient, CacheManager}
+  alias Mcp.Accounts.{Token, User}
+  alias Mcp.Cache.{CacheManager, RedisClient}
 
   describe "Cache Performance" do
     test "cache operations are performant" do
@@ -61,6 +61,7 @@ defmodule Mcp.Performance.CacheSessionPerformanceTest do
           key = "#{base_key}_#{i}"
 
           expected_value = "value_#{i}"
+
           case CacheManager.get(key) do
             {:ok, ^expected_value} -> 1
             _ -> 0

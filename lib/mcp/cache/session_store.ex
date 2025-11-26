@@ -9,7 +9,7 @@ defmodule Mcp.Cache.SessionStore do
   use GenServer
   require Logger
 
-  alias RedisClient
+  alias Mcp.Cache.RedisClient
 
   # 24 hours
   @session_ttl 86_400

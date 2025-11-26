@@ -1,7 +1,7 @@
 defmodule Mcp.Accounts.TokenTest do
   use ExUnit.Case, async: true
 
-  alias Mcp.Accounts.{User, Token}
+  alias Mcp.Accounts.{Token, User}
 
   describe "token generation" do
     test "generates cryptographically secure tokens" do

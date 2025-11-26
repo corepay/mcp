@@ -13,8 +13,9 @@ defmodule Mcp.Gdpr.Compliance do
   audit logging and compliance tracking.
   """
 
-  alias Mcp.Gdpr.{AuditTrail, DataRetention, Anonymizer, Export, Consent, Jobs}
+  alias Mcp.Accounts.User
   alias Mcp.Accounts.UserSchema
+  alias Mcp.Gdpr.{Anonymizer, AuditTrail, Consent, DataRetention, Export, Jobs}
   alias Mcp.Repo
   import Ecto.Query
 
@@ -40,10 +41,11 @@ defmodule Mcp.Gdpr.Compliance do
   def request_user_deletion(user_id, reason \\ "user_request", actor_id \\ nil, _opts \\ []) do
     Repo.transaction(fn ->
       with {:ok, user} <- soft_delete_user(user_id, reason),
-           {:ok, _audit} <- AuditTrail.log_action(user_id, "delete_request", actor_id, %{
-             reason: reason,
-             retention_expires_at: user.gdpr_retention_expires_at
-           }),
+           {:ok, _audit} <-
+             AuditTrail.log_action(user_id, "delete_request", actor_id, %{
+               reason: reason,
+               retention_expires_at: user.gdpr_retention_expires_at
+             }),
            {:ok, _schedule} <- schedule_retention_cleanup(user_id, @deletion_retention_days),
            {:ok, _export} <- generate_final_data_export(user_id) do
         user
@@ -96,11 +98,12 @@ defmodule Mcp.Gdpr.Compliance do
   """
   def update_user_consent(user_id, purpose, status, actor_id \\ nil) do
     with {:ok, consent} <- Consent.record_consent(user_id, purpose, status, actor_id),
-         {:ok, _audit} <- AuditTrail.log_action(user_id, "consent_updated", actor_id, %{
-           purpose: purpose,
-           status: status,
-           consent_id: consent.id
-         }) do
+         {:ok, _audit} <-
+           AuditTrail.log_action(user_id, "consent_updated", actor_id, %{
+             purpose: purpose,
+             status: status,
+             consent_id: consent.id
+           }) do
       {:ok, consent}
     end
   end
@@ -153,6 +156,7 @@ defmodule Mcp.Gdpr.Compliance do
       case user do
         nil ->
           Repo.rollback(:user_not_found)
+
         %UserSchema{status: "deleted"} ->
           with {:ok, _audit} <- AuditTrail.log_action(user_id, "anonymization_started", nil, %{}),
                {:ok, _result} <- Anonymizer.anonymize_user(user_id, opts),
@@ -161,6 +165,7 @@ defmodule Mcp.Gdpr.Compliance do
           else
             {:error, reason} -> Repo.rollback(reason)
           end
+
         _ ->
           Repo.rollback(:user_not_deleted)
       end
@@ -191,89 +196,92 @@ defmodule Mcp.Gdpr.Compliance do
   - {:error, reason} on failure
   """
   def generate_compliance_report(opts \\ []) do
-    try do
-      # Parse date range from opts
-      start_date = Keyword.get(opts, :start_date, DateTime.add(DateTime.utc_now(), -30, :day))
-      end_date = Keyword.get(opts, :end_date, DateTime.utc_now())
-      tenant_id = Keyword.get(opts, :tenant_id)
+    # Parse date range from opts
+    start_date = Keyword.get(opts, :start_date, DateTime.add(DateTime.utc_now(), -30, :day))
+    end_date = Keyword.get(opts, :end_date, DateTime.utc_now())
+    tenant_id = Keyword.get(opts, :tenant_id)
 
-      # Build base queries with optional tenant filtering
-      _user_filter = if tenant_id, do: [tenant_id: tenant_id], else: []
+    # Build base queries with optional tenant filtering
+    _user_filter = if tenant_id, do: [tenant_id: tenant_id], else: []
 
-      # 1. Get user statistics
-      total_users = count_users()
-      deleted_users = count_deleted_users(start_date, end_date)
-      anonymized_users = count_anonymized_users(start_date, end_date)
+    # 1. Get user statistics
+    total_users = count_users()
+    deleted_users = count_deleted_users(start_date, end_date)
+    anonymized_users = count_anonymized_users(start_date, end_date)
 
-      # 2. Get consent statistics
-      active_consents = count_active_consents(start_date, end_date)
-      expired_consents = count_expired_consents(start_date, end_date)
-      withdrawn_consents = count_withdrawn_consents(start_date, end_date)
+    # 2. Get consent statistics
+    active_consents = count_active_consents(start_date, end_date)
+    expired_consents = count_expired_consents(start_date, end_date)
+    withdrawn_consents = count_withdrawn_consents(start_date, end_date)
 
-      # 3. Get export statistics
-      pending_exports = count_pending_exports(start_date, end_date)
-      completed_exports = count_completed_exports(start_date, end_date)
+    # 3. Get export statistics
+    pending_exports = count_pending_exports(start_date, end_date)
+    completed_exports = count_completed_exports(start_date, end_date)
 
-      # 4. Get audit trail statistics
-      audit_actions = count_audit_actions(start_date, end_date)
-      audit_coverage = calculate_audit_coverage(start_date, end_date)
+    # 4. Get audit trail statistics
+    audit_actions = count_audit_actions(start_date, end_date)
+    audit_coverage = calculate_audit_coverage(start_date, end_date)
 
-      # 5. Get legal hold statistics
-      legal_holds = count_legal_holds(start_date, end_date)
+    # 5. Get legal hold statistics
+    legal_holds = count_legal_holds(start_date, end_date)
 
-      # 6. Get retention policy compliance
-      retention_compliance = calculate_retention_compliance(start_date, end_date)
+    # 6. Get retention policy compliance
+    retention_compliance = calculate_retention_compliance(start_date, end_date)
 
-      # 7. Calculate overall compliance score
-      compliance_score = calculate_compliance_score(%{
+    # 7. Calculate overall compliance score
+    compliance_score =
+      calculate_compliance_score(%{
         audit_coverage: audit_coverage,
         retention_compliance: retention_compliance,
-        consent_management: calculate_consent_compliance(active_consents, expired_consents, withdrawn_consents),
-        export_completion_rate: calculate_export_completion_rate(pending_exports, completed_exports)
+        consent_management:
+          calculate_consent_compliance(active_consents, expired_consents, withdrawn_consents),
+        export_completion_rate:
+          calculate_export_completion_rate(pending_exports, completed_exports)
       })
 
-      report = %{
-        # User Statistics
-        total_users: total_users,
-        deleted_users: deleted_users,
-        anonymized_users: anonymized_users,
-        user_deletion_rate: calculate_percentage(deleted_users, total_users),
+    report = %{
+      # User Statistics
+      total_users: total_users,
+      deleted_users: deleted_users,
+      anonymized_users: anonymized_users,
+      user_deletion_rate: calculate_percentage(deleted_users, total_users),
 
-        # Consent Statistics
-        active_consents: active_consents,
-        expired_consents: expired_consents,
-        withdrawn_consents: withdrawn_consents,
-        consent_compliance_rate: calculate_consent_compliance_rate(active_consents, expired_consents, withdrawn_consents),
+      # Consent Statistics
+      active_consents: active_consents,
+      expired_consents: expired_consents,
+      withdrawn_consents: withdrawn_consents,
+      consent_compliance_rate:
+        calculate_consent_compliance_rate(active_consents, expired_consents, withdrawn_consents),
 
-        # Export Statistics
-        pending_exports: pending_exports,
-        completed_exports: completed_exports,
-        export_completion_rate: calculate_export_completion_rate(pending_exports, completed_exports),
+      # Export Statistics
+      pending_exports: pending_exports,
+      completed_exports: completed_exports,
+      export_completion_rate:
+        calculate_export_completion_rate(pending_exports, completed_exports),
 
-        # Legal Holds
-        legal_holds: legal_holds,
+      # Legal Holds
+      legal_holds: legal_holds,
 
-        # Audit Trail
-        audit_actions: audit_actions,
-        audit_coverage: audit_coverage,
+      # Audit Trail
+      audit_actions: audit_actions,
+      audit_coverage: audit_coverage,
 
-        # Retention Policy
-        retention_compliance: retention_compliance,
+      # Retention Policy
+      retention_compliance: retention_compliance,
 
-        # Overall Metrics
-        compliance_score: compliance_score,
-        report_period: %{
-          start_date: start_date,
-          end_date: end_date
-        },
-        tenant_id: tenant_id,
-        generated_at: DateTime.utc_now()
-      }
+      # Overall Metrics
+      compliance_score: compliance_score,
+      report_period: %{
+        start_date: start_date,
+        end_date: end_date
+      },
+      tenant_id: tenant_id,
+      generated_at: DateTime.utc_now()
+    }
 
-      {:ok, report}
-    rescue
-      error -> {:error, {:compliance_report_failed, error}}
-    end
+    {:ok, report}
+  rescue
+    error -> {:error, {:compliance_report_failed, error}}
   end
 
   @doc """
@@ -290,31 +298,44 @@ defmodule Mcp.Gdpr.Compliance do
   def cancel_user_deletion(user_id, actor_id \\ nil) do
     Repo.transaction(fn ->
       user = Repo.get(UserSchema, user_id)
-
-      case user do
-        nil ->
-          Repo.rollback(:user_not_found)
-        %UserSchema{status: "deleted"} = user ->
-          # Restore user
-          changeset = Ecto.Changeset.change(user, %{
-            status: "active",
-            deleted_at: nil,
-            deletion_reason: nil,
-            gdpr_retention_expires_at: nil
-          })
-
-          case Repo.update(changeset) do
-            {:ok, restored_user} ->
-              AuditTrail.log_action(user_id, "deletion_cancelled", actor_id, %{})
-              restored_user
-            {:error, reason} ->
-              Repo.rollback(reason)
-          end
-        _ ->
-          AuditTrail.log_action(user_id, "deletion_cancelled_already_active", actor_id, %{})
-          user
-      end
+      handle_user_deletion_cancellation(user, user_id, actor_id)
     end)
+  end
+
+  defp handle_user_deletion_cancellation(nil, user_id, _actor_id) do
+    Repo.rollback(:user_not_found)
+  end
+
+  defp handle_user_deletion_cancellation(%UserSchema{status: "deleted"} = user, user_id, actor_id) do
+    restore_deleted_user(user, user_id, actor_id)
+  end
+
+  defp handle_user_deletion_cancellation(user, user_id, actor_id) do
+    AuditTrail.log_action(user_id, "deletion_cancelled_already_active", actor_id, %{})
+    user
+  end
+
+  defp restore_deleted_user(user, user_id, actor_id) do
+    user
+    |> build_restoration_changeset()
+    |> Repo.update()
+    |> case do
+      {:ok, restored_user} ->
+        AuditTrail.log_action(user_id, "deletion_cancelled", actor_id, %{})
+        restored_user
+
+      {:error, reason} ->
+        Repo.rollback(reason)
+    end
+  end
+
+  defp build_restoration_changeset(user) do
+    Ecto.Changeset.change(user, %{
+      status: "active",
+      deleted_at: nil,
+      deletion_reason: nil,
+      gdpr_retention_expires_at: nil
+    })
   end
 
   # Private functions
@@ -325,19 +346,24 @@ defmodule Mcp.Gdpr.Compliance do
     case user do
       nil ->
         {:error, :user_not_found}
+
       %UserSchema{status: "active"} = user ->
         retention_expires_at = DateTime.add(DateTime.utc_now(), @deletion_retention_days, :day)
 
-        changeset = Ecto.Changeset.change(user, %{
-          status: "deleted",
-          deleted_at: DateTime.utc_now(),
-          deletion_reason: reason,
-          gdpr_retention_expires_at: retention_expires_at
-        })
+        changeset =
+          Ecto.Changeset.change(user, %{
+            status: "deleted",
+            deleted_at: DateTime.utc_now(),
+            deletion_reason: reason,
+            gdpr_retention_expires_at: retention_expires_at
+          })
 
         Repo.update(changeset)
+
       %UserSchema{status: "deleted"} ->
-        {:ok, user}  # Already deleted
+        # Already deleted
+        {:ok, user}
+
       _ ->
         {:error, :invalid_user_status}
     end
@@ -345,7 +371,10 @@ defmodule Mcp.Gdpr.Compliance do
 
   defp schedule_retention_cleanup(user_id, retention_days) do
     expires_at = DateTime.add(DateTime.utc_now(), retention_days, :day)
-    DataRetention.schedule_cleanup(user_id, expires_at, categories: ["core_identity", "activity_data"])
+
+    DataRetention.schedule_cleanup(user_id, expires_at,
+      categories: ["core_identity", "activity_data"]
+    )
   end
 
   defp generate_final_data_export(user_id) do
@@ -356,7 +385,7 @@ defmodule Mcp.Gdpr.Compliance do
 
   # User statistics
   defp count_users do
-    case Mcp.Accounts.User.read() do
+    case User.read() do
       {:ok, users} -> length(users)
       _ -> 0
     end
@@ -453,18 +482,37 @@ defmodule Mcp.Gdpr.Compliance do
     import Ash.Query
 
     # Get critical actions that should be audited
-    _critical_actions = ["user_created", "user_updated", "user_deleted", "data_exported", "consent_given", "consent_withdrawn"]
+    _critical_actions = [
+      "user_created",
+      "user_updated",
+      "user_deleted",
+      "data_exported",
+      "consent_given",
+      "consent_withdrawn"
+    ]
 
-    _audited_actions = Mcp.Gdpr.Resources.AuditTrail
-    |> filter(action_type in ["user_created", "user_updated", "user_deleted", "data_exported", "consent_given", "consent_withdrawn"])
-    |> Ash.read()
-    |> case do
-      {:ok, audits} ->
-        # For simplicity, return 95% if we have any audit entries
-        # In a real implementation, this would compare against total expected actions
-        if length(audits) > 0, do: 95.0, else: 0.0
-      _ -> 0.0
-    end
+    _audited_actions =
+      Mcp.Gdpr.Resources.AuditTrail
+      |> filter(
+        action_type in [
+          "user_created",
+          "user_updated",
+          "user_deleted",
+          "data_exported",
+          "consent_given",
+          "consent_withdrawn"
+        ]
+      )
+      |> Ash.read()
+      |> case do
+        {:ok, audits} ->
+          # For simplicity, return 95% if we have any audit entries
+          # In a real implementation, this would compare against total expected actions
+          if length(audits) > 0, do: 95.0, else: 0.0
+
+        _ ->
+          0.0
+      end
   end
 
   # Legal hold statistics
@@ -498,9 +546,12 @@ defmodule Mcp.Gdpr.Compliance do
           # Assume 90% compliance if we have retention actions
           (retained_count / total * 100) |> Float.round(1)
         else
-          100.0  # Perfect compliance if no actions needed
+          # Perfect compliance if no actions needed
+          100.0
         end
-      _ -> 0.0
+
+      _ ->
+        0.0
     end
   end
 
@@ -514,16 +565,17 @@ defmodule Mcp.Gdpr.Compliance do
     }
 
     score =
-      (metrics.audit_coverage * weights.audit_coverage) +
-      (metrics.retention_compliance * weights.retention_compliance) +
-      (metrics.consent_management * weights.consent_management) +
-      (metrics.export_completion_rate * weights.export_completion_rate)
+      metrics.audit_coverage * weights.audit_coverage +
+        metrics.retention_compliance * weights.retention_compliance +
+        metrics.consent_management * weights.consent_management +
+        metrics.export_completion_rate * weights.export_completion_rate
 
     score |> Float.round(1)
   end
 
   defp calculate_consent_compliance(active, expired, withdrawn) do
     total = active + expired + withdrawn
+
     if total > 0 do
       # Active consents are good, expired/withdrawn need attention
       (active / total * 100) |> Float.round(1)
@@ -534,10 +586,12 @@ defmodule Mcp.Gdpr.Compliance do
 
   defp calculate_consent_compliance_rate(active, expired, withdrawn) do
     total = active + expired + withdrawn
+
     if total > 0 do
       active_percentage = active / total * 100
       # Reduce score for expired/withdrawn consents
-      penalty = ((expired + withdrawn) / total * 20)  # 20% penalty per issue
+      # 20% penalty per issue
+      penalty = (expired + withdrawn) / total * 20
       max(active_percentage - penalty, 0) |> Float.round(1)
     else
       100.0
@@ -546,6 +600,7 @@ defmodule Mcp.Gdpr.Compliance do
 
   defp calculate_export_completion_rate(pending, completed) do
     total = pending + completed
+
     if total > 0 do
       (completed / total * 100) |> Float.round(1)
     else

@@ -397,47 +397,72 @@ defmodule McpWeb.RegistrationLive.CustomerRegistration do
     customer_params = socket.assigns.registration_data
     tenant_id = get_tenant_id_from_host(socket) || "default"
 
-    # Validation checks
-    cond do
-      is_nil(customer_params["email"]) or customer_params["email"] == "" ->
-        {:error, {:validation_failed, :email, "Email is required"}}
-
-      not socket.assigns.terms_accepted ->
-        {:error, {:validation_failed, :terms, "Terms and conditions must be accepted"}}
-
-      # Simulate rate limiting check
-      :rand.uniform(100) < 5 -> # 5% chance of rate limit for demo
-        {:error, :rate_limited}
-
-      true ->
-        context = %{
-          ip_address: get_client_ip(socket),
-          user_agent: get_user_agent(socket),
-          referrer: get_referrer(socket),
-          marketing_consent: socket.assigns.marketing_consent,
-          analytics_consent: socket.assigns.analytics_consent,
-          terms_accepted_at: if(socket.assigns.terms_accepted, do: DateTime.utc_now(), else: nil),
-          privacy_policy_accepted_at:
-            if(socket.assigns.privacy_policy_accepted, do: DateTime.utc_now(), else: nil)
-        }
-
-        registration_data =
-          Map.merge(customer_params, %{
-            request_type: :customer,
-            marketing_consent: socket.assigns.marketing_consent,
-            analytics_consent: socket.assigns.analytics_consent,
-            terms_accepted: socket.assigns.terms_accepted,
-            privacy_policy_accepted: socket.assigns.privacy_policy_accepted,
-            terms_accepted_at: context.terms_accepted_at,
-            privacy_policy_accepted_at: context.privacy_policy_accepted_at
-          })
-
-        try do
-          RegistrationService.initialize_registration(tenant_id, :customer, registration_data, context)
-        rescue
-          error -> {:error, {:registration_failed, error}}
-        end
+    with {:ok, :valid_email} <- validate_email(customer_params["email"]),
+         {:ok, :terms_accepted} <- validate_terms_accepted(socket.assigns.terms_accepted),
+         {:ok, :not_rate_limited} <- check_rate_limit() do
+      submit_registration(tenant_id, customer_params, socket)
+    else
+      {:error, reason} -> {:error, reason}
     end
+  end
+
+  defp validate_email(nil), do: {:error, {:validation_failed, :email, "Email is required"}}
+  defp validate_email(""), do: {:error, {:validation_failed, :email, "Email is required"}}
+  defp validate_email(_email), do: {:ok, :valid_email}
+
+  defp validate_terms_accepted(false),
+    do: {:error, {:validation_failed, :terms, "Terms and conditions must be accepted"}}
+
+  defp validate_terms_accepted(true), do: {:ok, :terms_accepted}
+
+  defp check_rate_limit do
+    # Simulate rate limiting check - 5% chance of rate limit for demo
+    if :rand.uniform(100) < 5 do
+      {:error, :rate_limited}
+    else
+      {:ok, :not_rate_limited}
+    end
+  end
+
+  defp submit_registration(tenant_id, customer_params, socket) do
+    context = build_registration_context(socket)
+    registration_data = build_registration_data(customer_params, socket, context)
+
+    try do
+      RegistrationService.initialize_registration(
+        tenant_id,
+        :customer,
+        registration_data,
+        context
+      )
+    rescue
+      error -> {:error, {:registration_failed, error}}
+    end
+  end
+
+  defp build_registration_context(socket) do
+    %{
+      ip_address: get_client_ip(socket),
+      user_agent: get_user_agent(socket),
+      referrer: get_referrer(socket),
+      marketing_consent: socket.assigns.marketing_consent,
+      analytics_consent: socket.assigns.analytics_consent,
+      terms_accepted_at: if(socket.assigns.terms_accepted, do: DateTime.utc_now(), else: nil),
+      privacy_policy_accepted_at:
+        if(socket.assigns.privacy_policy_accepted, do: DateTime.utc_now(), else: nil)
+    }
+  end
+
+  defp build_registration_data(customer_params, socket, context) do
+    Map.merge(customer_params, %{
+      request_type: :customer,
+      marketing_consent: socket.assigns.marketing_consent,
+      analytics_consent: socket.assigns.analytics_consent,
+      terms_accepted: socket.assigns.terms_accepted,
+      privacy_policy_accepted: socket.assigns.privacy_policy_accepted,
+      terms_accepted_at: context.terms_accepted_at,
+      privacy_policy_accepted_at: context.privacy_policy_accepted_at
+    })
   end
 
   defp handle_successful_submission(socket, request) do

@@ -51,7 +51,7 @@ defmodule McpWeb.Plugs.TenantAuthorization do
         |> assign(:authorized_user, true)
         |> assign(:user_permissions, get_user_permissions(current_user))
         |> assign(:user_role, get_user_role(current_user))
-        |> assign(:is_tenant_owner, is_tenant_owner?(current_user))
+        |> assign(:is_tenant_owner, tenant_owner?(current_user))
     end
   end
 
@@ -106,7 +106,7 @@ defmodule McpWeb.Plugs.TenantAuthorization do
   def can_manage_users?(user) do
     user_has_permission?(user, :user_management) or
       user_has_permission?(user, :all) or
-      is_tenant_owner?(user)
+      tenant_owner?(user)
   end
 
   @doc """
@@ -115,7 +115,7 @@ defmodule McpWeb.Plugs.TenantAuthorization do
   def can_manage_billing?(user) do
     user_has_permission?(user, :billing_management) or
       user_has_permission?(user, :all) or
-      is_tenant_owner?(user)
+      tenant_owner?(user)
   end
 
   @doc """
@@ -124,7 +124,7 @@ defmodule McpWeb.Plugs.TenantAuthorization do
   def can_view_reports?(user) do
     user_has_permission?(user, :view_reports) or
       user_has_permission?(user, :all) or
-      is_tenant_owner?(user)
+      tenant_owner?(user)
   end
 
   @doc """
@@ -133,7 +133,7 @@ defmodule McpWeb.Plugs.TenantAuthorization do
   def can_access_system_settings?(user) do
     user_has_permission?(user, :system_configuration) or
       user_has_permission?(user, :all) or
-      is_tenant_owner?(user)
+      tenant_owner?(user)
   end
 
   @doc """
@@ -142,7 +142,7 @@ defmodule McpWeb.Plugs.TenantAuthorization do
   def can_invite_users?(user) do
     user_has_permission?(user, :user_management) or
       user_has_permission?(user, :all) or
-      is_tenant_owner?(user)
+      tenant_owner?(user)
   end
 
   # Private helper functions
@@ -177,25 +177,18 @@ defmodule McpWeb.Plugs.TenantAuthorization do
 
   defp authorized?(user, _tenant_context, opts) do
     # Check tenant owner bypass
-    if Keyword.get(opts, :allow_tenant_owners, true) and is_tenant_owner?(user) do
+    if Keyword.get(opts, :allow_tenant_owners, true) and tenant_owner?(user) do
       true
     else
       # Check required roles
       required_roles = Keyword.get(opts, :required_roles, [])
 
-      if not Enum.empty?(required_roles) do
-        if not user_has_any_role?(user, required_roles) do
-          false
-        end
-      end
-
-      # Check required permissions
-      required_permissions = Keyword.get(opts, :required_permissions, [])
-
-      if not Enum.empty?(required_permissions) do
-        user_has_all_permissions?(user, required_permissions)
+      if Enum.empty?(required_roles) || user_has_any_role?(user, required_roles) do
+        # Check required permissions
+        required_permissions = Keyword.get(opts, :required_permissions, [])
+        Enum.empty?(required_permissions) || user_has_all_permissions?(user, required_permissions)
       else
-        true
+        false
       end
     end
   end
@@ -217,7 +210,7 @@ defmodule McpWeb.Plugs.TenantAuthorization do
     Map.get(user, :role, :viewer)
   end
 
-  defp is_tenant_owner?(user) do
+  defp tenant_owner?(user) do
     Map.get(user, :is_tenant_owner, false)
   end
 

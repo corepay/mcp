@@ -1,8 +1,8 @@
 defmodule Mcp.Platform.TenantTest do
   use ExUnit.Case, async: true
 
-  alias Mcp.Platform.Tenant
   alias Mcp.MultiTenant
+  alias Mcp.Platform.Tenant
 
   describe "tenant creation" do
     test "creates tenant with valid attributes" do

@@ -28,6 +28,7 @@ defmodule Mcp.NumberHelper do
     case String.split(number_str, ".") do
       [integer_part, decimal_part] ->
         delimit_integer_part(integer_part) <> "." <> decimal_part
+
       [integer_part] ->
         delimit_integer_part(integer_part)
     end

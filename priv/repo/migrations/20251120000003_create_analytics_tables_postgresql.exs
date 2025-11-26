@@ -62,8 +62,10 @@ defmodule Mcp.Repo.Migrations.CreateAnalyticsTablesPostgresql do
     create index(:analytics_metrics_hourly, [:tenant_id, :time_bucket])
     create index(:analytics_metrics_hourly, [:tenant_id, :metric_key, :time_bucket])
     create index(:analytics_metrics_hourly, [:tenant_id, :category, :time_bucket])
+
     create unique_index(:analytics_metrics_hourly, [:tenant_id, :metric_key, :time_bucket],
-                      name: :unique_hourly_metric_bucket)
+             name: :unique_hourly_metric_bucket
+           )
 
     # Create analytics_metrics_daily aggregate table
     create table(:analytics_metrics_daily, primary_key: false) do
@@ -88,8 +90,10 @@ defmodule Mcp.Repo.Migrations.CreateAnalyticsTablesPostgresql do
     create index(:analytics_metrics_daily, [:tenant_id, :time_bucket])
     create index(:analytics_metrics_daily, [:tenant_id, :metric_key, :time_bucket])
     create index(:analytics_metrics_daily, [:tenant_id, :category, :time_bucket])
+
     create unique_index(:analytics_metrics_daily, [:tenant_id, :metric_key, :time_bucket],
-                      name: :unique_daily_metric_bucket)
+             name: :unique_daily_metric_bucket
+           )
 
     # Create other analytics tables
 
@@ -300,7 +304,10 @@ defmodule Mcp.Repo.Migrations.CreateAnalyticsTablesPostgresql do
     # Drop views and functions first
     execute("DROP VIEW IF EXISTS recent_metrics")
     execute("DROP FUNCTION IF EXISTS aggregate_hourly_metrics()")
-    execute("DROP FUNCTION IF EXISTS metric_aggregates(UUID, VARCHAR, TIMESTAMPTZ, TIMESTAMPTZ, INTERVAL)")
+
+    execute(
+      "DROP FUNCTION IF EXISTS metric_aggregates(UUID, VARCHAR, TIMESTAMPTZ, TIMESTAMPTZ, INTERVAL)"
+    )
 
     # Drop tables in reverse order of dependencies
     drop table(:analytics_alerts)

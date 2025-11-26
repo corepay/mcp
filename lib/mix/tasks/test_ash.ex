@@ -5,6 +5,9 @@ defmodule Mix.Tasks.TestAsh do
 
   use Mix.Task
 
+  alias Mcp.Accounts.User
+  alias Tenant
+
   @shortdoc "Test Ash Framework basic operations"
 
   @impl Mix.Task
@@ -51,11 +54,11 @@ defmodule Mix.Tasks.TestAsh do
     IO.puts("\n=== Test 2: Resource Loading ===")
 
     resources = [
-      {Mcp.Accounts.User, "User"},
+      {User, "User"},
       {Mcp.Accounts.Token, "Token"},
       {Mcp.Accounts.RegistrationSettings, "RegistrationSettings"},
       {Mcp.Accounts.RegistrationRequest, "RegistrationRequest"},
-      {Mcp.Platform.Tenant, "Tenant"}
+      {Tenant, "Tenant"}
     ]
 
     resources_loaded =
@@ -97,20 +100,20 @@ defmodule Mix.Tasks.TestAsh do
   end
 
   defp test_ash_read_operations do
-    case Ash.read(Mcp.Accounts.User) do
+    case Ash.read(User) do
       {:ok, users} ->
-        IO.puts("✓ Ash.read(Mcp.Accounts.User): #{length(users)} users found")
+        IO.puts("✓ Ash.read(User): #{length(users)} users found")
 
       {:error, reason} ->
-        IO.puts("✗ Ash.read(Mcp.Accounts.User) error: #{inspect(reason)}")
+        IO.puts("✗ Ash.read(User) error: #{inspect(reason)}")
     end
 
-    case Ash.read(Mcp.Platform.Tenant) do
+    case Ash.read(Tenant) do
       {:ok, tenants} ->
-        IO.puts("✓ Ash.read(Mcp.Platform.Tenant): #{length(tenants)} tenants found")
+        IO.puts("✓ Ash.read(Tenant): #{length(tenants)} tenants found")
 
       {:error, reason} ->
-        IO.puts("✗ Ash.read(Mcp.Platform.Tenant) error: #{inspect(reason)}")
+        IO.puts("✗ Ash.read(Tenant) error: #{inspect(reason)}")
     end
   end
 
@@ -118,10 +121,10 @@ defmodule Mix.Tasks.TestAsh do
     IO.puts("\n=== Test 4: Ash Authentication ===")
 
     try do
-      if function_exported?(Mcp.Accounts.User, :__info__, 1) do
+      if function_exported?(User, :__info__, 1) do
         auth_info =
-          Map.get(Mcp.Accounts.User.__info__(:functions), {:ash_authentication, 0}) ||
-            function_exported?(Mcp.Accounts.User, :ash_authentication, 0)
+          Map.get(User.__info__(:functions), {:ash_authentication, 0}) ||
+            function_exported?(User, :ash_authentication, 0)
 
         IO.puts("✓ User resource has authentication configuration: #{auth_info}")
       else

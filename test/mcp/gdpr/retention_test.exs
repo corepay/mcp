@@ -1,6 +1,8 @@
 defmodule Mcp.Gdpr.RetentionTest do
   use ExUnit.Case, async: true
+  alias Ecto.Adapters.SQL
   alias Mcp.Gdpr.Anonymizer
+  alias Mcp.Repo
 
   test "Anonymizer can be used directly" do
     # Test that the Anonymizer module works correctly
@@ -22,10 +24,11 @@ defmodule Mcp.Gdpr.RetentionTest do
     # Test that all the key Phase 3 components can be compiled
     # This is a basic smoke test to ensure the implementation is working
 
-    assert function_exported?(Mcp.Gdpr.Anonymizer, :anonymize_user, 1)
-    assert function_exported?(Mcp.Gdpr.Anonymizer, :anonymize_field, 3)
+    assert function_exported?(Anonymizer, :anonymize_user, 1)
+    assert function_exported?(Anonymizer, :anonymize_field, 3)
 
     # Verify the retention policies table exists
-    assert {:ok, _} = Ecto.Adapters.SQL.query(Mcp.Repo, "SELECT COUNT(*) FROM gdpr_retention_policies")
+    assert {:ok, _} =
+             SQL.query(Repo, "SELECT COUNT(*) FROM gdpr_retention_policies")
   end
 end

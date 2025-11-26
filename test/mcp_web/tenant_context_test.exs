@@ -3,13 +3,12 @@ defmodule McpWeb.TenantContextTest do
   use Plug.Test
 
   import Mox
-  alias McpWeb.TenantContext
-  alias McpWeb.TenantRouting
+
+  alias Mcp.Cache.TenantIsolation
   alias Mcp.Platform.Tenant
   alias Mcp.Repo
-
-  # Mock behaviors
-  alias Mcp.Cache.TenantIsolation
+  alias McpWeb.TenantContext
+  alias McpWeb.TenantRouting
 
   setup do
     # Start Mox

@@ -137,7 +137,8 @@ defmodule McpWeb.Router do
 
       # State-changing operations (API token auth, no CSRF required)
       post "/data-export", GdprController, :request_data_export
-      post "/export", GdprController, :export_data  # Additional route for tests
+      # Additional route for tests
+      post "/export", GdprController, :export_data
       post "/request-deletion", GdprController, :request_deletion
       post "/cancel-deletion", GdprController, :cancel_deletion
       post "/consent", GdprController, :update_consent
@@ -151,7 +152,8 @@ defmodule McpWeb.Router do
 
         # Admin read-only operations (no CSRF required)
         get "/compliance-report", GdprController, :admin_get_compliance_report
-        get "/compliance", GdprController, :admin_get_compliance  # Additional route for tests
+        # Additional route for tests
+        get "/compliance", GdprController, :admin_get_compliance
         get "/users/:user_id/data", GdprController, :admin_get_user_data
 
         # Admin state-changing operations (require CSRF protection and input validation)
@@ -159,9 +161,48 @@ defmodule McpWeb.Router do
           pipe_through :api_csrf
 
           post "/users/:user_id/delete", GdprController, :admin_delete_user
-          post "/anonymize-overdue", GdprController, :admin_anonymize_overdue_users
         end
       end
+    end
+  end
+
+  # Payments API
+  scope "/api", McpWeb do
+    pipe_through :api
+
+    scope "/payments" do
+      post "/", PaymentsController, :create
+      get "/:id", PaymentsController, :show
+
+      # QorPay Specifics
+      post "/boarding/merchants", PaymentsController, :board_merchant
+      post "/forms/sessions", PaymentsController, :create_form_session
+      post "/utilities/bin/:bin", PaymentsController, :lookup_bin
+      get "/transactions/:id", PaymentsController, :show_transaction
+    end
+
+    post "/webhooks/:provider", WebhooksController, :handle_webhook
+
+    scope "/refunds" do
+      post "/", RefundsController, :create
+      get "/:id", RefundsController, :show
+    end
+
+    scope "/customers" do
+      post "/", CustomersController, :create
+      get "/:id", CustomersController, :show
+      post "/:id", CustomersController, :update
+      delete "/:id", CustomersController, :delete
+    end
+
+    scope "/payment_methods" do
+      post "/", PaymentMethodsController, :create
+      get "/:id", PaymentMethodsController, :show
+      delete "/:id", PaymentMethodsController, :delete
+    end
+
+    scope "/voids" do
+      post "/", VoidsController, :create
     end
   end
 

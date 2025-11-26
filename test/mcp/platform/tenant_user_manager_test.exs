@@ -9,9 +9,9 @@ defmodule Mcp.Platform.TenantUserManagerTest do
   use ExUnit.Case, async: false
   use Mcp.DataCase
 
-  alias Mcp.Platform.TenantUserManager
-  alias Mcp.Platform.TenantPermissions
   alias Mcp.MultiTenant
+  alias Mcp.Platform.TenantPermissions
+  alias Mcp.Platform.TenantUserManager
 
   @tenant_schema "test_tenant"
   @valid_user_attrs %{

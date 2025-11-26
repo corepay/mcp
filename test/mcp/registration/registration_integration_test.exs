@@ -4,11 +4,11 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
   alias Mcp.Accounts.User
 
   alias Mcp.Registration.{
+    EmailService,
+    PolicyValidator,
     RegistrationService,
     SecurityService,
-    EmailService,
-    WorkflowOrchestrator,
-    PolicyValidator
+    WorkflowOrchestrator
   }
 
   describe "complete registration workflow" do

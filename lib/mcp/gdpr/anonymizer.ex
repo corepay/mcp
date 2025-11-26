@@ -1,7 +1,7 @@
 defmodule Mcp.Gdpr.Anonymizer do
   @moduledoc """
   GDPR-compliant data anonymization functionality.
-  
+
   Implements irreversible anonymization of personal data while maintaining
   referential integrity and audit trails.
   """
@@ -10,17 +10,15 @@ defmodule Mcp.Gdpr.Anonymizer do
   alias Mcp.Accounts.User
   require Logger
 
-
-
   @doc """
   Anonymizes all personal data for a user.
-  
+
   This is an irreversible operation that:
   - Anonymizes email, password, and other PII
   - Maintains user_id for referential integrity
   - Creates audit trail of anonymization
   - Updates user status to :deleted
-  
+
   Options:
   - strategy: :hash (default), :mask, :delete
   - preserve_metadata: boolean (default: true)
@@ -28,24 +26,24 @@ defmodule Mcp.Gdpr.Anonymizer do
   def anonymize_user(user_id, opts \\ []) do
     strategy = Keyword.get(opts, :strategy, :hash)
     preserve_metadata = Keyword.get(opts, :preserve_metadata, true)
-    
+
     Logger.info("Starting anonymization for user #{user_id} with strategy: #{strategy}")
-    
+
     with {:ok, user} <- User.get(user_id),
          {:ok, anonymized_data} <- build_anonymized_user_data(user, strategy),
          {:ok, _updated_user} <- apply_anonymization(user, anonymized_data),
          :ok <- anonymize_related_data(user_id, strategy),
          {:ok, _audit} <- create_anonymization_audit(user_id, strategy) do
-      
       Logger.info("Successfully anonymized user #{user_id}")
-      
-      {:ok, %{
-        user_id: user_id,
-        anonymized_at: DateTime.utc_now(),
-        strategy: strategy,
-        fields_anonymized: Map.keys(anonymized_data),
-        metadata_preserved: preserve_metadata
-      }}
+
+      {:ok,
+       %{
+         user_id: user_id,
+         anonymized_at: DateTime.utc_now(),
+         strategy: strategy,
+         fields_anonymized: Map.keys(anonymized_data),
+         metadata_preserved: preserve_metadata
+       }}
     else
       {:error, reason} = error ->
         Logger.error("Failed to anonymize user #{user_id}: #{inspect(reason)}")
@@ -55,7 +53,7 @@ defmodule Mcp.Gdpr.Anonymizer do
 
   @doc """
   Anonymizes a specific field value based on its type.
-  
+
   Supported field types:
   - :email - Generates deterministic anonymized email
   - :name - Replaces with generic placeholder
@@ -64,7 +62,7 @@ defmodule Mcp.Gdpr.Anonymizer do
   - :text - Redacts text content
   """
   def anonymize_field(value, field_type, user_id, opts \\ [])
-  
+
   def anonymize_field(value, :email, user_id, _opts) when is_binary(value) do
     # Create deterministic but anonymized email
     hash = :crypto.hash(:sha256, "#{user_id}#{value}") |> Base.encode16(case: :lower)
@@ -94,13 +92,13 @@ defmodule Mcp.Gdpr.Anonymizer do
         parts = String.split(value, ".")
         anonymized_parts = Enum.take(parts, 3) ++ ["0"]
         {:ok, Enum.join(anonymized_parts, ".")}
-        
+
       String.contains?(value, ":") ->
         # IPv6 - keep first 48 bits
         parts = String.split(value, ":")
         anonymized_parts = Enum.take(parts, 3) ++ ["0000", "0000", "0000", "0000", "0000"]
         {:ok, Enum.join(anonymized_parts, ":")}
-        
+
       true ->
         {:ok, "0.0.0.0"}
     end
@@ -112,13 +110,16 @@ defmodule Mcp.Gdpr.Anonymizer do
 
   def anonymize_field(value, :json, user_id, opts) when is_map(value) do
     # Recursively anonymize JSON/map fields
-    anonymized = Enum.reduce(value, %{}, fn {key, val}, acc ->
-      field_type = determine_field_type(key, val)
-      case anonymize_field(val, field_type, user_id, opts) do
-        {:ok, anonymized_val} -> Map.put(acc, key, anonymized_val)
-        _ -> Map.put(acc, key, "[REDACTED]")
-      end
-    end)
+    anonymized =
+      Enum.reduce(value, %{}, fn {key, val}, acc ->
+        field_type = determine_field_type(key, val)
+
+        case anonymize_field(val, field_type, user_id, opts) do
+          {:ok, anonymized_val} -> Map.put(acc, key, anonymized_val)
+          _ -> Map.put(acc, key, "[REDACTED]")
+        end
+      end)
+
     {:ok, anonymized}
   end
 
@@ -128,28 +129,30 @@ defmodule Mcp.Gdpr.Anonymizer do
 
   @doc """
   Batch anonymizes multiple users.
-  
+
   Useful for scheduled anonymization of deleted accounts.
   """
   def anonymize_users(user_ids, opts \\ []) when is_list(user_ids) do
-    results = Enum.map(user_ids, fn user_id ->
-      case anonymize_user(user_id, opts) do
-        {:ok, result} -> {:ok, user_id, result}
-        {:error, reason} -> {:error, user_id, reason}
-      end
-    end)
-    
+    results =
+      Enum.map(user_ids, fn user_id ->
+        case anonymize_user(user_id, opts) do
+          {:ok, result} -> {:ok, user_id, result}
+          {:error, reason} -> {:error, user_id, reason}
+        end
+      end)
+
     successes = Enum.count(results, fn {status, _, _} -> status == :ok end)
     failures = Enum.count(results, fn {status, _, _} -> status == :error end)
-    
+
     Logger.info("Batch anonymization complete: #{successes} succeeded, #{failures} failed")
-    
-    {:ok, %{
-      total: length(user_ids),
-      succeeded: successes,
-      failed: failures,
-      results: results
-    }}
+
+    {:ok,
+     %{
+       total: length(user_ids),
+       succeeded: successes,
+       failed: failures,
+       results: results
+     }}
   end
 
   @doc """
@@ -159,7 +162,7 @@ defmodule Mcp.Gdpr.Anonymizer do
     case User.get(user_id) do
       {:ok, user} ->
         user.status == :deleted and String.contains?(user.email, "@anonymized.local")
-        
+
       _ ->
         false
     end
@@ -167,7 +170,7 @@ defmodule Mcp.Gdpr.Anonymizer do
 
   @doc """
   Restores anonymized user data (NOT SUPPORTED - anonymization is irreversible).
-  
+
   Returns error as GDPR anonymization must be irreversible.
   """
   def restore_user_data(_user_id, _anonymized_data) do
@@ -192,14 +195,16 @@ defmodule Mcp.Gdpr.Anonymizer do
   @impl true
   def handle_call({:anonymize_user, user_id, opts}, _from, state) do
     result = anonymize_user(user_id, opts)
-    
-    new_stats = case result do
-      {:ok, _} ->
-        %{state.stats | total: state.stats.total + 1, succeeded: state.stats.succeeded + 1}
-      {:error, _} ->
-        %{state.stats | total: state.stats.total + 1, failed: state.stats.failed + 1}
-    end
-    
+
+    new_stats =
+      case result do
+        {:ok, _} ->
+          %{state.stats | total: state.stats.total + 1, succeeded: state.stats.succeeded + 1}
+
+        {:error, _} ->
+          %{state.stats | total: state.stats.total + 1, failed: state.stats.failed + 1}
+      end
+
     {:reply, result, %{state | stats: new_stats}}
   end
 
@@ -220,7 +225,7 @@ defmodule Mcp.Gdpr.Anonymizer do
       last_sign_in_ip: anonymize_ip(user.last_sign_in_ip, strategy),
       status: :deleted
     }
-    
+
     {:ok, anonymized}
   end
 
@@ -243,7 +248,7 @@ defmodule Mcp.Gdpr.Anonymizer do
       performed_at: DateTime.utc_now(),
       irreversible: true
     }
-    
+
     Logger.info("Anonymization audit created: #{inspect(audit_entry)}")
     {:ok, audit_entry}
   end
@@ -267,7 +272,7 @@ defmodule Mcp.Gdpr.Anonymizer do
   end
 
   defp anonymize_ip(nil, _strategy), do: nil
-  
+
   defp anonymize_ip(ip, _strategy) when is_binary(ip) do
     case anonymize_field(ip, :ip_address, nil, []) do
       {:ok, anonymized} -> anonymized

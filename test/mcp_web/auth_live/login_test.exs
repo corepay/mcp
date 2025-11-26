@@ -6,9 +6,9 @@ defmodule McpWeb.AuthLive.LoginTest do
   import Mox
   import Swoosh.TestAssertions
 
-  alias McpWeb.AuthLive.Login
-  alias Mcp.Accounts.{User, Auth, OAuth}
+  alias Mcp.Accounts.{Auth, OAuth, User}
   alias Mcp.Cache.SessionStore
+  alias McpWeb.AuthLive.Login
 
   @endpoint McpWeb.Endpoint
 
@@ -233,7 +233,7 @@ defmodule McpWeb.AuthLive.LoginTest do
       {:ok, view, _html} = live(conn, "/sign_in")
 
       view
-      |> element("button[phx-click=\"oauth_login\"][phx-value-provider=\"google\"]")
+      |> element(~s|button[phx-click="oauth_login"][phx-value-provider="google"]|)
       |> render_click()
 
       assert render(view) =~ "Connecting to Google..."
@@ -255,7 +255,7 @@ defmodule McpWeb.AuthLive.LoginTest do
       {:ok, view, _html} = live(conn, "/sign_in")
 
       view
-      |> element("button[phx-click=\"oauth_login\"][phx-value-provider=\"github\"]")
+      |> element(~s|button[phx-click="oauth_login"][phx-value-provider="github"]|)
       |> render_click()
 
       assert render(view) =~ "Connecting to GitHub..."
@@ -283,7 +283,7 @@ defmodule McpWeb.AuthLive.LoginTest do
 
       # Try OAuth button - should be disabled
       view
-      |> element("button[phx-click=\"oauth_login\"][phx-value-provider=\"google\"]")
+      |> element(~s|button[phx-click="oauth_login"][phx-value-provider="google"]|)
       |> render_click()
 
       # Should show rate limit message instead of OAuth flow
@@ -457,7 +457,7 @@ defmodule McpWeb.AuthLive.LoginTest do
       end)
 
       view
-      |> element("button[phx-click=\"oauth_login\"][phx-value-provider=\"google\"]")
+      |> element(~s|button[phx-click="oauth_login"][phx-value-provider="google"]|)
       |> render_click()
 
       # State should be cryptographically secure

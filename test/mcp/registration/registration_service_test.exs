@@ -1,12 +1,13 @@
 defmodule Mcp.Registration.RegistrationServiceTest do
   use Mcp.DataCase, async: true
 
-  alias Mcp.Registration.RegistrationService
   alias Mcp.Accounts.RegistrationRequest
+  alias Mcp.Registration.RegistrationService
 
   describe "initialize_registration/4" do
     test "creates a registration request successfully" do
       tenant_id = Ecto.UUID.generate()
+
       registration_data = %{
         "email" => "test@example.com",
         "first_name" => "John",
@@ -14,12 +15,13 @@ defmodule Mcp.Registration.RegistrationServiceTest do
         "company_name" => "Test Company"
       }
 
-      {:ok, request} = RegistrationService.initialize_registration(
-        tenant_id,
-        :customer,
-        registration_data,
-        %{"source" => "web"}
-      )
+      {:ok, request} =
+        RegistrationService.initialize_registration(
+          tenant_id,
+          :customer,
+          registration_data,
+          %{"source" => "web"}
+        )
 
       assert request.tenant_id == tenant_id
       assert request.type == :customer
@@ -36,12 +38,13 @@ defmodule Mcp.Registration.RegistrationServiceTest do
       tenant_id = Ecto.UUID.generate()
       registration_data = %{}
 
-      {:error, reason} = RegistrationService.initialize_registration(
-        tenant_id,
-        :customer,
-        registration_data,
-        %{}
-      )
+      {:error, reason} =
+        RegistrationService.initialize_registration(
+          tenant_id,
+          :customer,
+          registration_data,
+          %{}
+        )
 
       assert reason != nil
     end
@@ -83,7 +86,8 @@ defmodule Mcp.Registration.RegistrationServiceTest do
       non_existent_id = Ecto.UUID.generate()
       approver_id = Ecto.UUID.generate()
 
-      {:error, :not_found} = RegistrationService.approve_registration(non_existent_id, approver_id)
+      {:error, :not_found} =
+        RegistrationService.approve_registration(non_existent_id, approver_id)
     end
   end
 
@@ -137,7 +141,10 @@ defmodule Mcp.Registration.RegistrationServiceTest do
       # Create mixed status requests
       {:ok, _pending1} = insert(:registration_request, %{email: "pending1@example.com"})
       {:ok, _pending2} = insert(:registration_request, %{email: "pending2@example.com"})
-      {:ok, _submitted} = insert(:submitted_registration_request, %{email: "submitted@example.com"})
+
+      {:ok, _submitted} =
+        insert(:submitted_registration_request, %{email: "submitted@example.com"})
+
       {:ok, _approved} = insert(:approved_registration_request, %{email: "approved@example.com"})
 
       {:ok, pending} = RegistrationService.list_pending_registrations()
@@ -150,13 +157,23 @@ defmodule Mcp.Registration.RegistrationServiceTest do
       tenant_id = Ecto.UUID.generate()
 
       # Create requests for the tenant
-      {:ok, _pending1} = insert(:registration_request, %{tenant_id: tenant_id, email: "pending1@example.com"})
-      {:ok, _pending2} = insert(:registration_request, %{tenant_id: tenant_id, email: "pending2@example.com"})
-      {:ok, _submitted} = insert(:submitted_registration_request, %{tenant_id: tenant_id, email: "submitted@example.com"})
+      {:ok, _pending1} =
+        insert(:registration_request, %{tenant_id: tenant_id, email: "pending1@example.com"})
+
+      {:ok, _pending2} =
+        insert(:registration_request, %{tenant_id: tenant_id, email: "pending2@example.com"})
+
+      {:ok, _submitted} =
+        insert(:submitted_registration_request, %{
+          tenant_id: tenant_id,
+          email: "submitted@example.com"
+        })
 
       # Create requests for another tenant
       other_tenant_id = Ecto.UUID.generate()
-      {:ok, _other_pending} = insert(:registration_request, %{tenant_id: other_tenant_id, email: "other@example.com"})
+
+      {:ok, _other_pending} =
+        insert(:registration_request, %{tenant_id: other_tenant_id, email: "other@example.com"})
 
       {:ok, pending} = RegistrationService.list_pending_registrations(tenant_id)
 
@@ -168,9 +185,10 @@ defmodule Mcp.Registration.RegistrationServiceTest do
 
   describe "get_registration_status/1" do
     test "returns detailed status for existing request" do
-      {:ok, request} = insert(:submitted_registration_request, %{
-        submitted_at: DateTime.utc_now() |> DateTime.add(-1, :hour)
-      })
+      {:ok, request} =
+        insert(:submitted_registration_request, %{
+          submitted_at: DateTime.utc_now() |> DateTime.add(-1, :hour)
+        })
 
       {:ok, status} = RegistrationService.get_registration_status(request.id)
 

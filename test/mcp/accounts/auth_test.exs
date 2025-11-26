@@ -1,7 +1,7 @@
 defmodule Mcp.Accounts.AuthTest do
   use ExUnit.Case, async: true
 
-  alias Mcp.Accounts.{User, Auth}
+  alias Mcp.Accounts.{Auth, User}
 
   describe "authentication" do
     test "authenticates user with valid credentials" do

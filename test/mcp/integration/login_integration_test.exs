@@ -1,13 +1,14 @@
 defmodule Mcp.Integration.LoginIntegrationTest do
-  use ExUnit.Case, async: false  # Not async due to shared infrastructure
+  # Not async due to shared infrastructure
+  use ExUnit.Case, async: false
   use Phoenix.ConnTest
 
   import Mox
 
-  alias Mcp.Accounts.{User, Auth, OAuth}
+  alias Mcp.Accounts.{Auth, OAuth, User}
   alias Mcp.Cache.SessionStore
-  alias McpWeb.{AuthController, OAuthController, Endpoint}
   alias McpWeb.Auth.SessionPlug
+  alias McpWeb.{AuthController, Endpoint, OAuthController}
 
   @endpoint McpWeb.Endpoint
 
@@ -23,7 +24,10 @@ defmodule Mcp.Integration.LoginIntegrationTest do
        conn
        |> Map.put(:remote_ip, {127, 0, 0, 1})
        |> put_req_header("user-agent", "Integration Test Browser")
-       |> put_req_header("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")}
+       |> put_req_header(
+         "accept",
+         "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+       )}
   end
 
   describe "End-to-End Login Flow" do
@@ -50,7 +54,8 @@ defmodule Mcp.Integration.LoginIntegrationTest do
 
       # Step 5: Follow redirect to dashboard
       conn = get(recycle(conn), "/dashboard")
-      assert html_response(conn, 200) =~ "Dashboard"  # Assuming dashboard page has this content
+      # Assuming dashboard page has this content
+      assert html_response(conn, 200) =~ "Dashboard"
 
       # Step 6: Verify session is properly set
       assert get_session(conn, :user_token) != nil
@@ -101,6 +106,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
     test "complete Google OAuth flow", %{conn: conn} do
       # Mock OAuth flow
       state = "oauth_test_state_123"
+
       user_info = %{
         provider: :google,
         id: "google_user_123",
@@ -110,6 +116,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
         last_name: "User",
         email_verified: true
       }
+
       tokens = %{
         access_token: "google_access_token",
         refresh_token: "google_refresh_token",
@@ -268,9 +275,8 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       {:ok, user} = create_test_user()
 
       # Authenticate with tenant context
-      {:ok, session} = Auth.authenticate(user.email, "Password123!", "127.0.0.1", [
-        tenant_id: "tenant_123"
-      ])
+      {:ok, session} =
+        Auth.authenticate(user.email, "Password123!", "127.0.0.1", tenant_id: "tenant_123")
 
       # Verify session includes tenant information
       {:ok, claims} = Auth.verify_jwt_access_token(session.access_token)
@@ -283,13 +289,19 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       {:ok, user} = create_test_user()
 
       # Create session with specific tenant
-      {:ok, session} = Auth.authenticate(user.email, "Password123!", "127.0.0.1", [
-        tenant_id: "tenant_abc"
-      ])
+      {:ok, session} =
+        Auth.authenticate(user.email, "Password123!", "127.0.0.1", tenant_id: "tenant_abc")
 
       # Check authorization for different tenants
-      assert Auth.authorized_for_tenant?(session.access_token |> Auth.verify_session!() |> elem(1), "tenant_abc")
-      refute Auth.authorized_for_tenant?(session.access_token |> Auth.verify_session!() |> elem(1), "other_tenant")
+      assert Auth.authorized_for_tenant?(
+               session.access_token |> Auth.verify_session!() |> elem(1),
+               "tenant_abc"
+             )
+
+      refute Auth.authorized_for_tenant?(
+               session.access_token |> Auth.verify_session!() |> elem(1),
+               "other_tenant"
+             )
     end
   end
 
@@ -333,7 +345,8 @@ defmodule Mcp.Integration.LoginIntegrationTest do
 
       # These should be logged in audit trail
       # Verification would require checking audit logs
-      assert true  # Placeholder assertion
+      # Placeholder assertion
+      assert true
     end
   end
 
@@ -352,13 +365,15 @@ defmodule Mcp.Integration.LoginIntegrationTest do
         })
 
       # Should handle errors gracefully
-      assert conn.status in [200, 302, 500]  # Should not crash
+      # Should not crash
+      assert conn.status in [200, 302, 500]
     end
 
     test "network timeout handling", %{conn: conn} do
       # Test with simulated network timeouts
       # This would require mocking external service calls
-      assert true  # Placeholder
+      # Placeholder
+      assert true
     end
 
     test "invalid form submission handling", %{conn: conn} do
@@ -445,31 +460,37 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       num_requests = 3
 
       # Create test users
-      users = for i <- 1..num_users do
-        {:ok, user} = create_test_user(%{
-          email: "perf_user_#{i}@example.com"
-        })
-        user
-      end
+      users =
+        for i <- 1..num_users do
+          {:ok, user} =
+            create_test_user(%{
+              email: "perf_user_#{i}@example.com"
+            })
+
+          user
+        end
 
       # Generate concurrent login requests
-      tasks = for i <- 1..(num_users * num_requests) do
-        user = Enum.at(users, rem(i - 1, num_users))
+      tasks =
+        for i <- 1..(num_users * num_requests) do
+          user = Enum.at(users, rem(i - 1, num_users))
 
-        Task.async(fn ->
-          {time, result} = :timer.tc(fn ->
-            conn =
-              build_conn()
-              |> post("/sign_in", %{
-                "email" => user.email,
-                "password" => "Password123!"
-              })
+          Task.async(fn ->
+            {time, result} =
+              :timer.tc(fn ->
+                conn =
+                  build_conn()
+                  |> post("/sign_in", %{
+                    "email" => user.email,
+                    "password" => "Password123!"
+                  })
 
-            {conn.status, redirected_to(conn)}
+                {conn.status, redirected_to(conn)}
+              end)
+
+            {time, result, i}
           end)
-          {time, result, i}
-        end)
-      end
+        end
 
       results = Task.await_many(tasks, 15_000)
 
@@ -477,9 +498,10 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       assert length(results) == num_users * num_requests
 
       # Check success rate
-      successes = Enum.count(results, fn {_time, {status, redirect}, _i} ->
-        status == 302 and redirect == "/dashboard"
-      end)
+      successes =
+        Enum.count(results, fn {_time, {status, redirect}, _i} ->
+          status == 302 and redirect == "/dashboard"
+        end)
 
       success_rate = successes / length(results)
       assert success_rate > 0.8, "Success rate: #{success_rate}"
@@ -497,9 +519,10 @@ defmodule Mcp.Integration.LoginIntegrationTest do
 
       # Perform many login operations
       for i <- 1..50 do
-        user = create_test_user(%{
-          email: "load_test_#{i}@example.com"
-        })
+        user =
+          create_test_user(%{
+            email: "load_test_#{i}@example.com"
+          })
 
         post(conn, "/sign_in", %{
           "email" => user.email,
@@ -578,53 +601,60 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       # Simulate production load with multiple user types and operations
       num_operations = 100
 
-      operations = for i <- 1..num_operations do
-        case rem(i, 4) do
-          0 -> :login_page
-          1 -> :login_attempt
-          2 -> :oauth_initiate
-          3 -> :protected_route
-        end
-      end
-
-      tasks = Enum.with_index(operations, fn operation, i ->
-        Task.async(fn ->
-          conn = build_conn() |> put_req_header("x-forwarded-for", "192.168.1.#{rem(i, 255)}")
-
-          case operation do
-            :login_page ->
-              {time, result} = :timer.tc(fn -> get(conn, "/sign_in") end)
-              {:login_page, time, result.status}
-
-            :login_attempt ->
-              {:ok, user} = create_test_user(%{email: "prod_user_#{i}@example.com"})
-              {time, result} = :timer.tc(fn ->
-                post(conn, "/sign_in", %{
-                  "email" => user.email,
-                  "password" => "Password123!"
-                })
-              end)
-              {:login_attempt, time, result.status}
-
-            :oauth_initiate ->
-              {time, result} = :timer.tc(fn -> get(conn, "/auth/google") end)
-              {:oauth_initiate, time, result.status}
-
-            :protected_route ->
-              # Should be redirected to login
-              {time, result} = :timer.tc(fn -> get(conn, "/dashboard") end)
-              {:protected_route, time, result.status}
+      operations =
+        for i <- 1..num_operations do
+          case rem(i, 4) do
+            0 -> :login_page
+            1 -> :login_attempt
+            2 -> :oauth_initiate
+            3 -> :protected_route
           end
+        end
+
+      tasks =
+        Enum.with_index(operations, fn operation, i ->
+          Task.async(fn ->
+            conn = build_conn() |> put_req_header("x-forwarded-for", "192.168.1.#{rem(i, 255)}")
+
+            case operation do
+              :login_page ->
+                {time, result} = :timer.tc(fn -> get(conn, "/sign_in") end)
+                {:login_page, time, result.status}
+
+              :login_attempt ->
+                {:ok, user} = create_test_user(%{email: "prod_user_#{i}@example.com"})
+
+                {time, result} =
+                  :timer.tc(fn ->
+                    post(conn, "/sign_in", %{
+                      "email" => user.email,
+                      "password" => "Password123!"
+                    })
+                  end)
+
+                {:login_attempt, time, result.status}
+
+              :oauth_initiate ->
+                {time, result} = :timer.tc(fn -> get(conn, "/auth/google") end)
+                {:oauth_initiate, time, result.status}
+
+              :protected_route ->
+                # Should be redirected to login
+                {time, result} = :timer.tc(fn -> get(conn, "/dashboard") end)
+                {:protected_route, time, result.status}
+            end
+          end)
         end)
-      end)
 
       results = Task.await_many(tasks, 60_000)
 
       # Analyze results
       total_operations = length(results)
-      successful_operations = Enum.count(results, fn {_type, _time, status} ->
-        status in [200, 302]
-      end)
+
+      successful_operations =
+        Enum.count(results, fn {_type, _time, status} ->
+          status in [200, 302]
+        end)
 
       success_rate = successful_operations / total_operations
       assert success_rate > 0.95, "Production load success rate: #{success_rate}"

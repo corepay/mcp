@@ -25,7 +25,7 @@ config :mcp, McpWeb.Endpoint,
   # Force SSL in production
   force_ssl: [
     hsts: true,
-    max_age: 31536000,
+    max_age: 31_536_000,
     include_subdomains: true,
     preload: true
   ],
@@ -50,9 +50,12 @@ config :mcp, :security,
   compliance_monitoring: true,
   # Production rate limits
   rate_limits: %{
-    gdpr_api: %{limit: 100, window: 3600},  # 100 requests per hour
-    auth_api: %{limit: 20, window: 3600},   # 20 auth attempts per hour
-    export_api: %{limit: 10, window: 86400}   # 10 exports per day
+    # 100 requests per hour
+    gdpr_api: %{limit: 100, window: 3600},
+    # 20 auth attempts per hour
+    auth_api: %{limit: 20, window: 3600},
+    # 10 exports per day
+    export_api: %{limit: 10, window: 86400}
   }
 
 # GDPR production configuration
@@ -64,10 +67,14 @@ config :mcp, :gdpr,
   compliance_monitoring: true,
   # Production retention settings
   data_retention: %{
-    export_files: 30,          # days
-    audit_entries: 365,         # days
-    consent_records: 2555,      # days (7 years)
-    anonymization_delay: 30     # days
+    # days
+    export_files: 30,
+    # days
+    audit_entries: 365,
+    # days (7 years)
+    consent_records: 2555,
+    # days
+    anonymization_delay: 30
   }
 
 # Logging configuration for production
@@ -86,11 +93,15 @@ config :mcp, Oban,
   # Production-specific plugins
   plugins: [
     Oban.Plugins.Pruner,
-    {Oban.Plugins.Cron, crontab: [
-      {"0 2 * * *", Mcp.Jobs.Gdpr.ComplianceWorker},       # Daily at 2 AM
-      {"0 3 * * 0", Mcp.Jobs.Gdpr.RetentionCleanupWorker}, # Weekly on Sunday at 3 AM
-      {"0 4 * * *", Mcp.Jobs.Gdpr.AuditWorker}            # Daily at 4 AM
-    ]}
+    {Oban.Plugins.Cron,
+     crontab: [
+       # Daily at 2 AM
+       {"0 2 * * *", Mcp.Jobs.Gdpr.ComplianceWorker},
+       # Weekly on Sunday at 3 AM
+       {"0 3 * * 0", Mcp.Jobs.Gdpr.RetentionCleanupWorker},
+       # Daily at 4 AM
+       {"0 4 * * *", Mcp.Jobs.Gdpr.AuditWorker}
+     ]}
   ],
   # Production safety settings
   stage_prefix: "oban",
@@ -102,17 +113,24 @@ config :swoosh, :api_client, Swoosh.ApiClient.Req
 # Production monitoring configuration
 config :mcp, :monitoring,
   # Health check settings
-  health_check_interval: 30_000,  # 30 seconds
-  readiness_timeout: 5_000,       # 5 seconds
+  # 30 seconds
+  health_check_interval: 30_000,
+  # 5 seconds
+  readiness_timeout: 5_000,
   # Metrics collection
   metrics_enabled: true,
-  metrics_interval: 60_000,       # 1 minute
+  # 1 minute
+  metrics_interval: 60_000,
   # Alerting thresholds
   alert_thresholds: %{
-    memory_usage: 0.85,           # 85% memory usage
-    cpu_usage: 0.80,              # 80% CPU usage
-    response_time_p95: 2000,      # 2 seconds
-    error_rate: 0.05              # 5% error rate
+    # 85% memory usage
+    memory_usage: 0.85,
+    # 80% CPU usage
+    cpu_usage: 0.80,
+    # 2 seconds
+    response_time_p95: 2000,
+    # 5% error rate
+    error_rate: 0.05
   }
 
 # Runtime production configuration

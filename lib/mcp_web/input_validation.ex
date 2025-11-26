@@ -40,11 +40,17 @@ defmodule McpWeb.InputValidation do
     sanitized = String.trim(reason)
 
     cond do
-      byte_size(sanitized) == 0 -> {:error, :empty_reason}
-      byte_size(sanitized) > 1000 -> {:error, :reason_too_long}
+      byte_size(sanitized) == 0 ->
+        {:error, :empty_reason}
+
+      byte_size(sanitized) > 1000 ->
+        {:error, :reason_too_long}
+
       String.contains?(sanitized, ["<script", "javascript:", "data:"]) ->
         {:error, :potentially_dangerous_content}
-      true -> {:ok, sanitized}
+
+      true ->
+        {:ok, sanitized}
     end
   end
 
@@ -57,13 +63,13 @@ defmodule McpWeb.InputValidation do
     with {:ok, purposes} <- validate_consent_purposes(params["purposes"]),
          {:ok, legal_basis} <- validate_legal_basis(params["legal_basis"]),
          {:ok, consent_given} <- validate_consent_given(params["consent_given"]) do
-
-      {:ok, %{
-        purposes: purposes,
-        legal_basis: legal_basis,
-        consent_given: consent_given,
-        valid_until: params["valid_until"] || get_default_expiry()
-      }}
+      {:ok,
+       %{
+         purposes: purposes,
+         legal_basis: legal_basis,
+         consent_given: consent_given,
+         valid_until: params["valid_until"] || get_default_expiry()
+       }}
     else
       error -> error
     end
@@ -95,7 +101,14 @@ defmodule McpWeb.InputValidation do
   defp validate_consent_purposes(_), do: {:error, :invalid_purposes}
 
   defp validate_legal_basis(legal_basis) when is_binary(legal_basis) do
-    valid_bases = ["consent", "contract", "legal_obligation", "vital_interests", "public_task", "legitimate_interests"]
+    valid_bases = [
+      "consent",
+      "contract",
+      "legal_obligation",
+      "vital_interests",
+      "public_task",
+      "legitimate_interests"
+    ]
 
     sanitized = String.downcase(String.trim(legal_basis))
 
@@ -130,11 +143,12 @@ defmodule McpWeb.InputValidation do
     page = validate_integer_param(params["page"], 1, 1_000_000)
     limit = validate_integer_param(params["limit"], 10, 100)
 
-    {:ok, %{
-      page: page,
-      limit: limit,
-      offset: (page - 1) * limit
-    }}
+    {:ok,
+     %{
+       page: page,
+       limit: limit,
+       offset: (page - 1) * limit
+     }}
   end
 
   def validate_pagination_params(_), do: {:ok, %{page: 1, limit: 10, offset: 0}}
@@ -155,8 +169,10 @@ defmodule McpWeb.InputValidation do
   """
   def sanitize_for_logging(value) when is_binary(value) do
     value
-    |> String.slice(0, 100)  # Limit length
-    |> String.replace(~r/[^\w\s\-_.,]/, "*")  # Replace special chars
+    # Limit length
+    |> String.slice(0, 100)
+    # Replace special chars
+    |> String.replace(~r/[^\w\s\-_.,]/, "*")
   end
 
   def sanitize_for_logging(value) when is_map(value) do
@@ -216,10 +232,18 @@ defmodule McpWeb.InputValidation do
   end
 
   defp format_validation_error(:invalid_uuid), do: "Invalid user ID format"
-  defp format_validation_error(:unsupported_format), do: "Unsupported export format. Supported: json, csv, xml"
+
+  defp format_validation_error(:unsupported_format),
+    do: "Unsupported export format. Supported: json, csv, xml"
+
   defp format_validation_error(:empty_reason), do: "Deletion reason cannot be empty"
-  defp format_validation_error(:reason_too_long), do: "Deletion reason is too long (max 1000 characters)"
-  defp format_validation_error(:potentially_dangerous_content), do: "Deletion reason contains potentially dangerous content"
+
+  defp format_validation_error(:reason_too_long),
+    do: "Deletion reason is too long (max 1000 characters)"
+
+  defp format_validation_error(:potentially_dangerous_content),
+    do: "Deletion reason contains potentially dangerous content"
+
   defp format_validation_error(:invalid_params), do: "Invalid request parameters"
   defp format_validation_error(:no_valid_purposes), do: "No valid consent purposes provided"
   defp format_validation_error(:invalid_purposes), do: "Invalid consent purposes"
@@ -233,9 +257,10 @@ defmodule McpWeb.InputValidation do
   def validate_export_params(params) when is_map(params) do
     with {:ok, format} <- validate_export_format(params["format"]),
          :ok <- validate_safety_of_params(params, ["format", "purpose"]) do
-      {:ok, %{
-        format: format
-      }}
+      {:ok,
+       %{
+         format: format
+       }}
     else
       error -> error
     end
@@ -261,10 +286,11 @@ defmodule McpWeb.InputValidation do
   def validate_admin_deletion_params(params) when is_map(params) do
     with {:ok, user_id} <- validate_user_id(params["user_id"]),
          {:ok, reason} <- validate_deletion_reason(params["reason"]) do
-      {:ok, %{
-        user_id: user_id,
-        reason: reason
-      }}
+      {:ok,
+       %{
+         user_id: user_id,
+         reason: reason
+       }}
     else
       error -> error
     end
@@ -272,21 +298,25 @@ defmodule McpWeb.InputValidation do
 
   def validate_admin_deletion_params(_), do: {:error, :invalid_params}
 
-  defp validate_safety_of_params(params, allowed_keys) when is_map(params) and is_list(allowed_keys) do
+  defp validate_safety_of_params(params, allowed_keys)
+       when is_map(params) and is_list(allowed_keys) do
     Enum.each(allowed_keys, fn key ->
-      case Map.get(params, key) do
-        nil -> :ok
-        value when is_binary(value) ->
-          if contains_dangerous_content?(value) do
-            throw {:error, :potentially_dangerous_content}
-          end
-        _ -> :ok
-      end
+      value = Map.get(params, key)
+      validate_param_value(key, value)
     end)
 
     :ok
   catch
     {:error, reason} -> {:error, reason}
+  end
+
+  defp validate_param_value(_key, nil), do: :ok
+  defp validate_param_value(_key, value) when not is_binary(value), do: :ok
+
+  defp validate_param_value(key, value) when is_binary(value) do
+    if contains_dangerous_content?(value) do
+      throw({:error, :potentially_dangerous_content})
+    end
   end
 
   defp validate_safety_of_params(_, _), do: {:error, :invalid_params}

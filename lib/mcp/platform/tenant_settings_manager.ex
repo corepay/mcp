@@ -11,13 +11,16 @@ defmodule Mcp.Platform.TenantSettingsManager do
   def get_all_tenant_settings(tenant_id) do
     case Tenant.get_by_id(tenant_id) do
       {:ok, tenant} ->
-        {:ok, %{
-          tenant_id: tenant.id,
-          features: get_features_from_settings(tenant.settings),
-          branding: tenant.branding,
-          settings: tenant.settings
-        }}
-      {:error, error} -> {:error, error}
+        {:ok,
+         %{
+           tenant_id: tenant.id,
+           features: get_features_from_settings(tenant.settings),
+           branding: tenant.branding,
+           settings: tenant.settings
+         }}
+
+      {:error, error} ->
+        {:error, error}
     end
   end
 
@@ -28,7 +31,9 @@ defmodule Mcp.Platform.TenantSettingsManager do
     case Tenant.get_by_id(tenant_id) do
       {:ok, tenant} ->
         {:ok, get_features_from_settings(tenant.settings)}
-      {:error, error} -> {:error, error}
+
+      {:error, error} ->
+        {:error, error}
     end
   end
 
@@ -39,7 +44,9 @@ defmodule Mcp.Platform.TenantSettingsManager do
     case Tenant.get_by_id(tenant_id) do
       {:ok, tenant} ->
         {:ok, tenant.branding || %{}}
-      {:error, error} -> {:error, error}
+
+      {:error, error} ->
+        {:error, error}
     end
   end
 
@@ -50,7 +57,7 @@ defmodule Mcp.Platform.TenantSettingsManager do
     with {:ok, tenant} <- Tenant.get_by_id(tenant_id) do
       current_settings = tenant.settings || %{}
       features = Map.get(current_settings, "features", [])
-      
+
       if feature in features do
         {:ok, %{tenant_id: tenant_id, feature: feature, enabled: true, config: config}}
       else
@@ -64,7 +71,9 @@ defmodule Mcp.Platform.TenantSettingsManager do
         case Tenant.update(tenant, %{settings: new_settings}) do
           {:ok, _updated_tenant} ->
             {:ok, %{tenant_id: tenant_id, feature: feature, enabled: true, config: config}}
-          {:error, error} -> {:error, error}
+
+          {:error, error} ->
+            {:error, error}
         end
       end
     end
@@ -77,18 +86,20 @@ defmodule Mcp.Platform.TenantSettingsManager do
     with {:ok, tenant} <- Tenant.get_by_id(tenant_id) do
       current_settings = tenant.settings || %{}
       features = Map.get(current_settings, "features", [])
-      
-      if feature not in features do
-        {:ok, %{tenant_id: tenant_id, feature: feature, enabled: false}}
-      else
+
+      if feature in features do
         new_features = List.delete(features, feature)
         new_settings = Map.put(current_settings, "features", new_features)
 
         case Tenant.update(tenant, %{settings: new_settings}) do
           {:ok, _updated_tenant} ->
             {:ok, %{tenant_id: tenant_id, feature: feature, enabled: false}}
-          {:error, error} -> {:error, error}
+
+          {:error, error} ->
+            {:error, error}
         end
+      else
+        {:ok, %{tenant_id: tenant_id, feature: feature, enabled: false}}
       end
     end
   end
@@ -101,7 +112,9 @@ defmodule Mcp.Platform.TenantSettingsManager do
       case Tenant.update(tenant, %{branding: branding_map}) do
         {:ok, updated_tenant} ->
           {:ok, %{tenant_id: tenant_id, branding: updated_tenant.branding}}
-        {:error, error} -> {:error, error}
+
+        {:error, error} ->
+          {:error, error}
       end
     end
   end
@@ -111,12 +124,13 @@ defmodule Mcp.Platform.TenantSettingsManager do
   """
   def export_tenant_settings(tenant_id) do
     with {:ok, tenant} <- Tenant.get_by_id(tenant_id) do
-      {:ok, %{
-        tenant_id: tenant.id,
-        settings: tenant.settings,
-        branding: tenant.branding,
-        exported_at: DateTime.utc_now()
-      }}
+      {:ok,
+       %{
+         tenant_id: tenant.id,
+         settings: tenant.settings,
+         branding: tenant.branding,
+         exported_at: DateTime.utc_now()
+       }}
     end
   end
 
@@ -126,8 +140,16 @@ defmodule Mcp.Platform.TenantSettingsManager do
   def import_tenant_settings(tenant_id, settings_data, _context \\ nil) do
     with {:ok, tenant} <- Tenant.get_by_id(tenant_id) do
       updates = %{}
-      updates = if settings_data["settings"], do: Map.put(updates, :settings, settings_data["settings"]), else: updates
-      updates = if settings_data["branding"], do: Map.put(updates, :branding, settings_data["branding"]), else: updates
+
+      updates =
+        if settings_data["settings"],
+          do: Map.put(updates, :settings, settings_data["settings"]),
+          else: updates
+
+      updates =
+        if settings_data["branding"],
+          do: Map.put(updates, :branding, settings_data["branding"]),
+          else: updates
 
       case Tenant.update(tenant, updates) do
         {:ok, _} -> {:ok, %{tenant_id: tenant_id, imported: true}}
@@ -164,11 +186,14 @@ defmodule Mcp.Platform.TenantSettingsManager do
     with {:ok, tenant} <- Tenant.get_by_id(tenant_id) do
       current_settings = tenant.settings || %{}
       new_settings = Map.put(current_settings, category, settings)
-      
+
       case Tenant.update(tenant, %{settings: new_settings}) do
         {:ok, _} ->
-          {:ok, %{tenant_id: tenant_id, category: category, settings: settings, updated_by: user_id}}
-        {:error, error} -> {:error, error}
+          {:ok,
+           %{tenant_id: tenant_id, category: category, settings: settings, updated_by: user_id}}
+
+        {:error, error} ->
+          {:error, error}
       end
     end
   end
@@ -178,12 +203,15 @@ defmodule Mcp.Platform.TenantSettingsManager do
   """
   def get_tenant_config_summary(tenant_id) do
     with {:ok, tenant} <- Tenant.get_by_id(tenant_id) do
-      {:ok, %{summary: %{
-        plan: tenant.plan,
-        status: tenant.status,
-        feature_count: length(get_features_from_settings(tenant.settings)),
-        has_branding: map_size(tenant.branding || %{}) > 0
-      }}}
+      {:ok,
+       %{
+         summary: %{
+           plan: tenant.plan,
+           status: tenant.status,
+           feature_count: length(get_features_from_settings(tenant.settings)),
+           has_branding: map_size(tenant.branding || %{}) > 0
+         }
+       }}
     end
   end
 

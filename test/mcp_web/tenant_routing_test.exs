@@ -2,8 +2,8 @@ defmodule McpWeb.TenantRoutingTest do
   use ExUnit.Case, async: true
   use Plug.Test
 
-  alias McpWeb.TenantRouting
   alias Mcp.Platform.Tenant
+  alias McpWeb.TenantRouting
 
   # Mock tenant data
   @valid_tenant %Tenant{

@@ -7,7 +7,7 @@ defmodule Mcp.Storage.FileManager do
   use GenServer
   require Logger
 
-  alias ClientFactory
+  alias Mcp.Storage.ClientFactory
 
   def start_link(init_arg) do
     GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)

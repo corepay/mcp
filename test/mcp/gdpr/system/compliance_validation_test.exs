@@ -10,6 +10,7 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
     conn =
       conn
       |> put_req_header("x-forwarded-host", "www.example.com")
+
     {:ok, conn: conn}
   end
 
@@ -31,11 +32,13 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
       inserted_at: DateTime.utc_now(),
       updated_at: DateTime.utc_now()
     }
+
     [user: user]
   end
 
   defp create_admin_user(context) do
     tenant_schema = "test_tenant"
+
     user = %{
       id: Ecto.UUID.generate(),
       email: "admin@example.com",
@@ -44,6 +47,7 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
       inserted_at: DateTime.utc_now(),
       updated_at: DateTime.utc_now()
     }
+
     [user: user, tenant_schema: tenant_schema]
   end
 
@@ -104,7 +108,7 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
 
         # Should contain user's consent information
         assert Map.has_key?(consent_response, "user_id") or
-               Map.has_key?(consent_response, "consents")
+                 Map.has_key?(consent_response, "consents")
       end
     end
 
@@ -157,16 +161,22 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
 
           # Each audit entry should contain required compliance fields
           required_fields = [
-            "timestamp", "action", "user_id", "ip_address", "user_agent"
+            "timestamp",
+            "action",
+            "user_id",
+            "ip_address",
+            "user_agent"
           ]
 
           for entry <- audit_entries do
             # Verify at least some required fields are present
             entry_str = inspect(entry)
+
             assert String.contains?(entry_str, "timestamp") or
-                   String.contains?(entry_str, "time")
+                     String.contains?(entry_str, "time")
+
             assert String.contains?(entry_str, "action") or
-                   String.contains?(entry_str, "event")
+                     String.contains?(entry_str, "event")
           end
         end
       end
@@ -226,18 +236,23 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
 
         # Look for retention indicators
         retention_indicators = [
-          "retention", "data_retention", "cleanup", "expired", "anonymized"
+          "retention",
+          "data_retention",
+          "cleanup",
+          "expired",
+          "anonymized"
         ]
 
-        has_retention_info = Enum.any?(retention_indicators, fn indicator ->
-          String.contains?(String.downcase(response_str), indicator)
-        end)
+        has_retention_info =
+          Enum.any?(retention_indicators, fn indicator ->
+            String.contains?(String.downcase(response_str), indicator)
+          end)
 
         # Should at least have basic compliance metrics
         assert Map.has_key?(response, "compliance_score") or
-               Map.has_key?(response, "total_users") or
-               Map.has_key?(response, "deleted_users") or
-               has_retention_info
+                 Map.has_key?(response, "total_users") or
+                 Map.has_key?(response, "deleted_users") or
+                 has_retention_info
       end
     end
 
@@ -260,17 +275,22 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
 
         # Look for cleanup process indicators
         cleanup_indicators = [
-          "cleanup", "processed", "expired", "anonymized", "deleted"
+          "cleanup",
+          "processed",
+          "expired",
+          "anonymized",
+          "deleted"
         ]
 
-        has_cleanup_info = Enum.any?(cleanup_indicators, fn indicator ->
-          String.contains?(String.downcase(response_str), indicator)
-        end)
+        has_cleanup_info =
+          Enum.any?(cleanup_indicators, fn indicator ->
+            String.contains?(String.downcase(response_str), indicator)
+          end)
 
         # Should have some indication of processing activity
         assert has_cleanup_info or
-               Map.has_key?(response, "compliance_score") or
-               length(Map.keys(response)) > 0
+                 Map.has_key?(response, "compliance_score") or
+                 length(Map.keys(response)) > 0
       end
     end
   end
@@ -292,7 +312,8 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
         conn = post(conn, "/api/gdpr/consent", consent_data)
 
         # Should process consent requests
-        assert conn.status in [200, 400, 422]  # May fail validation but should not crash
+        # May fail validation but should not crash
+        assert conn.status in [200, 400, 422]
       end
 
       # Should be able to retrieve consent status
@@ -302,8 +323,8 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
 
       # Should contain consent information
       assert Map.has_key?(response, "user_id") or
-             Map.has_key?(response, "consents") or
-             length(Map.keys(response)) > 0
+               Map.has_key?(response, "consents") or
+               length(Map.keys(response)) > 0
     end
 
     test "consent withdrawal and timestamp tracking", %{conn: conn} do
@@ -342,7 +363,7 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
 
         # Should show consent-related activity
         assert String.contains?(response_str, "consent") or
-               Map.has_key?(response, "audit_entries")
+                 Map.has_key?(response, "audit_entries")
       end
     end
   end
@@ -378,10 +399,11 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
       # RED: Validate that exported data follows minimization principles
 
       # Request data export
-      conn = post(conn, "/api/gdpr/export", %{
-        "format" => "json",
-        "purpose" => "access_request"
-      })
+      conn =
+        post(conn, "/api/gdpr/export", %{
+          "format" => "json",
+          "purpose" => "access_request"
+        })
 
       if conn.status == 202 do
         response = json_response(conn, 202)
@@ -421,15 +443,15 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
 
             # Should have timestamp (for ordering)
             assert String.contains?(entry_str, "timestamp") or
-                   String.contains?(entry_str, "time")
+                     String.contains?(entry_str, "time")
 
             # Should have user identification
             assert String.contains?(entry_str, "user") or
-                   String.contains?(entry_str, "actor")
+                     String.contains?(entry_str, "actor")
 
             # Should have action identification
             assert String.contains?(entry_str, "action") or
-                   String.contains?(entry_str, "event")
+                     String.contains?(entry_str, "event")
           end
         end
       end
@@ -456,7 +478,8 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
         for header <- security_headers do
           header_value = get_resp_header(operation_conn, header)
           # Should have security headers set (when applicable)
-          assert length(header_value) >= 0  # Basic check that header inspection works
+          # Basic check that header inspection works
+          assert length(header_value) >= 0
         end
       end
     end
@@ -502,13 +525,19 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
 
         # Should provide transparency about processing activities
         transparency_indicators = [
-          "compliance_score", "total_users", "processed", "audit", "metrics"
+          "compliance_score",
+          "total_users",
+          "processed",
+          "audit",
+          "metrics"
         ]
 
         response_str = inspect(response)
-        has_transparency = Enum.any?(transparency_indicators, fn indicator ->
-          String.contains?(response_str, indicator)
-        end)
+
+        has_transparency =
+          Enum.any?(transparency_indicators, fn indicator ->
+            String.contains?(response_str, indicator)
+          end)
 
         assert has_transparency or length(Map.keys(response)) > 0
       end

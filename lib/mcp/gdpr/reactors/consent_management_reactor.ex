@@ -11,14 +11,14 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
   alias Mcp.Jobs.Gdpr.RetentionCleanupWorker
 
   # Input arguments for consent management
-  input :user_id
-  input :purpose
-  input :legal_basis
-  input :consent_value
-  input :actor_id
-  input :ip_address
-  input :user_agent
-  input :metadata
+  input(:user_id)
+  input(:purpose)
+  input(:legal_basis)
+  input(:consent_value)
+  input(:actor_id)
+  input(:ip_address)
+  input(:user_agent)
+  input(:metadata)
 
   step :validate_user do
     argument :user_id, input(:user_id)
@@ -112,6 +112,7 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
     case Ash.get(Mcp.Gdpr.Resources.User, user_id, domain: Mcp.Domains.Gdpr) do
       {:ok, user} ->
         {:ok, user}
+
       {:error, _} ->
         {:error, "User not found"}
     end
@@ -152,7 +153,14 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
   Validates the legal basis for consent.
   """
   def validate_legal_basis(%{legal_basis: basis, purpose: _purpose}) do
-    valid_bases = ["consent", "contract", "legal_obligation", "vital_interests", "public_task", "legitimate_interests"]
+    valid_bases = [
+      "consent",
+      "contract",
+      "legal_obligation",
+      "vital_interests",
+      "public_task",
+      "legitimate_interests"
+    ]
 
     if basis in valid_bases do
       {:ok, :valid_basis}
@@ -164,7 +172,13 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
   @doc """
   Creates a new consent record.
   """
-  def create_consent_record(%{user_id: user_id, purpose: purpose, legal_basis: basis, consent_value: value, metadata: metadata}) do
+  def create_consent_record(%{
+        user_id: user_id,
+        purpose: purpose,
+        legal_basis: basis,
+        consent_value: value,
+        metadata: metadata
+      }) do
     consent_data = %{
       user_id: user_id,
       purpose: purpose,
@@ -191,6 +205,7 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
       %{purpose: purpose},
       "system"
     )
+
     :ok
   end
 
@@ -203,16 +218,26 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
     case purpose do
       "marketing" ->
         Ash.get!(Mcp.Gdpr.Resources.User, user_id, domain: Mcp.Domains.Gdpr)
-        |> Ash.update!(%{
-          gdpr_marketing_consent: value,
-          gdpr_consent_record: %{marketing: consent_record}
-        }, action: :update_consent, domain: Mcp.Domains.Gdpr)
+        |> Ash.update!(
+          %{
+            gdpr_marketing_consent: value,
+            gdpr_consent_record: %{marketing: consent_record}
+          },
+          action: :update_consent,
+          domain: Mcp.Domains.Gdpr
+        )
+
       "analytics" ->
         Ash.get!(Mcp.Gdpr.Resources.User, user_id, domain: Mcp.Domains.Gdpr)
-        |> Ash.update!(%{
-          gdpr_analytics_consent: value,
-          gdpr_consent_record: %{analytics: consent_record}
-        }, action: :update_consent, domain: Mcp.Domains.Gdpr)
+        |> Ash.update!(
+          %{
+            gdpr_analytics_consent: value,
+            gdpr_consent_record: %{analytics: consent_record}
+          },
+          action: :update_consent,
+          domain: Mcp.Domains.Gdpr
+        )
+
       _ ->
         {:ok, :consent_updated}
     end
@@ -229,49 +254,72 @@ defmodule Mcp.Gdpr.ConsentManagementReactor do
       %{purpose: purpose},
       "system"
     )
+
     :ok
   end
 
   @doc """
   Creates an audit trail entry for the consent change.
   """
-  def create_consent_audit_entry(%{user_id: user_id, purpose: purpose, consent_value: value, actor_id: actor_id, ip_address: ip, user_agent: ua}) do
-    Ash.create(Mcp.Gdpr.Resources.AuditTrail, %{
-      user_id: user_id,
-      action_type: "consent_updated",
-      actor_type: "user",
-      actor_id: actor_id,
-      ip_address: ip,
-      user_agent: ua,
-      legal_basis: "consent",
-      data_categories: [purpose],
-      details: %{
+  def create_consent_audit_entry(%{
+        user_id: user_id,
         purpose: purpose,
-        consent_value: value
-      }
-    }, action: :create_entry, domain: Mcp.Domains.Gdpr)
+        consent_value: value,
+        actor_id: actor_id,
+        ip_address: ip,
+        user_agent: ua
+      }) do
+    Ash.create(
+      Mcp.Gdpr.Resources.AuditTrail,
+      %{
+        user_id: user_id,
+        action_type: "consent_updated",
+        actor_type: "user",
+        actor_id: actor_id,
+        ip_address: ip,
+        user_agent: ua,
+        legal_basis: "consent",
+        data_categories: [purpose],
+        details: %{
+          purpose: purpose,
+          consent_value: value
+        }
+      },
+      action: :create_entry,
+      domain: Mcp.Domains.Gdpr
+    )
   end
 
   @doc """
   Handles implications of consent changes.
   """
-  def handle_consent_implications(%{user_id: user_id, purpose: purpose, consent_value: value, previous_consent: previous}) do
+  def handle_consent_implications(%{
+        user_id: user_id,
+        purpose: purpose,
+        consent_value: value,
+        previous_consent: previous
+      }) do
     case {purpose, value, previous} do
       {"marketing", false, true} ->
         # User withdrew marketing consent - trigger data cleanup
         schedule_marketing_data_cleanup(user_id)
+
       {"analytics", false, true} ->
         # User withdrew analytics consent - disable tracking
         disable_analytics_tracking(user_id)
+
       {"third_party_sharing", false, true} ->
         # User withdrew third-party sharing consent
         revoke_third_party_access(user_id)
+
       {"marketing", true, false} ->
         # User gave marketing consent - enable marketing
         enable_marketing_communications(user_id)
+
       {"analytics", true, false} ->
         # User gave analytics consent - enable tracking
         enable_analytics_tracking(user_id)
+
       _ ->
         :ok
     end

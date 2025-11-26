@@ -47,14 +47,12 @@ defmodule Mcp.Application do
   # Ensure any available OS monitoring applications are started
   defp ensure_os_mon_apps do
     # Try to start os_mon if available, but don't fail if it's not
-    try do
-      Application.start(:os_mon)
-      :cpu_sup.start_link()
-      :memsup.start_link()
-      :disksup.start_link()
-    rescue
-      # OS monitoring not available, continue without it
-      _ -> :ok
-    end
+    Application.start(:os_mon)
+    :cpu_sup.start_link()
+    :memsup.start_link()
+    :disksup.start_link()
+  rescue
+    # OS monitoring not available, continue without it
+    _ -> :ok
   end
 end

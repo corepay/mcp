@@ -13,9 +13,12 @@ config :mcp, :token_signing_secret, "dev-secret-change-in-production-use-env-var
 # Configure Oban for development - use testing mode to prevent job processing
 config :mcp, Oban,
   repo: Mcp.Repo,
-  testing: :manual,  # This prevents automatic job processing
-  queues: false,       # Don't start queues in development
-  plugins: false      # Don't start plugins in development
+  # This prevents automatic job processing
+  testing: :manual,
+  # Don't start queues in development
+  queues: false,
+  # Don't start plugins in development
+  plugins: false
 
 # Configure your database with environment variables
 config :mcp, Mcp.Repo,

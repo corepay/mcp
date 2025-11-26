@@ -1,4 +1,8 @@
 defmodule Mcp.Platform do
+  @moduledoc """
+  Ash Domain for the Platform context.
+  """
+
   use Ash.Domain,
     otp_app: :mcp
 

@@ -92,14 +92,14 @@ defmodule McpWeb.OAuthController do
           |> put_flash(:info, "#{String.capitalize(provider)} account unlinked successfully")
           |> redirect(to: ~p"/settings/security")
 
-        # OAuth.unlink_oauth currently only returns {:ok, user}
-        # {:error, reason} ->
-        #   conn
-        #   |> put_flash(
-        #     :error,
-        #     "Failed to unlink #{String.capitalize(provider)}: #{inspect(reason)}"
-        #   )
-        #   |> redirect(to: ~p"/settings/security")
+          # OAuth.unlink_oauth currently only returns {:ok, user}
+          # {:error, reason} ->
+          #   conn
+          #   |> put_flash(
+          #     :error,
+          #     "Failed to unlink #{String.capitalize(provider)}: #{inspect(reason)}"
+          #   )
+          #   |> redirect(to: ~p"/settings/security")
       end
     else
       conn
@@ -171,7 +171,6 @@ defmodule McpWeb.OAuthController do
     handle_oauth_callback_error(conn, "oauth_failed", :oauth_failed)
   end
 
-  
   defp handle_oauth_callback_error(conn, provider, reason) do
     conn
     |> cleanup_oauth_session()
@@ -262,12 +261,12 @@ defmodule McpWeb.OAuthController do
         {:ok, _updated_user} ->
           json(conn, %{success: true, message: "Token refreshed successfully"})
 
-        # OAuth.refresh_oauth_token currently only returns {:ok, user}
-        # {:error, reason} ->
-        #   json(conn, %{
-        #     success: false,
-        #     error: "Failed to refresh token: #{inspect(reason)}"
-        #   })
+          # OAuth.refresh_oauth_token currently only returns {:ok, user}
+          # {:error, reason} ->
+          #   json(conn, %{
+          #     success: false,
+          #     error: "Failed to refresh token: #{inspect(reason)}"
+          #   })
       end
     else
       json(conn, %{

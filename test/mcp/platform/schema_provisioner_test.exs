@@ -1,10 +1,10 @@
 defmodule Mcp.Platform.SchemaProvisionerTest do
   use ExUnit.Case, async: false
 
-  alias Mcp.Repo
-  alias Mcp.Platform.Tenant
-  alias Mcp.Platform.SchemaProvisioner
   alias Mcp.MultiTenant
+  alias Mcp.Platform.SchemaProvisioner
+  alias Mcp.Platform.Tenant
+  alias Mcp.Repo
 
   @test_tenant_slug "test_tenant_#{System.unique_integer([:positive])}"
 

@@ -238,7 +238,6 @@ defmodule McpWeb.Auth.SessionPlug do
     end)
   end
 
-  
   defp get_current_session(conn) do
     conn.assigns[:current_session]
   end

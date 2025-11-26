@@ -213,10 +213,11 @@ defmodule Mcp.Accounts.UserTest do
   describe "pagination and filtering" do
     setup do
       # Create multiple users for testing
-      users = for i <- 1..5 do
-        {:ok, user} = User.register("user#{i}@example.com", "Password123!", "Password123!")
-        user
-      end
+      users =
+        for i <- 1..5 do
+          {:ok, user} = User.register("user#{i}@example.com", "Password123!", "Password123!")
+          user
+        end
 
       {:ok, users: users}
     end

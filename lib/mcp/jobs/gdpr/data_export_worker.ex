@@ -13,9 +13,9 @@ defmodule Mcp.Jobs.Gdpr.DataExportWorker do
 
   require Logger
 
+  alias Mcp.Accounts.UserSchema
   alias Mcp.Gdpr.Export
   alias Mcp.Repo
-  alias Mcp.Accounts.UserSchema
   import Ecto.Query
 
   @impl true
@@ -71,29 +71,27 @@ defmodule Mcp.Jobs.Gdpr.DataExportWorker do
   end
 
   defp collect_user_data(user_id, format) do
-    try do
-      user = Repo.get!(UserSchema, user_id)
+    user = Repo.get!(UserSchema, user_id)
 
-      # Collect all user-related data
-      user_data = %{
-        user_profile: format_user_profile(user),
-        audit_trail: get_user_audit_trail(user_id),
-        consents: get_user_consents(user_id),
-        activities: get_user_activities(user_id),
-        export_metadata: %{
-          user_id: user_id,
-          export_date: DateTime.utc_now(),
-          format: format,
-          version: "1.0"
-        }
+    # Collect all user-related data
+    user_data = %{
+      user_profile: format_user_profile(user),
+      audit_trail: get_user_audit_trail(user_id),
+      consents: get_user_consents(user_id),
+      activities: get_user_activities(user_id),
+      export_metadata: %{
+        user_id: user_id,
+        export_date: DateTime.utc_now(),
+        format: format,
+        version: "1.0"
       }
+    }
 
-      {:ok, user_data}
-    rescue
-      error ->
-        Logger.error("Error collecting user data for user #{user_id}: #{inspect(error)}")
-        {:error, :data_collection_failed}
-    end
+    {:ok, user_data}
+  rescue
+    error ->
+      Logger.error("Error collecting user data for user #{user_id}: #{inspect(error)}")
+      {:error, :data_collection_failed}
   end
 
   defp format_user_profile(user) do
@@ -112,7 +110,8 @@ defmodule Mcp.Jobs.Gdpr.DataExportWorker do
   defp get_user_audit_trail(user_id) do
     from(a in "gdpr_audit_trail",
       where: a.user_id == ^user_id,
-      order_by: [desc: a.inserted_at])
+      order_by: [desc: a.inserted_at]
+    )
     |> Repo.all()
     |> Enum.map(&format_audit_entry/1)
   end
@@ -120,7 +119,8 @@ defmodule Mcp.Jobs.Gdpr.DataExportWorker do
   defp get_user_consents(user_id) do
     from(c in "gdpr_consent",
       where: c.user_id == ^user_id,
-      order_by: [desc: c.inserted_at])
+      order_by: [desc: c.inserted_at]
+    )
     |> Repo.all()
     |> Enum.map(&format_consent_entry/1)
   end
@@ -181,25 +181,26 @@ defmodule Mcp.Jobs.Gdpr.DataExportWorker do
     filename = "user_data_export_#{export.user_id}_#{timestamp}.#{export.format}"
     file_path = Path.join(temp_dir, filename)
 
-    try do
-      content = case export.format do
+    content =
+      case export.format do
         "json" -> Jason.encode!(user_data, pretty: true)
         "csv" -> generate_csv_content(user_data)
         "xml" -> generate_xml_content(user_data)
         _ -> {:error, :unsupported_format}
       end
 
-      case content do
-        {:error, reason} -> {:error, reason}
-        content ->
-          File.write!(file_path, content)
-          {:ok, file_path}
-      end
-    rescue
-      error ->
-        Logger.error("Error generating export file: #{inspect(error)}")
-        {:error, :file_generation_failed}
+    case content do
+      {:error, reason} ->
+        {:error, reason}
+
+      content ->
+        File.write!(file_path, content)
+        {:ok, file_path}
     end
+  rescue
+    error ->
+      Logger.error("Error generating export file: #{inspect(error)}")
+      {:error, :file_generation_failed}
   end
 
   defp generate_csv_content(user_data) do
@@ -238,15 +239,21 @@ defmodule Mcp.Jobs.Gdpr.DataExportWorker do
 
   defp update_export_completion(export, download_url) do
     now = DateTime.utc_now()
-    expires_at = DateTime.add(now, 7, :day)  # 7 days expiration
+    # 7 days expiration
+    expires_at = DateTime.add(now, 7, :day)
 
-    case Ash.update(export, %{
-      status: "completed",
-      download_url: download_url,
-      completed_at: now,
-      expires_at: expires_at,
-      updated_at: now
-    }, action: :mark_completed, domain: Mcp.Domains.Gdpr) do
+    case Ash.update(
+           export,
+           %{
+             status: "completed",
+             download_url: download_url,
+             completed_at: now,
+             expires_at: expires_at,
+             updated_at: now
+           },
+           action: :mark_completed,
+           domain: Mcp.Domains.Gdpr
+         ) do
       {:ok, _updated_export} -> :ok
       {:error, reason} -> {:error, reason}
     end
@@ -256,6 +263,7 @@ defmodule Mcp.Jobs.Gdpr.DataExportWorker do
     File.rm(file_path)
     :ok
   rescue
-    _ -> :ok  # Ignore cleanup errors
+    # Ignore cleanup errors
+    _ -> :ok
   end
 end

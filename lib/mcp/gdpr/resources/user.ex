@@ -11,7 +11,7 @@ defmodule Mcp.Gdpr.Resources.User do
 
   postgres do
     table "users"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   attributes do
@@ -71,6 +71,7 @@ defmodule Mcp.Gdpr.Resources.User do
       argument :email, :string do
         allow_nil? false
       end
+
       get_by [:email]
     end
 
@@ -78,6 +79,7 @@ defmodule Mcp.Gdpr.Resources.User do
       argument :id, :uuid do
         allow_nil? false
       end
+
       get_by [:id]
     end
 
@@ -123,9 +125,11 @@ defmodule Mcp.Gdpr.Resources.User do
       ]
 
       argument :actor_id, :uuid
+
       argument :anonymization_mode, :string do
         default "full"
       end
+
       argument :fields_to_anonymize, {:array, :string}
 
       change set_attribute(:status, "anonymized")

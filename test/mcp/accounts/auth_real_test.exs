@@ -2,12 +2,13 @@ defmodule Mcp.Accounts.AuthRealTest do
   use ExUnit.Case, async: false
 
   import Ecto.Query
-  alias Mcp.Accounts.{User, Auth}
+  alias Ecto.Adapters.SQL.Sandbox
+  alias Mcp.Accounts.{Auth, User}
   alias Mcp.Repo
 
   setup do
-    Ecto.Adapters.SQL.Sandbox.checkout(Repo)
-    Ecto.Adapters.SQL.Sandbox.mode(Repo, {:shared, self()})
+    Sandbox.checkout(Repo)
+    Sandbox.mode(Repo, {:shared, self()})
     :ok
   end
 
@@ -39,7 +40,7 @@ defmodule Mcp.Accounts.AuthRealTest do
 
     test "rejects authentication for non-existent user" do
       assert {:error, :invalid_credentials} =
-        Auth.authenticate("nonexistent@example.com", "anypassword")
+               Auth.authenticate("nonexistent@example.com", "anypassword")
     end
 
     test "rejects authentication for suspended user" do

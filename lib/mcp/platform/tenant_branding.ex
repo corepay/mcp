@@ -1,12 +1,19 @@
 defmodule Mcp.Platform.TenantBranding do
+  @moduledoc """
+  Resource representing branding configuration for a tenant.
+  """
+
   use Ash.Resource,
     domain: Mcp.Platform,
     data_layer: AshPostgres.DataLayer,
     extensions: [Ash.Resource.Dsl]
 
+  alias Mcp.Platform.TenantBranding.Changes
+  alias Mcp.Repo
+
   postgres do
     table "tenant_branding"
-    repo Mcp.Repo
+    repo(Repo)
   end
 
   actions do
@@ -14,13 +21,40 @@ defmodule Mcp.Platform.TenantBranding do
 
     create :create_branding do
       primary? true
-      accept [:tenant_id, :name, :primary_color, :secondary_color, :accent_color, :background_color, :text_color, :theme, :font_family, :logo_url, :created_by, :is_active]
-      change &Mcp.Platform.TenantBranding.Changes.validate_colors/2
+
+      accept [
+        :tenant_id,
+        :name,
+        :primary_color,
+        :secondary_color,
+        :accent_color,
+        :background_color,
+        :text_color,
+        :theme,
+        :font_family,
+        :logo_url,
+        :created_by,
+        :is_active
+      ]
+
+      change &Changes.validate_colors/2
     end
 
     update :update_branding do
-      accept [:name, :primary_color, :secondary_color, :accent_color, :background_color, :text_color, :theme, :font_family, :logo_url, :is_active]
-      change &Mcp.Platform.TenantBranding.Changes.validate_colors/2
+      accept [
+        :name,
+        :primary_color,
+        :secondary_color,
+        :accent_color,
+        :background_color,
+        :text_color,
+        :theme,
+        :font_family,
+        :logo_url,
+        :is_active
+      ]
+
+      change &Changes.validate_colors/2
       require_atomic? false
     end
 
@@ -52,10 +86,12 @@ defmodule Mcp.Platform.TenantBranding do
     attribute :accent_color, :string
     attribute :background_color, :string
     attribute :text_color, :string
+
     attribute :theme, :atom do
-      constraints [one_of: [:light, :dark, :system]]
+      constraints one_of: [:light, :dark, :system]
       default :light
     end
+
     attribute :font_family, :string
     attribute :logo_url, :string
     attribute :created_by, :string

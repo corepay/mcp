@@ -8,7 +8,7 @@ defmodule Mcp.Platform.FeatureToggle do
   @doc """
   Gets all feature definitions.
   """
-  def feature_definitions() do
+  def feature_definitions do
     # Common feature definitions
     %{
       "analytics" => %{

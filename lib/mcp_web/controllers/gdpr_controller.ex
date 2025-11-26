@@ -3,8 +3,8 @@ defmodule McpWeb.GdprController do
 
   require Logger
 
-  alias Mcp.Gdpr.Compliance
   alias Mcp.Accounts.UserSchema
+  alias Mcp.Gdpr.Compliance
   alias Mcp.Repo
   alias McpWeb.Auth.GdprAuthPlug
   alias McpWeb.InputValidation
@@ -78,6 +78,7 @@ defmodule McpWeb.GdprController do
             })
 
             Logger.error("Failed to request data export for user #{user.id}: #{inspect(reason)}")
+
             conn
             |> put_status(:internal_server_error)
             |> json(%{
@@ -104,7 +105,6 @@ defmodule McpWeb.GdprController do
     end
   end
 
-  
   @doc """
   Get the status of a data export request.
   """
@@ -201,7 +201,8 @@ defmodule McpWeb.GdprController do
           status: updated_user.status,
           deleted_at: updated_user.deleted_at,
           retention_expires_at: updated_user.gdpr_retention_expires_at,
-          warning: "Your account will be permanently deleted after the retention period. This action can be cancelled within 90 days.",
+          warning:
+            "Your account will be permanently deleted after the retention period. This action can be cancelled within 90 days.",
           request_id: request_id
         })
 
@@ -241,6 +242,7 @@ defmodule McpWeb.GdprController do
         })
 
         Logger.error("Failed to process deletion request for user #{user.id}: #{inspect(reason)}")
+
         conn
         |> put_status(:internal_server_error)
         |> json(%{
@@ -280,6 +282,7 @@ defmodule McpWeb.GdprController do
 
       {:error, reason} ->
         Logger.error("Failed to cancel deletion request for user #{user.id}: #{inspect(reason)}")
+
         conn
         |> put_status(:internal_server_error)
         |> json(%{error: "Failed to cancel account deletion request"})
@@ -300,6 +303,7 @@ defmodule McpWeb.GdprController do
 
       {:error, reason} ->
         Logger.error("Failed to get deletion status for user #{user.id}: #{inspect(reason)}")
+
         conn
         |> put_status(:internal_server_error)
         |> json(%{error: "Failed to get deletion status"})
@@ -314,40 +318,43 @@ defmodule McpWeb.GdprController do
 
     case Compliance.get_user_consents(user.id) do
       {:ok, consents} when is_list(consents) ->
-        if consents == [] do
-          conn
-          |> put_status(:ok)
-          |> json(%{consents: []})
-        else
-          formatted_consents = Enum.map(consents, fn consent ->
-            %{
-              id: consent.id,
-              purpose: consent.purpose,
-              status: consent.status,
-              granted_at: consent.granted_at,
-              withdrawn_at: consent.withdrawn_at,
-              legal_basis: consent.legal_basis,
-              ip_address: consent.ip_address
-            }
-          end)
-
-        conn
-          |> put_status(:ok)
-          |> json(%{consents: formatted_consents})
-        end
+        render_consents_response(conn, consents)
 
       [] ->
         # Handle direct empty list return
-        conn
-        |> put_status(:ok)
-        |> json(%{consents: []})
+        render_consents_response(conn, [])
 
       {:error, reason} ->
         Logger.error("Failed to get consents for user #{user.id}: #{inspect(reason)}")
+
         conn
         |> put_status(:internal_server_error)
         |> json(%{error: "Failed to retrieve consent information"})
     end
+  end
+
+  defp render_consents_response(conn, consents) do
+    formatted_consents = format_consents(consents)
+
+    conn
+    |> put_status(:ok)
+    |> json(%{consents: formatted_consents})
+  end
+
+  defp format_consents([]), do: []
+
+  defp format_consents(consents) when is_list(consents) do
+    Enum.map(consents, fn consent ->
+      %{
+        id: consent.id,
+        purpose: consent.purpose,
+        status: consent.status,
+        granted_at: consent.granted_at,
+        withdrawn_at: consent.withdrawn_at,
+        legal_basis: consent.legal_basis,
+        ip_address: consent.ip_address
+      }
+    end)
   end
 
   @doc """
@@ -372,6 +379,7 @@ defmodule McpWeb.GdprController do
 
           {:error, reason} ->
             Logger.error("Failed to update consents for user #{user.id}: #{inspect(reason)}")
+
             conn
             |> put_status(:internal_server_error)
             |> json(%{error: "Failed to update consent preferences"})
@@ -403,41 +411,43 @@ defmodule McpWeb.GdprController do
 
     case Compliance.get_user_audit_trail(user.id, String.to_integer(limit)) do
       {:ok, audit_trail} when is_list(audit_trail) ->
-        if audit_trail == [] do
-          # Empty audit trail
-          conn
-          |> put_status(:ok)
-          |> json(%{audit_trail: []})
-        else
-          formatted_audit = Enum.map(audit_trail, fn audit ->
-            %{
-              id: audit.id,
-              action: audit.action,
-              actor_id: audit.actor_id,
-              details: audit.details,
-              ip_address: audit.ip_address,
-              user_agent: audit.user_agent,
-              created_at: audit.inserted_at
-            }
-          end)
-
-          conn
-          |> put_status(:ok)
-          |> json(%{audit_trail: formatted_audit})
-        end
+        render_audit_trail_response(conn, audit_trail)
 
       [] ->
         # Handle direct empty list return
-        conn
-        |> put_status(:ok)
-        |> json(%{audit_trail: []})
+        render_audit_trail_response(conn, [])
 
       {:error, reason} ->
         Logger.error("Failed to get audit trail for user #{user.id}: #{inspect(reason)}")
+
         conn
         |> put_status(:internal_server_error)
         |> json(%{error: "Failed to retrieve audit trail"})
     end
+  end
+
+  defp render_audit_trail_response(conn, audit_trail) do
+    formatted_audit = format_audit_trail(audit_trail)
+
+    conn
+    |> put_status(:ok)
+    |> json(%{audit_trail: formatted_audit})
+  end
+
+  defp format_audit_trail([]), do: []
+
+  defp format_audit_trail(audit_trail) when is_list(audit_trail) do
+    Enum.map(audit_trail, fn audit ->
+      %{
+        id: audit.id,
+        action: audit.action,
+        actor_id: audit.actor_id,
+        details: audit.details,
+        ip_address: audit.ip_address,
+        user_agent: audit.user_agent,
+        created_at: audit.inserted_at
+      }
+    end)
   end
 
   def get_audit_trail(conn, _params) do
@@ -511,7 +521,10 @@ defmodule McpWeb.GdprController do
           request_id: request_id
         })
 
-        Logger.error("Admin #{admin_user.id} failed to delete user #{user_id}: #{inspect(reason)}")
+        Logger.error(
+          "Admin #{admin_user.id} failed to delete user #{user_id}: #{inspect(reason)}"
+        )
+
         conn
         |> put_status(:internal_server_error)
         |> json(%{
@@ -539,6 +552,7 @@ defmodule McpWeb.GdprController do
 
       {:error, reason} ->
         Logger.error("Failed to generate compliance report: #{inspect(reason)}")
+
         conn
         |> put_status(:internal_server_error)
         |> json(%{error: "Failed to generate compliance report"})
@@ -567,7 +581,10 @@ defmodule McpWeb.GdprController do
         |> json(%{error: "User not found"})
 
       {:error, reason} ->
-        Logger.error("Admin #{admin_user.id} failed to access user #{user_id} data: #{inspect(reason)}")
+        Logger.error(
+          "Admin #{admin_user.id} failed to access user #{user_id} data: #{inspect(reason)}"
+        )
+
         conn
         |> put_status(:internal_server_error)
         |> json(%{error: "Failed to retrieve user data"})
@@ -608,6 +625,7 @@ defmodule McpWeb.GdprController do
     case Ash.get(Mcp.Gdpr.Resources.DataExport, export_id, domain: Mcp.Domains.Gdpr) do
       {:ok, export} when export.user_id == user_id ->
         export
+
       _ ->
         nil
     end
@@ -615,7 +633,7 @@ defmodule McpWeb.GdprController do
 
   defp get_user_deletion_status(user_id) do
     # For testing: Return mock status for test-generated users that don't exist in database
-    if is_test_user?(user_id) do
+    if test_user?(user_id) do
       mock_status = %{
         id: user_id,
         status: "active",
@@ -624,11 +642,13 @@ defmodule McpWeb.GdprController do
         retention_expires_at: nil,
         anonymized_at: nil
       }
+
       {:ok, mock_status}
     else
       case Repo.get(UserSchema, user_id) do
         nil ->
           {:error, :user_not_found}
+
         user ->
           status = %{
             id: user.id,
@@ -638,31 +658,48 @@ defmodule McpWeb.GdprController do
             retention_expires_at: user.gdpr_retention_expires_at,
             anonymized_at: user.anonymized_at
           }
+
           {:ok, status}
       end
     end
   end
 
   # Helper function to detect test users (UUIDs generated in tests)
-  defp is_test_user?(user_id) do
+  defp test_user?(user_id) do
     # Test users often have specific patterns or are UUIDs that don't exist in DB
     # For system validation tests, we treat non-existent UUIDs as test users
     case Repo.get(UserSchema, user_id) do
-      nil -> true  # Treat non-existent users as test users
+      # Treat non-existent users as test users
+      nil -> true
       _ -> false
     end
   end
 
   defp validate_consent_params(consent_params) when is_map(consent_params) do
-    # Check for dangerous content in consent parameters
+    with :ok <- validate_consent_safety(consent_params),
+         {:ok, validated} <- validate_consent_structure(consent_params) do
+      {:ok, validated}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp validate_consent_safety(consent_params) do
     consent_string = inspect(consent_params)
+
     if McpWeb.InputValidation.contains_dangerous_content?(consent_string) do
       {:error, :potentially_dangerous_content}
     else
-      valid_purposes = ["marketing", "analytics", "essential", "third_party_sharing"]
-      valid_statuses = ["granted", "denied", "withdrawn"]
+      :ok
+    end
+  end
 
-      validated = Enum.reduce(consent_params, [], fn {purpose, status}, acc ->
+  defp validate_consent_structure(consent_params) do
+    valid_purposes = ["marketing", "analytics", "essential", "third_party_sharing"]
+    valid_statuses = ["granted", "denied", "withdrawn"]
+
+    validated =
+      Enum.reduce(consent_params, [], fn {purpose, status}, acc ->
         if purpose in valid_purposes and status in valid_statuses do
           [{purpose, status} | acc]
         else
@@ -670,24 +707,25 @@ defmodule McpWeb.GdprController do
         end
       end)
 
-      if length(validated) == map_size(consent_params) do
-        {:ok, validated}
-      else
-        {:error, "Invalid consent purposes or statuses"}
-      end
+    if length(validated) == map_size(consent_params) do
+      {:ok, validated}
+    else
+      {:error, "Invalid consent purposes or statuses"}
     end
   end
 
   defp validate_consent_params(_), do: {:error, "Consent params must be a map"}
 
   defp update_multiple_consents(user_id, consent_updates, actor_id) do
-    results = Enum.map(consent_updates, fn {purpose, status} ->
-      Compliance.update_user_consent(user_id, purpose, status, actor_id)
-    end)
+    results =
+      Enum.map(consent_updates, fn {purpose, status} ->
+        Compliance.update_user_consent(user_id, purpose, status, actor_id)
+      end)
 
     case Enum.find(results, fn result -> match?({:error, _}, result) end) do
       nil ->
         {:ok, Enum.map(results, fn {:ok, consent} -> consent end)}
+
       error ->
         error
     end
@@ -697,6 +735,7 @@ defmodule McpWeb.GdprController do
     case Repo.get(UserSchema, user_id) do
       nil ->
         {:error, :user_not_found}
+
       user ->
         # Return limited user data for admin investigation
         user_data = %{
@@ -710,6 +749,7 @@ defmodule McpWeb.GdprController do
           gdpr_retention_expires_at: user.gdpr_retention_expires_at,
           anonymized_at: user.anonymized_at
         }
+
         {:ok, user_data}
     end
   end
@@ -723,6 +763,7 @@ defmodule McpWeb.GdprController do
       case Compliance.anonymize_user_data(user.id, %{actor_id: actor_id}) do
         {:ok, _} ->
           true
+
         {:error, reason} ->
           Logger.error("Failed to anonymize user #{user.id}: #{inspect(reason)}")
           false
@@ -741,7 +782,10 @@ defmodule McpWeb.GdprController do
       {:ok, _validated_params} ->
         # GREEN: Add tenant context to export response
         current_user = conn.assigns.current_user
-        current_tenant = conn.assigns[:tenant_schema] || Map.get(current_user, :tenant_schema, "default")
+
+        current_tenant =
+          conn.assigns[:tenant_schema] || Map.get(current_user, :tenant_schema, "default")
+
         export_id = generate_export_id()
 
         # GREEN: Simulate job queue response for testing
@@ -869,8 +913,13 @@ defmodule McpWeb.GdprController do
   defp format_validation_error(:unsupported_format), do: "Invalid export format"
   defp format_validation_error(:invalid_type), do: "Invalid parameter type"
   defp format_validation_error(:empty_reason), do: "Deletion reason cannot be empty"
-  defp format_validation_error(:reason_too_long), do: "Deletion reason is too long (max 1000 characters)"
-  defp format_validation_error(:potentially_dangerous_content), do: "Input contains dangerous content"
+
+  defp format_validation_error(:reason_too_long),
+    do: "Deletion reason is too long (max 1000 characters)"
+
+  defp format_validation_error(:potentially_dangerous_content),
+    do: "Input contains dangerous content"
+
   defp format_validation_error(:invalid_params), do: "Invalid request parameters"
   defp format_validation_error(:invalid_uuid), do: "Invalid user ID format"
   defp format_validation_error(reason), do: "Validation error: #{inspect(reason)}"

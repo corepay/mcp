@@ -13,11 +13,11 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
   alias Mcp.Jobs.Gdpr.AnonymizationWorker
 
   # Input arguments for the deletion workflow
-  input :user_id
-  input :deletion_reason
-  input :actor_id
-  input :ip_address
-  input :user_agent
+  input(:user_id)
+  input(:deletion_reason)
+  input(:actor_id)
+  input(:ip_address)
+  input(:user_agent)
 
   step :validate_user do
     argument :user_id, input(:user_id)
@@ -109,6 +109,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
         else
           {:error, "User already deleted or anonymized"}
         end
+
       {:error, _} ->
         {:error, "User not found"}
     end
@@ -121,6 +122,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
     case DataRetention.check_legal_holds(user_id) do
       [] ->
         {:ok, :no_holds}
+
       holds ->
         {:error, {:legal_holds_active, holds}}
     end
@@ -137,6 +139,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
       %{},
       "system"
     )
+
     :ok
   end
 
@@ -160,13 +163,14 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
   Calculates the retention schedule based on deletion reason and legal requirements.
   """
   def calculate_retention_schedule(%{user_id: _user_id, deletion_reason: reason}) do
-    retention_days = case reason do
-      "user_request" -> 30
-      "account_closure" -> 180
-      "legal_requirement" -> 0
-      "violation" -> 365
-      _ -> 90
-    end
+    retention_days =
+      case reason do
+        "user_request" -> 30
+        "account_closure" -> 180
+        "legal_requirement" -> 0
+        "violation" -> 365
+        _ -> 90
+      end
 
     retention_date = DateTime.add(DateTime.utc_now(), retention_days, :day)
     {:ok, retention_date}
@@ -175,30 +179,50 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
   @doc """
   Creates an audit trail entry for the deletion request.
   """
-  def create_deletion_audit_entry(%{user_id: user_id, deletion_reason: reason, actor_id: actor_id, ip_address: ip, user_agent: ua}) do
-    Ash.create(Mcp.Gdpr.Resources.AuditTrail, %{
-      user_id: user_id,
-      action_type: "deletion_requested",
-      actor_type: "user",
-      actor_id: actor_id,
-      ip_address: ip,
-      user_agent: ua,
-      legal_basis: reason,
-      data_categories: ["profile", "activity", "communications"],
-      details: %{reason: reason}
-    }, action: :create_entry, domain: Mcp.Domains.Gdpr)
+  def create_deletion_audit_entry(%{
+        user_id: user_id,
+        deletion_reason: reason,
+        actor_id: actor_id,
+        ip_address: ip,
+        user_agent: ua
+      }) do
+    Ash.create(
+      Mcp.Gdpr.Resources.AuditTrail,
+      %{
+        user_id: user_id,
+        action_type: "deletion_requested",
+        actor_type: "user",
+        actor_id: actor_id,
+        ip_address: ip,
+        user_agent: ua,
+        legal_basis: reason,
+        data_categories: ["profile", "activity", "communications"],
+        details: %{reason: reason}
+      },
+      action: :create_entry,
+      domain: Mcp.Domains.Gdpr
+    )
   end
 
   @doc """
   Initiates the soft delete process for the user.
   """
-  def initiate_soft_delete(%{user_id: user_id, deletion_reason: reason, actor_id: actor_id, retention_expires_at: expires_at}) do
+  def initiate_soft_delete(%{
+        user_id: user_id,
+        deletion_reason: reason,
+        actor_id: actor_id,
+        retention_expires_at: expires_at
+      }) do
     Ash.get!(Mcp.Gdpr.Resources.User, user_id, domain: Mcp.Domains.Gdpr)
-    |> Ash.update!(%{
-      gdpr_deletion_reason: reason,
-      gdpr_retention_expires_at: expires_at,
-      actor_id: actor_id
-    }, action: :soft_delete, domain: Mcp.Domains.Gdpr)
+    |> Ash.update!(
+      %{
+        gdpr_deletion_reason: reason,
+        gdpr_retention_expires_at: expires_at,
+        actor_id: actor_id
+      },
+      action: :soft_delete,
+      domain: Mcp.Domains.Gdpr
+    )
   end
 
   @doc """
@@ -208,6 +232,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
     # Restore user from soft delete state
     Ash.get!(Mcp.Gdpr.Resources.User, user_id, domain: Mcp.Domains.Gdpr)
     |> Ash.update!(%{actor_id: "system"}, action: :cancel_deletion, domain: Mcp.Domains.Gdpr)
+
     :ok
   end
 
@@ -263,6 +288,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
           %{reason: inspect(reason)},
           "system"
         )
+
         :ok
     end
   end
@@ -270,7 +296,11 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
   @doc """
   Notifies relevant stakeholders about the deletion request.
   """
-  def notify_deletion_stakeholders(%{user_id: user_id, deletion_reason: reason, anonymization_date: date}) do
+  def notify_deletion_stakeholders(%{
+        user_id: user_id,
+        deletion_reason: reason,
+        anonymization_date: date
+      }) do
     # Send notifications to compliance team, legal team, etc.
     # Implementation would depend on notification system
 
@@ -339,6 +369,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
           },
           "system"
         )
+
         :ok
 
       {:error, reason} ->
@@ -352,6 +383,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
           },
           "system"
         )
+
         :ok
     end
   rescue
@@ -365,6 +397,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
         },
         "system"
       )
+
       :ok
   end
 end

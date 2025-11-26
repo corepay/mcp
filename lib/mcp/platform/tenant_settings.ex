@@ -1,12 +1,19 @@
 defmodule Mcp.Platform.TenantSettings do
+  @moduledoc """
+  Resource representing settings for a tenant.
+  """
+
   use Ash.Resource,
     domain: Mcp.Platform,
     data_layer: AshPostgres.DataLayer,
     extensions: [Ash.Resource.Dsl]
 
+  alias Mcp.Platform.TenantSettings.Changes
+  alias Mcp.Repo
+
   postgres do
     table "tenant_settings"
-    repo Mcp.Repo
+    repo(Repo)
   end
 
   actions do
@@ -14,15 +21,27 @@ defmodule Mcp.Platform.TenantSettings do
 
     create :create_setting do
       primary? true
-      accept [:tenant_id, :category, :key, :value, :value_type, :description, :last_updated_by, :encrypted, :validation_rules]
-      change &Mcp.Platform.TenantSettings.Changes.validate_value/2
-      change &Mcp.Platform.TenantSettings.Changes.encrypt_value/2
+
+      accept [
+        :tenant_id,
+        :category,
+        :key,
+        :value,
+        :value_type,
+        :description,
+        :last_updated_by,
+        :encrypted,
+        :validation_rules
+      ]
+
+      change &Changes.validate_value/2
+      change &Changes.encrypt_value/2
     end
 
     update :update_setting do
       accept [:value, :last_updated_by]
-      change &Mcp.Platform.TenantSettings.Changes.validate_value/2
-      change &Mcp.Platform.TenantSettings.Changes.encrypt_value/2
+      change &Changes.validate_value/2
+      change &Changes.encrypt_value/2
       require_atomic? false
     end
 
@@ -41,7 +60,11 @@ defmodule Mcp.Platform.TenantSettings do
       argument :tenant_id, :string, allow_nil?: false
       argument :category, :atom, allow_nil?: false
       argument :key, :string, allow_nil?: false
-      filter expr(tenant_id == ^arg(:tenant_id) and category == ^arg(:category) and key == ^arg(:key))
+
+      filter expr(
+               tenant_id == ^arg(:tenant_id) and category == ^arg(:category) and key == ^arg(:key)
+             )
+
       # Expect one result
       get? true
     end
@@ -60,7 +83,15 @@ defmodule Mcp.Platform.TenantSettings do
 
     attribute :category, :atom do
       allow_nil? false
-      constraints [one_of: [:general, :billing, :business_info, :security, :notifications, :integrations]]
+
+      constraints one_of: [
+                    :general,
+                    :billing,
+                    :business_info,
+                    :security,
+                    :notifications,
+                    :integrations
+                  ]
     end
 
     attribute :key, :string do
@@ -73,7 +104,7 @@ defmodule Mcp.Platform.TenantSettings do
 
     attribute :value_type, :atom do
       allow_nil? false
-      constraints [one_of: [:string, :integer, :float, :boolean, :map, :array, :json]]
+      constraints one_of: [:string, :integer, :float, :boolean, :map, :array, :json]
       default :string
     end
 

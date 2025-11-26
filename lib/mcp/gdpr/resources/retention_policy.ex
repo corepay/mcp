@@ -12,7 +12,7 @@ defmodule Mcp.Gdpr.Resources.RetentionPolicy do
 
   postgres do
     table "gdpr_retention_policies"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   attributes do
@@ -96,6 +96,7 @@ defmodule Mcp.Gdpr.Resources.RetentionPolicy do
       argument :tenant_id, :uuid do
         allow_nil? false
       end
+
       filter expr(tenant_id == ^arg(:tenant_id))
     end
 
@@ -103,6 +104,7 @@ defmodule Mcp.Gdpr.Resources.RetentionPolicy do
       argument :entity_type, :string do
         allow_nil? false
       end
+
       filter expr(entity_type == ^arg(:entity_type))
     end
 
@@ -117,13 +119,16 @@ defmodule Mcp.Gdpr.Resources.RetentionPolicy do
       end
 
       filter expr(
-        active == true and
-        legal_hold == false and
-        (
-          is_nil(last_processed_at) or
-          last_processed_at < DateTime.add(^arg(:current_time), -processing_frequency_hours * 3600, :second)
-        )
-      )
+               active == true and
+                 legal_hold == false and
+                 (is_nil(last_processed_at) or
+                    last_processed_at <
+                      DateTime.add(
+                        ^arg(:current_time),
+                        -processing_frequency_hours * 3600,
+                        :second
+                      ))
+             )
     end
 
     create :create_policy do
@@ -211,5 +216,4 @@ defmodule Mcp.Gdpr.Resources.RetentionPolicy do
   validations do
     validate present([:tenant_id, :entity_type, :retention_days, :action])
   end
-
-  end
+end

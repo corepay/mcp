@@ -1,9 +1,7 @@
 defmodule Mcp.Platform.TenantSettingsTest do
   use Mcp.DataCase
 
-  alias Mcp.Platform.{TenantSettings, TenantSettingsManager, FeatureToggle, TenantBranding}
-
-
+  alias Mcp.Platform.{FeatureToggle, TenantBranding, TenantSettings, TenantSettingsManager}
 
   describe "TenantSettings resource" do
     test "creates a setting with valid attributes" do

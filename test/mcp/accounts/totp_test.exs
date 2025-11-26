@@ -1,7 +1,7 @@
 defmodule Mcp.Accounts.TOTPTest do
   use ExUnit.Case, async: true
 
-  alias Mcp.Accounts.{User, TOTP}
+  alias Mcp.Accounts.{TOTP, User}
 
   describe "TOTP secret generation" do
     test "generates a valid TOTP secret" do

@@ -3,14 +3,15 @@ defmodule Mcp.Accounts.Auth do
   Authentication context for user management.
   """
 
-  alias Mcp.Accounts.{User, AuthToken, JWT}
+  alias Mcp.Accounts.{AuthToken, JWT, User}
   alias Mcp.Cache.SessionStore
   require Logger
 
   @doc """
   Authenticates a user with email and password.
   """
-  def authenticate(email, password, _ip_address \\ nil) when is_binary(email) and is_binary(password) do
+  def authenticate(email, password, _ip_address \\ nil)
+      when is_binary(email) and is_binary(password) do
     case User.by_email(email) do
       {:ok, nil} ->
         # User not found - use generic error for security
@@ -73,17 +74,17 @@ defmodule Mcp.Accounts.Auth do
 
     with {:ok, access_token} <- JWT.generate_token(access_claims),
          {:ok, refresh_token} <- JWT.generate_token(refresh_claims) do
-
       # Store tokens in database
       case store_tokens(user.id, access_token, refresh_token, context, device_info) do
         :ok ->
-          {:ok, %{
-            user_id: user.id,
-            session_id: UUID.uuid4(),
-            access_token: access_token,
-            refresh_token: refresh_token,
-            expires_at: DateTime.add(DateTime.utc_now(), 24, :hour)
-          }}
+          {:ok,
+           %{
+             user_id: user.id,
+             session_id: UUID.uuid4(),
+             access_token: access_token,
+             refresh_token: refresh_token,
+             expires_at: DateTime.add(DateTime.utc_now(), 24, :hour)
+           }}
 
         error ->
           Logger.error("Failed to store session tokens: #{inspect(error)}")
@@ -111,8 +112,6 @@ defmodule Mcp.Accounts.Auth do
         # Increment failed attempts counter
         increment_failed_attempts(user.id, count + 1)
         Logger.warning("Failed authentication attempt #{count + 1} for user: #{user.id}")
-
-
     end
 
     :ok
@@ -145,13 +144,14 @@ defmodule Mcp.Accounts.Auth do
 
             with {:ok, new_access_token} <- JWT.generate_token(access_claims),
                  {:ok, new_refresh_token} <- JWT.generate_token(refresh_claims) do
-              {:ok, %{
-                user_id: user_id,
-                session_id: UUID.uuid4(),
-                access_token: new_access_token,
-                refresh_token: new_refresh_token,
-                expires_at: DateTime.add(DateTime.utc_now(), 24, :hour)
-              }}
+              {:ok,
+               %{
+                 user_id: user_id,
+                 session_id: UUID.uuid4(),
+                 access_token: new_access_token,
+                 refresh_token: new_refresh_token,
+                 expires_at: DateTime.add(DateTime.utc_now(), 24, :hour)
+               }}
             else
               {:error, reason} ->
                 Logger.error("Failed to refresh session tokens: #{inspect(reason)}")
@@ -266,6 +266,7 @@ defmodule Mcp.Accounts.Auth do
         Enum.each(tokens, fn token ->
           AuthToken.revoke(token)
         end)
+
         :ok
 
       {:error, _reason} ->
@@ -295,6 +296,7 @@ defmodule Mcp.Accounts.Auth do
     case SessionStore.create_session(session_key, token_data, ttl: 86_400) do
       :ok ->
         :ok
+
       {:error, reason} ->
         Logger.warning("Failed to store token metadata: #{inspect(reason)}")
         :ok
@@ -310,8 +312,10 @@ defmodule Mcp.Accounts.Auth do
     case SessionStore.get_session(cache_key) do
       {:ok, nil} ->
         {:ok, 0}
+
       {:ok, %{count: count}} ->
         {:ok, count}
+
       {:error, _reason} ->
         # Fallback to 0 if cache fails
         {:ok, 0}
@@ -322,7 +326,8 @@ defmodule Mcp.Accounts.Auth do
     cache_key = "failed_attempts:#{user_id}"
     data = %{count: count, last_attempt: DateTime.utc_now()}
 
-    SessionStore.create_session(cache_key, data, ttl: 3_600)  # 1 hour TTL
+    # 1 hour TTL
+    SessionStore.create_session(cache_key, data, ttl: 3_600)
   end
 
   defp lock_account(user_id) do
@@ -330,6 +335,7 @@ defmodule Mcp.Accounts.Auth do
     case User.by_id(user_id) do
       {:ok, user} ->
         User.update(user, %{status: "locked", locked_at: DateTime.utc_now()})
+
       {:error, reason} ->
         {:error, reason}
     end

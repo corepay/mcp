@@ -9,6 +9,7 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
     conn =
       conn
       |> put_req_header("x-forwarded-host", "www.example.com")
+
     {:ok, conn: conn}
   end
 
@@ -30,6 +31,7 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
       inserted_at: DateTime.utc_now(),
       updated_at: DateTime.utc_now()
     }
+
     [user: user]
   end
 
@@ -58,7 +60,8 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
       assert %{"export_id" => export_id, "status" => "pending"} = response
 
       # Response should indicate job was queued
-      assert is_binary(response["job_id"]) or response["queued"] or response["status"] == "pending"
+      assert is_binary(response["job_id"]) or response["queued"] or
+               response["status"] == "pending"
 
       # Export ID should be job-compatible format
       assert String.starts_with?(export_id, "export_") or is_binary(export_id)
@@ -82,17 +85,18 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
 
       # Should include job metadata
       assert status_response["created_at"] or status_response["updated_at"] or
-             status_response["job_id"] or status_response["queue"]
+               status_response["job_id"] or status_response["queue"]
     end
 
     test "job retry logic on failures", %{conn: conn, user: user} do
       # RED: Test that failed jobs are properly retried
 
       # Request export with parameters that might cause failure
-      conn = post(conn, "/api/gdpr/export", %{
-        "format" => "json",
-        "user_id" => "non-existent-user-uuid"
-      })
+      conn =
+        post(conn, "/api/gdpr/export", %{
+          "format" => "json",
+          "user_id" => "non-existent-user-uuid"
+        })
 
       # Should either succeed with 202 or fail gracefully
       if conn.status == 202 do
@@ -121,10 +125,12 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
       # Submit multiple export requests
       export_requests =
         for i <- 1..3 do
-          conn = post(conn, "/api/gdpr/export", %{
-            "format" => "json",
-            "request_id" => "req_#{i}"
-          })
+          conn =
+            post(conn, "/api/gdpr/export", %{
+              "format" => "json",
+              "request_id" => "req_#{i}"
+            })
+
           {conn, i}
         end
 
@@ -166,8 +172,8 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
 
         # Should indicate queue assignment
         assert response["queue"] == "gdpr_exports" or
-               response["job_queue"] or
-               String.contains?(inspect(response), "gdpr_exports")
+                 response["job_queue"] or
+                 String.contains?(inspect(response), "gdpr_exports")
       end
     end
 
@@ -196,8 +202,8 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
 
         # Should indicate processing job or immediate result
         assert response["compliance_score"] or
-               response["job_id"] or
-               response["processed_at"]
+                 response["job_id"] or
+                 response["processed_at"]
       end
     end
 
@@ -239,7 +245,7 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
         deletion_queue = deletion_response["queue"] || "gdpr_anonymize"
 
         assert export_queue != deletion_queue or
-               export_response["priority"] != deletion_response["priority"]
+                 export_response["priority"] != deletion_response["priority"]
       end
     end
   end
@@ -251,28 +257,31 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
       # RED: Test that invalid job parameters are caught early
 
       # Submit export with invalid parameters
-      conn = post(conn, "/api/gdpr/export", %{
-        "format" => "invalid_format",
-        "user_id" => "not-a-uuid",
-        "options" => %{"invalid" => "data"}
-      })
+      conn =
+        post(conn, "/api/gdpr/export", %{
+          "format" => "invalid_format",
+          "user_id" => "not-a-uuid",
+          "options" => %{"invalid" => "data"}
+        })
 
       # Should return 400 with validation error
       assert conn.status == 400
       response = json_response(conn, 400)
+
       assert response["error"] =~ "Invalid" or
-             response["error"] =~ "unsupported" or
-             response["error"] =~ "validation"
+               response["error"] =~ "unsupported" or
+               response["error"] =~ "validation"
     end
 
     test "job timeout handling", %{conn: conn} do
       # RED: Test that long-running jobs have appropriate timeout handling
 
       # Request potentially long-running operation
-      conn = post(conn, "/api/gdpr/export", %{
-        "format" => "json",
-        "large_dataset" => true
-      })
+      conn =
+        post(conn, "/api/gdpr/export", %{
+          "format" => "json",
+          "large_dataset" => true
+        })
 
       if conn.status == 202 do
         response = json_response(conn, 202)
@@ -284,14 +293,18 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
 
         # Should show appropriate status (not stuck indefinitely)
         assert status_response["status"] in [
-          "pending", "processing", "completed", "failed", "timeout"
-        ]
+                 "pending",
+                 "processing",
+                 "completed",
+                 "failed",
+                 "timeout"
+               ]
 
         # Should have timeout information if applicable
         if status_response["status"] == "failed" do
           assert status_response["error"] =~ "timeout" or
-                 status_response["timeout"] or
-                 status_response["retry_count"]
+                   status_response["timeout"] or
+                   status_response["retry_count"]
         end
       end
     end
@@ -300,10 +313,11 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
       # RED: Test that jobs with dependencies are handled correctly
 
       # Request export that depends on user consent verification
-      conn = post(conn, "/api/gdpr/export", %{
-        "format" => "json",
-        "verify_consent" => true
-      })
+      conn =
+        post(conn, "/api/gdpr/export", %{
+          "format" => "json",
+          "verify_consent" => true
+        })
 
       if conn.status == 202 do
         response = json_response(conn, 202)
@@ -315,12 +329,16 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
 
         # Should show dependency information
         assert status_response["status"] in [
-          "pending", "verifying_consent", "processing", "completed", "failed"
-        ]
+                 "pending",
+                 "verifying_consent",
+                 "processing",
+                 "completed",
+                 "failed"
+               ]
 
         if status_response["status"] == "verifying_consent" do
           assert status_response["dependencies"] or
-                 status_response["waiting_for"]
+                   status_response["waiting_for"]
         end
       end
     end
@@ -359,9 +377,9 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
 
         # Should include job processing metrics
         assert response["pending_exports"] or
-               response["processing_exports"] or
-               response["job_queue_stats"] or
-               response["metrics"]
+                 response["processing_exports"] or
+                 response["job_queue_stats"] or
+                 response["metrics"]
       end
     end
 
@@ -396,8 +414,8 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
 
         # Should include failure rate information
         assert response["failed_jobs"] or
-               response["error_rate"] or
-               response["failure_count"]
+                 response["error_rate"] or
+                 response["failure_count"]
       end
     end
   end

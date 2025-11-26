@@ -27,7 +27,19 @@ defmodule Mcp.Gdpr.Schemas.GdprExport do
   @doc false
   def changeset(gdpr_export, attrs) do
     gdpr_export
-    |> cast(attrs, [:user_id, :request_id, :format, :status, :file_path, :file_size, :download_count, :max_downloads, :expires_at, :metadata, :error_message])
+    |> cast(attrs, [
+      :user_id,
+      :request_id,
+      :format,
+      :status,
+      :file_path,
+      :file_size,
+      :download_count,
+      :max_downloads,
+      :expires_at,
+      :metadata,
+      :error_message
+    ])
     |> validate_required([:user_id, :request_id, :format, :status, :expires_at])
     |> validate_inclusion(:format, ["json", "csv", "xml", "pdf"])
     |> validate_inclusion(:status, ["pending", "processing", "ready", "expired", "failed"])

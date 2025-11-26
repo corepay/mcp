@@ -1,7 +1,7 @@
 defmodule Mcp.Accounts.User do
   @moduledoc """
   User resource for authentication and account management.
-  
+
   Handles user registration, authentication, password management,
   session tracking, and account status.
   """
@@ -13,24 +13,25 @@ defmodule Mcp.Accounts.User do
 
   postgres do
     table "users"
-    schema "platform"
-    repo Mcp.Repo
+    schema("platform")
+    repo(Mcp.Repo)
 
     custom_indexes do
-      index [:email], unique: true
-      index [:status]
-      index [:inserted_at]
+      index([:email], unique: true)
+      index([:status])
+      index([:inserted_at])
     end
   end
 
   authentication do
     strategies do
       password :password do
-        identity_field :email
-        hashed_password_field :hashed_password
-        hash_provider AshAuthentication.BcryptProvider
-        confirmation_required? false
-        sign_in_tokens_enabled? false  # Disable sign-in tokens
+        identity_field(:email)
+        hashed_password_field(:hashed_password)
+        hash_provider(AshAuthentication.BcryptProvider)
+        confirmation_required?(false)
+        # Disable sign-in tokens
+        sign_in_tokens_enabled?(false)
       end
     end
 
@@ -82,13 +83,14 @@ defmodule Mcp.Accounts.User do
     # Session tracking
     attribute :last_sign_in_at, :utc_datetime
     attribute :last_sign_in_ip, :string
+
     attribute :sign_in_count, :integer do
       default 0
     end
 
     # Account status
     attribute :status, :atom do
-      constraints [one_of: [:active, :suspended, :deleted]]
+      constraints one_of: [:active, :suspended, :deleted]
       default :active
       allow_nil? false
     end
@@ -109,7 +111,7 @@ defmodule Mcp.Accounts.User do
       argument :password_confirmation, :string, allow_nil?: false, sensitive?: true
 
       validate confirm(:password, :password_confirmation)
-      
+
       change fn changeset, _ ->
         if changeset.valid? do
           password = Ash.Changeset.get_argument(changeset, :password)
@@ -153,8 +155,10 @@ defmodule Mcp.Accounts.User do
         changeset
         |> Ash.Changeset.change_attribute(:last_sign_in_at, DateTime.utc_now())
         |> Ash.Changeset.change_attribute(:last_sign_in_ip, ip)
-        |> Ash.Changeset.change_attribute(:sign_in_count,
-          (Ash.Changeset.get_attribute(changeset, :sign_in_count) || 0) + 1)
+        |> Ash.Changeset.change_attribute(
+          :sign_in_count,
+          (Ash.Changeset.get_attribute(changeset, :sign_in_count) || 0) + 1
+        )
       end
     end
 
@@ -192,5 +196,7 @@ defmodule Mcp.Accounts.User do
   # Compatibility wrappers for existing code
   def get(id), do: by_id(id)
   def get_by_email(email), do: by_email(email)
-  def create(attrs), do: register(attrs["email"], attrs["password"], attrs["password_confirmation"])
+
+  def create(attrs),
+    do: register(attrs["email"], attrs["password"], attrs["password_confirmation"])
 end

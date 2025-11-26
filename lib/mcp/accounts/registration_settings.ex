@@ -1,7 +1,7 @@
 defmodule Mcp.Accounts.RegistrationSettings do
   @moduledoc """
   Registration settings management for tenant-level self-registration control.
-  
+
   Settings are stored in the Tenant.settings map under the "registration" key.
   """
 
@@ -25,7 +25,7 @@ defmodule Mcp.Accounts.RegistrationSettings do
 
   @doc """
   Gets current registration settings for a tenant.
-  
+
   Returns default settings if none are configured.
   """
   def get_current_settings(tenant_id) do
@@ -33,7 +33,7 @@ defmodule Mcp.Accounts.RegistrationSettings do
       {:ok, tenant} ->
         settings = get_registration_settings_from_tenant(tenant)
         {:ok, Map.put(settings, "tenant_id", tenant_id)}
-        
+
       {:error, _} = error ->
         error
     end
@@ -41,7 +41,7 @@ defmodule Mcp.Accounts.RegistrationSettings do
 
   @doc """
   Updates registration settings for a tenant.
-  
+
   Merges new settings with existing settings.
   """
   def update_settings(tenant_id, new_settings) do
@@ -49,20 +49,22 @@ defmodule Mcp.Accounts.RegistrationSettings do
       {:ok, tenant} ->
         current_tenant_settings = tenant.settings || %{}
         current_registration = Map.get(current_tenant_settings, "registration", @default_settings)
-        
+
         # Merge new settings with current settings
         updated_registration = Map.merge(current_registration, new_settings)
-        updated_tenant_settings = Map.put(current_tenant_settings, "registration", updated_registration)
-        
+
+        updated_tenant_settings =
+          Map.put(current_tenant_settings, "registration", updated_registration)
+
         case Tenant.update(tenant, %{settings: updated_tenant_settings}) do
           {:ok, updated_tenant} ->
             settings = get_registration_settings_from_tenant(updated_tenant)
             {:ok, Map.put(settings, "tenant_id", tenant_id)}
-            
+
           error ->
             error
         end
-        
+
       {:error, _} = error ->
         error
     end
@@ -80,16 +82,17 @@ defmodule Mcp.Accounts.RegistrationSettings do
   """
   def self_registration_allowed?(tenant_id) do
     case get_current_settings(tenant_id) do
-      {:ok, settings} -> 
+      {:ok, settings} ->
         Map.get(settings, "allow_self_registration", true)
-      _ -> 
+
+      _ ->
         false
     end
   end
 
   @doc """
   Checks if email domain is allowed for registration.
-  
+
   Returns true if:
   - No allowed_domains are configured (open registration)
   - Email domain is in allowed_domains list
@@ -99,24 +102,24 @@ defmodule Mcp.Accounts.RegistrationSettings do
     case get_current_settings(tenant_id) do
       {:ok, settings} ->
         domain = email |> String.split("@") |> List.last() |> String.downcase()
-        
+
         allowed_domains = Map.get(settings, "allowed_domains", [])
         blocked_domains = Map.get(settings, "blocked_domains", [])
-        
+
         cond do
           domain in blocked_domains ->
             false
-            
+
           Enum.empty?(allowed_domains) ->
             true
-            
+
           domain in allowed_domains ->
             true
-            
+
           true ->
             false
         end
-        
+
       _ ->
         false
     end
@@ -127,9 +130,10 @@ defmodule Mcp.Accounts.RegistrationSettings do
   """
   def approval_required?(tenant_id) do
     case get_current_settings(tenant_id) do
-      {:ok, settings} -> 
+      {:ok, settings} ->
         Map.get(settings, "require_approval", false)
-      _ -> 
+
+      _ ->
         false
     end
   end
@@ -139,9 +143,10 @@ defmodule Mcp.Accounts.RegistrationSettings do
   """
   def email_verification_required?(tenant_id) do
     case get_current_settings(tenant_id) do
-      {:ok, settings} -> 
+      {:ok, settings} ->
         Map.get(settings, "require_email_verification", true)
-      _ -> 
+
+      _ ->
         true
     end
   end
@@ -151,9 +156,10 @@ defmodule Mcp.Accounts.RegistrationSettings do
   """
   def captcha_required?(tenant_id) do
     case get_current_settings(tenant_id) do
-      {:ok, settings} -> 
+      {:ok, settings} ->
         Map.get(settings, "require_captcha", false)
-      _ -> 
+
+      _ ->
         false
     end
   end
@@ -163,9 +169,10 @@ defmodule Mcp.Accounts.RegistrationSettings do
   """
   def get_default_role(tenant_id) do
     case get_current_settings(tenant_id) do
-      {:ok, settings} -> 
+      {:ok, settings} ->
         Map.get(settings, "default_role", "user")
-      _ -> 
+
+      _ ->
         "user"
     end
   end
@@ -175,16 +182,17 @@ defmodule Mcp.Accounts.RegistrationSettings do
   """
   def get_registration_fields(tenant_id) do
     case get_current_settings(tenant_id) do
-      {:ok, settings} -> 
+      {:ok, settings} ->
         Map.get(settings, "registration_fields", ["email", "password", "name"])
-      _ -> 
+
+      _ ->
         ["email", "password", "name"]
     end
   end
 
   @doc """
   Validates registration data against tenant settings.
-  
+
   Returns :ok or {:error, reasons}
   """
   def validate_registration(tenant_id, registration_data) do
@@ -193,6 +201,8 @@ defmodule Mcp.Accounts.RegistrationSettings do
          :ok <- validate_email_domain(settings, registration_data["email"]),
          :ok <- validate_required_fields(settings, registration_data) do
       :ok
+    else
+      error -> error
     end
   end
 
@@ -213,20 +223,20 @@ defmodule Mcp.Accounts.RegistrationSettings do
 
   defp validate_email_domain(settings, email) when is_binary(email) do
     domain = email |> String.split("@") |> List.last() |> String.downcase()
-    
+
     allowed_domains = Map.get(settings, "allowed_domains", [])
     blocked_domains = Map.get(settings, "blocked_domains", [])
-    
+
     cond do
       domain in blocked_domains ->
         {:error, :email_domain_blocked}
-        
+
       Enum.empty?(allowed_domains) ->
         :ok
-        
+
       domain in allowed_domains ->
         :ok
-        
+
       true ->
         {:error, :email_domain_not_allowed}
     end
@@ -236,11 +246,12 @@ defmodule Mcp.Accounts.RegistrationSettings do
 
   defp validate_required_fields(settings, registration_data) do
     required_fields = Map.get(settings, "registration_fields", ["email", "password"])
-    
-    missing_fields = Enum.filter(required_fields, fn field ->
-      is_nil(registration_data[field]) or registration_data[field] == ""
-    end)
-    
+
+    missing_fields =
+      Enum.filter(required_fields, fn field ->
+        is_nil(registration_data[field]) or registration_data[field] == ""
+      end)
+
     if Enum.empty?(missing_fields) do
       :ok
     else

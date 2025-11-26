@@ -38,12 +38,12 @@ defmodule McpWeb.Auth.LiveAuth do
     #     {:cont, socket}
     #
     #   {:error, _reason} ->
-        socket =
-          socket
-          |> put_flash(:error, "Authentication required")
-          |> redirect(to: "/users/log_in")
+    socket =
+      socket
+      |> put_flash(:error, "Authentication required")
+      |> redirect(to: "/users/log_in")
 
-        {:halt, socket}
+    {:halt, socket}
     # end
   end
 
@@ -61,14 +61,14 @@ defmodule McpWeb.Auth.LiveAuth do
     #     {:cont, socket}
     #
     #   {:error, _reason} ->
-        socket =
-          socket
-          |> assign(:current_user, nil)
-          |> assign(:current_context, %{})
-          |> assign(:authorized_contexts, [])
-          |> assign(:session_id, nil)
+    socket =
+      socket
+      |> assign(:current_user, nil)
+      |> assign(:current_context, %{})
+      |> assign(:authorized_contexts, [])
+      |> assign(:session_id, nil)
 
-        {:cont, socket}
+    {:cont, socket}
     # end
   end
 
@@ -84,7 +84,7 @@ defmodule McpWeb.Auth.LiveAuth do
     #     {:halt, socket}
     #
     #   {:error, _reason} ->
-        {:cont, socket}
+    {:cont, socket}
     # end
   end
 
@@ -193,7 +193,6 @@ defmodule McpWeb.Auth.LiveAuth do
 
   # Private helper functions
 
-  
   defp find_refresh_token_for_session(_session_id) do
     # This would typically involve a database lookup or token storage
     # For now, we'll assume the refresh token is available in the session

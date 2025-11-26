@@ -1,9 +1,9 @@
 defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
   use McpWeb.ConnCase, async: true
 
-  alias Mcp.Gdpr.Supervisor
-  alias Mcp.Accounts.User
   alias Mcp.Accounts.Tenant
+  alias Mcp.Accounts.User
+  alias Mcp.Gdpr.Supervisor
 
   @moduletag :gdpr
   @moduletag :unit
@@ -13,6 +13,7 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
     conn =
       conn
       |> put_req_header("x-forwarded-host", "www.example.com")
+
     {:ok, conn: conn}
   end
 
@@ -35,6 +36,7 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
       inserted_at: DateTime.utc_now(),
       updated_at: DateTime.utc_now()
     }
+
     [user: user]
   end
 
@@ -122,7 +124,13 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
 
     test "prevents XSS in consent parameters", %{conn: conn, user: user} do
       # RED: Test XSS prevention in consent data
-      xss_consent = %{"consents" => %{"legal_basis" => "consent", "purpose" => "<img src=x onerror=alert('xss')>"}}
+      xss_consent = %{
+        "consents" => %{
+          "legal_basis" => "consent",
+          "purpose" => "<img src=x onerror=alert('xss')>"
+        }
+      }
+
       conn = post(conn, "/api/gdpr/consent", xss_consent)
 
       # Should return 400 Bad Request with dangerous content error

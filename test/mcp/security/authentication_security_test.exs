@@ -4,21 +4,20 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
   import Plug.Conn
   import Phoenix.ConnTest
 
-  alias Mcp.Accounts.{User, Auth, Token}
+  alias Mcp.Accounts.{Auth, Token, User}
   alias Mcp.Cache.SessionStore
   alias McpWeb.Auth.SessionPlug
 
   @endpoint McpWeb.Endpoint
 
-  
   setup do
     # Clean up any existing sessions
     SessionStore.flush_all()
 
     conn =
-       build_conn()
-       |> Map.put(:remote_ip, {127, 0, 0, 1})
-       |> put_req_header("user-agent", "Security Test Browser")
+      build_conn()
+      |> Map.put(:remote_ip, {127, 0, 0, 1})
+      |> put_req_header("user-agent", "Security Test Browser")
 
     {:ok, conn: conn}
   end

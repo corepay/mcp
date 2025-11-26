@@ -13,7 +13,7 @@ defmodule Mcp.Registration.SelfRegistrationControlTest do
   use ExUnit.Case, async: true
 
   alias Mcp.Accounts.RegistrationSettings
-  alias Mcp.Registration.{RegistrationService, PolicyValidator}
+  alias Mcp.Registration.{PolicyValidator, RegistrationService}
   alias Mcp.RegistrationLive.{CustomerRegistration, VendorRegistration}
 
   @test_tenant_id "test-tenant-123"

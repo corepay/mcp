@@ -33,7 +33,15 @@ defmodule Mcp.Accounts.UserSchema do
   @doc false
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:email, :hashed_password, :status, :deleted_at, :deletion_reason, :gdpr_retention_expires_at, :anonymized_at])
+    |> cast(attrs, [
+      :email,
+      :hashed_password,
+      :status,
+      :deleted_at,
+      :deletion_reason,
+      :gdpr_retention_expires_at,
+      :anonymized_at
+    ])
     |> validate_required([:email, :status])
     |> validate_inclusion(:status, ["active", "suspended", "deleted"])
     |> unique_constraint(:email)

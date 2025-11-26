@@ -1,7 +1,7 @@
 defmodule Mcp.Accounts.AuthTokenTest do
   use ExUnit.Case, async: false
 
-  alias Mcp.Accounts.{User, AuthToken}
+  alias Mcp.Accounts.{AuthToken, JWT, User}
 
   describe "token generation" do
     setup do
@@ -89,7 +89,7 @@ defmodule Mcp.Accounts.AuthTokenTest do
         "exp" => DateTime.utc_now() |> DateTime.add(-1, :hour) |> DateTime.to_unix()
       }
 
-      {:ok, expired_token} = Mcp.Accounts.JWT.generate_token(claims)
+      {:ok, expired_token} = JWT.generate_token(claims)
 
       assert {:error, _} = AuthToken.by_token(expired_token)
     end

@@ -76,8 +76,7 @@ defmodule Mcp.Platform.TenantBranding.Changes do
         hex =
           hex
           |> String.graphemes()
-          |> Enum.map(&String.duplicate(&1, 2))
-          |> Enum.join()
+          |> Enum.map_join(&String.duplicate(&1, 2))
 
         hex_to_rgb("#" <> hex)
 

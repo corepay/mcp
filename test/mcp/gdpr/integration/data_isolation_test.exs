@@ -9,6 +9,7 @@ defmodule Mcp.Gdpr.Integration.DataIsolationTest do
     conn =
       conn
       |> put_req_header("x-forwarded-host", "www.example.com")
+
     {:ok, conn: conn}
   end
 
@@ -25,6 +26,7 @@ defmodule Mcp.Gdpr.Integration.DataIsolationTest do
       inserted_at: DateTime.utc_now(),
       updated_at: DateTime.utc_now()
     }
+
     [user: user, tenant: tenant_name]
   end
 
@@ -106,8 +108,8 @@ defmodule Mcp.Gdpr.Integration.DataIsolationTest do
 
       # Export should be associated with current tenant
       assert String.contains?(export_id, tenant) or
-             response["tenant_id"] == tenant or
-             get_resp_header(conn, "x-tenant-id") == [tenant]
+               response["tenant_id"] == tenant or
+               get_resp_header(conn, "x-tenant-id") == [tenant]
     end
 
     test "audit trail maintains tenant separation", %{conn: conn, user: user, tenant: tenant} do
@@ -125,17 +127,19 @@ defmodule Mcp.Gdpr.Integration.DataIsolationTest do
       assert is_list(entries)
 
       # All entries should belong to current tenant
-      tenant_entries = Enum.filter(entries, fn entry ->
-        entry["tenant_id"] == tenant or entry["tenant_schema"] == tenant
-      end)
+      tenant_entries =
+        Enum.filter(entries, fn entry ->
+          entry["tenant_id"] == tenant or entry["tenant_schema"] == tenant
+        end)
 
       # Should have at least one entry for the current tenant
       assert length(tenant_entries) >= 1
 
       # No entries should belong to other tenants
-      other_tenant_entries = Enum.filter(entries, fn entry ->
-        entry["tenant_id"] != nil and entry["tenant_id"] != tenant
-      end)
+      other_tenant_entries =
+        Enum.filter(entries, fn entry ->
+          entry["tenant_id"] != nil and entry["tenant_id"] != tenant
+        end)
 
       assert Enum.empty?(other_tenant_entries)
     end
@@ -144,7 +148,11 @@ defmodule Mcp.Gdpr.Integration.DataIsolationTest do
   describe "Cross-Tenant Data Leak Prevention" do
     setup [:create_tenant_user, :auth_tenant_user_conn]
 
-    test "user enumeration across tenants is prevented", %{conn: conn, user: user1, tenant: tenant1} do
+    test "user enumeration across tenants is prevented", %{
+      conn: conn,
+      user: user1,
+      tenant: tenant1
+    } do
       # RED: Test that users cannot enumerate users across tenants
 
       # Create user from different tenant
@@ -179,14 +187,16 @@ defmodule Mcp.Gdpr.Integration.DataIsolationTest do
       if conn.status == 202 do
         # If accepted, verify it's isolated to current tenant
         response = json_response(conn, 202)
+
         assert response["tenant_id"] == tenant or
-               not Map.has_key?(response, "tenant_id")
+                 not Map.has_key?(response, "tenant_id")
       else
         # Should reject with validation error
         assert conn.status in [400, 403]
         response = json_response(conn, conn.status)
+
         assert response["error"] =~ "invalid" or
-               response["error"] =~ "forbidden"
+                 response["error"] =~ "forbidden"
       end
     end
 
@@ -208,14 +218,15 @@ defmodule Mcp.Gdpr.Integration.DataIsolationTest do
       response = json_response(conn, 200)
 
       # Verify tenant scoping indicators
+      # Implicit scoping
       assert response["tenant_id"] == tenant or
-             not Map.has_key?(response, "tenant_id")  # Implicit scoping
+               not Map.has_key?(response, "tenant_id")
 
       # Verify data aggregation is tenant-specific
       if Map.has_key?(response, "total_users") do
         assert is_number(response["total_users"])
         # Should be reasonable for single tenant (not massive aggregation)
-        assert response["total_users"] < 10000
+        assert response["total_users"] < 10_000
       end
     end
   end

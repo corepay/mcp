@@ -459,12 +459,15 @@ defmodule McpWeb.CoreComponents do
 
   def card(assigns) do
     ~H"""
-    <div class={[
-      "card bg-base-100 shadow-sm border border-base-200 rounded-lg",
-      @class
-    ]} {@rest}>
+    <div
+      class={[
+        "card bg-base-100 shadow-sm border border-base-200 rounded-lg",
+        @class
+      ]}
+      {@rest}
+    >
       <div class="card-body">
-        <%= render_slot(@inner_block) %>
+        {render_slot(@inner_block)}
       </div>
     </div>
     """

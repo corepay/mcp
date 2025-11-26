@@ -11,7 +11,7 @@ defmodule Mcp.Gdpr.Resources.AuditTrail do
 
   postgres do
     table "gdpr_audit_trail"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   attributes do
@@ -37,6 +37,7 @@ defmodule Mcp.Gdpr.Resources.AuditTrail do
 
     attribute :legal_basis, :string
     attribute :retention_period_days, :integer
+
     attribute :details, :map do
       default %{}
     end
@@ -58,6 +59,7 @@ defmodule Mcp.Gdpr.Resources.AuditTrail do
       argument :user_id, :uuid do
         allow_nil? false
       end
+
       filter expr(user_id == ^arg(:user_id))
     end
 
@@ -65,6 +67,7 @@ defmodule Mcp.Gdpr.Resources.AuditTrail do
       argument :action_type, :string do
         allow_nil? false
       end
+
       filter expr(action_type == ^arg(:action_type))
     end
 
@@ -94,5 +97,4 @@ defmodule Mcp.Gdpr.Resources.AuditTrail do
   validations do
     validate present([:user_id, :action_type])
   end
-
-  end
+end

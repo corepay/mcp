@@ -18,9 +18,12 @@ defmodule McpWeb.Auth.GdprAuthPlug do
   alias Mcp.Gdpr.AuditTrail
   alias McpWeb.Auth.AuthorizationPlug
 
-  @gdpr_rate_limit_window 60 * 60  # 1 hour window
-  @gdpr_rate_limit_max 50          # Max 50 GDPR requests per hour per user
-  @max_request_body_size 5 * 1024 * 1024  # 5MB max request body size for GDPR endpoints
+  # 1 hour window
+  @gdpr_rate_limit_window 60 * 60
+  # Max 50 GDPR requests per hour per user
+  @gdpr_rate_limit_max 50
+  # 5MB max request body size for GDPR endpoints
+  @max_request_body_size 5 * 1024 * 1024
 
   @doc """
   Initialize the plug with options.
@@ -56,8 +59,8 @@ defmodule McpWeb.Auth.GdprAuthPlug do
   end
 
   defp generate_unique_request_id do
-    "gdpr_" <>
-    (:crypto.strong_rand_bytes(16) |> Base.encode64(case: :lower))
+    ("gdpr_" <>
+       (:crypto.strong_rand_bytes(16) |> Base.encode64(case: :lower)))
     |> String.replace("/", "_")
     |> String.replace("+", "-")
   end
@@ -110,7 +113,9 @@ defmodule McpWeb.Auth.GdprAuthPlug do
     ip_address =
       get_req_header(conn, "x-forwarded-for")
       |> case do
-        [ip | _] -> String.split(ip, ",") |> hd() |> String.trim()
+        [ip | _] ->
+          String.split(ip, ",") |> hd() |> String.trim()
+
         [] ->
           get_req_header(conn, "x-real-ip")
           |> case do
@@ -148,20 +153,24 @@ defmodule McpWeb.Auth.GdprAuthPlug do
             |> put_status(:payload_too_large)
             |> json(%{
               error: "Request entity too large",
-              message: "Request body size (#{content_length} bytes) exceeds maximum allowed size (#{@max_request_body_size} bytes)",
+              message:
+                "Request body size (#{content_length} bytes) exceeds maximum allowed size (#{@max_request_body_size} bytes)",
               max_size: @max_request_body_size
             })
             |> halt()
 
           {_content_length, ""} ->
-            conn  # Within limits, continue
+            # Within limits, continue
+            conn
 
           _ ->
-            conn  # Invalid content-length header, continue (will be caught by Plug.Parsers)
+            # Invalid content-length header, continue (will be caught by Plug.Parsers)
+            conn
         end
 
       [] ->
-        conn  # No content-length header, continue
+        # No content-length header, continue
+        conn
     end
   end
 
@@ -178,6 +187,7 @@ defmodule McpWeb.Auth.GdprAuthPlug do
       case check_rate_limit_key(key) do
         :ok ->
           conn
+
         {:error, :rate_limit_exceeded} ->
           log_audit_event(conn, "RATE_LIMIT_EXCEEDED", %{
             reason: "Too many GDPR requests",
@@ -207,6 +217,7 @@ defmodule McpWeb.Auth.GdprAuthPlug do
       case get_current_user(conn) do
         {:ok, user} ->
           assign(conn, :current_user, user)
+
         {:error, reason} ->
           log_audit_event(conn, "AUTHENTICATION_FAILED", %{
             reason: reason,
@@ -232,31 +243,41 @@ defmodule McpWeb.Auth.GdprAuthPlug do
   """
   def authorize_access(conn, opts) do
     if Keyword.get(opts, :require_admin, false) do
-      case get_current_user(conn) do
-        {:ok, user} ->
-          if admin_user?(user) do
-            conn
-          else
-            log_audit_event(conn, "AUTHORIZATION_FAILED", %{
-              reason: "Admin access required",
-              user_role: user.role,
-              required_roles: ["admin", "super_admin"]
-            })
-
-            conn
-            |> put_status(:forbidden)
-            |> json(%{
-              error: "Admin access required",
-              message: "This endpoint requires administrator privileges",
-              request_id: conn.assigns[:gdpr_request_id]
-            })
-            |> halt()
-          end
-        {:error, _reason} ->
-          conn  # Already handled in authenticate_user
-      end
+      check_admin_authorization(conn)
     else
       conn
+    end
+  end
+
+  defp check_admin_authorization(conn) do
+    case get_current_user(conn) do
+      {:ok, user} ->
+        authorize_admin_user(conn, user)
+
+      {:error, _reason} ->
+        # Already handled in authenticate_user
+        conn
+    end
+  end
+
+  defp authorize_admin_user(conn, user) do
+    if admin_user?(user) do
+      conn
+    else
+      log_audit_event(conn, "AUTHORIZATION_FAILED", %{
+        reason: "Admin access required",
+        user_role: user.role,
+        required_roles: ["admin", "super_admin"]
+      })
+
+      conn
+      |> put_status(:forbidden)
+      |> json(%{
+        error: "Admin access required",
+        message: "This endpoint requires administrator privileges",
+        request_id: conn.assigns[:gdpr_request_id]
+      })
+      |> halt()
     end
   end
 
@@ -274,7 +295,11 @@ defmodule McpWeb.Auth.GdprAuthPlug do
         user_agent: conn.assigns[:gdpr_user_agent],
         request_path: conn.request_path,
         request_method: conn.method,
-        user_id: (case user do {:ok, u} -> u.id; _ -> nil end),
+        user_id:
+          case user do
+            {:ok, u} -> u.id
+            _ -> nil
+          end,
         session_id: get_session_id(conn),
         tenant_id: get_current_tenant(conn)
       }
@@ -289,25 +314,29 @@ defmodule McpWeb.Auth.GdprAuthPlug do
   Log GDPR audit events.
   """
   def log_audit_event(conn, action, details \\ %{}) do
-    audit_data = Map.merge(details, %{
-      action: action,
-      ip_address: conn.assigns[:gdpr_ip_address],
-      user_agent: conn.assigns[:gdpr_user_agent],
-      request_id: conn.assigns[:gdpr_request_id],
-      timestamp: DateTime.utc_now(),
-      endpoint: conn.request_path,
-      method: conn.method
-    })
+    audit_data =
+      Map.merge(details, %{
+        action: action,
+        ip_address: conn.assigns[:gdpr_ip_address],
+        user_agent: conn.assigns[:gdpr_user_agent],
+        request_id: conn.assigns[:gdpr_request_id],
+        timestamp: DateTime.utc_now(),
+        endpoint: conn.request_path,
+        method: conn.method
+      })
 
     # Add user context if available
-    updated_audit_data = case get_current_user(conn) do
-      {:ok, user} ->
-        Map.merge(audit_data, %{
-          user_id: user.id,
-          user_role: user.role
-        })
-      _ -> audit_data
-    end
+    updated_audit_data =
+      case get_current_user(conn) do
+        {:ok, user} ->
+          Map.merge(audit_data, %{
+            user_id: user.id,
+            user_role: user.role
+          })
+
+        _ ->
+          audit_data
+      end
 
     # Log to application logger
     Logger.info("GDPR Audit: #{action} - #{inspect(updated_audit_data)}")
@@ -317,49 +346,47 @@ defmodule McpWeb.Auth.GdprAuthPlug do
       nil ->
         # Audit trail process not available, just log
         :ok
+
       _pid ->
-        try do
-          AuditTrail.log_event(
-            updated_audit_data.user_id,
-            action,
-            updated_audit_data.actor_id,
-            Map.merge(updated_audit_data, %{
-              ip_address: conn.assigns[:gdpr_ip_address],
-              user_agent: conn.assigns[:gdpr_user_agent]
-            })
-          )
-        rescue
-          _ ->
-            # Audit logging failed, but don't crash the request
-            Logger.warning("Failed to store GDPR audit event: #{inspect(updated_audit_data)}")
-        end
+        AuditTrail.log_event(
+          updated_audit_data.user_id,
+          action,
+          updated_audit_data.actor_id,
+          Map.merge(updated_audit_data, %{
+            ip_address: conn.assigns[:gdpr_ip_address],
+            user_agent: conn.assigns[:gdpr_user_agent]
+          })
+        )
     end
+  rescue
+    _ ->
+      # Audit logging failed, but don't crash the request
+      Logger.warning("Failed to store GDPR audit event: details omitted for safety")
   end
 
   # Private helper functions
 
   defp get_current_user(conn) do
     # Try to get user from session (safe check for API endpoints)
-    try do
-      case get_session(conn, :current_user) do
-        nil ->
-          # Try to get from assigns (set by other plugs)
-          case conn.assigns[:current_user] do
-            nil -> {:error, :no_user_in_session}
-            user -> {:ok, user}
-          end
-        user ->
-          {:ok, user}
-      end
-    rescue
-      # Session not available (API endpoints)
-      ArgumentError ->
+    case get_session(conn, :current_user) do
+      nil ->
         # Try to get from assigns (set by other plugs)
         case conn.assigns[:current_user] do
           nil -> {:error, :no_user_in_session}
           user -> {:ok, user}
         end
+
+      user ->
+        {:ok, user}
     end
+  rescue
+    # Session not available (API endpoints)
+    ArgumentError ->
+      # Try to get from assigns (set by other plugs)
+      case conn.assigns[:current_user] do
+        nil -> {:error, :no_user_in_session}
+        user -> {:ok, user}
+      end
   end
 
   defp get_user_id_from_conn(conn) do
@@ -370,27 +397,25 @@ defmodule McpWeb.Auth.GdprAuthPlug do
   end
 
   defp get_session_id(conn) do
-    try do
-      get_session(conn, :session_id) ||
+    get_session(conn, :session_id) ||
       conn.cookies["_mcp_session_id"] ||
       conn.assigns[:gdpr_request_id]
-    rescue
-      # Session not available (API endpoints)
-      ArgumentError ->
-        conn.cookies["_mcp_session_id"] ||
+  rescue
+    # Session not available (API endpoints)
+    ArgumentError ->
+      conn.cookies["_mcp_session_id"] ||
         conn.assigns[:gdpr_request_id]
-    end
   end
 
   defp get_current_tenant(conn) do
     conn.assigns[:current_tenant] ||
-    try do
-      AuthorizationPlug.current_tenant(conn)
-    rescue
-      # Session not available (API endpoints)
-      ArgumentError ->
-        nil
-    end
+      try do
+        AuthorizationPlug.current_tenant(conn)
+      rescue
+        # Session not available (API endpoints)
+        ArgumentError ->
+          nil
+      end
   end
 
   defp admin_user?(user) do
@@ -399,36 +424,48 @@ defmodule McpWeb.Auth.GdprAuthPlug do
   end
 
   defp check_rate_limit_key(key) do
-    # Simple in-memory rate limiting
-    # In production, use Redis or another distributed cache
+    with {:ok, _table} <- ensure_rate_limit_table(),
+         {:ok, recent_requests} <- get_recent_requests(key),
+         :ok <- check_rate_limit_available(recent_requests, key) do
+      :ok
+    else
+      {:error, :rate_limit_exceeded} -> {:error, :rate_limit_exceeded}
+    end
+  end
+
+  defp ensure_rate_limit_table do
     case :ets.whereis(:gdpr_rate_limits) do
       :undefined ->
         :ets.new(:gdpr_rate_limits, [:set, :named_table, :public])
-        check_rate_limit_key(key)
+        {:ok, :gdpr_rate_limits}
 
-      _table ->
-        now = DateTime.utc_now() |> DateTime.to_unix()
-        window_start = now - @gdpr_rate_limit_window
+      table ->
+        {:ok, table}
+    end
+  end
 
-        case :ets.lookup(:gdpr_rate_limits, key) do
-          [{^key, requests}] ->
-            # Filter out old requests
-            recent_requests = Enum.filter(requests, fn req_time ->
-              req_time > window_start
-            end)
+  defp get_recent_requests(key) do
+    now = DateTime.utc_now() |> DateTime.to_unix()
+    window_start = now - @gdpr_rate_limit_window
 
-            if length(recent_requests) >= @gdpr_rate_limit_max do
-              {:error, :rate_limit_exceeded}
-            else
-              updated_requests = [now | recent_requests]
-              :ets.insert(:gdpr_rate_limits, {key, updated_requests})
-              :ok
-            end
+    case :ets.lookup(:gdpr_rate_limits, key) do
+      [{^key, requests}] ->
+        recent_requests = Enum.filter(requests, &(&1 > window_start))
+        {:ok, recent_requests}
 
-          [] ->
-            :ets.insert(:gdpr_rate_limits, {key, [now]})
-            :ok
-        end
+      [] ->
+        {:ok, []}
+    end
+  end
+
+  defp check_rate_limit_available(recent_requests, key) do
+    if length(recent_requests) >= @gdpr_rate_limit_max do
+      {:error, :rate_limit_exceeded}
+    else
+      now = DateTime.utc_now() |> DateTime.to_unix()
+      updated_requests = [now | recent_requests]
+      :ets.insert(:gdpr_rate_limits, {key, updated_requests})
+      :ok
     end
   end
 
@@ -437,24 +474,35 @@ defmodule McpWeb.Auth.GdprAuthPlug do
   """
   def cleanup_rate_limits do
     case :ets.whereis(:gdpr_rate_limits) do
-      :undefined -> :ok
+      :undefined ->
+        :ok
+
       _table ->
-        now = DateTime.utc_now() |> DateTime.to_unix()
-        window_start = now - @gdpr_rate_limit_window
+        cleanup_old_rate_limit_entries()
+    end
+  end
 
-        :ets.foldl(fn {key, requests}, acc ->
-          recent_requests = Enum.filter(requests, fn req_time ->
-            req_time > window_start
-          end)
+  defp cleanup_old_rate_limit_entries do
+    now = DateTime.utc_now() |> DateTime.to_unix()
+    window_start = now - @gdpr_rate_limit_window
 
-          if Enum.empty?(recent_requests) do
-            :ets.delete(:gdpr_rate_limits, key)
-          else
-            :ets.insert(:gdpr_rate_limits, {key, recent_requests})
-          end
+    :ets.foldl(
+      fn {key, requests}, acc ->
+        cleanup_rate_limit_entry(key, requests, window_start)
+        acc
+      end,
+      nil,
+      :gdpr_rate_limits
+    )
+  end
 
-          acc
-        end, nil, :gdpr_rate_limits)
+  defp cleanup_rate_limit_entry(key, requests, window_start) do
+    recent_requests = Enum.filter(requests, &(&1 > window_start))
+
+    if Enum.empty?(recent_requests) do
+      :ets.delete(:gdpr_rate_limits, key)
+    else
+      :ets.insert(:gdpr_rate_limits, {key, recent_requests})
     end
   end
 end

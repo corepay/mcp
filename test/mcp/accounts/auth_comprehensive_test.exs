@@ -1,7 +1,7 @@
 defmodule Mcp.Accounts.AuthComprehensiveTest do
   use ExUnit.Case, async: true
 
-  alias Mcp.Accounts.{User, Auth, Token}
+  alias Mcp.Accounts.{Auth, Token, User}
 
   describe "authentication flow" do
     test "authenticates user with valid credentials" do

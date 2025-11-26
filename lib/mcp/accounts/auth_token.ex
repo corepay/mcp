@@ -1,7 +1,7 @@
 defmodule Mcp.Accounts.AuthToken do
   @moduledoc """
   AuthToken resource for managing JWT-based authentication tokens.
-  
+
   Handles access tokens, refresh tokens, and token lifecycle including
   expiration, revocation, and usage tracking.
   """
@@ -13,15 +13,15 @@ defmodule Mcp.Accounts.AuthToken do
 
   postgres do
     table "auth_tokens"
-    schema "platform"
-    repo Mcp.Repo
+    schema("platform")
+    repo(Mcp.Repo)
 
     custom_indexes do
-      index [:token], unique: true
-      index [:user_id]
-      index [:type]
-      index [:expires_at]
-      index [:revoked_at]
+      index([:token], unique: true)
+      index([:user_id])
+      index([:type])
+      index([:expires_at])
+      index([:revoked_at])
     end
   end
 
@@ -38,7 +38,7 @@ defmodule Mcp.Accounts.AuthToken do
     end
 
     attribute :type, :atom do
-      constraints [one_of: [:access, :refresh, :reset, :verification, :session]]
+      constraints one_of: [:access, :refresh, :reset, :verification, :session]
       allow_nil? false
     end
 
@@ -82,7 +82,10 @@ defmodule Mcp.Accounts.AuthToken do
     read :by_token do
       argument :token, :string, allow_nil?: false
       get? true
-      filter expr(token == ^arg(:token) and is_nil(revoked_at) and expires_at > ^DateTime.utc_now())
+
+      filter expr(
+               token == ^arg(:token) and is_nil(revoked_at) and expires_at > ^DateTime.utc_now()
+             )
     end
 
     read :by_user do

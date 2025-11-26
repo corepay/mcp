@@ -5,7 +5,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
   use Phoenix.ConnTest
   use Plug.Test
 
-  alias Mcp.Accounts.{User, Auth}
+  alias Mcp.Accounts.{Auth, User}
   alias Mcp.Cache.SessionStore
   alias McpWeb.Endpoint
 

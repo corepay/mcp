@@ -108,7 +108,8 @@ defmodule Mcp.SystemHelperTest do
       assert disk_info.percentage <= 100
 
       # Total should equal used + available
-      assert abs(disk_info.total - (disk_info.used + disk_info.available)) < disk_info.total * 0.01
+      assert abs(disk_info.total - (disk_info.used + disk_info.available)) <
+               disk_info.total * 0.01
     end
   end
 

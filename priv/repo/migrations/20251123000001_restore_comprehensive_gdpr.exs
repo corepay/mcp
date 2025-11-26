@@ -27,8 +27,10 @@ defmodule Mcp.Repo.Migrations.RestoreComprehensiveGdpr do
     create table(:gdpr_requests, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :user_id, :binary_id, null: false
-      add :type, :string, null: false  # deletion, export, correction, restriction
-      add :status, :string, null: false, default: "pending"  # pending, processing, completed, failed
+      # deletion, export, correction, restriction
+      add :type, :string, null: false
+      # pending, processing, completed, failed
+      add :status, :string, null: false, default: "pending"
       add :reason, :string
       add :actor_id, :binary_id
       add :data, :jsonb
@@ -48,11 +50,14 @@ defmodule Mcp.Repo.Migrations.RestoreComprehensiveGdpr do
       add :id, :binary_id, primary_key: true
       add :user_id, :binary_id, null: false
       add :purpose, :string, null: false
-      add :legal_basis, :string, null: false  # consent, contract, legal_obligation, vital_interests, public_task, legitimate_interests
-      add :status, :string, null: false, default: "active"  # active, withdrawn, expired
+      # consent, contract, legal_obligation, vital_interests, public_task, legitimate_interests
+      add :legal_basis, :string, null: false
+      # active, withdrawn, expired
+      add :status, :string, null: false, default: "active"
       add :withdrawn_at, :utc_datetime_usec
       add :version, :integer, default: 1
-      add :scope, :jsonb  # What data this consent covers
+      # What data this consent covers
+      add :scope, :jsonb
       add :valid_until, :utc_datetime_usec
       add :metadata, :jsonb
 
@@ -96,9 +101,12 @@ defmodule Mcp.Repo.Migrations.RestoreComprehensiveGdpr do
       add :data_category, :string, null: false
       add :retention_days, :integer, null: false
       add :expires_at, :utc_datetime_usec, null: false
-      add :action, :string, null: false  # delete, anonymize, archive
-      add :status, :string, null: false, default: "scheduled"  # scheduled, processing, completed, failed
-      add :priority, :string, default: "normal"  # low, normal, high, urgent
+      # delete, anonymize, archive
+      add :action, :string, null: false
+      # scheduled, processing, completed, failed
+      add :status, :string, null: false, default: "scheduled"
+      # low, normal, high, urgent
+      add :priority, :string, default: "normal"
       add :legal_hold, :boolean, default: false
       add :processed_at, :utc_datetime_usec
       add :error_message, :text
@@ -116,7 +124,8 @@ defmodule Mcp.Repo.Migrations.RestoreComprehensiveGdpr do
       add :user_id, :binary_id, null: false
       add :request_id, :binary_id, null: false
       add :format, :string, null: false
-      add :status, :string, null: false, default: "pending"  # pending, processing, ready, expired, failed
+      # pending, processing, ready, expired, failed
+      add :status, :string, null: false, default: "pending"
       add :file_path, :string
       add :file_size, :integer
       add :download_count, :integer, default: 0
@@ -157,11 +166,13 @@ defmodule Mcp.Repo.Migrations.RestoreComprehensiveGdpr do
       add :user_id, :binary_id, null: false
       add :case_reference, :string, null: false
       add :reason, :text
-      add :status, :string, null: false, default: "active"  # active, released
+      # active, released
+      add :status, :string, null: false, default: "active"
       add :placed_by, :binary_id, null: false
       add :released_by, :binary_id
       add :released_at, :utc_datetime_usec
-      add :scope, :jsonb  # What data is preserved
+      # What data is preserved
+      add :scope, :jsonb
 
       timestamps()
     end

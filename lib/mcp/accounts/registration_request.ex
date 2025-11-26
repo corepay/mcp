@@ -13,13 +13,13 @@ defmodule Mcp.Accounts.RegistrationRequest do
 
   postgres do
     table "registration_requests"
-    schema "platform"
-    repo Mcp.Repo
+    schema("platform")
+    repo(Mcp.Repo)
 
     custom_indexes do
-      index [:tenant_id, :status]
-      index [:email]
-      index [:status, :created_at]
+      index([:tenant_id, :status])
+      index([:email])
+      index([:status, :created_at])
     end
   end
 
@@ -36,7 +36,7 @@ defmodule Mcp.Accounts.RegistrationRequest do
     end
 
     attribute :type, :atom do
-      constraints [one_of: [:customer, :vendor, :merchant, :reseller, :developer, :admin]]
+      constraints one_of: [:customer, :vendor, :merchant, :reseller, :developer, :admin]
       default :customer
       allow_nil? false
       description "Type of registration request"
@@ -73,7 +73,7 @@ defmodule Mcp.Accounts.RegistrationRequest do
     end
 
     attribute :status, :atom do
-      constraints [one_of: [:pending, :submitted, :approved, :rejected]]
+      constraints one_of: [:pending, :submitted, :approved, :rejected]
       default :pending
       allow_nil? false
       description "Current status of the registration request"
@@ -120,6 +120,7 @@ defmodule Mcp.Accounts.RegistrationRequest do
 
     create :initialize do
       primary? true
+
       accept [
         :tenant_id,
         :type,
@@ -190,7 +191,20 @@ defmodule Mcp.Accounts.RegistrationRequest do
 
   code_interface do
     define :read
-    define :initialize, args: [:tenant_id, :type, :email, :first_name, :last_name, :phone, :company_name, :registration_data, :context]
+
+    define :initialize,
+      args: [
+        :tenant_id,
+        :type,
+        :email,
+        :first_name,
+        :last_name,
+        :phone,
+        :company_name,
+        :registration_data,
+        :context
+      ]
+
     define :submit, args: [:context]
     define :approve, args: [:approver_id]
     define :reject, args: [:rejection_reason]

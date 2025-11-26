@@ -1,5 +1,6 @@
 defmodule Mcp.Gdpr.System.PerformanceTest do
-  use McpWeb.ConnCase, async: false  # Performance tests should not be async
+  # Performance tests should not be async
+  use McpWeb.ConnCase, async: false
 
   @moduletag :gdpr
   @moduletag :system
@@ -10,6 +11,7 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
     conn =
       conn
       |> put_req_header("x-forwarded-host", "www.example.com")
+
     {:ok, conn: conn}
   end
 
@@ -31,6 +33,7 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
       inserted_at: DateTime.utc_now(),
       updated_at: DateTime.utc_now()
     }
+
     [user: user]
   end
 
@@ -53,32 +56,42 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
 
       # Define SLA thresholds (in milliseconds)
       sla_thresholds = %{
-        simple_get: 200,      # Simple GET requests
-        export_request: 500,  # Export request (requires processing)
-        audit_trail: 300,     # Audit trail (may query multiple records)
-        status_check: 200     # Status checks
+        # Simple GET requests
+        simple_get: 200,
+        # Export request (requires processing)
+        export_request: 500,
+        # Audit trail (may query multiple records)
+        audit_trail: 300,
+        # Status checks
+        status_check: 200
       }
 
       # Test simple GET endpoint
-      {time, _conn} = :timer.tc(fn ->
-        get(conn, "/api/gdpr/export/#{Ecto.UUID.generate()}/status")
-      end)
+      {time, _conn} =
+        :timer.tc(fn ->
+          get(conn, "/api/gdpr/export/#{Ecto.UUID.generate()}/status")
+        end)
+
       assert time / 1000 <= sla_thresholds.status_check,
-        "Status check took #{time/1000}ms, should be under #{sla_thresholds.status_check}ms"
+             "Status check took #{time / 1000}ms, should be under #{sla_thresholds.status_check}ms"
 
       # Test audit trail endpoint
-      {time, _conn} = :timer.tc(fn ->
-        get(conn, "/api/gdpr/audit-trail")
-      end)
+      {time, _conn} =
+        :timer.tc(fn ->
+          get(conn, "/api/gdpr/audit-trail")
+        end)
+
       assert time / 1000 <= sla_thresholds.audit_trail,
-        "Audit trail took #{time/1000}ms, should be under #{sla_thresholds.audit_trail}ms"
+             "Audit trail took #{time / 1000}ms, should be under #{sla_thresholds.audit_trail}ms"
 
       # Test export request
-      {time, _conn} = :timer.tc(fn ->
-        post(conn, "/api/gdpr/export", %{"format" => "json"})
-      end)
+      {time, _conn} =
+        :timer.tc(fn ->
+          post(conn, "/api/gdpr/export", %{"format" => "json"})
+        end)
+
       assert time / 1000 <= sla_thresholds.export_request,
-        "Export request took #{time/1000}ms, should be under #{sla_thresholds.export_request}ms"
+             "Export request took #{time / 1000}ms, should be under #{sla_thresholds.export_request}ms"
     end
 
     test "concurrent request handling", %{conn: conn, user: user} do
@@ -97,12 +110,13 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
             # Make multiple requests
             results =
               for _j <- 1..requests_per_user do
-                {time, response_conn} = :timer.tc(fn ->
-                  post(user_conn, "/api/gdpr/export", %{
-                    "format" => "json",
-                    "request_id" => "#{:erlang.unique_integer()}"
-                  })
-                end)
+                {time, response_conn} =
+                  :timer.tc(fn ->
+                    post(user_conn, "/api/gdpr/export", %{
+                      "format" => "json",
+                      "request_id" => "#{:erlang.unique_integer()}"
+                    })
+                  end)
 
                 %{
                   response_time: time,
@@ -114,7 +128,8 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
             %{
               total_requests: length(results),
               successful_requests: Enum.count(results, & &1.success),
-              avg_response_time: Enum.sum(Enum.map(results, & &1.response_time)) / length(results),
+              avg_response_time:
+                Enum.sum(Enum.map(results, & &1.response_time)) / length(results),
               max_response_time: Enum.max(Enum.map(results, & &1.response_time))
             }
           end)
@@ -132,14 +147,15 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
 
       # Performance assertions
       success_rate = total_successful / total_requests * 100
+
       assert success_rate >= 90.0,
-        "Success rate was #{success_rate}%, should be at least 90%"
+             "Success rate was #{success_rate}%, should be at least 90%"
 
       assert overall_avg_response_time / 1000 <= 1000,
-        "Average response time was #{overall_avg_response_time/1000}ms, should be under 1000ms"
+             "Average response time was #{overall_avg_response_time / 1000}ms, should be under 1000ms"
 
       assert max_response_time / 1000 <= 5000,
-        "Max response time was #{max_response_time/1000}ms, should be under 5000ms"
+             "Max response time was #{max_response_time / 1000}ms, should be under 5000ms"
     end
 
     test "export processing performance", %{conn: conn} do
@@ -153,24 +169,28 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
       ]
 
       performance_thresholds = %{
-        small: 2_000,    # 2 seconds
-        medium: 5_000,   # 5 seconds
-        large: 10_000    # 10 seconds
+        # 2 seconds
+        small: 2_000,
+        # 5 seconds
+        medium: 5_000,
+        # 10 seconds
+        large: 10_000
       }
 
       for scenario <- export_scenarios do
-        {time, response_conn} = :timer.tc(fn ->
-          post(conn, "/api/gdpr/export", scenario)
-        end)
+        {time, response_conn} =
+          :timer.tc(fn ->
+            post(conn, "/api/gdpr/export", scenario)
+          end)
 
         threshold = Map.get(performance_thresholds, scenario["dataset_size"], 5_000)
 
         assert time / 1000 <= threshold,
-          "Export for #{scenario["dataset_size"]} dataset took #{time/1000}ms, should be under #{threshold}ms"
+               "Export for #{scenario["dataset_size"]} dataset took #{time / 1000}ms, should be under #{threshold}ms"
 
         # Verify the request was processed (not just rejected)
         assert response_conn.status in [200, 202],
-          "Export request failed with status #{response_conn.status}"
+               "Export request failed with status #{response_conn.status}"
       end
     end
 
@@ -182,6 +202,7 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
 
       # Generate load
       load_requests = 50
+
       results =
         for _i <- 1..load_requests do
           Task.async(fn ->
@@ -202,16 +223,18 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
 
       # Memory usage should not increase dramatically
       assert memory_increase_mb < 100,
-        "Memory increased by #{memory_increase_mb}MB, should be under 100MB"
+             "Memory increased by #{memory_increase_mb}MB, should be under 100MB"
 
       # Verify most requests succeeded
-      successful_responses = Enum.count(responses, fn response_conn ->
-        response_conn.status in [200, 202]
-      end)
+      successful_responses =
+        Enum.count(responses, fn response_conn ->
+          response_conn.status in [200, 202]
+        end)
 
       success_rate = successful_responses / length(responses) * 100
+
       assert success_rate >= 80.0,
-        "Success rate under memory load was #{success_rate}%, should be at least 80%"
+             "Success rate under memory load was #{success_rate}%, should be at least 80%"
     end
   end
 
@@ -222,7 +245,8 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
       # RED: Test system performance under sustained load
 
       duration_seconds = 5
-      target_rps = 10  # requests per second
+      # requests per second
+      target_rps = 10
       total_requests = duration_seconds * target_rps
 
       # Create a stream of requests over time
@@ -235,12 +259,14 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
             :timer.sleep(div(i * 1000, target_rps))
 
             user_conn = auth_conn(conn, user)
-            {time, response_conn} = :timer.tc(fn ->
-              post(user_conn, "/api/gdpr/export", %{
-                "format" => "json",
-                "request_id" => "load_test_#{i}"
-              })
-            end)
+
+            {time, response_conn} =
+              :timer.tc(fn ->
+                post(user_conn, "/api/gdpr/export", %{
+                  "format" => "json",
+                  "request_id" => "load_test_#{i}"
+                })
+              end)
 
             %{
               request_id: i,
@@ -259,23 +285,27 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
       response_times = Enum.map(results, & &1.response_time)
 
       avg_response_time = Enum.sum(response_times) / length(response_times)
-      p95_response_time = response_times |> Enum.sort() |> Enum.at(trunc(length(response_times) * 0.95))
-      p99_response_time = response_times |> Enum.sort() |> Enum.at(trunc(length(response_times) * 0.99))
+
+      p95_response_time =
+        response_times |> Enum.sort() |> Enum.at(trunc(length(response_times) * 0.95))
+
+      p99_response_time =
+        response_times |> Enum.sort() |> Enum.at(trunc(length(response_times) * 0.99))
 
       success_rate = successful_requests / length(results) * 100
 
       # Performance assertions for sustained load
       assert success_rate >= 95.0,
-        "Success rate under sustained load was #{success_rate}%, should be at least 95%"
+             "Success rate under sustained load was #{success_rate}%, should be at least 95%"
 
       assert avg_response_time / 1000 <= 1500,
-        "Average response time under load was #{avg_response_time/1000}ms, should be under 1500ms"
+             "Average response time under load was #{avg_response_time / 1000}ms, should be under 1500ms"
 
       assert p95_response_time / 1000 <= 3000,
-        "95th percentile response time was #{p95_response_time/1000}ms, should be under 3000ms"
+             "95th percentile response time was #{p95_response_time / 1000}ms, should be under 3000ms"
 
       assert p99_response_time / 1000 <= 5000,
-        "99th percentile response time was #{p99_response_time/1000}ms, should be under 5000ms"
+             "99th percentile response time was #{p99_response_time / 1000}ms, should be under 5000ms"
     end
 
     test "resource cleanup under load", %{conn: conn} do
@@ -292,7 +322,8 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
             # Multiple rapid requests
             for _j <- 1..5 do
               post(conn, "/api/gdpr/export", %{"format" => "json"})
-              :timer.sleep(10)  # Small delay
+              # Small delay
+              :timer.sleep(10)
             end
           end)
         end
@@ -312,10 +343,10 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
 
       # Resources should not leak significantly
       assert process_increase < 50,
-        "Process count increased by #{process_increase}, should be under 50"
+             "Process count increased by #{process_increase}, should be under 50"
 
       assert memory_increase < 50,
-        "Memory increased by #{memory_increase}MB, should be under 50MB"
+             "Memory increased by #{memory_increase}MB, should be under 50MB"
     end
   end
 
@@ -327,7 +358,8 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
 
       # Define performance baselines (these would be updated based on historical data)
       baseline_response_times = %{
-        export_request: 300,    # milliseconds
+        # milliseconds
+        export_request: 300,
         status_check: 100,
         audit_trail: 200,
         consent_endpoint: 150
@@ -341,7 +373,8 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
         {fn -> get(conn, "/api/gdpr/consent") end, :consent_endpoint}
       ]
 
-      regression_threshold = 1.5  # Allow 50% regression
+      # Allow 50% regression
+      regression_threshold = 1.5
 
       for {request_fn, endpoint_key} <- endpoints_to_test do
         # Run multiple measurements for accuracy
@@ -356,7 +389,7 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
         allowed_max = baseline * regression_threshold
 
         assert avg_time / 1000 <= allowed_max,
-          "#{endpoint_key} averaged #{avg_time/1000}ms, baseline is #{baseline}ms, regression threshold is #{allowed_max/1000}ms"
+               "#{endpoint_key} averaged #{avg_time / 1000}ms, baseline is #{baseline}ms, regression threshold is #{allowed_max / 1000}ms"
       end
     end
 
@@ -364,28 +397,32 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
       # RED: Test that throughput doesn't regress
 
       # Measure throughput by timing requests
-      test_duration = 3000  # 3 seconds
-      target_throughput = 20  # requests per second
+      # 3 seconds
+      test_duration = 3000
+      # requests per second
+      target_throughput = 20
 
-      {total_requests, elapsed_time} = :timer.tc(fn ->
-        request_count =
-          Stream.iterate(1, &(&1 + 1))
-          |> Stream.take_while(fn _i ->
-            :timer.sleep(div(1000, target_throughput))
-            true
-          end)
-          |> Enum.take(target_throughput * div(test_duration, 1000))
-          |> length()
+      {total_requests, elapsed_time} =
+        :timer.tc(fn ->
+          request_count =
+            Stream.iterate(1, &(&1 + 1))
+            |> Stream.take_while(fn _i ->
+              :timer.sleep(div(1000, target_throughput))
+              true
+            end)
+            |> Enum.take(target_throughput * div(test_duration, 1000))
+            |> length()
 
-        request_count
-      end)
+          request_count
+        end)
 
       actual_throughput = total_requests / (elapsed_time / 1_000_000)
 
       # Should maintain at least 80% of target throughput
       min_throughput = target_throughput * 0.8
+
       assert actual_throughput >= min_throughput,
-        "Throughput was #{actual_throughput} req/s, should be at least #{min_throughput} req/s"
+             "Throughput was #{actual_throughput} req/s, should be at least #{min_throughput} req/s"
     end
   end
 end

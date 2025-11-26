@@ -1,8 +1,8 @@
 defmodule McpWeb.AuthLive.TwoFactorSetupTest do
   use ExUnit.Case, async: true
 
-  alias McpWeb.AuthLive.TwoFactorSetup
   alias McpWeb.AuthLive.TwoFactorManagement
+  alias McpWeb.AuthLive.TwoFactorSetup
 
   # Basic test to ensure the 2FA LiveView components can be started
   test "2FA setup LiveView mounts successfully" do

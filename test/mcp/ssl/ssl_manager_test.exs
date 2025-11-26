@@ -1,8 +1,8 @@
 defmodule Mcp.SSL.SSLManagerTest do
   use ExUnit.Case, async: true
 
-  alias Mcp.SSL.SSLManager
   alias Mcp.Platform.Tenant
+  alias Mcp.SSL.SSLManager
 
   @sample_tenant %Tenant{
     id: "123e4567-e89b-12d3-a456-426614174000",

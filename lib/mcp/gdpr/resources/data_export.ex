@@ -12,7 +12,7 @@ defmodule Mcp.Gdpr.Resources.DataExport do
 
   postgres do
     table "gdpr_exports"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   attributes do
@@ -59,6 +59,7 @@ defmodule Mcp.Gdpr.Resources.DataExport do
       argument :user_id, :uuid do
         allow_nil? false
       end
+
       filter expr(user_id == ^arg(:user_id))
     end
 

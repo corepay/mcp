@@ -10,6 +10,7 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
     conn =
       conn
       |> put_req_header("x-forwarded-host", "www.example.com")
+
     {:ok, conn: conn}
   end
 
@@ -32,6 +33,7 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
       inserted_at: DateTime.utc_now(),
       updated_at: DateTime.utc_now()
     }
+
     [user: user]
   end
 
@@ -44,6 +46,7 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
       inserted_at: DateTime.utc_now(),
       updated_at: DateTime.utc_now()
     }
+
     [user: user]
   end
 
@@ -73,11 +76,13 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
       for {request_conn, endpoint_type} <- unauthenticated_endpoints do
         # Should return 401, 403, or 404 (for non-existent resources) for unauthenticated requests
         assert request_conn.status in [401, 403, 404]
+
         if request_conn.status in [401, 403] do
           response = json_response(request_conn, request_conn.status)
+
           assert response["error"] =~ "Authentication required" or
-                 response["error"] =~ "Unauthorized" or
-                 response["error"] =~ "forbidden"
+                   response["error"] =~ "Unauthorized" or
+                   response["error"] =~ "forbidden"
         end
       end
     end
@@ -100,12 +105,13 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
         assert request_conn.status == 403
 
         response = json_response(request_conn, 403)
+
         assert response["error"] =~ "Admin access required" or
-               response["error"] =~ "forbidden" or
-               response["error"] =~ "access denied" or
-               response["error"] =~ "unauthorized" or
-               response["error"] =~ "permission" or
-               response["error"] =~ "required"
+                 response["error"] =~ "forbidden" or
+                 response["error"] =~ "access denied" or
+                 response["error"] =~ "unauthorized" or
+                 response["error"] =~ "permission" or
+                 response["error"] =~ "required"
       end
     end
 
@@ -127,10 +133,12 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
 
         # Should reject invalid tokens
         assert conn.status in [401, 403, 404]
+
         if conn.status in [401, 403] do
           response = json_response(conn, conn.status)
+
           assert response["error"] =~ "Authentication" or
-                 response["error"] =~ "Unauthorized"
+                   response["error"] =~ "Unauthorized"
         end
       end
     end
@@ -155,23 +163,27 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
         assert conn.status in [400, 404]
 
         # Handle both JSON and HTML error responses
-        if get_resp_header(conn, "content-type") |> Enum.any?(&String.contains?(&1, "application/json")) do
+        if get_resp_header(conn, "content-type")
+           |> Enum.any?(&String.contains?(&1, "application/json")) do
           response = json_response(conn, conn.status)
+
           assert response["error"] =~ "Invalid" or
-                 response["error"] =~ "not found"
+                   response["error"] =~ "not found"
         end
 
         # Test export parameters
-        conn = post(conn, "/api/gdpr/export", %{
-          "format" => "json",
-          "user_id" => malicious_payload
-        })
+        conn =
+          post(conn, "/api/gdpr/export", %{
+            "format" => "json",
+            "user_id" => malicious_payload
+          })
 
         if conn.status != 202 do
           assert conn.status in [400, 422]
 
           # Handle both JSON and HTML error responses
-          if get_resp_header(conn, "content-type") |> Enum.any?(&String.contains?(&1, "application/json")) do
+          if get_resp_header(conn, "content-type")
+             |> Enum.any?(&String.contains?(&1, "application/json")) do
             response = json_response(conn, conn.status)
             assert response["error"] =~ "Invalid"
           end
@@ -192,11 +204,12 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
 
       for xss_payload <- xss_payloads do
         # Test various parameters for XSS
-        conn = post(conn, "/api/gdpr/export", %{
-          "format" => "json",
-          "purpose" => xss_payload,
-          "callback_url" => xss_payload
-        })
+        conn =
+          post(conn, "/api/gdpr/export", %{
+            "format" => "json",
+            "purpose" => xss_payload,
+            "callback_url" => xss_payload
+          })
 
         # Should either accept (if sanitized) or reject (if detected)
         if conn.status == 202 do
@@ -208,9 +221,10 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
           # Should reject malicious content
           assert conn.status in [400, 422]
           response = json_response(conn, conn.status)
+
           assert response["error"] =~ "dangerous" or
-                 response["error"] =~ "invalid" or
-                 response["error"] =~ "sanitized"
+                   response["error"] =~ "invalid" or
+                   response["error"] =~ "sanitized"
         end
       end
     end
@@ -247,8 +261,9 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
         conn = post(conn, "/api/gdpr/export", %{"format" => invalid_format})
         assert conn.status in [400, 422]
         response = json_response(conn, conn.status)
+
         assert response["error"] =~ "Invalid" or
-               response["error"] =~ "unsupported"
+                 response["error"] =~ "unsupported"
       end
     end
   end
@@ -272,11 +287,13 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
         end
 
       # At least some requests should be rate limited
-      rate_limited_requests = Enum.filter(requests, fn request_conn ->
-        request_conn.status == 429
-      end)
+      rate_limited_requests =
+        Enum.filter(requests, fn request_conn ->
+          request_conn.status == 429
+        end)
 
-      assert length(rate_limited_requests) > 0, "No requests were rate limited - all responses: #{inspect(Enum.map(requests, & &1.status))}"
+      assert length(rate_limited_requests) > 0,
+             "No requests were rate limited - all responses: #{inspect(Enum.map(requests, & &1.status))}"
 
       # Verify rate limit response format
       if length(rate_limited_requests) > 0 do
@@ -285,9 +302,9 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
 
         # Check for proper rate limit response format
         assert response["error"] == "Rate limit exceeded" or
-               response["error"] =~ "rate limit" or
-               response["error"] =~ "too many requests" or
-               response["message"] =~ "Too many GDPR requests"
+                 response["error"] =~ "rate limit" or
+                 response["error"] =~ "too many requests" or
+                 response["message"] =~ "Too many GDPR requests"
       end
     end
 
@@ -297,7 +314,8 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
       # Create large payload that exceeds Phoenix's default limit
       large_payload = %{
         "format" => "json",
-        "large_data" => String.duplicate("x", 10_000_000)  # 10MB
+        # 10MB
+        "large_data" => String.duplicate("x", 10_000_000)
       }
 
       payload_json = Jason.encode!(large_payload)
@@ -444,7 +462,7 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
 
           for field <- required_fields do
             assert Map.has_key?(audit_entry, field) or
-                   String.contains?(inspect(audit_entry), field)
+                     String.contains?(inspect(audit_entry), field)
           end
 
           # Should not contain sensitive data in audit trail
@@ -471,9 +489,10 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
         response = json_response(conn, 200)
 
         # Should have audit entries structure
+        # Endpoint exists even if no entries
         assert Map.has_key?(response, "audit_entries") or
-               Map.has_key?(response, "entries") or
-               conn.status == 200  # Endpoint exists even if no entries
+                 Map.has_key?(response, "entries") or
+                 conn.status == 200
       end
     end
   end

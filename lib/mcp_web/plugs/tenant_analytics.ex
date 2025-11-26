@@ -107,7 +107,7 @@ defmodule McpWeb.Plugs.TenantAnalytics do
         conn
 
       # Check for public dashboard access
-      is_public_analytics_request?(conn) ->
+      public_analytics_request?(conn) ->
         conn
 
       true ->
@@ -128,18 +128,18 @@ defmodule McpWeb.Plugs.TenantAnalytics do
   defp has_analytics_role?(:operator), do: true
   defp has_analytics_role?(_), do: false
 
-  defp is_public_analytics_request?(conn) do
+  defp public_analytics_request?(conn) do
     # Check if this is a request for a public dashboard or report
     path = conn.request_path
 
     cond do
       String.starts_with?(path, "/analytics/public") -> true
-      String.contains?(path, "/dashboards/") && is_public_dashboard_request?(conn) -> true
+      String.contains?(path, "/dashboards/") && public_dashboard_request?(conn) -> true
       true -> false
     end
   end
 
-  defp is_public_dashboard_request?(conn) do
+  defp public_dashboard_request?(conn) do
     # Check if the requested dashboard is public
     dashboard_slug = get_dashboard_slug_from_path(conn.request_path)
 

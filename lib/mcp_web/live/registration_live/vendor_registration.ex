@@ -601,7 +601,25 @@ defmodule McpWeb.RegistrationLive.VendorRegistration do
     vendor_params = socket.assigns.registration_data
     tenant_id = get_tenant_id_from_host(socket) || "default"
 
-    # Validation checks
+    with :ok <- validate_vendor_requirements(vendor_params, socket),
+         :ok <- check_rate_limit() do
+      context = build_registration_context(socket)
+      registration_data = build_vendor_registration_data(vendor_params, socket, context)
+
+      try do
+        RegistrationService.initialize_registration(
+          tenant_id,
+          :vendor,
+          registration_data,
+          context
+        )
+      rescue
+        error -> {:error, {:registration_failed, error}}
+      end
+    end
+  end
+
+  defp validate_vendor_requirements(vendor_params, socket) do
     cond do
       is_nil(vendor_params["company_name"]) or vendor_params["company_name"] == "" ->
         {:error, {:validation_failed, :company_name, "Company name is required"}}
@@ -612,43 +630,47 @@ defmodule McpWeb.RegistrationLive.VendorRegistration do
       not socket.assigns.terms_accepted ->
         {:error, {:validation_failed, :terms, "Terms and conditions must be accepted"}}
 
-      # Simulate rate limiting check
-      :rand.uniform(100) < 5 -> # 5% chance of rate limit for demo
-        {:error, :rate_limited}
-
       true ->
-        context = %{
-          ip_address: get_client_ip(socket),
-          user_agent: get_user_agent(socket),
-          referrer: get_referrer(socket),
-          marketing_consent: socket.assigns.marketing_consent,
-          analytics_consent: socket.assigns.analytics_consent,
-          terms_accepted_at: if(socket.assigns.terms_accepted, do: DateTime.utc_now(), else: nil),
-          privacy_policy_accepted_at:
-            if(socket.assigns.privacy_policy_accepted, do: DateTime.utc_now(), else: nil),
-          uploaded_documents: socket.assigns.uploaded_documents,
-          document_types: socket.assigns.document_uploads
-        }
-
-        registration_data =
-          Map.merge(vendor_params, %{
-            request_type: :vendor,
-            marketing_consent: socket.assigns.marketing_consent,
-            analytics_consent: socket.assigns.analytics_consent,
-            terms_accepted: socket.assigns.terms_accepted,
-            privacy_policy_accepted: socket.assigns.privacy_policy_accepted,
-            terms_accepted_at: context.terms_accepted_at,
-            privacy_policy_accepted_at: context.privacy_policy_accepted_at,
-            business_documents: socket.assigns.uploaded_documents,
-            business_document_types: socket.assigns.document_uploads
-          })
-
-        try do
-          RegistrationService.initialize_registration(tenant_id, :vendor, registration_data, context)
-        rescue
-          error -> {:error, {:registration_failed, error}}
-        end
+        :ok
     end
+  end
+
+  defp check_rate_limit do
+    # 5% chance of rate limit for demo
+    if :rand.uniform(100) < 5 do
+      {:error, :rate_limited}
+    else
+      :ok
+    end
+  end
+
+  defp build_registration_context(socket) do
+    %{
+      ip_address: get_client_ip(socket),
+      user_agent: get_user_agent(socket),
+      referrer: get_referrer(socket),
+      marketing_consent: socket.assigns.marketing_consent,
+      analytics_consent: socket.assigns.analytics_consent,
+      terms_accepted_at: if(socket.assigns.terms_accepted, do: DateTime.utc_now(), else: nil),
+      privacy_policy_accepted_at:
+        if(socket.assigns.privacy_policy_accepted, do: DateTime.utc_now(), else: nil),
+      uploaded_documents: socket.assigns.uploaded_documents,
+      document_types: socket.assigns.document_uploads
+    }
+  end
+
+  defp build_vendor_registration_data(vendor_params, socket, context) do
+    Map.merge(vendor_params, %{
+      request_type: :vendor,
+      marketing_consent: socket.assigns.marketing_consent,
+      analytics_consent: socket.assigns.analytics_consent,
+      terms_accepted: socket.assigns.terms_accepted,
+      privacy_policy_accepted: socket.assigns.privacy_policy_accepted,
+      terms_accepted_at: context.terms_accepted_at,
+      privacy_policy_accepted_at: context.privacy_policy_accepted_at,
+      business_documents: socket.assigns.uploaded_documents,
+      business_document_types: socket.assigns.document_uploads
+    })
   end
 
   defp handle_successful_submission(socket, request) do

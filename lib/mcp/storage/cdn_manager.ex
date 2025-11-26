@@ -7,7 +7,7 @@ defmodule Mcp.Storage.CDNManager do
   use GenServer
   require Logger
 
-  alias CDNClient
+  alias Mcp.Storage.CDNClient
 
   def start_link(init_arg) do
     GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)

@@ -73,7 +73,7 @@ defmodule Mcp.DateHelper do
   @doc """
   Gets current UTC datetime.
   """
-  def utc_now() do
+  def utc_now do
     DateTime.utc_now()
   end
 end

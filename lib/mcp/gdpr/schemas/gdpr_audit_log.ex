@@ -29,8 +29,33 @@ defmodule Mcp.Gdpr.Schemas.GdprAuditLog do
   @doc false
   def changeset(gdpr_audit_log, attrs) do
     gdpr_audit_log
-    |> cast(attrs, [:user_id, :actor_id, :action, :resource_type, :resource_id, :old_values, :new_values, :metadata, :ip_address, :user_agent, :session_id, :request_id, :timestamp])
+    |> cast(attrs, [
+      :user_id,
+      :actor_id,
+      :action,
+      :resource_type,
+      :resource_id,
+      :old_values,
+      :new_values,
+      :metadata,
+      :ip_address,
+      :user_agent,
+      :session_id,
+      :request_id,
+      :timestamp
+    ])
     |> validate_required([:action, :timestamp])
-    |> validate_inclusion(:action, ["delete_request", "export_request", "consent_updated", "consent_recorded", "consent_withdrawn", "anonymization_started", "anonymization_complete", "deletion_cancelled", "legal_hold_placed", "legal_hold_released"])
+    |> validate_inclusion(:action, [
+      "delete_request",
+      "export_request",
+      "consent_updated",
+      "consent_recorded",
+      "consent_withdrawn",
+      "anonymization_started",
+      "anonymization_complete",
+      "deletion_cancelled",
+      "legal_hold_placed",
+      "legal_hold_released"
+    ])
   end
 end

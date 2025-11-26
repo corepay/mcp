@@ -36,26 +36,26 @@ defmodule Mcp.Platform.TenantSettings.Changes do
   end
 
   defp validate_value_by_type(value, :string, rules) do
-    if !is_binary(value) do
-      {:error, "Value must be a string"}
-    else
+    if is_binary(value) do
       validate_string_rules(value, rules)
+    else
+      {:error, "Value must be a string"}
     end
   end
 
   defp validate_value_by_type(value, :integer, rules) do
-    if !is_integer(value) do
-      {:error, "Value must be an integer"}
-    else
+    if is_integer(value) do
       validate_numeric_rules(value, rules)
+    else
+      {:error, "Value must be an integer"}
     end
   end
 
   defp validate_value_by_type(value, :float, rules) do
-    if !is_number(value) do
-      {:error, "Value must be a number"}
-    else
+    if is_number(value) do
       validate_numeric_rules(value, rules)
+    else
+      {:error, "Value must be a number"}
     end
   end
 
@@ -68,18 +68,18 @@ defmodule Mcp.Platform.TenantSettings.Changes do
   end
 
   defp validate_value_by_type(value, :map, rules) do
-    if !is_map(value) do
-      {:error, "Value must be a map"}
-    else
+    if is_map(value) do
       validate_map_rules(value, rules)
+    else
+      {:error, "Value must be a map"}
     end
   end
 
   defp validate_value_by_type(value, :array, rules) do
-    if !is_list(value) do
-      {:error, "Value must be an array"}
-    else
+    if is_list(value) do
       validate_array_rules(value, rules)
+    else
+      {:error, "Value must be an array"}
     end
   end
 
@@ -93,37 +93,69 @@ defmodule Mcp.Platform.TenantSettings.Changes do
   end
 
   defp validate_string_rules(value, rules) do
-    cond do
-      min_length = Map.get(rules, "min_length") ->
+    with :ok <- validate_min_length(value, rules),
+         :ok <- validate_max_length(value, rules),
+         :ok <- validate_pattern(value, rules),
+         :ok <- validate_enum(value, rules) do
+      :ok
+    else
+      {:error, _reason} = error -> error
+    end
+  end
+
+  defp validate_min_length(value, rules) do
+    case Map.get(rules, "min_length") do
+      nil ->
+        :ok
+
+      min_length ->
         if String.length(value) < min_length do
           {:error, "String must be at least #{min_length} characters"}
         else
-          validate_string_rules(value, Map.delete(rules, "min_length"))
+          :ok
         end
+    end
+  end
 
-      max_length = Map.get(rules, "max_length") ->
+  defp validate_max_length(value, rules) do
+    case Map.get(rules, "max_length") do
+      nil ->
+        :ok
+
+      max_length ->
         if String.length(value) > max_length do
           {:error, "String must be at most #{max_length} characters"}
         else
-          validate_string_rules(value, Map.delete(rules, "max_length"))
+          :ok
         end
+    end
+  end
 
-      pattern = Map.get(rules, "pattern") ->
-        if !Regex.match?(~r/#{pattern}/, value) do
-          {:error, "String does not match required pattern"}
-        else
-          validate_string_rules(value, Map.delete(rules, "pattern"))
-        end
-
-      enum = Map.get(rules, "enum") ->
-        if value not in enum do
-          {:error, "Value must be one of: #{Enum.join(enum, ", ")}"}
-        else
-          validate_string_rules(value, Map.delete(rules, "enum"))
-        end
-
-      true ->
+  defp validate_pattern(value, rules) do
+    case Map.get(rules, "pattern") do
+      nil ->
         :ok
+
+      pattern ->
+        if Regex.match?(~r/#{pattern}/, value) do
+          :ok
+        else
+          {:error, "String does not match required pattern"}
+        end
+    end
+  end
+
+  defp validate_enum(value, rules) do
+    case Map.get(rules, "enum") do
+      nil ->
+        :ok
+
+      enum ->
+        if value in enum do
+          :ok
+        else
+          {:error, "Value must be one of: #{Enum.join(enum, ", ")}"}
+        end
     end
   end
 
@@ -149,25 +181,45 @@ defmodule Mcp.Platform.TenantSettings.Changes do
   end
 
   defp validate_map_rules(value, rules) do
-    cond do
-      required_keys = Map.get(rules, "required_keys") ->
-        if !Enum.all?(required_keys, &Map.has_key?(value, &1)) do
+    with :ok <- validate_required_keys(value, rules),
+         :ok <- validate_allowed_keys(value, rules) do
+      :ok
+    else
+      {:error, _reason} = error -> error
+    end
+  end
+
+  defp validate_required_keys(value, rules) do
+    case Map.get(rules, "required_keys") do
+      nil ->
+        :ok
+
+      required_keys ->
+        if Enum.all?(required_keys, &Map.has_key?(value, &1)) do
+          :ok
+        else
           missing = Enum.reject(required_keys, &Map.has_key?(value, &1))
           {:error, "Missing required keys: #{Enum.join(missing, ", ")}"}
-        else
-          validate_map_rules(value, Map.delete(rules, "required_keys"))
         end
+    end
+  end
 
-      allowed_keys = Map.get(rules, "allowed_keys") ->
-        if !Enum.all?(Map.keys(value), fn key -> key in allowed_keys end) do
-          extra = Enum.reject(Map.keys(value), &(&1 in allowed_keys))
-          {:error, "Extra keys not allowed: #{Enum.join(extra, ", ")}"}
-        else
-          validate_map_rules(value, Map.delete(rules, "allowed_keys"))
-        end
+  defp validate_allowed_keys(value, rules) do
+    allowed_keys = Map.get(rules, "allowed_keys")
 
-      true ->
-        :ok
+    if allowed_keys == nil do
+      :ok
+    else
+      validate_keys_allowed(Map.keys(value), allowed_keys)
+    end
+  end
+
+  defp validate_keys_allowed(keys, allowed_keys) do
+    if Enum.all?(keys, &(&1 in allowed_keys)) do
+      :ok
+    else
+      extra = Enum.reject(keys, &(&1 in allowed_keys))
+      {:error, "Extra keys not allowed: #{Enum.join(extra, ", ")}"}
     end
   end
 

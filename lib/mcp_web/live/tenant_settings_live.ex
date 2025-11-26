@@ -5,7 +5,7 @@ defmodule McpWeb.TenantSettingsLive do
 
   use McpWeb, :live_view
 
-  alias Mcp.Platform.{TenantSettingsManager, FeatureToggle}
+  alias Mcp.Platform.{FeatureToggle, TenantSettingsManager}
 
   def __live__ do
     %{
@@ -180,7 +180,7 @@ defmodule McpWeb.TenantSettingsLive do
                 phx-click="show_import_modal"
                 class="w-full"
                 variant="primary"
-                              >
+              >
                 <.icon name="hero-upload" class="mr-2" /> Import Settings
               </.button>
             </div>
@@ -262,9 +262,15 @@ defmodule McpWeb.TenantSettingsLive do
         </div>
       </.form>
       <div class="relative bg-white rounded-lg max-w-md mx-auto mt-20 p-4">
-        <button type="button" phx-click="hide_import_modal" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">&times;</button>
+        <button
+          type="button"
+          phx-click="hide_import_modal"
+          class="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+        >
+          &times;
+        </button>
       </div>
-      </div>
+    </div>
     """
   end
 
@@ -284,8 +290,7 @@ defmodule McpWeb.TenantSettingsLive do
            content: json_data,
            filename: filename
          })}
-
-      end
+    end
   end
 
   def handle_event("show_import_modal", _params, socket) do
@@ -300,41 +305,27 @@ defmodule McpWeb.TenantSettingsLive do
     current_user = socket.assigns.current_user
     tenant_id = socket.assigns.tenant_id
 
-    case File.read(file.path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, import_data} ->
-            case TenantSettingsManager.import_tenant_settings(
-                   tenant_id,
-                   import_data,
-                   current_user.id
-                 ) do
-              {:ok, %{imported: true} = _result} ->
-                # Reload data
-                {:ok, settings} = TenantSettingsManager.get_all_tenant_settings(tenant_id)
-                {:ok, enabled_features} = TenantSettingsManager.get_enabled_features(tenant_id)
-                {:ok, branding} = TenantSettingsManager.get_tenant_branding(tenant_id)
+    with {:ok, content} <- File.read(file.path),
+         {:ok, import_data} <- Jason.decode(content),
+         {:ok, %{imported: true} = _result} <-
+           TenantSettingsManager.import_tenant_settings(tenant_id, import_data, current_user.id) do
+      # Reload data
+      {:ok, settings} = TenantSettingsManager.get_all_tenant_settings(tenant_id)
+      {:ok, enabled_features} = TenantSettingsManager.get_enabled_features(tenant_id)
+      {:ok, branding} = TenantSettingsManager.get_tenant_branding(tenant_id)
 
-                {:noreply,
-                 socket
-                 |> put_flash(:info, "Settings imported successfully")
-                 |> assign(:settings, settings)
-                 |> assign(:enabled_features, enabled_features)
-                 |> assign(:branding, branding)
-                 |> assign(:show_import_modal, false)}
-            end
-
-          {:error, _} ->
-            {:noreply,
-             socket
-             |> put_flash(:error, "Invalid JSON file format")
-             |> assign(:show_import_modal, false)}
-        end
-
+      {:noreply,
+       socket
+       |> put_flash(:info, "Settings imported successfully")
+       |> assign(:settings, settings)
+       |> assign(:enabled_features, enabled_features)
+       |> assign(:branding, branding)
+       |> assign(:show_import_modal, false)}
+    else
       {:error, _} ->
         {:noreply,
          socket
-         |> put_flash(:error, "Failed to read uploaded file")
+         |> put_flash(:error, "Failed to process import file")
          |> assign(:show_import_modal, false)}
     end
   end

@@ -8,9 +8,9 @@ defmodule Mcp.Gdpr.RetentionReactor do
 
   use Ash.Reactor
 
-  alias Mcp.Gdpr.Resources.RetentionPolicy
-  alias Mcp.Gdpr.Resources.AuditTrail
   alias Mcp.Gdpr.Anonymizer
+  alias Mcp.Gdpr.Resources.AuditTrail
+  alias Mcp.Gdpr.Resources.RetentionPolicy
   alias Mcp.Repo
   require Logger
   import Ecto.Query
@@ -143,70 +143,62 @@ defmodule Mcp.Gdpr.RetentionReactor do
 
   # Helper function to find overdue records based on entity type
   defp find_overdue_records("user", cutoff_date) do
-    try do
-      # Find users who need anonymization/deletion
-      overdue_query =
-        from(u in Mcp.Gdpr.Resources.User,
-          where: u.inserted_at <= ^cutoff_date,
-          # Not already anonymized
-          where: is_nil(u.gdpr_anonymized_at),
-          # Only process active or soft-deleted users
-          where: u.status in ["active", "deleted"],
-          select: u.id
-        )
+    # Find users who need anonymization/deletion
+    overdue_query =
+      from(u in Mcp.Gdpr.Resources.User,
+        where: u.inserted_at <= ^cutoff_date,
+        # Not already anonymized
+        where: is_nil(u.gdpr_anonymized_at),
+        # Only process active or soft-deleted users
+        where: u.status in ["active", "deleted"],
+        select: u.id
+      )
 
-      overdue_ids = Repo.all(overdue_query)
-      {:ok, overdue_ids}
-    rescue
-      error -> {:error, "Error finding overdue users: #{inspect(error)}"}
-    end
+    overdue_ids = Repo.all(overdue_query)
+    {:ok, overdue_ids}
+  rescue
+    error -> {:error, "Error finding overdue users: #{inspect(error)}"}
   end
 
   defp find_overdue_records("audit_trail", cutoff_date) do
-    try do
-      overdue_query =
-        from(a in "gdpr_audit_trail",
-          where: a.inserted_at <= ^cutoff_date,
-          select: a.id
-        )
+    overdue_query =
+      from(a in "gdpr_audit_trail",
+        where: a.inserted_at <= ^cutoff_date,
+        select: a.id
+      )
 
-      overdue_ids = Repo.all(overdue_query)
-      {:ok, overdue_ids}
-    rescue
-      error -> {:error, "Error finding overdue audit trails: #{inspect(error)}"}
-    end
+    overdue_ids = Repo.all(overdue_query)
+    {:ok, overdue_ids}
+  rescue
+    error -> {:error, "Error finding overdue audit trails: #{inspect(error)}"}
   end
 
   defp find_overdue_records("consent", cutoff_date) do
-    try do
-      overdue_query =
-        from(c in "gdpr_consent",
-          where: c.inserted_at <= ^cutoff_date,
-          select: c.id
-        )
+    overdue_query =
+      from(c in "gdpr_consent",
+        where: c.inserted_at <= ^cutoff_date,
+        select: c.id
+      )
 
-      overdue_ids = Repo.all(overdue_query)
-      {:ok, overdue_ids}
-    rescue
-      error -> {:error, "Error finding overdue consent records: #{inspect(error)}"}
-    end
+    overdue_ids = Repo.all(overdue_query)
+    {:ok, overdue_ids}
+  rescue
+    error -> {:error, "Error finding overdue consent records: #{inspect(error)}"}
   end
 
   defp find_overdue_records("data_export", cutoff_date) do
-    try do
-      overdue_query =
-        from(e in "gdpr_data_exports",
-          where: e.inserted_at <= ^cutoff_date,
-          # Only remove exported files that have been downloaded
-          where: not is_nil(e.downloaded_at),
-          select: e.id
-        )
+    overdue_query =
+      from(e in "gdpr_data_exports",
+        where: e.inserted_at <= ^cutoff_date,
+        # Only remove exported files that have been downloaded
+        where: not is_nil(e.downloaded_at),
+        select: e.id
+      )
 
-      overdue_ids = Repo.all(overdue_query)
-      {:ok, overdue_ids}
-    rescue
-      error -> {:error, "Error finding overdue data exports: #{inspect(error)}"}
-    end
+    overdue_ids = Repo.all(overdue_query)
+    {:ok, overdue_ids}
+  rescue
+    error -> {:error, "Error finding overdue data exports: #{inspect(error)}"}
   end
 
   defp find_overdue_records(entity_type, _cutoff_date) do
@@ -268,44 +260,42 @@ defmodule Mcp.Gdpr.RetentionReactor do
       "Deleting #{length(record_ids)} #{policy.entity_type} records for policy #{policy.id}"
     )
 
-    try do
-      case policy.entity_type do
-        "audit_trail" ->
-          from(a in "gdpr_audit_trail", where: a.id in ^record_ids)
-          |> Repo.delete_all()
+    case policy.entity_type do
+      "audit_trail" ->
+        from(a in "gdpr_audit_trail", where: a.id in ^record_ids)
+        |> Repo.delete_all()
 
-        "consent" ->
-          from(c in "gdpr_consent", where: c.id in ^record_ids)
-          |> Repo.delete_all()
+      "consent" ->
+        from(c in "gdpr_consent", where: c.id in ^record_ids)
+        |> Repo.delete_all()
 
-        "data_export" ->
-          from(e in "gdpr_data_exports", where: e.id in ^record_ids)
-          |> Repo.delete_all()
+      "data_export" ->
+        from(e in "gdpr_data_exports", where: e.id in ^record_ids)
+        |> Repo.delete_all()
 
-        entity_type ->
-          Logger.warning("Deletion not implemented for entity type: #{entity_type}")
-          {0, nil}
-      end
-
-      # Create audit entries for deleted records
-      Enum.each(record_ids, fn record_id ->
-        create_retention_audit(record_id, "delete_record", policy.id, %{
-          entity_type: policy.entity_type,
-          action: "delete"
-        })
-      end)
-
-      {:ok,
-       %{
-         action: "delete",
-         records_processed: length(record_ids),
-         errors: []
-       }}
-    rescue
-      error ->
-        Logger.error("Error deleting records: #{inspect(error)}")
-        {:error, "Deletion failed: #{inspect(error)}"}
+      entity_type ->
+        Logger.warning("Deletion not implemented for entity type: #{entity_type}")
+        {0, nil}
     end
+
+    # Create audit entries for deleted records
+    Enum.each(record_ids, fn record_id ->
+      create_retention_audit(record_id, "delete_record", policy.id, %{
+        entity_type: policy.entity_type,
+        action: "delete"
+      })
+    end)
+
+    {:ok,
+     %{
+       action: "delete",
+       records_processed: length(record_ids),
+       errors: []
+     }}
+  rescue
+    error ->
+      Logger.error("Error deleting records: #{inspect(error)}")
+      {:error, "Deletion failed: #{inspect(error)}"}
   end
 
   # Process archiving (placeholder for future implementation)
@@ -333,33 +323,31 @@ defmodule Mcp.Gdpr.RetentionReactor do
 
   # Create audit trail entry for retention actions
   defp create_retention_audit(record_id, action, policy_id, details) do
-    try do
-      Ash.create!(
-        AuditTrail,
-        %{
-          user_id: record_id,
-          action_type: action,
-          actor_type: "retention_policy",
-          actor_id: policy_id,
-          details:
-            Map.merge(details, %{
-              policy_id: policy_id,
-              processed_at: DateTime.utc_now()
-            }),
-          data_categories: determine_data_categories(action, details),
-          processed_at: DateTime.utc_now()
-        },
-        action: :create_entry
-      )
+    Ash.create!(
+      AuditTrail,
+      %{
+        user_id: record_id,
+        action_type: action,
+        actor_type: "retention_policy",
+        actor_id: policy_id,
+        details:
+          Map.merge(details, %{
+            policy_id: policy_id,
+            processed_at: DateTime.utc_now()
+          }),
+        data_categories: determine_data_categories(action, details),
+        processed_at: DateTime.utc_now()
+      },
+      action: :create_entry
+    )
 
-      Logger.info("GDPR Audit: #{action} for record #{record_id} - audit entry created")
+    Logger.info("GDPR Audit: #{action} for record #{record_id} - audit entry created")
+    :ok
+  rescue
+    error ->
+      Logger.error("Failed to create retention audit: #{inspect(error)}")
+      # Continue processing even if audit fails - don't break the reactor
       :ok
-    rescue
-      error ->
-        Logger.error("Failed to create retention audit: #{inspect(error)}")
-        # Continue processing even if audit fails - don't break the reactor
-        :ok
-    end
   end
 
   # Determine appropriate data categories based on action and details

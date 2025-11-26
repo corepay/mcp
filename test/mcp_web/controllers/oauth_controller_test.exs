@@ -4,9 +4,9 @@ defmodule McpWeb.OAuthControllerTest do
 
   import Mox
 
-  alias McpWeb.OAuthController
-  alias Mcp.Accounts.{User, OAuth, Auth}
+  alias Mcp.Accounts.{Auth, OAuth, User}
   alias Mcp.Cache.SessionStore
+  alias McpWeb.OAuthController
 
   @endpoint McpWeb.Endpoint
 

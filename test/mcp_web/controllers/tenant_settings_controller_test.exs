@@ -4,7 +4,7 @@ defmodule McpWeb.TenantSettingsControllerTest do
   import Mcp.AccountsFixtures
   import Mcp.TenantFixtures
 
-  alias Mcp.Platform.{TenantSettingsManager, FeatureToggle}
+  alias Mcp.Platform.{FeatureToggle, TenantSettingsManager}
 
   @moduletag :capture_log
 

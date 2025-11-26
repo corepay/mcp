@@ -90,44 +90,36 @@ defmodule McpWeb.HealthController do
   end
 
   defp check_database_connection do
-    try do
-      Mcp.Repo.query("SELECT 1", [])
-      true
-    rescue
-      _ -> false
-    end
+    Mcp.Repo.query("SELECT 1", [])
+    true
+  rescue
+    _ -> false
   end
 
   defp check_redis_connection do
-    try do
-      # Check if Redis is available (basic ping)
-      case Redix.command(:redix, ["PING"]) do
-        {:ok, "PONG"} -> true
-        _ -> false
-      end
-    rescue
+    # Check if Redis is available (basic ping)
+    case Redix.command(:redix, ["PING"]) do
+      {:ok, "PONG"} -> true
       _ -> false
     end
+  rescue
+    _ -> false
   end
 
   defp check_job_queue do
-    try do
-      # Check if Oban is running and can queue jobs
-      Oban.config()
-      true
-    rescue
-      _ -> false
-    end
+    # Check if Oban is running and can queue jobs
+    Oban.config()
+    true
+  rescue
+    _ -> false
   end
 
   defp check_migrations do
-    try do
-      # Basic check that migrations table exists and has data
-      Mcp.Repo.query("SELECT COUNT(*) FROM schema_migrations", [])
-      true
-    rescue
-      _ -> false
-    end
+    # Basic check that migrations table exists and has data
+    Mcp.Repo.query("SELECT COUNT(*) FROM schema_migrations", [])
+    true
+  rescue
+    _ -> false
   end
 
   defp check_dependencies do
@@ -140,57 +132,53 @@ defmodule McpWeb.HealthController do
   end
 
   defp get_database_info do
-    try do
-      {:ok, result} = Mcp.Repo.query("SELECT version()", [])
-      version = result.rows |> List.first() |> List.first()
+    {:ok, result} = Mcp.Repo.query("SELECT version()", [])
+    version = result.rows |> List.first() |> List.first()
 
+    %{
+      connected: true,
+      version: version,
+      pool_size: get_db_pool_size()
+    }
+  rescue
+    _ ->
       %{
-        connected: true,
-        version: version,
-        pool_size: get_db_pool_size()
+        connected: false,
+        version: nil,
+        pool_size: 0
       }
-    rescue
-      _ ->
-        %{
-          connected: false,
-          version: nil,
-          pool_size: 0
-        }
-    end
   end
 
   defp get_redis_info do
-    try do
-      case Redix.command(:redix, ["INFO", "server"]) do
-        {:ok, info} ->
-          lines = String.split(info, "\r\n")
-          redis_version = Enum.find(lines, &String.starts_with?(&1, "redis_version:"))
+    case Redix.command(:redix, ["INFO", "server"]) do
+      {:ok, info} ->
+        lines = String.split(info, "\r\n")
+        redis_version = Enum.find(lines, &String.starts_with?(&1, "redis_version:"))
 
-          %{
-            connected: true,
-            version: redis_version && String.replace_prefix(redis_version, "redis_version:", "")
-          }
-        _ ->
-          %{connected: false, version: nil}
-      end
-    rescue
+        %{
+          connected: true,
+          version: redis_version && String.replace_prefix(redis_version, "redis_version:", "")
+        }
+
       _ ->
         %{connected: false, version: nil}
     end
+  rescue
+    _ ->
+      %{connected: false, version: nil}
   end
 
   defp get_oban_info do
-    try do
-      config = Oban.config()
-      %{
-        configured: true,
-        queues: config.queues,
-        crontab: length(config.crontab || [])
-      }
-    rescue
-      _ ->
-        %{configured: false, queues: [], crontab: 0}
-    end
+    config = Oban.config()
+
+    %{
+      configured: true,
+      queues: config.queues,
+      crontab: length(config.crontab || [])
+    }
+  rescue
+    _ ->
+      %{configured: false, queues: [], crontab: 0}
   end
 
   defp get_storage_info do
@@ -219,6 +207,7 @@ defmodule McpWeb.HealthController do
 
   defp get_memory_stats do
     memory = :erlang.memory()
+
     %{
       total: memory[:total],
       processes: memory[:processes],
@@ -245,17 +234,16 @@ defmodule McpWeb.HealthController do
 
   defp get_uptime do
     {time_ms, _} = :erlang.statistics(:wall_clock)
-    div(time_ms, 1000)  # Convert to seconds
+    # Convert to seconds
+    div(time_ms, 1000)
   end
 
   defp get_db_pool_size do
-    try do
-      # Get pool size from repo configuration
-      config = Mcp.Repo.config()
-      Keyword.get(config, :pool_size, 0)
-    rescue
-      _ -> 0
-    end
+    # Get pool size from repo configuration
+    config = Mcp.Repo.config()
+    Keyword.get(config, :pool_size, 0)
+  rescue
+    _ -> 0
   end
 
   defp config_env do

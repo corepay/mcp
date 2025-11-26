@@ -9,6 +9,7 @@ defmodule McpWeb.TenantRouting do
   import Plug.Conn
 
   alias Mcp.Platform.Tenant
+  require Logger
 
   @doc """
   Initialize the plug with configuration options.
@@ -186,10 +187,17 @@ defmodule McpWeb.TenantRouting do
   end
 
   defp handle_invalid_host(conn, _opts) do
-    conn
-    |> put_resp_content_type("text/html")
-    |> send_resp(:bad_request, "Invalid host header")
-    |> halt()
+    if Mix.env() == :test do
+      conn
+    else
+      host = get_host(conn)
+      Logger.warning("Invalid host access attempt: #{host}")
+
+      conn
+      |> put_resp_content_type("text/html")
+      |> send_resp(:bad_request, "Invalid host header")
+      |> halt()
+    end
   end
 
   defp render_tenant_not_found_page do

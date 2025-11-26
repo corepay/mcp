@@ -1,7 +1,7 @@
 defmodule Mcp.Accounts do
   @moduledoc """
   Accounts domain for user authentication and management.
-  
+
   This domain handles:
   - User registration and authentication
   - JWT token-based sessions

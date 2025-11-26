@@ -1,7 +1,7 @@
 defmodule Mcp.Accounts.JWT do
   @moduledoc """
   JWT token generation and verification using Joken.
-  
+
   Handles signing and verifying JWT tokens for authentication.
   """
 
@@ -10,7 +10,8 @@ defmodule Mcp.Accounts.JWT do
   @impl true
   def token_config do
     default_claims(
-      default_exp: 24 * 60 * 60,  # 24 hours
+      # 24 hours
+      default_exp: 24 * 60 * 60,
       iss: "mcp-platform",
       aud: "mcp-users"
     )
@@ -18,30 +19,30 @@ defmodule Mcp.Accounts.JWT do
 
   @doc """
   Generates a JWT token with the given claims.
-  
+
   ## Examples
-  
+
       iex> claims = %{"sub" => user_id, "type" => "access"}
       iex> Mcp.Accounts.JWT.generate_token(claims)
       {:ok, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}
   """
   def generate_token(claims) do
     signer = get_signer()
-    
+
     generate_and_sign(claims, signer)
   end
 
   @doc """
   Verifies a JWT token and returns the claims.
-  
+
   ## Examples
-  
+
       iex> Mcp.Accounts.JWT.verify_token(token)
       {:ok, %{"sub" => "user-id", "type" => "access"}}
   """
   def verify_token(token) do
     signer = get_signer()
-    
+
     verify_and_validate(token, signer)
   end
 
@@ -67,10 +68,10 @@ defmodule Mcp.Accounts.JWT do
       Application.get_env(:mcp, Mcp.Accounts.JWT)[:signing_secret] ||
       raise """
       JWT signing secret not configured!
-      
+
       Add to config/runtime.exs:
       config :mcp, :token_signing_secret, System.get_env("JWT_SECRET")
-      
+
       Or for development, add to config/dev.exs:
       config :mcp, :token_signing_secret, "dev-secret-change-in-production"
       """

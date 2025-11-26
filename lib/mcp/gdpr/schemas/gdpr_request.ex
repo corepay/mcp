@@ -25,7 +25,17 @@ defmodule Mcp.Gdpr.Schemas.GdprRequest do
   @doc false
   def changeset(gdpr_request, attrs) do
     gdpr_request
-    |> cast(attrs, [:user_id, :type, :status, :reason, :actor_id, :data, :expires_at, :completed_at, :error_message])
+    |> cast(attrs, [
+      :user_id,
+      :type,
+      :status,
+      :reason,
+      :actor_id,
+      :data,
+      :expires_at,
+      :completed_at,
+      :error_message
+    ])
     |> validate_required([:user_id, :type, :status])
     |> validate_inclusion(:type, ["deletion", "export", "correction", "restriction"])
     |> validate_inclusion(:status, ["pending", "processing", "completed", "failed"])

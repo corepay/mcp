@@ -86,7 +86,8 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
          {:ok, user} <- get_user_for_anonymization(user_id),
          {:ok, _} <- apply_field_anonymization(user, fields),
          :ok <- update_anonymization_metadata(user_id, "partial") do
-      {:ok, %{user_id: user_id, mode: "partial", fields: fields, anonymized_at: DateTime.utc_now()}}
+      {:ok,
+       %{user_id: user_id, mode: "partial", fields: fields, anonymized_at: DateTime.utc_now()}}
     else
       {:error, reason} -> {:error, reason}
       error -> {:error, "Unexpected error: #{inspect(error)}"}
@@ -114,6 +115,7 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
     case has_active_legal_hold?(user_id) do
       true ->
         {:error, :legal_hold_active}
+
       false ->
         :ok
     end
@@ -122,7 +124,8 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
   defp has_active_legal_hold?(user_id) do
     from(lh in "gdpr_legal_holds",
       where: lh.user_id == ^user_id,
-      where: is_nil(lh.released_at))
+      where: is_nil(lh.released_at)
+    )
     |> Repo.exists?()
   end
 
@@ -136,25 +139,28 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
   defp get_full_anonymization_config do
     [
       # User table fields
-      {"mcp_users", [
-        {"email", :email_hash},
-        {"first_name", :generic},
-        {"last_name", :generic},
-        {"phone", :partial_hash},
-        {"address", :nullify},
-        {"birth_date", :nullify},
-        {"ssn", :nullify},
-        {"personal_notes", :nullify}
-      ]},
+      {"mcp_users",
+       [
+         {"email", :email_hash},
+         {"first_name", :generic},
+         {"last_name", :generic},
+         {"phone", :partial_hash},
+         {"address", :nullify},
+         {"birth_date", :nullify},
+         {"ssn", :nullify},
+         {"personal_notes", :nullify}
+       ]},
       # Audit trail fields
-      {"gdpr_audit_trail", [
-        {"ip_address", :partial_hash},
-        {"user_agent", :truncate}
-      ]},
+      {"gdpr_audit_trail",
+       [
+         {"ip_address", :partial_hash},
+         {"user_agent", :truncate}
+       ]},
       # Consent fields
-      {"gdpr_consent", [
-        {"ip_address", :partial_hash}
-      ]}
+      {"gdpr_consent",
+       [
+         {"ip_address", :partial_hash}
+       ]}
     ]
   end
 
@@ -162,13 +168,16 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
     Enum.each(config, fn {table, fields} ->
       apply_table_anonymization(user.id, table, fields)
     end)
+
     :ok
   end
 
   defp apply_table_anonymization(user_id, table, fields) do
     Enum.each(fields, fn {field, method} ->
       case anonymize_table_field(user_id, table, field, method) do
-        :ok -> :ok
+        :ok ->
+          :ok
+
         {:error, reason} ->
           Logger.error("Failed to anonymize #{table}.#{field}: #{inspect(reason)}")
       end
@@ -180,6 +189,7 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
       {:ok, current_value} ->
         {:ok, anonymized_value} = Anonymizer.anonymize_field(current_value, method, user_id)
         update_field_value(user_id, table, field, anonymized_value)
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -201,8 +211,10 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
   end
 
   defp build_table_query("gdpr_audit_trail", user_id) do
-    query = from(r in Mcp.Gdpr.Resources.AuditTrail, where: r.user_id == ^user_id)
-            |> limit(1)
+    query =
+      from(r in Mcp.Gdpr.Resources.AuditTrail, where: r.user_id == ^user_id)
+      |> limit(1)
+
     {:ok, query}
   end
 
@@ -213,14 +225,12 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
   defp build_table_query(_, _), do: {:error, :table_not_allowed}
 
   defp execute_query_safely(query) do
-    try do
-      case Repo.one(query) do
-        nil -> {:ok, nil}
-        record -> {:ok, record}
-      end
-    rescue
-      _ -> {:error, :field_not_found}
+    case Repo.one(query) do
+      nil -> {:ok, nil}
+      record -> {:ok, record}
     end
+  rescue
+    _ -> {:error, :field_not_found}
   end
 
   defp update_field_value(user_id, table, field, value) do
@@ -235,15 +245,14 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
   end
 
   defp update_record_safely(query, field, value) do
-    try do
-      field_atom = String.to_atom(field)
-      case Repo.update_all(query, [set: [{field_atom, value}]]) do
-        {1, _} -> :ok
-        {0, _} -> {:error, :no_records_updated}
-      end
-    rescue
-      _ -> {:error, :update_failed}
+    field_atom = String.to_atom(field)
+
+    case Repo.update_all(query, set: [{field_atom, value}]) do
+      {1, _} -> :ok
+      {0, _} -> {:error, :no_records_updated}
     end
+  rescue
+    _ -> {:error, :update_failed}
   end
 
   defp apply_field_anonymization(user, fields) do
@@ -259,10 +268,13 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
     cond do
       table not in allowed_tables ->
         {:error, :table_not_allowed}
+
       mode not in allowed_modes ->
         {:error, :mode_not_allowed}
+
       not is_map(conditions) ->
         {:error, :invalid_conditions}
+
       true ->
         :ok
     end
@@ -270,20 +282,25 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
 
   defp get_records_for_anonymization(table, conditions) do
     # Use hardcoded table queries for security
-    query = case table do
-      "mcp_users" -> from(r in Mcp.Accounts.UserSchema)
-      "gdpr_audit_trail" -> from(r in Mcp.Gdpr.Resources.AuditTrail)
-      "gdpr_consent" -> from(r in Mcp.Accounts.UserSchema)  # Consent in user table
-      _ -> {:error, :table_not_allowed}
-    end
+    query =
+      case table do
+        "mcp_users" -> from(r in Mcp.Accounts.UserSchema)
+        "gdpr_audit_trail" -> from(r in Mcp.Gdpr.Resources.AuditTrail)
+        # Consent in user table
+        "gdpr_consent" -> from(r in Mcp.Accounts.UserSchema)
+        _ -> {:error, :table_not_allowed}
+      end
 
     case query do
-      {:error, _} = error -> error
+      {:error, _} = error ->
+        error
+
       query ->
         try do
-          query = Enum.reduce(conditions, query, fn {field, value}, acc ->
-            where(acc, ^[String.to_atom(field)] == ^value)
-          end)
+          query =
+            Enum.reduce(conditions, query, fn {field, value}, acc ->
+              where(acc, ^[String.to_atom(field)] == ^value)
+            end)
 
           {:ok, Repo.all(query)}
         rescue
@@ -310,12 +327,15 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
     now = DateTime.utc_now()
 
     from(u in Mcp.Accounts.UserSchema,
-      where: u.id == ^user_id)
-    |> Repo.update_all([set: [
-      anonymized_at: now,
-      anonymization_mode: mode,
-      updated_at: now
-    ]])
+      where: u.id == ^user_id
+    )
+    |> Repo.update_all(
+      set: [
+        anonymized_at: now,
+        anonymization_mode: mode,
+        updated_at: now
+      ]
+    )
     |> case do
       {1, _} -> :ok
       {0, _} -> {:error, :update_failed}

@@ -1,7 +1,7 @@
 defmodule Mcp.Accounts.OAuth do
   @moduledoc """
   OAuth authentication integration using Ueberauth.
-  
+
   Supports OAuth providers: Google, GitHub
   Stores OAuth tokens in user.oauth_tokens map field.
   """
@@ -12,7 +12,7 @@ defmodule Mcp.Accounts.OAuth do
 
   @doc """
   Generates OAuth authorize URL for a provider.
-  
+
   Uses Ueberauth to generate the authorization URL.
   """
   def authorize_url(provider, state) when provider in @supported_providers do
@@ -27,18 +27,18 @@ defmodule Mcp.Accounts.OAuth do
 
   @doc """
   Handles OAuth callback and creates or updates user.
-  
+
   Called after successful OAuth authentication.
   Returns {:ok, user} or {:error, reason}
   """
   def callback(provider, auth_info, user_info) when provider in @supported_providers do
     email = get_email_from_auth(user_info)
-    
+
     case User.by_email(email) do
       {:ok, user} ->
         # User exists, link OAuth
         link_oauth(user, provider, auth_info, user_info)
-        
+
       {:error, _} ->
         # New user, create with OAuth
         create_user_from_oauth(provider, auth_info, user_info)
@@ -71,7 +71,7 @@ defmodule Mcp.Accounts.OAuth do
   def unlink_oauth(user, provider) when provider in @supported_providers do
     oauth_tokens = user.oauth_tokens || %{}
     new_tokens = Map.delete(oauth_tokens, to_string(provider))
-    
+
     # Update user's oauth_tokens
     case User.update(user, %{oauth_tokens: new_tokens}) do
       {:ok, updated_user} -> {:ok, updated_user}
@@ -84,7 +84,7 @@ defmodule Mcp.Accounts.OAuth do
   """
   def link_oauth(user, provider, auth_info, user_info) when provider in @supported_providers do
     oauth_tokens = user.oauth_tokens || %{}
-    
+
     provider_data = %{
       "provider" => to_string(provider),
       "uid" => user_info.uid,
@@ -98,9 +98,9 @@ defmodule Mcp.Accounts.OAuth do
         "image" => user_info.image
       }
     }
-    
+
     new_tokens = Map.put(oauth_tokens, to_string(provider), provider_data)
-    
+
     case User.update(user, %{oauth_tokens: new_tokens}) do
       {:ok, updated_user} -> {:ok, updated_user}
       error -> error
@@ -112,7 +112,7 @@ defmodule Mcp.Accounts.OAuth do
   """
   def get_oauth_info(user, provider) when provider in @supported_providers do
     oauth_tokens = user.oauth_tokens || %{}
-    
+
     case Map.get(oauth_tokens, to_string(provider)) do
       nil -> %{provider: provider, linked: false}
       data -> Map.put(data, "linked", true)
@@ -124,7 +124,7 @@ defmodule Mcp.Accounts.OAuth do
   """
   def get_linked_providers(user) do
     oauth_tokens = user.oauth_tokens || %{}
-    
+
     oauth_tokens
     |> Map.keys()
     |> Enum.map(&String.to_atom/1)
@@ -133,21 +133,21 @@ defmodule Mcp.Accounts.OAuth do
 
   @doc """
   Refreshes OAuth token for a provider.
-  
+
   Note: Requires OAuth provider to support refresh tokens.
   """
   def refresh_oauth_token(user, provider) when provider in @supported_providers do
     oauth_tokens = user.oauth_tokens || %{}
-    
+
     case Map.get(oauth_tokens, to_string(provider)) do
       nil ->
         {:error, :oauth_not_linked}
-        
+
       provider_data ->
         case provider_data["refresh_token"] do
           nil ->
             {:error, :no_refresh_token}
-            
+
           _refresh_token ->
             # Attempt to refresh the token
             # This would call the OAuth provider's token refresh endpoint

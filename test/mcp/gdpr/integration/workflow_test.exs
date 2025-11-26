@@ -9,6 +9,7 @@ defmodule Mcp.Gdpr.Integration.WorkflowTest do
     conn =
       conn
       |> put_req_header("x-forwarded-host", "www.example.com")
+
     {:ok, conn: conn}
   end
 
@@ -30,6 +31,7 @@ defmodule Mcp.Gdpr.Integration.WorkflowTest do
       inserted_at: DateTime.utc_now(),
       updated_at: DateTime.utc_now()
     }
+
     [user: user]
   end
 
@@ -157,10 +159,12 @@ defmodule Mcp.Gdpr.Integration.WorkflowTest do
       assert is_list(entries)
 
       # Should contain export request entry
-      export_entries = Enum.filter(entries, fn entry ->
-        entry["action"] == "DATA_EXPORT_REQUEST" or
-        entry["endpoint"] == "/api/gdpr/export"
-      end)
+      export_entries =
+        Enum.filter(entries, fn entry ->
+          entry["action"] == "DATA_EXPORT_REQUEST" or
+            entry["endpoint"] == "/api/gdpr/export"
+        end)
+
       assert length(export_entries) >= 1
     end
   end

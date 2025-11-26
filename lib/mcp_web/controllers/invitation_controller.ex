@@ -9,7 +9,6 @@ defmodule McpWeb.InvitationController do
   use McpWeb, :controller
   require Logger
 
-  
   def accept(conn, %{"token" => token}) do
     # Try to find the tenant for this invitation
     case find_tenant_for_invitation(token) do
@@ -103,46 +102,45 @@ defmodule McpWeb.InvitationController do
   end
 
   def setup_account(conn, %{"token" => token} = params) do
-    case find_tenant_for_invitation(token) do
-      {:ok, tenant} ->
-        case find_invitation_details(token, tenant.company_schema) do
-          {:ok, invitation} ->
-            # Check if invitation is still valid
-            if invitation_valid?(invitation) do
-              accept_invitation_with_details(conn, token, tenant, invitation, params)
-            else
-              render_invalid_invitation(
-                conn,
-                "This invitation has expired. Please contact your administrator for a new invitation."
-              )
-            end
+    with {:ok, tenant} <- find_tenant_for_invitation(token),
+         {:ok, invitation} <- find_invitation_details(token, tenant.company_schema),
+         :ok <- validate_invitation(invitation) do
+      accept_invitation_with_details(conn, token, tenant, invitation, params)
+    else
+      {:error, :invalid_invitation} ->
+        render_invalid_invitation(
+          conn,
+          "This invitation has expired. Please contact your administrator for a new invitation."
+        )
 
-          {:error, :not_found} ->
-            render_invalid_invitation(conn, "Invitation not found or has been used.")
+      {:error, :not_found} ->
+        render_invalid_invitation(conn, "Invitation not found or has been used.")
 
-          {:error, reason} ->
-            Logger.error("Error getting invitation details: #{inspect(reason)}")
-
-            conn
-            |> put_status(:internal_server_error)
-            |> put_view(McpWeb.ErrorView)
-            |> render(:internal_server_error)
-        end
+      {:error, reason} ->
+        Logger.error("Error processing invitation: #{inspect(reason)}")
+        internal_server_error_response(conn)
 
       {:error, :not_found} ->
         conn
         |> put_status(:not_found)
         |> put_view(McpWeb.ErrorView)
         |> render(:not_found)
-
-      {:error, reason} ->
-        Logger.error("Error finding tenant for invitation: #{inspect(reason)}")
-
-        conn
-        |> put_status(:internal_server_error)
-        |> put_view(McpWeb.ErrorView)
-        |> render(:internal_server_error)
     end
+  end
+
+  defp validate_invitation(invitation) do
+    if invitation_valid?(invitation) do
+      :ok
+    else
+      {:error, :invalid_invitation}
+    end
+  end
+
+  defp internal_server_error_response(conn) do
+    conn
+    |> put_status(:internal_server_error)
+    |> put_view(McpWeb.ErrorView)
+    |> render(:internal_server_error)
   end
 
   # Private helper functions
@@ -255,6 +253,7 @@ defmodule McpWeb.InvitationController do
       token: token,
       errors: [base: "Invalid invitation token"]
     )
+
     # end
   end
 

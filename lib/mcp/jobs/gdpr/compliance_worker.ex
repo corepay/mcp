@@ -14,6 +14,8 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
   use Oban.Worker, queue: :gdpr_compliance, max_attempts: 1
   require Logger
 
+  alias Mcp.Jobs.Gdpr.AnonymizationWorker
+  alias Mcp.Jobs.Gdpr.RetentionCleanupWorker
   alias Mcp.Repo
   import Ecto.Query
 
@@ -70,12 +72,13 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
     # Store metrics for reporting
     store_compliance_metrics(compliance_metrics, compliance_score)
 
-    {:ok, %{
-      score: compliance_score,
-      issues_count: length(issues),
-      metrics: compliance_metrics,
-      timestamp: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       score: compliance_score,
+       issues_count: length(issues),
+       metrics: compliance_metrics,
+       timestamp: DateTime.utc_now()
+     }}
   end
 
   defp generate_weekly_compliance_report do
@@ -138,12 +141,13 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
       schedule_audit_cleanup_jobs()
     end
 
-    {:ok, %{
-      overdue_anonymizations: overdue_count,
-      expired_exports: expired_count,
-      old_audit_entries: old_audit_count,
-      timestamp: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       overdue_anonymizations: overdue_count,
+       expired_exports: expired_count,
+       old_audit_entries: old_audit_count,
+       timestamp: DateTime.utc_now()
+     }}
   end
 
   defp check_legal_holds do
@@ -162,7 +166,9 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
     }
 
     if length(expired_holds) > 0 do
-      Logger.warning("Found #{length(expired_holds)} legal holds that expired but weren't released")
+      Logger.warning(
+        "Found #{length(expired_holds)} legal holds that expired but weren't released"
+      )
     end
 
     {:ok, legal_hold_summary}
@@ -190,20 +196,24 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
     base_score = 100
 
     # Deductions for compliance issues
-    score = base_score
-    |> deduct_overdue_anonymizations(metrics.total_users, metrics.anonymized_users)
-    |> deduct_unreleased_legal_holds(metrics.legal_holds)
-    |> deduct_missing_user_consents(metrics.active_users, metrics.active_consents)
-    |> deduct_export_cleanup(metrics.active_exports)
+    score =
+      base_score
+      |> deduct_overdue_anonymizations(metrics.total_users, metrics.anonymized_users)
+      |> deduct_unreleased_legal_holds(metrics.legal_holds)
+      |> deduct_missing_user_consents(metrics.active_users, metrics.active_consents)
+      |> deduct_export_cleanup(metrics.active_exports)
 
     max(score, 0)
   end
 
   defp deduct_overdue_anonymizations(score, total_users, anonymized_users) do
     if total_users > 0 do
-      expected_anonymized = total_users * 0.01  # 1% should be anonymized over time
+      # 1% should be anonymized over time
+      expected_anonymized = total_users * 0.01
+
       if anonymized_users > expected_anonymized do
-        score - 5  # Penalty for not processing anonymizations
+        # Penalty for not processing anonymizations
+        score - 5
       else
         score
       end
@@ -224,7 +234,8 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
   defp deduct_missing_user_consents(score, active_users, active_consents) do
     if active_users > 0 do
       consent_rate = active_consents / active_users
-      if consent_rate < 0.95 do  # 95% consent rate target
+      # 95% consent rate target
+      if consent_rate < 0.95 do
         score - 10
       else
         score
@@ -289,10 +300,11 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
     # Calculate score based on weekly performance
     base_score = 100
 
-    score = base_score
-    |> deduct_processing_delays(weekly_data)
-    |> deduct_legal_hold_duration(weekly_data)
-    |> deduct_retention_compliance(weekly_data)
+    score =
+      base_score
+      |> deduct_processing_delays(weekly_data)
+      |> deduct_legal_hold_duration(weekly_data)
+      |> deduct_retention_compliance(weekly_data)
 
     max(score, 0)
   end
@@ -308,7 +320,8 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
 
   defp deduct_legal_hold_duration(score, _data) do
     # Check if legal holds are resolved within reasonable time
-    score  # Placeholder for more complex logic
+    # Placeholder for more complex logic
+    score
   end
 
   defp deduct_retention_compliance(score, data) do
@@ -382,30 +395,35 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
   defp get_pending_deletion_count do
     from(u in "mcp_users",
       where: u.status == "deleted",
-      where: is_nil(u.anonymized_at))
+      where: is_nil(u.anonymized_at)
+    )
     |> Repo.aggregate(:count, :id)
   end
 
   defp get_active_export_count do
     from(e in "gdpr_exports",
-      where: e.status in ["pending", "processing"])
+      where: e.status in ["pending", "processing"]
+    )
     |> Repo.aggregate(:count, :id)
   end
 
   defp get_active_consent_count do
     from(c in "gdpr_consent",
-      where: c.status == "granted")
+      where: c.status == "granted"
+    )
     |> Repo.aggregate(:count, :id)
   end
 
   defp get_active_legal_holds_count do
     from(lh in "gdpr_legal_holds",
-      where: is_nil(lh.released_at))
+      where: is_nil(lh.released_at)
+    )
     |> Repo.aggregate(:count, :id)
   end
 
   defp get_audit_entries_count(hours_ago) do
     cutoff_time = DateTime.add(DateTime.utc_now(), -hours_ago * 60 * 60, :second)
+
     from(a in "gdpr_audit_trail", where: a.inserted_at >= ^cutoff_time)
     |> Repo.aggregate(:count, :id)
   end
@@ -424,25 +442,30 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
 
   defp get_overdue_retention_count do
     cutoff_time = DateTime.utc_now()
+
     from(u in "mcp_users",
       where: u.status == "deleted",
       where: not is_nil(u.gdpr_retention_expires_at),
       where: u.gdpr_retention_expires_at <= ^cutoff_time,
-      where: is_nil(u.anonymized_at))
+      where: is_nil(u.anonymized_at)
+    )
     |> Repo.aggregate(:count, :id)
   end
 
   defp get_expired_exports_count do
     cutoff_time = DateTime.add(DateTime.utc_now(), -7, :day)
+
     from(e in "gdpr_exports",
       where: e.status == "completed",
-      where: e.expires_at <= ^cutoff_time)
+      where: e.expires_at <= ^cutoff_time
+    )
     |> Repo.aggregate(:count, :id)
   end
 
   defp get_old_audit_entries_count do
     # Consider entries older than 2 years as old
     cutoff_time = DateTime.add(DateTime.utc_now(), -730, :day)
+
     from(a in "gdpr_audit_trail", where: a.inserted_at <= ^cutoff_time)
     |> Repo.aggregate(:count, :id)
   end
@@ -450,17 +473,21 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
   defp get_legal_holds_approaching_expiration do
     # Legal holds expiring within 7 days
     cutoff_time = DateTime.add(DateTime.utc_now(), 7, :day)
+
     from(lh in "gdpr_legal_holds",
       where: is_nil(lh.released_at),
-      where: lh.expires_at <= ^cutoff_time)
+      where: lh.expires_at <= ^cutoff_time
+    )
     |> Repo.all()
   end
 
   defp get_expired_legal_holds do
     cutoff_time = DateTime.utc_now()
+
     from(lh in "gdpr_legal_holds",
       where: is_nil(lh.released_at),
-      where: lh.expires_at <= ^cutoff_time)
+      where: lh.expires_at <= ^cutoff_time
+    )
     |> Repo.all()
   end
 
@@ -471,7 +498,7 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
     overdue_users = get_overdue_user_ids()
 
     Enum.each(overdue_users, fn user_id ->
-      Mcp.Jobs.Gdpr.AnonymizationWorker.new(%{
+      AnonymizationWorker.new(%{
         "user_id" => user_id,
         "mode" => "full"
       })
@@ -480,14 +507,14 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
   end
 
   defp schedule_export_cleanup_jobs do
-    Mcp.Jobs.Gdpr.RetentionCleanupWorker.new(%{
+    RetentionCleanupWorker.new(%{
       "type" => "export_cleanup"
     })
     |> Oban.insert()
   end
 
   defp schedule_audit_cleanup_jobs do
-    Mcp.Jobs.Gdpr.RetentionCleanupWorker.new(%{
+    RetentionCleanupWorker.new(%{
       "type" => "audit_cleanup"
     })
     |> Oban.insert()
@@ -495,12 +522,14 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
 
   defp get_overdue_user_ids do
     cutoff_time = DateTime.utc_now()
+
     from(u in "mcp_users",
       where: u.status == "deleted",
       where: not is_nil(u.gdpr_retention_expires_at),
       where: u.gdpr_retention_expires_at <= ^cutoff_time,
       where: is_nil(u.anonymized_at),
-      select: u.id)
+      select: u.id
+    )
     |> Repo.all()
   end
 end

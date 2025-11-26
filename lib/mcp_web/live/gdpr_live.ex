@@ -14,8 +14,8 @@ defmodule McpWeb.GdprLive do
 
   require Logger
 
-  alias Mcp.Gdpr.Compliance
   alias Mcp.Accounts.UserSchema
+  alias Mcp.Gdpr.Compliance
   alias Mcp.Repo
   alias McpWeb.GdprComponents
 
@@ -65,7 +65,10 @@ defmodule McpWeb.GdprLive do
 
         {:noreply,
          socket
-         |> put_flash(:info, "Data export request accepted. You will be notified when it's ready for download.")
+         |> put_flash(
+           :info,
+           "Data export request accepted. You will be notified when it's ready for download."
+         )
          |> load_gdpr_data()}
 
       {:error, reason} ->
@@ -87,7 +90,10 @@ defmodule McpWeb.GdprLive do
 
         {:noreply,
          socket
-         |> put_flash(:warning, "Account deletion request processed. Your account will be deleted after the retention period. You can cancel this request within 90 days.")
+         |> put_flash(
+           :warning,
+           "Account deletion request processed. Your account will be deleted after the retention period. You can cancel this request within 90 days."
+         )
          |> load_gdpr_data()}
 
       {:error, reason} ->
@@ -152,16 +158,18 @@ defmodule McpWeb.GdprLive do
     deletion_status = get_user_deletion_status_for_display(user.id)
 
     # Load user consents
-    consents = case Compliance.get_user_consents(user.id) do
-      {:ok, user_consents} -> format_consents_for_display(user_consents)
-      {:error, _} -> []
-    end
+    consents =
+      case Compliance.get_user_consents(user.id) do
+        {:ok, user_consents} -> format_consents_for_display(user_consents)
+        {:error, _} -> []
+      end
 
     # Load recent audit trail
-    audit_trail = case Compliance.get_user_audit_trail(user.id, 10) do
-      {:ok, audits} -> format_audit_trail_for_display(audits)
-      {:error, _} -> []
-    end
+    audit_trail =
+      case Compliance.get_user_audit_trail(user.id, 10) do
+        {:ok, audits} -> format_audit_trail_for_display(audits)
+        {:error, _} -> []
+      end
 
     socket
     |> assign(:deletion_status, deletion_status)
@@ -173,6 +181,7 @@ defmodule McpWeb.GdprLive do
     case Repo.get(UserSchema, user_id) do
       nil ->
         %{status: "not_found", deletable: false}
+
       user ->
         %{
           status: user.status,
@@ -213,30 +222,43 @@ defmodule McpWeb.GdprLive do
   end
 
   defp validate_and_update_consents(user_id, consent_params, actor_id) do
+    with {:ok, validated} <- validate_consent_params(consent_params),
+         {:ok, results} <- update_consent_records(user_id, validated, actor_id) do
+      {:ok, Enum.map(results, fn {:ok, consent} -> consent end)}
+    else
+      {:error, _reason} = error -> error
+    end
+  end
+
+  defp validate_consent_params(consent_params) do
     valid_purposes = ["marketing", "analytics", "essential", "third_party_sharing"]
     valid_statuses = ["granted", "denied", "withdrawn"]
 
-    validated = Enum.reduce(consent_params, [], fn {purpose, status}, acc ->
-      if purpose in valid_purposes and status in valid_statuses do
-        [{purpose, status} | acc]
-      else
-        acc
-      end
-    end)
+    validated =
+      Enum.reduce(consent_params, [], fn {purpose, status}, acc ->
+        if purpose in valid_purposes and status in valid_statuses do
+          [{purpose, status} | acc]
+        else
+          acc
+        end
+      end)
 
     if length(validated) == map_size(consent_params) do
-      results = Enum.map(validated, fn {purpose, status} ->
+      {:ok, validated}
+    else
+      {:error, :invalid_consent_params}
+    end
+  end
+
+  defp update_consent_records(user_id, validated, actor_id) do
+    results =
+      Enum.map(validated, fn {purpose, status} ->
         Compliance.update_user_consent(user_id, purpose, status, actor_id)
       end)
 
-      case Enum.find(results, fn result -> match?({:error, _}, result) end) do
-        nil ->
-          {:ok, Enum.map(results, fn {:ok, consent} -> consent end)}
-        error ->
-          error
-      end
-    else
-      {:error, :invalid_consent_params}
+    case Enum.find(results, fn result -> match?({:error, _}, result) end) do
+      nil -> {:ok, results}
+      error -> error
     end
   end
 
@@ -246,10 +268,17 @@ defmodule McpWeb.GdprLive do
   defp get_consent_display_name("third_party_sharing"), do: "Third Party Sharing"
   defp get_consent_display_name(_), do: "Unknown"
 
-  defp get_consent_description("marketing"), do: "Receive marketing emails and promotional content"
-  defp get_consent_description("analytics"), do: "Allow analytics tracking for service improvement"
+  defp get_consent_description("marketing"),
+    do: "Receive marketing emails and promotional content"
+
+  defp get_consent_description("analytics"),
+    do: "Allow analytics tracking for service improvement"
+
   defp get_consent_description("essential"), do: "Required for essential service functionality"
-  defp get_consent_description("third_party_sharing"), do: "Share data with trusted third-party partners"
+
+  defp get_consent_description("third_party_sharing"),
+    do: "Share data with trusted third-party partners"
+
   defp get_consent_description(_), do: "No description available"
 
   defp get_audit_action_display("delete_request"), do: "Requested Account Deletion"
@@ -257,7 +286,9 @@ defmodule McpWeb.GdprLive do
   defp get_audit_action_display("export_request"), do: "Requested Data Export"
   defp get_audit_action_display("consent_updated"), do: "Updated Consent Preferences"
   defp get_audit_action_display("account_created"), do: "Account Created"
-  defp get_audit_action_display(action), do: String.replace(action, "_", " ") |> String.capitalize()
+
+  defp get_audit_action_display(action),
+    do: String.replace(action, "_", " ") |> String.capitalize()
 
   # Date formatting helper functions - moved to GdprComponents
 
@@ -274,17 +305,16 @@ defmodule McpWeb.GdprLive do
               <p class="text-base-content/70 mt-2">Manage your privacy settings and data rights</p>
             </div>
             <.link navigate="/dashboard" class="btn btn-outline btn-primary">
-              <.icon name="hero-arrow-left" class="w-4 h-4" />
-              Back to Dashboard
+              <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to Dashboard
             </.link>
           </div>
         </div>
-
-        <!-- Flash Messages -->
+        
+    <!-- Flash Messages -->
         <.flash kind={:info} flash={@flash} />
         <.flash kind={:error} flash={@flash} />
-
-        <!-- Tab Navigation -->
+        
+    <!-- Tab Navigation -->
         <div class="tabs tabs-boxed mb-8">
           <a
             class={"tab #{if @active_tab == "overview", do: "tab-active"}"}
@@ -322,8 +352,8 @@ defmodule McpWeb.GdprLive do
             Audit Trail
           </a>
         </div>
-
-        <!-- Component-based Content -->
+        
+    <!-- Component-based Content -->
         <.gdpr_content
           active_tab={@active_tab}
           current_user={@current_user}
@@ -392,8 +422,8 @@ defmodule McpWeb.GdprLive do
       <h2 class="card-title text-2xl">Data Export (Data Portability)</h2>
 
       <GdprComponents.data_export_form current_user={@current_user} loading={@loading} />
-
-      <!-- Export Information -->
+      
+    <!-- Export Information -->
       <div class="divider">What's Included</div>
       <div class="grid md:grid-cols-2 gap-4">
         <div class="bg-base-200 p-4 rounded-lg">
@@ -425,7 +455,10 @@ defmodule McpWeb.GdprLive do
     <div class="space-y-6">
       <h2 class="card-title text-2xl">Account Deletion (Right to be Forgotten)</h2>
 
-      <GdprComponents.account_deletion_component deletion_status={@deletion_status} loading={@loading} />
+      <GdprComponents.account_deletion_component
+        deletion_status={@deletion_status}
+        loading={@loading}
+      />
     </div>
     """
   end

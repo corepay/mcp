@@ -143,24 +143,7 @@ defmodule Mcp.Cache.TenantIsolation do
 
     migration_results =
       Enum.map(source_keys, fn key ->
-        case CacheManager.get(key, tenant_id: source_tenant_id) do
-          {:ok, value} ->
-            # Copy to target tenant
-            case CacheManager.set(key, value, tenant_id: target_tenant_id) do
-              :ok ->
-                # Delete from source after successful copy
-                CacheManager.delete(key, tenant_id: source_tenant_id)
-                {:ok, key}
-
-              error ->
-                Logger.warning("Failed to migrate key #{key} to target tenant: #{inspect(error)}")
-                {:error, key, error}
-            end
-
-          error ->
-            Logger.warning("Failed to read key #{key} from source tenant: #{inspect(error)}")
-            {:error, key, error}
-        end
+        migrate_cache_key(key, source_tenant_id, target_tenant_id)
       end)
 
     successful_migrations = Enum.count(migration_results, &match?({:ok, _}, &1))
@@ -285,5 +268,28 @@ defmodule Mcp.Cache.TenantIsolation do
       "tenant:settings",
       "tenant:metadata"
     ]
+  end
+
+  defp migrate_cache_key(key, source_tenant_id, target_tenant_id) do
+    case CacheManager.get(key, tenant_id: source_tenant_id) do
+      {:ok, value} ->
+        copy_and_delete_key(key, value, source_tenant_id, target_tenant_id)
+
+      error ->
+        Logger.warning("Failed to read key #{key} from source tenant: #{inspect(error)}")
+        {:error, key, error}
+    end
+  end
+
+  defp copy_and_delete_key(key, value, source_tenant_id, target_tenant_id) do
+    case CacheManager.set(key, value, tenant_id: target_tenant_id) do
+      :ok ->
+        CacheManager.delete(key, tenant_id: source_tenant_id)
+        {:ok, key}
+
+      error ->
+        Logger.warning("Failed to migrate key #{key} to target tenant: #{inspect(error)}")
+        {:error, key, error}
+    end
   end
 end

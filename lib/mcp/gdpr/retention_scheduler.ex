@@ -14,7 +14,8 @@ defmodule Mcp.Gdpr.RetentionScheduler do
 
   alias Mcp.Jobs.Gdpr.RetentionCleanupWorker
 
-  @renewal_interval :timer.hours(24)  # Check every 24 hours
+  # Check every 24 hours
+  @renewal_interval :timer.hours(24)
 
   # Client API
 
@@ -135,38 +136,35 @@ defmodule Mcp.Gdpr.RetentionScheduler do
   end
 
   defp perform_retention_cleanup do
-    try do
-      # Enqueue the retention cleanup job
-      job_args = %{"action" => "process_retention_policies"}
+    # Enqueue the retention cleanup job
+    job_args = %{"action" => "process_retention_policies"}
 
-      job = RetentionCleanupWorker.new(job_args)
-      case Oban.insert(job) do
-        {:ok, inserted_job} ->
-          Logger.info("Retention cleanup job enqueued: #{inserted_job.id}")
-          {:ok, %{job_id: inserted_job.id, status: :enqueued}}
+    job = RetentionCleanupWorker.new(job_args)
 
-        {:error, reason} ->
-          Logger.error("Failed to enqueue retention cleanup job: #{inspect(reason)}")
-          {:error, reason}
-      end
-    rescue
-      error ->
-        Logger.error("Error performing retention cleanup: #{inspect(error)}")
-        {:error, {:exception, error}}
+    case Oban.insert(job) do
+      {:ok, inserted_job} ->
+        Logger.info("Retention cleanup job enqueued: #{inserted_job.id}")
+        {:ok, %{job_id: inserted_job.id, status: :enqueued}}
+
+      {:error, reason} ->
+        Logger.error("Failed to enqueue retention cleanup job: #{inspect(reason)}")
+        {:error, reason}
     end
+  rescue
+    error ->
+      Logger.error("Error performing retention cleanup: #{inspect(error)}")
+      {:error, {:exception, error}}
   end
 
   defp enqueue_policy_cleanup(policy_id) do
-    try do
-      job_args = %{"action" => "process_policy", "policy_id" => policy_id}
+    job_args = %{"action" => "process_policy", "policy_id" => policy_id}
 
-      job = RetentionCleanupWorker.new(job_args)
-      Oban.insert(job)
-    rescue
-      error ->
-        Logger.error("Error creating policy cleanup job for #{policy_id}: #{inspect(error)}")
-        {:error, {:exception, error}}
-    end
+    job = RetentionCleanupWorker.new(job_args)
+    Oban.insert(job)
+  rescue
+    error ->
+      Logger.error("Error creating policy cleanup job for #{policy_id}: #{inspect(error)}")
+      {:error, {:exception, error}}
   end
 
   defp update_state_after_run(state, result) do
@@ -174,20 +172,22 @@ defmodule Mcp.Gdpr.RetentionScheduler do
 
     case result do
       :success ->
-        %{state |
-          last_run: current_time,
-          next_run: DateTime.add(current_time, @renewal_interval, :second),
-          run_count: state.run_count + 1,
-          last_error: nil
+        %{
+          state
+          | last_run: current_time,
+            next_run: DateTime.add(current_time, @renewal_interval, :second),
+            run_count: state.run_count + 1,
+            last_error: nil
         }
 
       {:error, reason} ->
-        %{state |
-          last_run: current_time,
-          next_run: DateTime.add(current_time, @renewal_interval, :second),
-          run_count: state.run_count + 1,
-          error_count: state.error_count + 1,
-          last_error: reason
+        %{
+          state
+          | last_run: current_time,
+            next_run: DateTime.add(current_time, @renewal_interval, :second),
+            run_count: state.run_count + 1,
+            error_count: state.error_count + 1,
+            last_error: reason
         }
     end
   end

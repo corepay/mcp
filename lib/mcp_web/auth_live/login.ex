@@ -326,7 +326,6 @@ defmodule McpWeb.AuthLive.Login do
     end
   end
 
-  
   defp handle_login_error(socket, reason, _login_params) do
     error_message = translate_login_error(reason)
 
@@ -377,7 +376,6 @@ defmodule McpWeb.AuthLive.Login do
     |> then(fn state -> "oauth_#{state}" end)
   end
 
-  
   defp request_password_recovery(email) do
     # This would integrate with the password recovery system
     # For now, we'll simulate success
@@ -475,7 +473,6 @@ defmodule McpWeb.AuthLive.Login do
   defp translate_login_error(:rate_limited), do: "Too many attempts. Please try again later."
   defp translate_login_error(reason), do: "Authentication failed: #{inspect(reason)}"
 
-  
   defp assign_flash_from_session(socket, session) do
     flash_messages = session["flash"] || %{}
 

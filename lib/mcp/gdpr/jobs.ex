@@ -100,14 +100,17 @@ defmodule Mcp.Gdpr.Jobs do
   Enqueue a user anonymization job.
   """
   def enqueue_user_anonymization(user_id, mode, actor_id \\ nil) do
-    args = case mode do
-      :full ->
-        %{"user_id" => user_id, "mode" => "full"}
-      {:partial, fields} when is_list(fields) ->
-        %{"user_id" => user_id, "mode" => "partial", "fields" => fields}
-      _ ->
-        %{"user_id" => user_id, "mode" => "full"}
-    end
+    args =
+      case mode do
+        :full ->
+          %{"user_id" => user_id, "mode" => "full"}
+
+        {:partial, fields} when is_list(fields) ->
+          %{"user_id" => user_id, "mode" => "partial", "fields" => fields}
+
+        _ ->
+          %{"user_id" => user_id, "mode" => "full"}
+      end
 
     # Log the anonymization request for audit trail
     AuditTrail.log_action(
@@ -143,13 +146,14 @@ defmodule Mcp.Gdpr.Jobs do
   Enqueue compliance monitoring job.
   """
   def enqueue_compliance_check(type) do
-    args = case type do
-      :daily -> %{"type" => "daily_monitoring"}
-      :weekly -> %{"type" => "weekly_report"}
-      :retention -> %{"type" => "retention_enforcement"}
-      :legal_hold -> %{"type" => "legal_hold_check"}
-      _ -> %{"type" => "daily_monitoring"}
-    end
+    args =
+      case type do
+        :daily -> %{"type" => "daily_monitoring"}
+        :weekly -> %{"type" => "weekly_report"}
+        :retention -> %{"type" => "retention_enforcement"}
+        :legal_hold -> %{"type" => "legal_hold_check"}
+        _ -> %{"type" => "daily_monitoring"}
+      end
 
     ComplianceWorker.new(args)
     |> Oban.insert()
@@ -179,28 +183,32 @@ defmodule Mcp.Gdpr.Jobs do
   defp get_pending_job_count do
     from(j in Oban.Job,
       where: j.state in ["available", "retryable"],
-      where: j.queue in ^@gdpr_queues)
+      where: j.queue in ^@gdpr_queues
+    )
     |> Repo.aggregate(:count, :id)
   end
 
   defp get_failed_job_count do
     from(j in Oban.Job,
       where: j.state == "discarded",
-      where: j.queue in ^@gdpr_queues)
+      where: j.queue in ^@gdpr_queues
+    )
     |> Repo.aggregate(:count, :id)
   end
 
   defp get_completed_job_count do
     from(j in Oban.Job,
       where: j.state == "completed",
-      where: j.queue in ^@gdpr_queues)
+      where: j.queue in ^@gdpr_queues
+    )
     |> Repo.aggregate(:count, :id)
   end
 
   defp get_queue_statistics do
     Enum.reduce(@gdpr_queues, %{}, fn queue, acc ->
-      count = from(j in Oban.Job, where: j.queue == ^queue)
-      |> Repo.aggregate(:count, :id)
+      count =
+        from(j in Oban.Job, where: j.queue == ^queue)
+        |> Repo.aggregate(:count, :id)
 
       Map.put(acc, queue, count)
     end)

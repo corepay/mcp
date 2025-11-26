@@ -1,0 +1,8 @@
+{
+  "installed": [
+    "uuid-ossp",
+    "pgcrypto",
+    "btree_gist",
+    "citext"
+  ]
+}

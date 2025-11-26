@@ -1,0 +1,86 @@
+    warning: the following clause will never match:
+
+        {:error, reason}
+
+    because it attempts to match on the result of:
+
+        adapter.create_merchant(params, %{})
+
+    which has type:
+
+        dynamic({:ok, %{merchant_id: binary(), status: binary()}})
+
+    typing violation found at:
+    │
+ 53 │       {:error, reason} ->
+    │       ~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/mcp_web/controllers/payments_controller.ex:53: McpWeb.PaymentsController.board_merchant/2
+
+    warning: the following clause will never match:
+
+        {:error, reason}
+
+    because it attempts to match on the result of:
+
+        adapter.create_form_session(params, %{})
+
+    which has type:
+
+        dynamic({:ok, %{session_id: binary(), url: binary()}})
+
+    typing violation found at:
+    │
+ 66 │       {:error, reason} ->
+    │       ~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/mcp_web/controllers/payments_controller.ex:66: McpWeb.PaymentsController.create_form_session/2
+
+     warning: clauses with the same name and arity (number of arguments) should be grouped together, "def get_audit_trail/2" was previously defined (lib/mcp_web/controllers/gdpr_controller.ex:409)
+     │
+ 453 │   def get_audit_trail(conn, _params) do
+     │       ~
+     │
+     └─ lib/mcp_web/controllers/gdpr_controller.ex:453:7
+
+     warning: clauses with the same name and arity (number of arguments) should be grouped together, "defp validate_consent_params/1" was previously defined (lib/mcp_web/controllers/gdpr_controller.ex:678)
+     │
+ 717 │   defp validate_consent_params(_), do: {:error, "Consent params must be a map"}
+     │        ~
+     │
+     └─ lib/mcp_web/controllers/gdpr_controller.ex:717:8
+
+     warning: variable "key" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 315 │   defp validate_param_value(key, value) when is_binary(value) do
+     │                             ~~~
+     │
+     └─ lib/mcp_web/input_validation.ex:315:29: McpWeb.InputValidation.validate_param_value/2
+
+     warning: clauses with the same name and arity (number of arguments) should be grouped together, "defp validate_safety_of_params/2" was previously defined (lib/mcp_web/input_validation.ex:301)
+     │
+ 321 │   defp validate_safety_of_params(_, _), do: {:error, :invalid_params}
+     │        ~
+     │
+     └─ lib/mcp_web/input_validation.ex:321:8
+
+Running ExUnit with seed: 0, max_cases: 20
+Excluding tags: [:slow, :integration, :external_api, :performance]
+
+
+
+  1) test tokenizes bank account and creates payment method (McpWeb.PaymentMethodsControllerAchTest)
+     test/mcp_web/controllers/payment_methods_controller_ach_test.exs:18
+     ** (RuntimeError) expected response with status 201, got: 422, with body:
+     "{\"message\":\"%Reactor.Error.Invalid{errors: [%Reactor.Error.Invalid.RunStepError{error: %Ash.Error.Invalid{bread_crumbs: [\\\"Error returned from: Mcp.Payments.PaymentMethod.create\\\"],  changeset: \\\"#Changeset<>\\\",  errors: [%Ash.Error.Invalid.NoSuchInput{calculation: nil, resource: Mcp.Payments.PaymentMethod, action: :create, input: :account_holder_name, inputs: MapSet.new([:type, :provider, :customer_id, :provider_token, :last4, :brand, :exp_month, :exp_year, \\\"brand\\\", \\\"customer_id\\\", \\\"exp_month\\\", \\\"exp_year\\\", \\\"last4\\\", \\\"provider\\\", \\\"provider_token\\\", \\\"type\\\"]), did_you_mean: [], splode: Ash.Error, bread_crumbs: [\\\"Error returned from: Mcp.Payments.PaymentMethod.create\\\"], vars: [], path: [], stacktrace: #Splode.Stacktrace<>, class: :invalid}, %Ash.Error.Invalid.NoSuchInput{calculation: nil, resource: Mcp.Payments.PaymentMethod, action: :create, input: :account_type, inputs: MapSet.new([:type, :provider, :customer_id, :provider_token, :last4, :brand, :exp_month, :exp_year, \\\"brand\\\", \\\"customer_id\\\", \\\"exp_month\\\", \\\"exp_year\\\", \\\"last4\\\", \\\"provider\\\", \\\"provider_token\\\", \\\"type\\\"]), did_you_mean: [], splode: Ash.Error, bread_crumbs: [\\\"Error returned from: Mcp.Payments.PaymentMethod.create\\\"], vars: [], path: [], stacktrace: #Splode.Stacktrace<>, class: :invalid}, %Ash.Error.Invalid.NoSuchInput{calculation: nil, resource: Mcp.Payments.PaymentMethod, action: :create, input: :bank_name, inputs: MapSet.new([:type, :provider, :customer_id, :provider_token, :last4, :brand, :exp_month, :exp_year, \\\"brand\\\", \\\"customer_id\\\", \\\"exp_month\\\", \\\"exp_year\\\", \\\"last4\\\", \\\"provider\\\", \\\"provider_token\\\", \\\"type\\\"]), did_you_mean: [], splode: Ash.Error, bread_crumbs: [\\\"Error returned from: Mcp.Payments.PaymentMethod.create\\\"], vars: [], path: [], stacktrace: #Splode.Stacktrace<>, class: :invalid}, %Ash.Error.Invalid.NoSuchInput{calculation: nil, resource: Mcp.Payments.PaymentMethod, action: :create, input: :last4_account, inputs: MapSet.new([:type, :provider, :customer_id, :provider_token, :last4, :brand, :exp_month, :exp_year, \\\"brand\\\", \\\"customer_id\\\", \\\"exp_month\\\", \\\"exp_year\\\", \\\"last4\\\", \\\"provider\\\", \\\"provider_token\\\", \\\"type\\\"]), did_you_mean: [], splode: Ash.Error, bread_crumbs: [\\\"Error returned from: Mcp.Payments.PaymentMethod.create\\\"], vars: [], path: [], stacktrace: #Splode.Stacktrace<>, class: :invalid}]}, step: %Reactor.Step{arguments: [%Reactor.Argument{description: nil, name: :token_data, source: %Reactor.Template.Result{name: :tokenize_card, sub_path: []}, transform: nil}, %Reactor.Argument{description: nil, name: :type, source: %Reactor.Template.Input{name: :type, sub_path: []}, transform: nil}, %Reactor.Argument{description: nil, name: :provider, source: %Reactor.Template.Input{name: :provider, sub_path: []}, transform: nil}, %Reactor.Argument{description: nil, name: :customer_id, source: %Reactor.Template.Input{name: :customer_id, sub_path: []}, transform: nil}], async?: true, context: %{}, description: nil, impl: {Reactor.Step.AnonFn, [run: &Mcp.Payments.PaymentMethodReactor.run_0_generated_A463591D72CA5E31CC0872BFA71B3E57/2, compensate: nil, undo: nil, backoff: nil]}, name: :create_resource, max_retries: :infinity, ref: :create_resource, transform: nil, guards: []}, splode: Reactor.Error, bread_crumbs: [], vars: [], path: [], stacktrace: #Splode.Stacktrace<>, class: :invalid}], splode: Reactor.Error, bread_crumbs: [], vars: [], path: [], stacktrace: #Splode.Stacktrace<>, class: :unknown}\",\"status\":\"error\"}"
+     code: assert %{"status" => "success", "data" => data} = json_response(conn, 201)
+     stacktrace:
+       (phoenix 1.8.1) lib/phoenix/test/conn_test.ex:373: Phoenix.ConnTest.response/2
+       (phoenix 1.8.1) lib/phoenix/test/conn_test.ex:419: Phoenix.ConnTest.json_response/2
+       test/mcp_web/controllers/payment_methods_controller_ach_test.exs:49: (test)
+
+--max-failures reached, aborting test suite
+Finished in 0.3 seconds (0.00s async, 0.3s sync)
+1 test, 1 failure
+[os_mon] cpu supervisor port (cpu_sup): Erlang has closed
+[os_mon] memory supervisor port (memsup): Erlang has closed

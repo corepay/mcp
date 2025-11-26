@@ -1,8 +1,8 @@
 defmodule Mcp.Gdpr.ComplianceTest do
   use Mcp.DataCase, async: true
 
-  alias Mcp.Gdpr.Compliance
   alias Mcp.Accounts.User
+  alias Mcp.Gdpr.Compliance
   alias Mcp.Repo
 
   import Ecto.Query

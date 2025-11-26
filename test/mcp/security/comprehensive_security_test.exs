@@ -1,18 +1,19 @@
 defmodule Mcp.Security.ComprehensiveSecurityTest do
   use ExUnit.Case, async: false
 
-  alias Mcp.Accounts.{User, Token, TOTP}
+  alias Mcp.Accounts.{Token, TOTP, User}
   alias Mcp.Cache.RedisClient
 
   describe "Authentication Security" do
     test "prevents timing attacks on password verification" do
-      {:ok, user} = User.register(%{
-        first_name: "Timing",
-        last_name: "Test",
-        email: "timing.test@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user} =
+        User.register(%{
+          first_name: "Timing",
+          last_name: "Test",
+          email: "timing.test@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       password_attempts = [
         "wrong1",
@@ -21,13 +22,16 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
         "Password123!"
       ]
 
-      times = Enum.map(password_attempts, fn password ->
-        {time, _result} = :timer.tc(fn ->
-          # Simulate password verification timing
-          Bcrypt.check_pass(%{hashed_password: user.hashed_password}, password)
+      times =
+        Enum.map(password_attempts, fn password ->
+          {time, _result} =
+            :timer.tc(fn ->
+              # Simulate password verification timing
+              Bcrypt.check_pass(%{hashed_password: user.hashed_password}, password)
+            end)
+
+          time
         end)
-        time
-      end)
 
       # All attempts should take roughly the same time (within 50ms variance)
       # This prevents timing attacks where attackers could infer password validity
@@ -35,47 +39,52 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
       min_time = Enum.min(times)
       time_diff = max_time - min_time
 
-      assert time_diff < 50_000  # 50ms threshold
+      # 50ms threshold
+      assert time_diff < 50_000
     end
 
     test "implements proper password hashing" do
-      {:ok, user} = User.register(%{
-        first_name: "Hash",
-        last_name: "Test",
-        email: "hash.test@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user} =
+        User.register(%{
+          first_name: "Hash",
+          last_name: "Test",
+          email: "hash.test@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       # Password should be properly hashed
       assert String.starts_with?(user.hashed_password, "$2b$")
       assert String.length(user.hashed_password) > 50
 
       # Hash should be different each time (due to salt)
-      {:ok, user2} = User.register(%{
-        first_name: "Hash2",
-        last_name: "Test",
-        email: "hash2.test@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user2} =
+        User.register(%{
+          first_name: "Hash2",
+          last_name: "Test",
+          email: "hash2.test@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       assert user.hashed_password != user2.hashed_password
     end
 
     test "generates cryptographically secure tokens" do
-      {:ok, user} = User.register(%{
-        first_name: "Token",
-        last_name: "Test",
-        email: "token.test@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user} =
+        User.register(%{
+          first_name: "Token",
+          last_name: "Test",
+          email: "token.test@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       # Generate multiple tokens
-      tokens = for _i <- 1..100 do
-        Token.generate_token()
-      end
+      tokens =
+        for _i <- 1..100 do
+          Token.generate_token()
+        end
 
       # All tokens should be unique
       assert length(Enum.uniq(tokens)) == 100
@@ -88,9 +97,10 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
     end
 
     test "TOTP secrets are properly secured" do
-      secrets = for _i <- 1..50 do
-        TOTP.generate_totp_secret()
-      end
+      secrets =
+        for _i <- 1..50 do
+          TOTP.generate_totp_secret()
+        end
 
       # All secrets should be unique
       assert length(Enum.uniq(secrets)) == 50
@@ -115,13 +125,14 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
 
   describe "Session Security" do
     test "invalidates sessions on password change" do
-      {:ok, user} = User.register(%{
-        first_name: "Session",
-        last_name: "Test",
-        email: "session.test@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user} =
+        User.register(%{
+          first_name: "Session",
+          last_name: "Test",
+          email: "session.test@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       # Create initial session tokens
       {:ok, access_token} = Token.create_jwt_token(user, :access)
@@ -140,13 +151,14 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
     end
 
     test "implements session timeout" do
-      {:ok, user} = User.register(%{
-        first_name: "Timeout",
-        last_name: "Test",
-        email: "timeout.test@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user} =
+        User.register(%{
+          first_name: "Timeout",
+          last_name: "Test",
+          email: "timeout.test@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       # Create session with short expiration for testing
       {:ok, token} = Token.create_jwt_token(user, :access, expires_in: {-1, :second})
@@ -157,13 +169,14 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
     end
 
     test "prevents session fixation" do
-      {:ok, user} = User.register(%{
-        first_name: "Fixation",
-        last_name: "Test",
-        email: "fixation.test@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user} =
+        User.register(%{
+          first_name: "Fixation",
+          last_name: "Test",
+          email: "fixation.test@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       # Before login, no session should exist
       # After login, new session should be created
@@ -172,18 +185,20 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
     end
 
     test "implements concurrent session limits" do
-      {:ok, user} = User.register(%{
-        first_name: "Concurrent",
-        last_name: "Test",
-        email: "concurrent.test@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user} =
+        User.register(%{
+          first_name: "Concurrent",
+          last_name: "Test",
+          email: "concurrent.test@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       # Create multiple sessions
-      sessions = for _i <- 1..5 do
-        Token.create_jwt_token(user, :access)
-      end
+      sessions =
+        for _i <- 1..5 do
+          Token.create_jwt_token(user, :access)
+        end
 
       # Should limit concurrent sessions based on policy
       # This depends on the specific implementation
@@ -202,13 +217,14 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
       ]
 
       Enum.each(sql_injection_attempts, fn malicious_email ->
-        result = User.register(%{
-          first_name: "SQL",
-          last_name: "Test",
-          email: malicious_email,
-          password: "Password123!",
-          password_confirmation: "Password123!"
-        })
+        result =
+          User.register(%{
+            first_name: "SQL",
+            last_name: "Test",
+            email: malicious_email,
+            password: "Password123!",
+            password_confirmation: "Password123!"
+          })
 
         # Should fail due to email validation, not SQL injection
         assert match?({:error, _}, result)
@@ -233,19 +249,23 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
 
     test "validates input length limits" do
       long_strings = [
-        String.duplicate("a", 1000),  # Very long
-        String.duplicate("🚀", 100),   # Unicode characters
-        String.duplicate("\n", 100)    # Newlines
+        # Very long
+        String.duplicate("a", 1000),
+        # Unicode characters
+        String.duplicate("🚀", 100),
+        # Newlines
+        String.duplicate("\n", 100)
       ]
 
       Enum.each(long_strings, fn long_string ->
-        result = User.register(%{
-          first_name: long_string,
-          last_name: "Test",
-          email: "test@example.com",
-          password: "Password123!",
-          password_confirmation: "Password123!"
-        })
+        result =
+          User.register(%{
+            first_name: long_string,
+            last_name: "Test",
+            email: "test@example.com",
+            password: "Password123!",
+            password_confirmation: "Password123!"
+          })
 
         # Should fail due to length validation
         assert match?({:error, _}, result)
@@ -255,13 +275,16 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
     test "handles Unicode and internationalization" do
       unicode_cases = [
         %{
-          first_name: "用户",  # Chinese
-          last_name: "テスト",  # Japanese
+          # Chinese
+          first_name: "用户",
+          # Japanese
+          last_name: "テスト",
           email: "unicode@test.com",
           password: "Password123!"
         },
         %{
-          first_name: "Müller",  # German with umlaut
+          # German with umlaut
+          first_name: "Müller",
           last_name: "José",
           email: "umlaut@test.com",
           password: "Password123!"
@@ -289,24 +312,28 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
       email = "ratelimit.security@example.com"
 
       # Make rapid login attempts
-      attempts = for _i <- 1..20 do
-        {time, result} = :timer.tc(fn ->
-          User.register(%{
-            first_name: "Rate",
-            last_name: "Limit",
-            email: email,
-            password: "Password123!",
-            password_confirmation: "Password123!"
-          })
-        end)
-        {time, result}
-      end
+      attempts =
+        for _i <- 1..20 do
+          {time, result} =
+            :timer.tc(fn ->
+              User.register(%{
+                first_name: "Rate",
+                last_name: "Limit",
+                email: email,
+                password: "Password123!",
+                password_confirmation: "Password123!"
+              })
+            end)
+
+          {time, result}
+        end
 
       # Some attempts should be rate limited
       # This depends on the actual rate limiting implementation
-      failed_attempts = Enum.filter(attempts, fn {_time, result} ->
-        match?({:error, _}, result)
-      end)
+      failed_attempts =
+        Enum.filter(attempts, fn {_time, result} ->
+          match?({:error, _}, result)
+        end)
 
       # At least some attempts should be controlled
       assert length(failed_attempts) >= 0
@@ -316,21 +343,23 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
       ip_address = "192.168.1.100"
 
       # Simulate multiple requests from same IP
-      requests = for i <- 1..10 do
-        User.register(%{
-          first_name: "IP#{i}",
-          last_name: "Test",
-          email: "ip#{i}@test.com",
-          password: "Password123!",
-          password_confirmation: "Password123!"
-        })
-      end
+      requests =
+        for i <- 1..10 do
+          User.register(%{
+            first_name: "IP#{i}",
+            last_name: "Test",
+            email: "ip#{i}@test.com",
+            password: "Password123!",
+            password_confirmation: "Password123!"
+          })
+        end
 
       # Some requests might be rate limited
-      successful_requests = Enum.filter(requests, fn
-        {:ok, _} -> true
-        _ -> false
-      end)
+      successful_requests =
+        Enum.filter(requests, fn
+          {:ok, _} -> true
+          _ -> false
+        end)
 
       # Rate limiting should be in effect
       assert length(successful_requests) <= 10
@@ -341,10 +370,12 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
       # about whether an account exists
 
       # Try to reset password for non-existent user
-      nonexistent_result = "Password reset instructions sent"  # Standard response
+      # Standard response
+      nonexistent_result = "Password reset instructions sent"
 
       # Try to reset password for existing user
-      existent_result = "Password reset instructions sent"  # Same response
+      # Same response
+      existent_result = "Password reset instructions sent"
 
       # Responses should be identical to prevent enumeration
       assert nonexistent_result == existent_result
@@ -386,13 +417,14 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
 
   describe "Data Protection and Encryption" do
     test "encrypts sensitive data at rest" do
-      {:ok, user} = User.register(%{
-        first_name: "Encrypt",
-        last_name: "Test",
-        email: "encrypt.test@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user} =
+        User.register(%{
+          first_name: "Encrypt",
+          last_name: "Test",
+          email: "encrypt.test@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       # Sensitive data should be encrypted or hashed
       assert user.hashed_password != "Password123!"
@@ -404,18 +436,20 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
     end
 
     test "implements data retention policies" do
-      {:ok, user} = User.register(%{
-        first_name: "Retention",
-        last_name: "Test",
-        email: "retention.test@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user} =
+        User.register(%{
+          first_name: "Retention",
+          last_name: "Test",
+          email: "retention.test@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       # Test GDPR compliance
-      {:ok, deleted_user} = User.soft_delete(user, %{
-        reason: "User requested deletion"
-      })
+      {:ok, deleted_user} =
+        User.soft_delete(user, %{
+          reason: "User requested deletion"
+        })
 
       assert deleted_user.status == :deleted
       assert deleted_user.gdpr_deletion_requested_at != nil
@@ -465,13 +499,14 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
     end
 
     test "implements audit trails" do
-      {:ok, user} = User.register(%{
-        first_name: "Audit",
-        last_name: "Test",
-        email: "audit.test@example.com",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      })
+      {:ok, user} =
+        User.register(%{
+          first_name: "Audit",
+          last_name: "Test",
+          email: "audit.test@example.com",
+          password: "Password123!",
+          password_confirmation: "Password123!"
+        })
 
       # Key actions should be auditable
       audit_actions = [
@@ -506,9 +541,10 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
 
     test "implements API rate limiting" do
       # API requests should be rate limited
-      api_keys = for i <- 1..100 do
-        "api_key_#{i}"
-      end
+      api_keys =
+        for i <- 1..100 do
+          "api_key_#{i}"
+        end
 
       # Multiple rapid API calls should be controlled
       Enum.each(api_keys, fn key ->
@@ -520,7 +556,7 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
     test "validates API input thoroughly" do
       api_inputs = [
         %{"email" => "<script>alert('xss')</script>"},
-        %{"name" => String.duplicate("a", 10000)},
+        %{"name" => String.duplicate("a", 10_000)},
         %{"data" => %{"nested" => %{"deep" => "value"}}}
       ]
 
@@ -551,7 +587,7 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
       # System should handle unexpected errors without crashing
       exception_scenarios = [
         fn -> raise "Unexpected error" end,
-        fn -> throw {:error, :test} end,
+        fn -> throw({:error, :test}) end,
         fn -> exit(:normal) end
       ]
 

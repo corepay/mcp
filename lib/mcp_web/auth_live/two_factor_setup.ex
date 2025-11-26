@@ -303,6 +303,7 @@ defmodule McpWeb.AuthLive.TwoFactorSetup do
   # Private helper functions
 
   defp translate_totp_error(:invalid_code), do: "Invalid verification code. Please try again."
+
   # defp translate_totp_error(:code_already_used), do: "This code has already been used. Please wait for a new one."
   # defp translate_totp_error(:totp_not_enabled), do: "2FA is not enabled for this account."
   defp translate_totp_error(reason), do: "Verification failed: #{inspect(reason)}"

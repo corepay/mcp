@@ -19,12 +19,21 @@ defmodule McpWeb.ApiSecurityHeaders do
     |> put_resp_header("x-frame-options", "DENY")
     |> put_resp_header("x-xss-protection", "1; mode=block")
     |> put_resp_header("referrer-policy", "strict-origin-when-cross-origin")
-    |> put_resp_header("permissions-policy", "geolocation=(), microphone=(), camera=(), payment=()")
+    |> put_resp_header(
+      "permissions-policy",
+      "geolocation=(), microphone=(), camera=(), payment=()"
+    )
     |> put_resp_header("strict-transport-security", "max-age=31536000; includeSubDomains")
-    |> put_resp_header("content-security-policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'")
+    |> put_resp_header(
+      "content-security-policy",
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'"
+    )
     |> put_resp_header("access-control-allow-origin", get_allowed_origin(conn))
     |> put_resp_header("access-control-allow-methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-    |> put_resp_header("access-control-allow-headers", "Content-Type, Authorization, X-Requested-With, X-CSRF-Token")
+    |> put_resp_header(
+      "access-control-allow-headers",
+      "Content-Type, Authorization, X-Requested-With, X-CSRF-Token"
+    )
     |> put_resp_header("access-control-max-age", "86400")
     |> put_resp_header("access-control-allow-credentials", "true")
   end
@@ -40,10 +49,13 @@ defmodule McpWeb.ApiSecurityHeaders do
         if String.contains?(origin, get_host(conn)) do
           origin
         else
-          "null"  # Reject cross-origin requests
+          # Reject cross-origin requests
+          "null"
         end
+
       [] ->
         "null"
+
       _ ->
         "null"
     end

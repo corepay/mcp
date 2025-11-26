@@ -10,8 +10,14 @@ import Config
 config :mcp,
   ecto_repos: [Mcp.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Mcp.Accounts, Mcp.Platform, Mcp.Domains.Gdpr],
+  ash_domains: [Mcp.Accounts, Mcp.Platform, Mcp.Domains.Gdpr, Mcp.Payments],
   base_domain: "localhost"
+
+config :mcp, :qorpay,
+  base_url: System.get_env("QORPAY_SANDBOX_URL", "https://api-sandbox.qorcommerce.io/v3"),
+  app_key: System.get_env("QORPAY_SANDBOX_APP_KEY", "T6554252567241061980"),
+  client_key: System.get_env("QORPAY_SANDBOX_CLIENT_KEY", "01dffeb784c64d098c8c691ea589eb82"),
+  mid: System.get_env("QORPAY_SANDBOX_MID", "887728202")
 
 # Oban configuration
 config :mcp, Oban,
