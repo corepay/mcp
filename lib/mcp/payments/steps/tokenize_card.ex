@@ -53,7 +53,7 @@ defmodule Mcp.Payments.Steps.TokenizeCard do
     }
   end
 
-  defp extract_metadata(result, %{type: :bank_account} = input_params) do
+  defp extract_metadata(_result, %{type: :bank_account} = input_params) do
     %{
       last4_account: String.slice(input_params.bank_account[:account_number] || "", -4..-1),
       bank_name: input_params.bank_account[:bank_name],

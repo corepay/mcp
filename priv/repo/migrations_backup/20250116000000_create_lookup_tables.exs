@@ -1,4 +1,4 @@
-defmodule Mcp.Repo.Migrations.CreateLookupTables do
+defmodule Mcp.Repo.Migrations.CreateLookupTablesV2 do
   use Ecto.Migration
 
   def up do

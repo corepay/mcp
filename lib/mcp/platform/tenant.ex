@@ -30,7 +30,7 @@ defmodule Mcp.Platform.Tenant do
 
     create :create do
       primary? true
-      accept [:name, :slug, :subdomain, :custom_domain, :plan, :settings, :branding]
+      accept [:name, :slug, :subdomain, :custom_domain, :plan]
 
       change fn changeset, _ ->
         Ash.Changeset.force_change_attribute(
@@ -43,7 +43,7 @@ defmodule Mcp.Platform.Tenant do
 
     update :update do
       primary? true
-      accept [:name, :slug, :subdomain, :custom_domain, :plan, :settings, :branding, :status]
+      accept [:name, :slug, :subdomain, :custom_domain, :plan, :status]
     end
 
     read :by_subdomain do
@@ -97,15 +97,13 @@ defmodule Mcp.Platform.Tenant do
       allow_nil? false
     end
 
-    attribute :settings, :map do
-      default %{}
-    end
-
-    attribute :branding, :map do
-      default %{}
-    end
-
     timestamps()
+  end
+
+  relationships do
+    has_one :account, Mcp.Finance.Account
+    has_one :settings, Mcp.Platform.TenantSettings
+    has_one :branding, Mcp.Platform.TenantBranding
   end
 
   code_interface do

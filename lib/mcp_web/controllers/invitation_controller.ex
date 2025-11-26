@@ -119,12 +119,6 @@ defmodule McpWeb.InvitationController do
       {:error, reason} ->
         Logger.error("Error processing invitation: #{inspect(reason)}")
         internal_server_error_response(conn)
-
-      {:error, :not_found} ->
-        conn
-        |> put_status(:not_found)
-        |> put_view(McpWeb.ErrorView)
-        |> render(:not_found)
     end
   end
 

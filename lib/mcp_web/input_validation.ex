@@ -310,16 +310,16 @@ defmodule McpWeb.InputValidation do
     {:error, reason} -> {:error, reason}
   end
 
+  defp validate_safety_of_params(_, _), do: {:error, :invalid_params}
+
   defp validate_param_value(_key, nil), do: :ok
   defp validate_param_value(_key, value) when not is_binary(value), do: :ok
 
-  defp validate_param_value(key, value) when is_binary(value) do
+  defp validate_param_value(_key, value) when is_binary(value) do
     if contains_dangerous_content?(value) do
       throw({:error, :potentially_dangerous_content})
     end
   end
-
-  defp validate_safety_of_params(_, _), do: {:error, :invalid_params}
 
   @doc """
   Check if a string contains potentially dangerous content.

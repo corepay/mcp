@@ -10,8 +10,18 @@ import Config
 config :mcp,
   ecto_repos: [Mcp.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Mcp.Accounts, Mcp.Platform, Mcp.Domains.Gdpr, Mcp.Payments],
+  ash_domains: [
+    Mcp.Accounts,
+    Mcp.Platform,
+    Mcp.Domains.Gdpr,
+    Mcp.Payments,
+    Mcp.Finance,
+    Mcp.Audit
+  ],
   base_domain: "localhost"
+
+config :ash_typescript,
+  output_file: "assets/js/ash_generated.ts"
 
 config :mcp, :qorpay,
   base_url: System.get_env("QORPAY_SANDBOX_URL", "https://api-sandbox.qorcommerce.io/v3"),

@@ -15,9 +15,17 @@ CREATE SCHEMA IF NOT EXISTS shared;
 ALTER DATABASE base_mcp_dev SET search_path TO platform, shared, public;
 
 -- Grant permissions to the development user
-GRANT ALL PRIVILEGES ON ALL SCHEMAS IN DATABASE base_mcp_dev TO base_mcp_dev;
-GRANT ALL PRIVILEGES ON ALL TABLES IN ALL SCHEMAS TO base_mcp_dev;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN ALL SCHEMAS TO base_mcp_dev;
+-- Grant permissions to the development user
+GRANT ALL ON SCHEMA platform TO base_mcp_dev;
+GRANT ALL ON SCHEMA shared TO base_mcp_dev;
+GRANT ALL ON SCHEMA public TO base_mcp_dev;
+
+GRANT ALL ON ALL TABLES IN SCHEMA platform TO base_mcp_dev;
+GRANT ALL ON ALL TABLES IN SCHEMA shared TO base_mcp_dev;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO base_mcp_dev;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA platform TO base_mcp_dev;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA shared TO base_mcp_dev;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO base_mcp_dev;
 
 -- Set up default privileges for future tables
 ALTER DEFAULT PRIVILEGES IN SCHEMA platform GRANT ALL ON TABLES TO base_mcp_dev;

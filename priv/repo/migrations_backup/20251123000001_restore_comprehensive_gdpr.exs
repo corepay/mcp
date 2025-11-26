@@ -4,17 +4,15 @@ defmodule Mcp.Repo.Migrations.RestoreComprehensiveGdpr do
 
   def up do
     # First, add missing GDPR fields to existing users table
-    alter table(:users) do
-      # status field already exists with constraint for 'active', 'suspended', 'deleted'
-      add :deleted_at, :utc_datetime_usec
-      add :deletion_reason, :string
-      add :gdpr_retention_expires_at, :utc_datetime_usec
-      add :anonymized_at, :utc_datetime_usec
-    end
+    # First, add missing GDPR fields to existing users table
+    execute "ALTER TABLE platform.users ADD COLUMN IF NOT EXISTS deleted_at timestamp(6) without time zone"
+    execute "ALTER TABLE platform.users ADD COLUMN IF NOT EXISTS deletion_reason text"
+    execute "ALTER TABLE platform.users ADD COLUMN IF NOT EXISTS gdpr_retention_expires_at timestamp(6) without time zone"
+    execute "ALTER TABLE platform.users ADD COLUMN IF NOT EXISTS anonymized_at timestamp(6) without time zone"
 
     # Drop and recreate status index to include GDPR status values
     drop_if_exists(index(:users, [:status]))
-    create index(:users, [:gdpr_retention_expires_at])
+    create_if_not_exists index(:users, [:gdpr_retention_expires_at])
 
     # Drop existing incomplete GDPR tables if they exist
     drop_if_exists(table(:gdpr_requests))
@@ -41,9 +39,9 @@ defmodule Mcp.Repo.Migrations.RestoreComprehensiveGdpr do
       timestamps()
     end
 
-    create index(:gdpr_requests, [:user_id])
-    create index(:gdpr_requests, [:type, :status])
-    create index(:gdpr_requests, [:expires_at])
+    create_if_not_exists index(:gdpr_requests, [:user_id])
+    create_if_not_exists index(:gdpr_requests, [:type, :status])
+    create_if_not_exists index(:gdpr_requests, [:expires_at])
 
     # Comprehensive consent management
     create table(:gdpr_consents, primary_key: false) do
@@ -64,9 +62,9 @@ defmodule Mcp.Repo.Migrations.RestoreComprehensiveGdpr do
       timestamps()
     end
 
-    create index(:gdpr_consents, [:user_id])
-    create index(:gdpr_consents, [:purpose, :status])
-    create unique_index(:gdpr_consents, [:user_id, :purpose, :version])
+    create_if_not_exists index(:gdpr_consents, [:user_id])
+    create_if_not_exists index(:gdpr_consents, [:purpose, :status])
+    create_if_not_exists unique_index(:gdpr_consents, [:user_id, :purpose, :version])
 
     # Comprehensive audit trail
     create table(:gdpr_audit_logs, primary_key: false) do
@@ -88,11 +86,11 @@ defmodule Mcp.Repo.Migrations.RestoreComprehensiveGdpr do
       timestamps()
     end
 
-    create index(:gdpr_audit_logs, [:user_id])
-    create index(:gdpr_audit_logs, [:actor_id])
-    create index(:gdpr_audit_logs, [:action])
-    create index(:gdpr_audit_logs, [:timestamp])
-    create index(:gdpr_audit_logs, [:resource_type, :resource_id])
+    create_if_not_exists index(:gdpr_audit_logs, [:user_id])
+    create_if_not_exists index(:gdpr_audit_logs, [:actor_id])
+    create_if_not_exists index(:gdpr_audit_logs, [:action])
+    create_if_not_exists index(:gdpr_audit_logs, [:timestamp])
+    create_if_not_exists index(:gdpr_audit_logs, [:resource_type, :resource_id])
 
     # Data retention schedules
     create table(:gdpr_retention_schedules, primary_key: false) do
@@ -114,9 +112,9 @@ defmodule Mcp.Repo.Migrations.RestoreComprehensiveGdpr do
       timestamps()
     end
 
-    create index(:gdpr_retention_schedules, [:user_id])
-    create index(:gdpr_retention_schedules, [:expires_at])
-    create index(:gdpr_retention_schedules, [:status, :priority])
+    create_if_not_exists index(:gdpr_retention_schedules, [:user_id])
+    create_if_not_exists index(:gdpr_retention_schedules, [:expires_at])
+    create_if_not_exists index(:gdpr_retention_schedules, [:status, :priority])
 
     # Export tracking
     create table(:gdpr_exports, primary_key: false) do
@@ -137,9 +135,9 @@ defmodule Mcp.Repo.Migrations.RestoreComprehensiveGdpr do
       timestamps()
     end
 
-    create index(:gdpr_exports, [:user_id])
-    create index(:gdpr_exports, [:request_id])
-    create index(:gdpr_exports, [:status, :expires_at])
+    create_if_not_exists index(:gdpr_exports, [:user_id])
+    create_if_not_exists index(:gdpr_exports, [:request_id])
+    create_if_not_exists index(:gdpr_exports, [:status, :expires_at])
 
     # Anonymization tracking
     create table(:gdpr_anonymization_records, primary_key: false) do
@@ -157,8 +155,8 @@ defmodule Mcp.Repo.Migrations.RestoreComprehensiveGdpr do
       timestamps()
     end
 
-    create index(:gdpr_anonymization_records, [:user_id])
-    create index(:gdpr_anonymization_records, [:table_name, :column_name])
+    create_if_not_exists index(:gdpr_anonymization_records, [:user_id])
+    create_if_not_exists index(:gdpr_anonymization_records, [:table_name, :column_name])
 
     # Legal holds
     create table(:gdpr_legal_holds, primary_key: false) do
@@ -177,9 +175,9 @@ defmodule Mcp.Repo.Migrations.RestoreComprehensiveGdpr do
       timestamps()
     end
 
-    create index(:gdpr_legal_holds, [:user_id])
-    create index(:gdpr_legal_holds, [:case_reference])
-    create index(:gdpr_legal_holds, [:status])
+    create_if_not_exists index(:gdpr_legal_holds, [:user_id])
+    create_if_not_exists index(:gdpr_legal_holds, [:case_reference])
+    create_if_not_exists index(:gdpr_legal_holds, [:status])
   end
 
   def down do

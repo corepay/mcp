@@ -21,35 +21,35 @@ defmodule Mcp.Repo.Migrations.CreateRemainingLookupTables do
             SELECT 'home', 'Home Address', 'Personal home address', 1
             WHERE NOT EXISTS (SELECT 1 FROM platform.address_types WHERE value = 'home')
             """,
-            nil
+            ""
 
     execute """
             INSERT INTO platform.address_types (value, label, description, sort_order)
             SELECT 'business', 'Business Address', 'Business/office address', 2
             WHERE NOT EXISTS (SELECT 1 FROM platform.address_types WHERE value = 'business')
             """,
-            nil
+            ""
 
     execute """
             INSERT INTO platform.address_types (value, label, description, sort_order)
             SELECT 'shipping', 'Shipping Address', 'Shipping/delivery address', 3
             WHERE NOT EXISTS (SELECT 1 FROM platform.address_types WHERE value = 'shipping')
             """,
-            nil
+            ""
 
     execute """
             INSERT INTO platform.address_types (value, label, description, sort_order)
             SELECT 'billing', 'Billing Address', 'Billing address for invoices', 4
             WHERE NOT EXISTS (SELECT 1 FROM platform.address_types WHERE value = 'billing')
             """,
-            nil
+            ""
 
     execute """
             INSERT INTO platform.address_types (value, label, description, sort_order)
             SELECT 'legal', 'Legal Address', 'Legal/registered address', 5
             WHERE NOT EXISTS (SELECT 1 FROM platform.address_types WHERE value = 'legal')
             """,
-            nil
+            ""
 
     # Email Types
     create_if_not_exists table(:email_types, primary_key: false, prefix: "platform") do
@@ -66,28 +66,28 @@ defmodule Mcp.Repo.Migrations.CreateRemainingLookupTables do
             SELECT 'personal', 'Personal', 1
             WHERE NOT EXISTS (SELECT 1 FROM platform.email_types WHERE value = 'personal')
             """,
-            nil
+            ""
 
     execute """
             INSERT INTO platform.email_types (value, label, sort_order)
             SELECT 'work', 'Work', 2
             WHERE NOT EXISTS (SELECT 1 FROM platform.email_types WHERE value = 'work')
             """,
-            nil
+            ""
 
     execute """
             INSERT INTO platform.email_types (value, label, sort_order)
             SELECT 'support', 'Support', 3
             WHERE NOT EXISTS (SELECT 1 FROM platform.email_types WHERE value = 'support')
             """,
-            nil
+            ""
 
     execute """
             INSERT INTO platform.email_types (value, label, sort_order)
             SELECT 'billing', 'Billing', 4
             WHERE NOT EXISTS (SELECT 1 FROM platform.email_types WHERE value = 'billing')
             """,
-            nil
+            ""
 
     # Phone Types
     create_if_not_exists table(:phone_types, primary_key: false, prefix: "platform") do
@@ -105,14 +105,14 @@ defmodule Mcp.Repo.Migrations.CreateRemainingLookupTables do
             SELECT 'mobile', 'Mobile', true, 1
             WHERE NOT EXISTS (SELECT 1 FROM platform.phone_types WHERE value = 'mobile')
             """,
-            nil
+            ""
 
     execute """
             INSERT INTO platform.phone_types (value, label, supports_sms, sort_order)
             SELECT 'work', 'Work', false, 3
             WHERE NOT EXISTS (SELECT 1 FROM platform.phone_types WHERE value = 'work')
             """,
-            nil
+            ""
   end
 
   def down do

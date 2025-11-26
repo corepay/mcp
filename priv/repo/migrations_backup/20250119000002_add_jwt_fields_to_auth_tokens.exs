@@ -13,7 +13,7 @@ defmodule Mcp.Repo.Migrations.AddJwtFieldsToAuthTokens do
   use Ecto.Migration
 
   def up do
-    alter table("platform.auth_tokens") do
+    alter table(:auth_tokens, prefix: "platform") do
       # JWT-specific fields
       add :jti, :string, null: true, comment: "JWT ID for token identification and revocation"
       add :session_id, :string, null: true, comment: "Session identifier for token grouping"
@@ -28,21 +28,21 @@ defmodule Mcp.Repo.Migrations.AddJwtFieldsToAuthTokens do
     end
 
     # Create indexes for performance after adding columns
-    create unique_index("auth_tokens", [:jti], where: "jti IS NOT NULL")
-    create index("auth_tokens", [:session_id])
-    create index("auth_tokens", [:device_id])
-    create index("auth_tokens", [:user_id, :type, :revoked_at, :expires_at])
-    create index("auth_tokens", [:type, :expires_at])
+    create unique_index(:auth_tokens, [:jti], where: "jti IS NOT NULL", prefix: "platform")
+    create index(:auth_tokens, [:session_id], prefix: "platform")
+    create index(:auth_tokens, [:device_id], prefix: "platform")
+    create index(:auth_tokens, [:user_id, :type, :revoked_at, :expires_at], prefix: "platform")
+    create index(:auth_tokens, [:type, :expires_at], prefix: "platform")
 
     # Update the type constraint to include revoked_jwt
     execute """
-            ALTER TABLE auth_tokens
+            ALTER TABLE platform.auth_tokens
             DROP CONSTRAINT IF EXISTS auth_tokens_type_check
             """,
             ""
 
     execute """
-            ALTER TABLE auth_tokens
+            ALTER TABLE platform.auth_tokens
             ADD CONSTRAINT auth_tokens_type_check
             CHECK (type IN ('access', 'refresh', 'reset', 'verification', 'session', 'revoked_jwt'))
             """,
@@ -50,7 +50,7 @@ defmodule Mcp.Repo.Migrations.AddJwtFieldsToAuthTokens do
   end
 
   def down do
-    alter table("platform.auth_tokens") do
+    alter table(:auth_tokens, prefix: "platform") do
       remove :jti
       remove :session_id
       remove :device_id
@@ -59,13 +59,13 @@ defmodule Mcp.Repo.Migrations.AddJwtFieldsToAuthTokens do
 
     # Update the type constraint to remove revoked_jwt
     execute """
-            ALTER TABLE auth_tokens
+            ALTER TABLE platform.auth_tokens
             DROP CONSTRAINT IF EXISTS auth_tokens_type_check
             """,
             ""
 
     execute """
-            ALTER TABLE auth_tokens
+            ALTER TABLE platform.auth_tokens
             ADD CONSTRAINT auth_tokens_type_check
             CHECK (type IN ('access', 'refresh', 'reset', 'verification', 'session'))
             """,

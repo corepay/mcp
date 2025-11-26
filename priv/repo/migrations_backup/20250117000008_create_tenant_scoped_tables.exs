@@ -66,6 +66,20 @@ defmodule Mcp.Repo.Migrations.CreateTenantScopedTables do
           kyc_verified_at TIMESTAMP,
           verification_status TEXT DEFAULT 'pending',
 
+          -- Enhanced Fields
+          mcc TEXT,
+          tax_id_type TEXT, -- EIN, SSN
+          kyc_status TEXT DEFAULT 'pending',
+          kyc_documents JSONB DEFAULT '{}',
+
+          timezone TEXT DEFAULT 'UTC',
+          default_currency TEXT DEFAULT 'USD',
+          operating_hours JSONB DEFAULT '{}',
+
+          risk_score INTEGER,
+          risk_profile TEXT DEFAULT 'low',
+          processing_limits JSONB DEFAULT '{}',
+
           created_at TIMESTAMP NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
@@ -110,6 +124,15 @@ defmodule Mcp.Repo.Migrations.CreateTenantScopedTables do
           status TEXT DEFAULT 'active',
           is_primary BOOLEAN DEFAULT false,
 
+          -- Enhanced Fields
+          processor_name TEXT,
+          acquirer_name TEXT,
+          batch_time TIME,
+          
+          supported_card_brands TEXT[],
+          currencies TEXT[],
+          fraud_settings JSONB DEFAULT '{}',
+
           daily_limit NUMERIC,
           monthly_limit NUMERIC,
 
@@ -151,6 +174,15 @@ defmodule Mcp.Repo.Migrations.CreateTenantScopedTables do
           subdomain TEXT,
           custom_domain TEXT,
 
+          -- Enhanced Fields
+          geo_location JSONB, -- {lat: ..., lng: ...}
+          tax_nexus TEXT[],
+          store_type TEXT, -- physical, online, hybrid, pop-up
+          
+          store_manager_name TEXT,
+          store_phone TEXT,
+          store_email TEXT,
+
           settings JSONB DEFAULT '{}',
           branding JSONB DEFAULT '{}',
 
@@ -185,14 +217,14 @@ defmodule Mcp.Repo.Migrations.CreateTenantScopedTables do
       'customers',
       $template$
         CREATE TABLE customers (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          id UUID DEFAULT gen_random_uuid(),
           merchant_id UUID NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
 
           email CITEXT NOT NULL,
           first_name TEXT,
           last_name TEXT,
 
-          hashed_password TEXT,
+          user_id UUID REFERENCES platform.users(id),
 
           phone TEXT,
 
@@ -206,9 +238,22 @@ defmodule Mcp.Repo.Migrations.CreateTenantScopedTables do
 
           status TEXT DEFAULT 'active',
 
+          -- Enhanced Fields
+          marketing_preferences JSONB DEFAULT '{}',
+          loyalty_tier TEXT,
+          loyalty_points INTEGER DEFAULT 0,
+          
+          tags TEXT[],
+          last_active_at TIMESTAMP,
+          source TEXT,
+          
+          gdpr_consent BOOLEAN DEFAULT false,
+          gdpr_consent_at TIMESTAMP,
+
           created_at TIMESTAMP NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
+          PRIMARY KEY (merchant_id, id),
           UNIQUE(merchant_id, email),
           CHECK (status IN ('active', 'suspended', 'deleted'))
         );
@@ -216,6 +261,7 @@ defmodule Mcp.Repo.Migrations.CreateTenantScopedTables do
         CREATE INDEX idx_customers_merchant_id ON customers(merchant_id);
         CREATE INDEX idx_customers_email ON customers(merchant_id, email);
         CREATE INDEX idx_customers_status ON customers(status);
+        CREATE INDEX idx_customers_user_id ON customers(user_id);
 
         CREATE TABLE customers_stores (
           customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
@@ -232,87 +278,72 @@ defmodule Mcp.Repo.Migrations.CreateTenantScopedTables do
     """
 
     # ========================================
-    # DEVELOPERS TABLE TEMPLATE
+    # VENDORS TABLE TEMPLATE
     # ========================================
     execute """
     INSERT INTO platform.tenant_table_templates (table_name, create_sql, description)
     VALUES (
-      'developers',
+      'vendors',
       $template$
-        CREATE TABLE developers (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        CREATE TABLE vendors (
+          id UUID DEFAULT gen_random_uuid(),
+          merchant_id UUID NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
 
-          company_name TEXT NOT NULL,
-          contact_name TEXT NOT NULL,
-          contact_email TEXT NOT NULL,
+          name TEXT NOT NULL,
+          service_type TEXT,
+          
+          user_id UUID REFERENCES platform.users(id),
 
-          api_quota_daily INTEGER DEFAULT 1000,
-          api_quota_monthly INTEGER DEFAULT 10000,
+          contact_name TEXT,
+          contact_email TEXT,
+          contact_phone TEXT,
 
-          webhook_url TEXT,
-          webhook_secret TEXT,
-
+          address JSONB,
+          
           status TEXT DEFAULT 'active',
+
+          -- Enhanced Fields
+          tax_form_status TEXT, -- w9_received
+          payment_terms TEXT, -- net30, net60
+          
+          service_category TEXT,
+          performance_rating INTEGER,
+          active_contracts JSONB DEFAULT '{}',
 
           created_at TIMESTAMP NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
-          CHECK (status IN ('active', 'suspended', 'pending'))
+          PRIMARY KEY (merchant_id, id),
+          CHECK (status IN ('active', 'inactive'))
         );
 
-        CREATE INDEX idx_developers_status ON developers(status);
-        CREATE INDEX idx_developers_contact_email ON developers(contact_email);
+        CREATE INDEX idx_vendors_merchant_id ON vendors(merchant_id);
+        CREATE INDEX idx_vendors_status ON vendors(status);
+        CREATE INDEX idx_vendors_user_id ON vendors(user_id);
+
+        CREATE TABLE vendors_stores (
+          vendor_id UUID NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+          store_id UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+          assigned_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          PRIMARY KEY (vendor_id, store_id)
+        );
+
+        CREATE INDEX idx_vendors_stores_vendor ON vendors_stores(vendor_id);
+        CREATE INDEX idx_vendors_stores_store ON vendors_stores(store_id);
       $template$,
-      'Developers (API partners) table for tenant schema'
+      'Vendors table for merchant schema'
     )
     """
+
+    # ========================================
+    # DEVELOPERS TABLE TEMPLATE
+    # ========================================
+
 
     # ========================================
     # RESELLERS TABLE TEMPLATE
     # ========================================
-    execute """
-    INSERT INTO platform.tenant_table_templates (table_name, create_sql, description)
-    VALUES (
-      'resellers',
-      $template$
-        CREATE TABLE resellers (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-          slug TEXT NOT NULL,
-          company_name TEXT NOT NULL,
-          subdomain TEXT NOT NULL,
-          custom_domain TEXT,
-
-          contact_name TEXT NOT NULL,
-          contact_email TEXT NOT NULL,
-          contact_phone TEXT,
-
-          commission_rate NUMERIC(5,2) DEFAULT 0.00,
-          revenue_share_model JSONB DEFAULT '{}',
-
-          branding JSONB DEFAULT '{}',
-          settings JSONB DEFAULT '{}',
-
-          max_merchants INTEGER DEFAULT 50,
-
-          status TEXT DEFAULT 'active',
-
-          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-          updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-
-          UNIQUE(slug),
-          UNIQUE(subdomain),
-          CHECK (status IN ('active', 'suspended', 'pending'))
-        );
-
-        CREATE INDEX idx_resellers_slug ON resellers(slug);
-        CREATE INDEX idx_resellers_subdomain ON resellers(subdomain);
-        CREATE INDEX idx_resellers_status ON resellers(status);
-        CREATE UNIQUE INDEX idx_resellers_custom_domain ON resellers(custom_domain) WHERE custom_domain IS NOT NULL;
-      $template$,
-      'Resellers (white-label partners) table for tenant schema'
-    )
-    """
   end
 
   def down do
