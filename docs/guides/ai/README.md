@@ -15,12 +15,12 @@ The AI subsystem is built on a dual-layer architecture designed for both robust 
 ### 2. Developer Tooling: Open WebUI
 *   **Purpose**: Interactive debugging and prompt engineering.
 *   **Role**: Provides a ChatGPT-like interface to interact directly with the local LLM (Ollama). Use this to test prompts, verify model behavior, and debug "hallucinations" without writing code.
-*   **Access**: Available at `http://localhost:3000` (default).
+*   **Access**: Available at `http://localhost:${OPEN_WEBUI_PORT}` (check `.env` for port).
 
 ### Infrastructure
-*   **Ollama**: Local LLM inference engine (port `${OLLAMA_PORT}`, default `51434`).
+*   **Ollama**: Local LLM inference engine (port `${OLLAMA_PORT}`, default `11434`).
 *   **Postgres + pgvector**: Vector database for storing embeddings (port `${POSTGRES_PORT}`, default `41789`).
-*   **Open WebUI**: Admin interface for Ollama (port `${OPEN_WEBUI_PORT}`, default `53000`).
+*   **Open WebUI**: Admin interface for Ollama (port `${OPEN_WEBUI_PORT}`, default `53000` or `8080`).
 
 ## Key Capabilities
 

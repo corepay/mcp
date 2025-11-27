@@ -103,3 +103,37 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+@theme {
+  /* Brand Colors */
+  --color-brand-primary: var(--color-primary);
+  --color-brand-secondary: var(--color-secondary);
+  --color-brand-accent: var(--color-accent);
+
+  /* Semantic Colors */
+  --color-status-success: var(--color-success);
+  --color-status-warning: var(--color-warning);
+  --color-status-error: var(--color-error);
+  --color-status-info: var(--color-info);
+
+  /* Typography */
+  --font-heading: "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+
+  /* Spacing */
+  --spacing-layout-gutter: 1rem;
+  --spacing-layout-margin: 2rem;
+
+  /* Border Radius */
+  --radius-box: var(--radius-box);
+  --radius-btn: var(--radius-selector);
+}
+
+/* Default Theme Variables (Fallback) */
+:root {
+  --color-primary: oklch(58% 0.233 277.117);
+  --color-secondary: oklch(58% 0.233 277.117);
+  --color-accent: oklch(60% 0.25 292.717);
+  --radius-box: 0.5rem;
+  --radius-selector: 0.25rem;
+}

@@ -26,7 +26,7 @@ config :mcp, Mcp.Repo,
   password: System.get_env("POSTGRES_PASSWORD", "mcp_password"),
   hostname: "localhost",
   database: System.get_env("POSTGRES_DB", "base_mcp_dev"),
-  port: String.to_integer(System.get_env("POSTGRES_PORT", "41789")),
+  port: String.to_integer(System.get_env("POSTGRES_PORT") || "41789"),
   show_sensitive_data_on_connection_error: true,
   pool_size: 10,
   ssl: false

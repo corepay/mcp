@@ -8,7 +8,7 @@ defmodule Mcp.Application do
   @impl true
   def start(_type, _args) do
     # Ensure OS monitoring applications are started
-    ensure_os_mon_apps()
+    # ensure_os_mon_apps()
 
     children = [
       # Platform-level services (shared resources)

@@ -62,47 +62,47 @@ defmodule McpWeb.TenantSettingsLive do
   def render(assigns) do
     ~H"""
     <div class="container mx-auto p-6">
-      <.header>
+      <McpWeb.CoreComponents.header>
         Tenant Settings
         <:subtitle>Manage your ISP platform configuration and preferences</:subtitle>
-      </.header>
+      </McpWeb.CoreComponents.header>
       
     <!-- Tab Navigation -->
       <div class="border-b border-gray-200 mb-8">
         <nav class="-mb-px flex space-x-8">
           <.tab
             active={@active_tab == "general"}
-            patch={~p"/#{@tenant_schema}/settings/live?tab=general"}
+            patch={~p"/tenant/settings?tab=general"}
           >
             General
           </.tab>
           <.tab
             active={@active_tab == "business"}
-            patch={~p"/#{@tenant_schema}/settings/live?tab=business"}
+            patch={~p"/tenant/settings?tab=business"}
           >
             Business Info
           </.tab>
           <.tab
             active={@active_tab == "features"}
-            patch={~p"/#{@tenant_schema}/settings/live?tab=features"}
+            patch={~p"/tenant/settings?tab=features"}
           >
             Features
           </.tab>
           <.tab
             active={@active_tab == "branding"}
-            patch={~p"/#{@tenant_schema}/settings/live?tab=branding"}
+            patch={~p"/tenant/settings?tab=branding"}
           >
             Branding
           </.tab>
           <.tab
             active={@active_tab == "notifications"}
-            patch={~p"/#{@tenant_schema}/settings/live?tab=notifications"}
+            patch={~p"/tenant/settings?tab=notifications"}
           >
             Notifications
           </.tab>
           <.tab
             active={@active_tab == "security"}
-            patch={~p"/#{@tenant_schema}/settings/live?tab=security"}
+            patch={~p"/tenant/settings?tab=security"}
           >
             Security
           </.tab>
@@ -167,27 +167,27 @@ defmodule McpWeb.TenantSettingsLive do
     <!-- Sidebar -->
         <div class="space-y-6">
           <!-- Quick Actions -->
-          <.card class="p-6">
+          <McpWeb.CoreComponents.card class="p-6">
             <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
             <div class="space-y-3">
-              <.button
+              <McpWeb.CoreComponents.button
                 phx-click="export_settings"
                 class="w-full"
               >
-                <.icon name="hero-download" class="mr-2" /> Export Settings
-              </.button>
-              <.button
+                <McpWeb.CoreComponents.icon name="hero-download" class="mr-2" /> Export Settings
+              </McpWeb.CoreComponents.button>
+              <McpWeb.CoreComponents.button
                 phx-click="show_import_modal"
                 class="w-full"
                 variant="primary"
               >
-                <.icon name="hero-upload" class="mr-2" /> Import Settings
-              </.button>
+                <McpWeb.CoreComponents.icon name="hero-upload" class="mr-2" /> Import Settings
+              </McpWeb.CoreComponents.button>
             </div>
-          </.card>
+          </McpWeb.CoreComponents.card>
           
     <!-- Status Overview -->
-          <.card class="p-6">
+          <McpWeb.CoreComponents.card class="p-6">
             <h3 class="text-lg font-semibold mb-4">Configuration Status</h3>
             <div class="space-y-3">
               <.status_item
@@ -206,23 +206,23 @@ defmodule McpWeb.TenantSettingsLive do
                 icon="hero-palette"
               />
             </div>
-          </.card>
+          </McpWeb.CoreComponents.card>
           
     <!-- Help -->
-          <.card class="p-6">
+          <McpWeb.CoreComponents.card class="p-6">
             <h3 class="text-lg font-semibold mb-4">Help & Resources</h3>
             <div class="space-y-3">
               <a href="#" class="block text-sm text-blue-600 hover:text-blue-800">
-                <.icon name="hero-book-open" class="mr-2" /> Settings Documentation
+                <McpWeb.CoreComponents.icon name="hero-book-open" class="mr-2" /> Settings Documentation
               </a>
               <a href="#" class="block text-sm text-blue-600 hover:text-blue-800">
-                <.icon name="hero-video-camera" class="mr-2" /> Video Tutorials
+                <McpWeb.CoreComponents.icon name="hero-video-camera" class="mr-2" /> Video Tutorials
               </a>
               <a href="#" class="block text-sm text-blue-600 hover:text-blue-800">
-                <.icon name="hero-question-mark-circle" class="mr-2" /> Support Center
+                <McpWeb.CoreComponents.icon name="hero-question-mark-circle" class="mr-2" /> Support Center
               </a>
             </div>
-          </.card>
+          </McpWeb.CoreComponents.card>
         </div>
       </div>
     </div>
@@ -233,7 +233,7 @@ defmodule McpWeb.TenantSettingsLive do
       id="import_modal"
       class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
     >
-      <.header>Import Settings</.header>
+      <McpWeb.CoreComponents.header>Import Settings</McpWeb.CoreComponents.header>
       <p class="text-gray-600 mb-4">
         Upload a JSON file containing your tenant settings configuration.
       </p>
@@ -244,7 +244,7 @@ defmodule McpWeb.TenantSettingsLive do
         phx-submit="import_settings"
         phx-change="validate_import"
       >
-        <.input
+        <McpWeb.CoreComponents.input
           type="file"
           name="file"
           accept=".json"
@@ -253,12 +253,12 @@ defmodule McpWeb.TenantSettingsLive do
         />
 
         <div class="flex justify-end space-x-3 mt-6">
-          <.button variant="primary" type="button" phx-click="hide_import_modal">
+          <McpWeb.CoreComponents.button variant="primary" type="button" phx-click="hide_import_modal">
             Cancel
-          </.button>
-          <.button type="submit" phx-disable-with="Importing...">
+          </McpWeb.CoreComponents.button>
+          <McpWeb.CoreComponents.button type="submit" phx-disable-with="Importing...">
             Import Settings
-          </.button>
+          </McpWeb.CoreComponents.button>
         </div>
       </.form>
       <div class="relative bg-white rounded-lg max-w-md mx-auto mt-20 p-4">
@@ -364,7 +364,7 @@ defmodule McpWeb.TenantSettingsLive do
     ~H"""
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-2">
-        <.icon name={@icon} class="w-4 h-4 text-gray-500" />
+        <McpWeb.CoreComponents.icon name={@icon} class="w-4 h-4 text-gray-500" />
         <span class="text-sm text-gray-600">{@label}</span>
       </div>
       <span class="text-sm font-medium text-gray-900">{@value}</span>

@@ -1,7 +1,18 @@
-[:telemetry, :ecto, :postgrex, :ash, :ash_postgres]
-|> Enum.each(&Application.ensure_all_started/1)
+# Ensure the app is started
+[:telemetry, :ash, :mcp]
+|> Enum.each(fn app ->
+  case Application.ensure_all_started(app) do
+    {:ok, _} -> :ok
+    {:error, {:already_started, _}} -> :ok
+    {:error, reason} -> IO.warn("Failed to start #{app}: #{inspect(reason)}")
+  end
+end)
 
-{:ok, _} = Mcp.Repo.start_link()
-{:ok, _} = Mcp.Secrets.start_link()
+IO.puts("DATABASE_URL: #{System.get_env("DATABASE_URL")}")
+IO.puts("Checking Mcp.Repo...")
+case Process.whereis(Mcp.Repo) do
+  nil -> IO.puts("Mcp.Repo is NOT running!")
+  pid -> IO.puts("Mcp.Repo is running at #{inspect(pid)}")
+end
 
 Mcp.Seeder.run()

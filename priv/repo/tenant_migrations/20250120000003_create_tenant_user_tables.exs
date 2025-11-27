@@ -25,7 +25,7 @@ defmodule Mcp.Repo.TenantMigrations.CreateTenantUserTables do
       add :last_sign_in_ip, :string
       add :sign_in_count, :integer, null: false, default: 0
       add :permissions, {:array, :string}, default: []
-      add :settings, :jsonb, default: %{}
+      add :settings, :jsonb, default: "{}"
       add :is_tenant_owner, :boolean, null: false, default: false
       add :password_change_required, :boolean, null: false, default: false
       add :phone_number, :string
@@ -54,7 +54,7 @@ defmodule Mcp.Repo.TenantMigrations.CreateTenantUserTables do
     # Create tenant_invitations table
     create table(:tenant_invitations, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :tenant_user_id, :binary_id, null: false
+      add :tenant_user_id, references(:tenant_users, type: :binary_id, on_delete: :delete_all), null: false
       add :email, :citext, null: false
       add :invitation_token, :binary_id, null: false
       add :status, :string, null: false, default: "pending"
@@ -73,15 +73,13 @@ defmodule Mcp.Repo.TenantMigrations.CreateTenantUserTables do
       add :email_service_id, :string, size: 200
       add :acceptance_ip, :string
       add :acceptance_user_agent, :string, size: 500
-      add :metadata, :jsonb, default: %{}
+      add :metadata, :jsonb, default: "{}"
 
       timestamps()
     end
 
     # Create foreign key constraint to tenant_users
-    create constraint(:tenant_invitations, :tenant_invitations_tenant_user_id_fkey,
-      check: "tenant_user_id IN (SELECT id FROM tenant_users WHERE id IS NOT NULL)"
-    )
+    # (Replaced by references in table definition)
 
     # Create unique index for invitation token
     create unique_index(:tenant_invitations, [:invitation_token])
@@ -93,7 +91,7 @@ defmodule Mcp.Repo.TenantMigrations.CreateTenantUserTables do
 
     # Create indexes for performance
     create index(:tenant_invitations, [:tenant_user_id])
-    create index(:tenant_invitations, [:email])
+    # create index(:tenant_invitations, [:email]) # Duplicate of unique index above
     create index(:tenant_invitations, [:status])
     create index(:tenant_invitations, [:invited_by_id])
     create index(:tenant_invitations, [:expires_at])
@@ -116,9 +114,10 @@ defmodule Mcp.Repo.TenantMigrations.CreateTenantUserTables do
       add :granted_by_id, :binary_id
       add :granted_at, :utc_datetime_usec
       add :expires_at, :utc_datetime_usec
-      add :conditions, :jsonb, default: %{}
+      add :conditions, :jsonb, default: "{}"
 
-      timestamps()
+      add :inserted_at, :utc_datetime_usec, null: false, default: fragment("NOW()")
+      add :updated_at, :utc_datetime_usec, null: false, default: fragment("NOW()")
     end
 
     # Create unique index for role-permission combination
@@ -137,36 +136,36 @@ defmodule Mcp.Repo.TenantMigrations.CreateTenantUserTables do
     create index(:role_permissions, [:category, :is_granted])
 
     # Create audit extensions for user activity tracking
-    execute """
-      CREATE OR REPLACE FUNCTION update_tenant_user_modified_column()
-      RETURNS TRIGGER AS $$
-      BEGIN
-        NEW.updated_at = NOW();
-        RETURN NEW;
-      END;
-      $$ language 'plpgsql';
-    """
+    # execute """
+    #   CREATE OR REPLACE FUNCTION update_tenant_user_modified_column()
+    #   RETURNS TRIGGER AS $$
+    #   BEGIN
+    #     NEW.updated_at = NOW();
+    #     RETURN NEW;
+    #   END;
+    #   $$ language 'plpgsql';
+    # """
 
-    execute """
-      CREATE TRIGGER tenant_users_updated_at
-        BEFORE UPDATE ON tenant_users
-        FOR EACH ROW
-        EXECUTE FUNCTION update_tenant_user_modified_column();
-    """
+    # execute """
+    #   CREATE TRIGGER tenant_users_updated_at
+    #     BEFORE UPDATE ON tenant_users
+    #     FOR EACH ROW
+    #     EXECUTE FUNCTION update_tenant_user_modified_column();
+    # """
 
-    execute """
-      CREATE TRIGGER tenant_invitations_updated_at
-        BEFORE UPDATE ON tenant_invitations
-        FOR EACH ROW
-        EXECUTE FUNCTION update_tenant_user_modified_column();
-    """
+    # execute """
+    #   CREATE TRIGGER tenant_invitations_updated_at
+    #     BEFORE UPDATE ON tenant_invitations
+    #     FOR EACH ROW
+    #     EXECUTE FUNCTION update_tenant_user_modified_column();
+    # """
 
-    execute """
-      CREATE TRIGGER role_permissions_updated_at
-        BEFORE UPDATE ON role_permissions
-        FOR EACH ROW
-        EXECUTE FUNCTION update_tenant_user_modified_column();
-    """
+    # execute """
+    #   CREATE TRIGGER role_permissions_updated_at
+    #     BEFORE UPDATE ON role_permissions
+    #     FOR EACH ROW
+    #     EXECUTE FUNCTION update_tenant_user_modified_column();
+    # """
 
     # Create user activity log table
     create table(:user_activity_logs, primary_key: false) do
@@ -177,7 +176,7 @@ defmodule Mcp.Repo.TenantMigrations.CreateTenantUserTables do
       add :resource_id, :binary_id
       add :ip_address, :string
       add :user_agent, :string, size: 500
-      add :metadata, :jsonb, default: %{}
+      add :metadata, :jsonb, default: "{}"
       add :timestamp, :utc_datetime_usec, null: false, default: fragment("NOW()")
 
       timestamps()
@@ -259,7 +258,8 @@ defmodule Mcp.Repo.TenantMigrations.CreateTenantUserTables do
       (gen_random_uuid(), 'viewer', 'view_service_usage', 'services', 'View service usage statistics', true, false, 1),
       (gen_random_uuid(), 'viewer', 'view_billing', 'billing', 'View billing information', true, false, 1),
       (gen_random_uuid(), 'viewer', 'view_support_tickets', 'support', 'View support tickets', true, false, 1),
-      (gen_random_uuid(), 'viewer', 'view_reports', 'reports', 'View reports and analytics', true, false, 1);
+      (gen_random_uuid(), 'viewer', 'view_reports', 'reports', 'View reports and analytics', true, false, 1)
+      ON CONFLICT (role, permission) DO NOTHING;
     """
   end
 

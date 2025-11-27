@@ -10,54 +10,6 @@ defmodule Mcp.Repo do
 
   # Advanced features for AI-powered MSP platform
 
-  @impl true
-  def init(_type, config) do
-    # Load environment variables for database configuration
-    defaults = [
-        hostname: System.get_env("POSTGRES_HOST", "localhost"),
-        port: String.to_integer(System.get_env("POSTGRES_PORT", "41789")),
-        database: System.get_env("POSTGRES_DB", "base_mcp_dev"),
-        username: System.get_env("POSTGRES_USER", "base_mcp_dev"),
-        password: System.get_env("POSTGRES_PASSWORD", "mcp_password"),
-        pool_size: String.to_integer(System.get_env("DB_POOL_SIZE", "10")),
-        ssl: false,
-        show_sensitive_data_on_connection_error: true,
-        timeout: :timer.seconds(30),
-        connect_timeout: :timer.seconds(10),
-        prepare: :unnamed,
-        parameters: [
-          timezone: "UTC"
-        ],
-        types: Mcp.PostgresTypes
-      ]
-
-    config = Keyword.merge(defaults, config)
-
-    # Apply environment-specific overrides
-    config = apply_env_config(Mix.env(), config)
-
-    {:ok, config}
-  end
-
-  defp apply_env_config(:test, config) do
-    config
-    |> put_repo_config()
-    |> Keyword.put(:pool, Ecto.Adapters.SQL.Sandbox)
-  end
-
-  defp apply_env_config(:dev, config) do
-    config
-    |> put_repo_config()
-  end
-
-  defp apply_env_config(_, config), do: config
-
-  defp put_repo_config(config) do
-    config
-    |> Keyword.put(:url, System.get_env("DATABASE_URL"))
-    |> Keyword.put(:socket_dir, System.get_env("DB_SOCKET_DIR"))
-  end
-
   # Advanced query helpers for full technology stack
 
   def tenant_query(tenant_schema_name, query) do

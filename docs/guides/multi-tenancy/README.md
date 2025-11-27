@@ -36,6 +36,7 @@ The multi-tenancy framework uses PostgreSQL schema-based isolation with tenant-a
 ## Documentation
 
 - **[Developer Guide](developer-guide.md)** - Technical implementation and integration guide
+- **[Hierarchy & Roles](hierarchy-and-roles.md)** - Detailed explanation of the 4-level hierarchy and portal purposes
 - **[API Reference](api-reference.md)** - Complete tenant management API documentation
 - **[Stakeholder Guide](stakeholder-guide.md)** - Multi-tenancy business value and operational benefits
 - **[User Guide](user-guide.md)** - Tenant administration and operational procedures

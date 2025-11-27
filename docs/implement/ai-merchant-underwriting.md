@@ -491,34 +491,34 @@ end
 ### Merchant Application API
 
 ```
-POST   /api/v1/merchants/applications
-GET    /api/v1/merchants/applications/:id
-PATCH  /api/v1/merchants/applications/:id
-POST   /api/v1/merchants/applications/:id/submit
-GET    /api/v1/merchants/applications/:id/status
+POST   /api/merchants/applications
+GET    /api/merchants/applications/:id
+PATCH  /api/merchants/applications/:id
+POST   /api/merchants/applications/:id/submit
+GET    /api/merchants/applications/:id/status
 
 # Admin endpoints
-GET    /api/v1/admin/applications
-GET    /api/v1/admin/applications/:id/review
-POST   /api/v1/admin/applications/:id/approve
-POST   /api/v1/admin/applications/:id/reject
+GET    /api/admin/applications
+GET    /api/admin/applications/:id/review
+POST   /api/admin/applications/:id/approve
+POST   /api/admin/applications/:id/reject
 ```
 
 ### Risk Assessment API
 
 ```
-POST   /api/v1/merchants/:id/risk-assessment
-GET    /api/v1/merchants/:id/risk-assessments
-GET    /api/v1/merchants/:id/risk-score
+POST   /api/merchants/:id/risk-assessment
+GET    /api/merchants/:id/risk-assessments
+GET    /api/merchants/:id/risk-score
 ```
 
 ### PAYFAC Configuration API (Tenant Admin Only)
 
 ```
-GET    /api/v1/payfac/config
-PUT    /api/v1/payfac/config
-GET    /api/v1/payfac/sub-merchants
-GET    /api/v1/payfac/analytics
+GET    /api/payfac/config
+PUT    /api/payfac/config
+GET    /api/payfac/sub-merchants
+GET    /api/payfac/analytics
 ```
 
 ---

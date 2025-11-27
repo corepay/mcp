@@ -6,9 +6,9 @@ This guide provides technical implementation details for developers and LLM agen
 
 The multi-tenancy framework follows a schema-based isolation approach:
 
-- **Tenant Management Layer**: `Mcp.Infrastructure.TenantManager` handles schema lifecycle (create, drop, check).
--   **Context Routing Layer**: `Mcp.Infrastructure.Context` manages process-dictionary based context switching.
--   **Provisioning Layer**: `Mcp.Platform.Tenants.Changes.ProvisionTenant` orchestrates the onboarding flow.
+-   **Tenant Management Layer**: `Mcp.Platform.TenantSettingsManager` handles tenant configuration and settings.
+-   **Context Routing Layer**: `McpWeb.TenantRouting` manages connection-based context switching via `conn.assigns`.
+-   **Provisioning Layer**: `Mcp.Platform.SchemaProvisioner` orchestrates schema creation and migration.
 -   **Schema Isolation Layer**: PostgreSQL schema-based data separation and security.
 
 ## Database Schema Design
@@ -137,123 +137,41 @@ end
 
 ## Tenant Management System
 
+## Tenant Settings Management
+
 ```elixir
-defmodule Mcp.MultiTenancy.TenantManager do
+defmodule Mcp.Platform.TenantSettingsManager do
   @moduledoc """
-  Manages tenant lifecycle operations including creation, configuration, and deletion
+  Manages tenant settings, features, and branding configuration.
   """
 
-  alias Mcp.MultiTenancy.{Tenant, TenantDomain, SchemaManager}
+  alias Mcp.Platform.{Tenant, TenantSettings}
   alias Mcp.Core.Repo
+  import Ecto.Query
 
-  def create_tenant(tenant_params) do
-    Multi.new()
-    |> Multi.insert(:tenant, Tenant.changeset(%Tenant{}, tenant_params))
-    |> Multi.run(:create_schema, fn %{tenant: tenant} ->
-      SchemaManager.create_tenant_schema(tenant.schema_name)
-    end)
-    |> Multi.run(:run_migrations, fn %{tenant: tenant} ->
-      SchemaManager.run_tenant_migrations(tenant.schema_name)
-    end)
-    |> Multi.run(:setup_default_settings, fn %{tenant: tenant} ->
-      setup_tenant_settings(tenant)
-    end)
-    |> Multi.run(:create_default_domain, fn %{tenant: tenant} ->
-      create_default_domain(tenant)
-    end)
-    |> Repo.transaction()
+  def get_all_tenant_settings(tenant_id) do
+    settings =
+      TenantSettings
+      |> where([s], s.tenant_id == ^tenant_id)
+      |> Repo.all()
+
+    # Group by category
+    grouped = Enum.group_by(settings, & &1.category, fn s -> {s.key, s.value} end)
+    
+    # Convert to map
+    result = Map.new(grouped, fn {k, v} -> {k, Map.new(v)} end)
+    
+    {:ok, result}
   end
 
-  def update_tenant(tenant, updates) do
-    Multi.new()
-    |> Multi.update(:tenant, Tenant.changeset(tenant, updates))
-    |> Multi.run(:handle_schema_rename, fn %{tenant: updated_tenant} ->
-      if updated_tenant.schema_name != tenant.schema_name do
-        SchemaManager.rename_schema(tenant.schema_name, updated_tenant.schema_name)
-      else
-        {:ok, :no_rename_needed}
-      end
-    end)
-    |> Repo.transaction()
+  def get_tenant_branding(tenant_id) do
+    # Implementation for fetching branding settings
+    # ...
   end
 
-  def archive_tenant(tenant) do
-    Multi.new()
-    |> Multi.update(:tenant, Tenant.changeset(tenant, %{status: "archived"}))
-    |> Multi.run(:backup_schema, fn %{tenant: tenant} ->
-      SchemaManager.backup_schema(tenant.schema_name)
-    end)
-    |> Multi.run(:archive_schema, fn %{tenant: tenant} ->
-      SchemaManager.archive_schema(tenant.schema_name)
-    end)
-    |> Repo.transaction()
-  end
-
-  def delete_tenant(tenant) do
-    Multi.new()
-    |> Multi.delete(:tenant, tenant)
-    |> Multi.run(:drop_schema, fn _changes ->
-      SchemaManager.drop_schema(tenant.schema_name)
-    end)
-    |> Repo.transaction()
-  end
-
-  def get_tenant_by_domain(domain) do
-    query = from t in Tenant,
-      join: td in TenantDomain,
-      on: td.tenant_id == t.id,
-      where: td.domain == ^domain,
-      where: t.status == "active",
-      limit: 1
-
-    Repo.one(query)
-  end
-
-  def get_tenant_by_slug(slug) do
-    query = from t in Tenant,
-      where: t.slug == ^slug,
-      where: t.status == "active"
-
-    Repo.one(query)
-  end
-
-  defp setup_tenant_settings(tenant) do
-    default_settings = [
-      %{category: "general", key: "timezone", value: "UTC", type: "string"},
-      %{category: "general", key: "locale", value: "en", type: "string"},
-      %{category: "security", key: "session_timeout_minutes", value: "30", type: "integer"},
-      %{category: "security", key: "require_2fa", value: "false", type: "boolean"},
-      %{category: "notifications", key: "email_enabled", value: "true", type: "boolean"},
-      %{category: "notifications", key: "slack_enabled", value: "false", type: "boolean"},
-      %{category: "billing", key: "invoice_day", value: "1", type: "integer"}
-    ]
-
-    Enum.each(default_settings, fn setting ->
-      %{
-        tenant_id: tenant.id,
-        category: setting.category,
-        key: setting.key,
-        value: setting.value,
-        type: setting.type
-      }
-      |> Mcp.MultiTenancy.TenantSettings.changeset(%Mcp.MultiTenancy.TenantSettings{})
-      |> Repo.insert()
-    end)
-
-    {:ok, :settings_created}
-  end
-
-  defp create_default_domain(tenant) do
-    default_domain = %{
-      tenant_id: tenant.id,
-      domain: "#{tenant.slug}.mcp-platform.com",
-      primary: true,
-      verified_at: DateTime.utc_now()
-    }
-
-    %TenantDomain{}
-    |> TenantDomain.changeset(default_domain)
-    |> Repo.insert()
+  def update_tenant_setting(tenant_id, category, key, value) do
+    # Implementation for updating a specific setting
+    # ...
   end
 end
 ```
@@ -430,258 +348,232 @@ defmodule Mcp.MultiTenancy.SchemaManager do
 end
 ```
 
-## Tenant Context Management
 
-```elixir
-defmodule Mcp.MultiTenancy.TenantContext do
-  @moduledoc """
-  Manages tenant context switching and retrieval throughout the request lifecycle
-  """
-
-  def get_tenant_from_domain(domain) do
-    case Mcp.MultiTenancy.TenantManager.get_tenant_by_domain(domain) do
-      nil -> {:error, :tenant_not_found}
-      tenant -> {:ok, tenant}
-    end
-  end
-
-  def get_tenant_from_slug(slug) do
-    case Mcp.MultiTenancy.TenantManager.get_tenant_by_slug(slug) do
-      nil -> {:error, :tenant_not_found}
-      tenant -> {:ok, tenant}
-    end
-  end
-
-  def set_tenant_context(tenant) do
-    Process.put(:tenant_id, tenant.id)
-    Process.put(:tenant_slug, tenant.slug)
-    Process.put(:tenant_schema, tenant.schema_name)
-
-    # Switch database schema
-    set_tenant_schema(tenant.schema_name)
-
-    {:ok, tenant}
-  end
-
-  def get_current_tenant do
-    tenant_id = Process.get(:tenant_id)
-
-    if tenant_id do
-      case Mcp.MultiTenancy.get_tenant(tenant_id) do
-        nil -> {:error, :tenant_not_in_context}
-        tenant -> {:ok, tenant}
-      end
-    else
-      {:error, :no_tenant_context}
-    end
-  end
-
-  def with_tenant(tenant, fun) do
-    old_context = get_current_context()
-
-    try do
-      case set_tenant_context(tenant) do
-        {:ok, _} -> fun.()
-        error -> error
-      end
-    after
-      restore_context(old_context)
-    end
-  end
-
-  def current_tenant_id do
-    Process.get(:tenant_id)
-  end
-
-  def current_tenant_schema do
-    Process.get(:tenant_schema)
-  end
-
-  def in_tenant_context? do
-    !!Process.get(:tenant_id)
-  end
-
-  defp set_tenant_schema(schema_name) do
-    sql = "SET search_path TO #{schema_name}, public, platform, shared, ag_catalog;"
-    Ecto.Adapters.SQL.query!(Mcp.Core.Repo, sql)
-  end
-
-  defp get_current_context do
-    %{
-      tenant_id: Process.get(:tenant_id),
-      tenant_slug: Process.get(:tenant_slug),
-      tenant_schema: Process.get(:tenant_schema)
-    }
-  end
-
-  defp restore_context(context) do
-    if context.tenant_schema do
-      set_tenant_schema(context.tenant_schema)
-    else
-      # Reset to default schema path
-      sql = "SET search_path TO public, platform, shared, ag_catalog;"
-      Ecto.Adapters.SQL.query!(Mcp.Core.Repo, sql)
-    end
-
-    Process.put(:tenant_id, context.tenant_id)
-    Process.put(:tenant_slug, context.tenant_slug)
-    Process.put(:tenant_schema, context.tenant_schema)
-  end
-end
-```
-
-## Multi-Tenant Database Repository
-
-```elixir
-defmodule Mcp.MultiTenancy.TenantRepo do
-  @moduledoc """
-  Tenant-aware repository for database operations
-  """
-
-  alias Mcp.Core.Repo
-  alias Mcp.MultiTenancy.TenantContext
-
-  # Delegate all Ecto.Repo functions with tenant context
-  def get(queryable, opts \\ []), do: with_tenant_context(&Repo.get/2, queryable, opts)
-  def get!(queryable, id, opts \\ []), do: with_tenant_context(&Repo.get!/2, queryable, id, opts)
-  def get_by(queryable, clauses, opts \\ []), do: with_tenant_context(&Repo.get_by/2, queryable, clauses, opts)
-  def get_by!(queryable, clauses, opts \\ []), do: with_tenant_context(&Repo.get_by!/2, queryable, clauses, opts)
-
-  def one(queryable, opts \\ []), do: with_tenant_context(&Repo.one/1, queryable, opts)
-  def one!(queryable, opts \\ []), do: with_tenant_context(&Repo.one!/1, queryable, opts)
-  def all(queryable, opts \\ []), do: with_tenant_context(&Repo.all/1, queryable, opts)
-
-  def aggregate(queryable, agg, opts \\ []), do: with_tenant_context(&Repo.aggregate/3, queryable, agg, opts)
-  def count(queryable, opts \\ []), do: with_tenant_context(&Repo.count/1, queryable, opts)
-
-  def insert(changeset, opts \\ []), do: with_tenant_context(&Repo.insert/1, changeset, opts)
-  def insert!(changeset, opts \\ []), do: with_tenant_context(&Repo.insert!/1, changeset, opts)
-  def insert_all(schema_or_source, entries, opts \\ []), do: with_tenant_context(&Repo.insert_all/2, schema_or_source, entries, opts)
-
-  def update(changeset, opts \\ []), do: with_tenant_context(&Repo.update/1, changeset, opts)
-  def update!(changeset, opts \\ []), do: with_tenant_context(&Repo.update!/1, changeset, opts)
-  def update_all(queryable, updates, opts \\ []), do: with_tenant_context(&Repo.update_all/2, queryable, updates, opts)
-
-  def delete(struct_or_changeset, opts \\ []), do: with_tenant_context(&Repo.delete/1, struct_or_changeset, opts)
-  def delete!(struct_or_changeset, opts \\ []), do: with_tenant_context(&Repo.delete!/1, struct_or_changeset, opts)
-  def delete_all(queryable, opts \\ []), do: with_tenant_context(&Repo.delete_all/1, queryable, opts)
-
-  def transaction(fun_or_multi, opts \\ []), do: with_tenant_context(&Repo.transaction/2, fun_or_multi, opts)
-
-  # Custom tenant-specific functions
-  def insert_with_tenant(changeset, tenant, opts \\ []) do
-    TenantContext.with_tenant(tenant, fn ->
-      Repo.insert(changeset, opts)
-    end)
-  end
-
-  def update_with_tenant(changeset, tenant, opts \\ []) do
-    TenantContext.with_tenant(tenant, fn ->
-      Repo.update(changeset, opts)
-    end)
-  end
-
-  def delete_with_tenant(struct_or_changeset, tenant, opts \\ []) do
-    TenantContext.with_tenant(tenant, fn ->
-      Repo.delete(struct_or_changeset, opts)
-    end)
-  end
-
-  def query_with_tenant(query, tenant, opts \\ []) do
-    TenantContext.with_tenant(tenant, fn ->
-      Repo.all(query, opts)
-    end)
-  end
-
-  defp with_tenant_context(fun, args) when is_function(fun, 1) do
-    if TenantContext.in_tenant_context? do
-      fun.(args)
-    else
-      {:error, :no_tenant_context}
-    end
-  end
-
-  defp with_tenant_context(fun, arg1, arg2) when is_function(fun, 2) do
-    if TenantContext.in_tenant_context? do
-      fun.(arg1, arg2)
-    else
-      {:error, :no_tenant_context}
-    end
-  end
-
-  defp with_tenant_context(fun, arg1, arg2, arg3) when is_function(fun, 3) do
-    if TenantContext.in_tenant_context? do
-      fun.(arg1, arg2, arg3)
-    else
-      {:error, :no_tenant_context}
-    end
-  end
-end
-```
 
 ## Phoenix Plug for Tenant Resolution
 
 ```elixir
-defmodule McpWeb.Plugs.TenantResolver do
+defmodule McpWeb.TenantRouting do
   @moduledoc """
-  Phoenix plug for resolving tenant from domain and setting tenant context
+  Plug for tenant identification and routing based on subdomain or custom domain.
+
+  This plug extracts tenant information from the HTTP host and sets up the proper
+  tenant context for the request, enabling multi-tenancy via subdomain routing.
   """
 
   import Plug.Conn
-  alias Mcp.MultiTenancy.TenantContext
 
-  def init(opts), do: opts
+  alias Mcp.Platform.Tenant
+  require Logger
 
-  def call(conn, _opts) do
+  @doc """
+  Initialize the plug with configuration options.
+  """
+  def init(opts \\ []) do
+    Keyword.merge(
+      [
+        base_domain: get_base_domain(),
+        fallback_tenant: nil,
+        skip_subdomain_extraction: false
+      ],
+      opts
+    )
+  end
+
+  @doc """
+  Call the plug to handle tenant routing.
+  """
+  def call(conn, opts) do
+    if Keyword.get(opts, :skip_subdomain_extraction, false) do
+      conn
+    else
+      case extract_tenant_from_host(conn, opts) do
+        {:ok, tenant} ->
+          setup_tenant_context(conn, tenant)
+
+        {:error, :tenant_not_found} ->
+          handle_tenant_not_found(conn, opts)
+
+        {:error, :invalid_host} ->
+          handle_invalid_host(conn, opts)
+      end
+    end
+  end
+
+  @doc """
+  Extract tenant information from the current connection.
+  """
+  def get_current_tenant(conn) do
+    conn.assigns[:current_tenant]
+  end
+
+  @doc """
+  Check if the current request is in a tenant context.
+  """
+  def tenant_context?(conn) do
+    not is_nil(conn.assigns[:current_tenant])
+  end
+
+  @doc """
+  Get the base domain for tenant routing.
+  """
+  def get_base_domain do
+    Application.get_env(:mcp, :base_domain, "localhost")
+  end
+
+  # Private functions
+
+  defp extract_tenant_from_host(conn, _opts) do
     host = get_host(conn)
 
-    case resolve_tenant_from_host(host) do
-      {:ok, tenant} ->
-        TenantContext.set_tenant_context(tenant)
-        assign(conn, :current_tenant, tenant)
-
-      {:error, :tenant_not_found} ->
-        conn
-        |> put_status(:not_found)
-        |> put_view(McpWeb.ErrorView)
-        |> render(:"404")
-        |> halt()
-
-      {:error, reason} ->
-        conn
-        |> put_status(:internal_server_error)
-        |> put_view(McpWeb.ErrorView)
-        |> render(:"500")
-        |> halt()
+    if is_nil(host) or host == "" do
+      {:error, :invalid_host}
+    else
+      case identify_tenant_from_host(host) do
+        {:ok, tenant} -> {:ok, tenant}
+        {:error, reason} -> {:error, reason}
+      end
     end
   end
 
   defp get_host(conn) do
-    conn |> get_req_header("host") |> List.first()
-  end
+    # Try various headers to get the actual host
+    case get_req_header(conn, "x-forwarded-host") do
+      [host | _] ->
+        String.downcase(host)
 
-  defp resolve_tenant_from_host(nil), do: {:error, :no_host}
-
-  defp resolve_tenant_from_host(host) do
-    # Extract domain from host (remove port if present)
-    domain = String.split(host, ":") |> List.first()
-
-    # Try exact domain match first
-    case TenantContext.get_tenant_from_domain(domain) do
-      {:ok, tenant} -> {:ok, tenant}
-      {:error, :tenant_not_found} ->
-        # Try subdomain pattern (extract slug from subdomain)
-        resolve_from_subdomain(domain)
+      [] ->
+        case get_req_header(conn, "host") do
+          [host | _] -> String.downcase(host)
+          [] -> nil
+        end
     end
   end
 
-  defp resolve_from_subdomain(domain) do
-    case String.split(domain, ".") do
-      [slug | _rest] when slug != "www" and slug != "app" ->
-        TenantContext.get_tenant_from_slug(slug)
-      _ ->
+  defp identify_tenant_from_host(host) do
+    # Remove port if present
+    host_without_port = String.split(host, ":") |> List.first()
+
+    cond do
+      # Check for custom domain first
+      tenant_by_custom_domain =
+          Tenant.by_custom_domain!(host_without_port)
+          |> Enum.at(0) ->
+        {:ok, tenant_by_custom_domain}
+
+      # Check for subdomain pattern
+      matches_subdomain_pattern?(host_without_port) ->
+        subdomain = extract_subdomain_from_host(host_without_port)
+
+        case Tenant.by_subdomain!(subdomain) |> Enum.at(0) do
+          nil -> {:error, :tenant_not_found}
+          tenant -> {:ok, tenant}
+        end
+
+      # Base domain - no tenant context
+      base_domain?(host_without_port) ->
+        {:error, :tenant_not_found}
+
+      # Unknown pattern
+      true ->
         {:error, :tenant_not_found}
     end
+  rescue
+    Ash.Error.Invalid.NoSuchResource -> {:error, :tenant_not_found}
+    Ash.Error.Query.NotFound -> {:error, :tenant_not_found}
+    _ -> {:error, :tenant_not_found}
+  end
+
+  defp matches_subdomain_pattern?(host) do
+    base_domain = get_base_domain()
+    String.ends_with?(host, ".#{base_domain}") and String.contains?(host, ".")
+  end
+
+  defp base_domain?(host) do
+    base_domain = get_base_domain()
+    host == base_domain or host == "www.#{base_domain}"
+  end
+
+  defp extract_subdomain_from_host(host) do
+    base_domain = get_base_domain()
+    subdomain_part = String.replace_prefix(host, ".#{base_domain}", "")
+
+    # Handle potential www prefix for base domain
+    case String.split(subdomain_part, ".") do
+      [subdomain] -> subdomain
+      [subdomain | _] -> subdomain
+      [] -> host
+    end
+  end
+
+  defp setup_tenant_context(conn, tenant) do
+    conn
+    |> assign(:current_tenant, tenant)
+    |> assign(:tenant_schema, tenant.company_schema)
+    |> assign(:tenant_id, tenant.id)
+    |> put_private(:tenant_id, tenant.id)
+    |> put_private(:tenant_schema, tenant.company_schema)
+  end
+
+  defp handle_tenant_not_found(conn, opts) do
+    fallback_tenant = Keyword.get(opts, :fallback_tenant)
+
+    if fallback_tenant do
+      # In development, you might want to fall back to a default tenant
+      conn
+      |> assign(:current_tenant, nil)
+      |> assign(:tenant_schema, nil)
+      |> assign(:tenant_id, nil)
+    else
+      # In production, return 404 for unknown tenants
+      if Application.get_env(:mcp, :env) == :prod do
+        conn
+        |> put_resp_content_type("text/html")
+        |> send_resp(:not_found, render_tenant_not_found_page())
+        |> halt()
+      else
+        # In development, continue without tenant context for debugging
+        conn
+        |> assign(:current_tenant, nil)
+        |> assign(:tenant_schema, nil)
+        |> assign(:tenant_id, nil)
+      end
+    end
+  end
+
+  defp handle_invalid_host(conn, _opts) do
+    if Mix.env() == :test do
+      conn
+    else
+      host = get_host(conn)
+      Logger.warning("Invalid host access attempt: #{host}")
+
+      conn
+      |> put_resp_content_type("text/html")
+      |> send_resp(:bad_request, "Invalid host header")
+      |> halt()
+    end
+  end
+
+  defp render_tenant_not_found_page do
+    """
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Tenant Not Found</title>
+      <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #e53e3e; }
+        p { color: #4a5568; }
+      </style>
+    </head>
+    <body>
+      <h1>Tenant Not Found</h1>
+      <p>The requested tenant could not be found or may have been deactivated.</p>
+      <p>Please check the URL and try again.</p>
+    </body>
+    </html>
+    """
   end
 end
 ```

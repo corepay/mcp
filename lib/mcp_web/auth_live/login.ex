@@ -29,12 +29,18 @@ defmodule McpWeb.AuthLive.Login do
     current_user = get_connect_info(socket, :user_data) || session["current_user"]
 
     if current_user do
-      {:ok, push_navigate(socket, to: "/dashboard")}
+      {:ok, push_navigate(socket, to: default_redirect_path(get_portal_context(get_connect_info(socket, :host) || "localhost")))}
     else
+      # Determine portal context from host
+      host = get_connect_info(socket, :host) || "localhost"
+      portal_context = get_portal_context(host)
+      
       # Initialize form and state
       socket =
         socket
-        |> assign(:page_title, "Sign In to MCP Platform")
+        |> assign(:page_title, portal_title(portal_context))
+        |> assign(:portal_context, portal_context)
+        |> assign(:portal_config, portal_config(portal_context))
         |> assign(:form, to_form(%{}, as: :login))
         |> assign(:email, "")
         |> assign(:password, "")
@@ -58,8 +64,123 @@ defmodule McpWeb.AuthLive.Login do
         # Handle any flash messages from the session
         |> assign_flash_from_session(session)
 
-      {:ok, socket}
+      {:ok, socket, layout: false}
     end
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <McpWeb.AuthComponents.auth_layout
+      title={@portal_config.title}
+      subtitle={@portal_config.subtitle}
+      image_url={@portal_config.image_url}
+    >
+      <div class="mb-8 text-center md:text-left">
+        <h3 class="text-2xl font-bold text-base-content">Welcome back</h3>
+        <p class="text-base-content/60">Please enter your details to sign in.</p>
+      </div>
+
+      <.form for={@form} phx-submit="login" phx-change="validate" class="space-y-6">
+        <McpWeb.AuthComponents.auth_input
+          field={@form[:email]}
+          type="email"
+          label="Email Address"
+          placeholder="you@example.com"
+          icon="hero-envelope"
+        />
+
+        <div class="form-control w-full">
+          <label class="label font-medium">
+            <span class="label-text">Password</span>
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content/50">
+              <McpWeb.CoreComponents.icon name="hero-lock-closed" class="size-5" />
+            </div>
+            <input
+              type={if @show_password, do: "text", else: "password"}
+              name={@form[:password].name}
+              id={@form[:password].id}
+              value={@form[:password].value}
+              placeholder="••••••••"
+              class={[
+                "input input-bordered w-full pl-10 pr-10 focus:input-primary transition-all duration-200",
+                @form[:password].errors != [] && "input-error"
+              ]}
+            />
+            <button
+              type="button"
+              phx-click="toggle_password"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-base-content/50 hover:text-base-content"
+              aria-label={if @show_password, do: "Hide password", else: "Show password"}
+            >
+              <McpWeb.CoreComponents.icon
+                name={if @show_password, do: "hero-eye-slash", else: "hero-eye"}
+                class="size-5"
+              />
+            </button>
+          </div>
+          <label :for={msg <- @form[:password].errors} class="label">
+            <span class="label-text-alt text-error">{msg}</span>
+          </label>
+          <div class="label">
+            <span class="label-text-alt"></span>
+            <a href="#" phx-click="show_recovery" class="label-text-alt link link-primary font-medium">
+              Forgot password?
+            </a>
+          </div>
+        </div>
+
+        <div class="form-control">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input type="checkbox" name="login[remember_me]" class="checkbox checkbox-primary checkbox-sm" checked={@remember_me} />
+            <span class="label-text font-medium">Remember me for 30 days</span>
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          class="btn btn-primary w-full shadow-lg shadow-primary/20"
+          disabled={@loading}
+        >
+          <span :if={@loading} class="loading loading-spinner loading-sm"></span>
+          {if @loading, do: "Signing in...", else: "Sign in"}
+        </button>
+      </.form>
+
+      <div class="divider text-base-content/30 text-sm font-medium">OR CONTINUE WITH</div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <button
+          :for={provider <- @oauth_providers}
+          phx-click="oauth_login"
+          phx-value-provider={provider}
+          class="btn btn-outline w-full hover:bg-base-200 hover:text-base-content"
+          disabled={@loading || @oauth_loading[provider]}
+        >
+          <span :if={@oauth_loading[provider]} class="loading loading-spinner loading-xs"></span>
+          <McpWeb.CoreComponents.icon name={"hero-globe-alt"} class="size-5 mr-2" />
+          {String.capitalize(provider)}
+        </button>
+      </div>
+    </McpWeb.AuthComponents.auth_layout>
+
+    <!-- Modals -->
+    <McpWeb.CoreComponents.modal id="recovery_modal" show={@show_recovery_modal} on_cancel="hide_recovery">
+      <:title>Reset Password</:title>
+      <p class="py-4 text-base-content/70">Enter your email address and we'll send you instructions to reset your password.</p>
+      <.form for={%{}} as={:recovery} phx-submit="request_recovery">
+        <div class="form-control w-full mb-4">
+          <input type="email" name="email" value={@recovery_email} placeholder="you@example.com" class="input input-bordered w-full" required />
+        </div>
+        <div class="modal-action">
+          <button type="button" class="btn" phx-click="hide_recovery">Cancel</button>
+          <button type="submit" class="btn btn-primary">Send Instructions</button>
+        </div>
+      </.form>
+    </McpWeb.CoreComponents.modal>
+    """
   end
 
   @impl true
@@ -76,6 +197,62 @@ defmodule McpWeb.AuthLive.Login do
 
     {:noreply, socket}
   end
+
+  # ... (rest of event handlers remain the same)
+
+  # Private helper functions
+
+  defp get_portal_context(host) do
+    cond do
+      String.starts_with?(host, "admin.") -> :admin
+      String.starts_with?(host, "app.") -> :merchant
+      String.starts_with?(host, "developers.") -> :developer
+      String.starts_with?(host, "partners.") -> :reseller
+      String.starts_with?(host, "store.") -> :customer
+      String.starts_with?(host, "vendors.") -> :vendor
+      true -> :tenant
+    end
+  end
+
+  defp portal_title(:admin), do: "Platform Admin"
+  defp portal_title(:merchant), do: "Merchant Portal"
+  defp portal_title(:developer), do: "Developer Portal"
+  defp portal_title(:reseller), do: "Partner Portal"
+  defp portal_title(:customer), do: "Customer Account"
+  defp portal_title(:vendor), do: "Vendor Portal"
+  defp portal_title(:tenant), do: "Tenant Portal"
+
+  defp portal_config(context) do
+    %{
+      title: portal_title(context),
+      subtitle: portal_subtitle(context),
+      image_url: portal_image(context)
+    }
+  end
+
+  defp portal_subtitle(:admin), do: "Manage the entire platform infrastructure."
+  defp portal_subtitle(:merchant), do: "Manage your store, orders, and customers."
+  defp portal_subtitle(:developer), do: "Access API keys, webhooks, and documentation."
+  defp portal_subtitle(:reseller), do: "Track commissions and manage your merchants."
+  defp portal_subtitle(:customer), do: "View your order history and manage subscriptions."
+  defp portal_subtitle(:vendor), do: "Manage your products and fulfillment."
+  defp portal_subtitle(:tenant), do: "Sign in to your organization's workspace."
+
+  # Placeholder images - in a real app these would be assets or CDN links
+  # Using Unsplash source for demo purposes if acceptable, or just nil for clean look
+  # For now, let's use nil to rely on the clean gradient/solid background or add later
+  defp portal_image(_), do: nil
+
+  defp default_redirect_path(:admin), do: "/admin"
+  defp default_redirect_path(:merchant), do: "/app"
+  defp default_redirect_path(:developer), do: "/developers"
+  defp default_redirect_path(:reseller), do: "/partners"
+  defp default_redirect_path(:customer), do: "/store/account"
+  defp default_redirect_path(:vendor), do: "/vendors"
+  defp default_redirect_path(:tenant), do: "/tenant"
+  defp default_redirect_path(_), do: "/tenant"
+
+  # ... (rest of private helpers)
 
   # Form validation with debouncing
   @impl true

@@ -6,7 +6,7 @@ This guide covers how to implement AI features using the `Mcp.Ai` domain.
 ## Local Development Environment
 
 ### Open WebUI (Developer Interface)
-The project includes **Open WebUI** running on `http://localhost:${OPEN_WEBUI_PORT}` (default `53000`). This is your "cockpit" for the local AI environment.
+The project includes **Open WebUI** running on `http://localhost:${OPEN_WEBUI_PORT}`. Check your `.env` file for the configured port (default is often `53000` or `8080`). This is your "cockpit" for the local AI environment.
 
 **Use Cases:**
 1.  **Prompt Engineering**: Test system prompts and user queries to see raw model output before implementing them in Elixir.
@@ -19,7 +19,7 @@ The application is configured to talk to Ollama via `config/config.exs`:
 ```elixir
 config :mcp, :ollama,
   model: System.get_env("OLLAMA_MODEL", "llama3"),
-  base_url: System.get_env("OLLAMA_BASE_URL", "http://localhost:11434")
+  base_url: System.get_env("OLLAMA_BASE_URL") || "http://localhost:#{System.get_env("OLLAMA_PORT", "11434")}"
 ```
 
 Ensure your `OLLAMA_BASE_URL` is reachable from the Phoenix application (usually `http://localhost:11434` or `http://ollama:11434` inside Docker).

@@ -19,7 +19,7 @@ defmodule McpWeb.AuthController do
         |> put_session(:user_token, session.access_token)
         |> put_session(:current_user, session.user)
         |> put_flash(:info, "Welcome back!")
-        |> redirect(to: get_session(conn, :return_to) || ~p"/dashboard")
+        |> redirect(to: get_session(conn, :return_to) || get_redirect_path(conn, session.user))
 
       {:password_change_required, user} ->
         # Create a temporary token for password change
@@ -63,7 +63,7 @@ defmodule McpWeb.AuthController do
     conn
     |> clear_session()
     |> put_flash(:info, "You have been signed out successfully.")
-    |> redirect(to: ~p"/")
+    |> redirect(to: ~p"/sign_in")
   end
 
   # Private functions
@@ -146,5 +146,20 @@ defmodule McpWeb.AuthController do
     |> Base.encode64()
     |> String.replace(["/", "+", "="], ["_", "-", ""])
     |> then(fn token -> "pwd_change_" <> token end)
+  end
+
+  defp get_redirect_path(conn, _user) do
+    # Determine redirect path based on tenant context
+    # In the future, we can also check user roles here
+    case conn.assigns[:current_tenant] do
+      nil ->
+        # Platform Admin context
+        ~p"/admin"
+
+      _tenant ->
+        # Tenant/Merchant context
+        # Default to tenant portal for now
+        ~p"/tenant"
+    end
   end
 end
