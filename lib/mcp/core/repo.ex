@@ -57,7 +57,6 @@ defmodule Mcp.Repo do
     config
     |> Keyword.put(:url, System.get_env("DATABASE_URL"))
     |> Keyword.put(:socket_dir, System.get_env("DB_SOCKET_DIR"))
-    |> Keyword.delete(:name)
   end
 
   # Advanced query helpers for full technology stack

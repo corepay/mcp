@@ -302,7 +302,7 @@ defmodule Mcp.Gdpr.Compliance do
     end)
   end
 
-  defp handle_user_deletion_cancellation(nil, user_id, _actor_id) do
+  defp handle_user_deletion_cancellation(nil, _user_id, _actor_id) do
     Repo.rollback(:user_not_found)
   end
 

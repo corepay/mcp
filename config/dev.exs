@@ -50,7 +50,7 @@ config :mcp, McpWeb.Endpoint,
 # Configure Redis for caching
 config :mcp, Mcp.Redis,
   host: "localhost",
-  port: String.to_integer(System.get_env("REDIS_PORT", "48234")),
+  port: String.to_integer(System.get_env("REDIS_PORT", "6379")),
   database: 0,
   reconnect_interval: :timer.seconds(5)
 

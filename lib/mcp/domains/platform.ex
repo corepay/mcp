@@ -21,8 +21,5 @@ defmodule Mcp.Platform do
     resource Mcp.Platform.Vendor
     resource Mcp.Platform.CustomerStore
     resource Mcp.Platform.VendorStore
-    resource Mcp.Platform.Merchant.Version
-    resource Mcp.Platform.Developer.Version
-    resource Mcp.Platform.Reseller.Version
   end
 end

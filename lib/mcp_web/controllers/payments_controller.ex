@@ -54,10 +54,10 @@ defmodule McpWeb.PaymentsController do
       {:ok, result} ->
         json(conn, %{status: "success", data: result})
 
-      {:error, reason} ->
+      other ->
         conn
         |> put_status(:bad_request)
-        |> json(%{status: "error", message: inspect(reason)})
+        |> json(%{status: "error", message: inspect(other)})
     end
   end
 
@@ -68,10 +68,10 @@ defmodule McpWeb.PaymentsController do
       {:ok, result} ->
         json(conn, %{status: "success", data: result})
 
-      {:error, reason} ->
+      other ->
         conn
         |> put_status(:bad_request)
-        |> json(%{status: "error", message: inspect(reason)})
+        |> json(%{status: "error", message: inspect(other)})
     end
   end
 

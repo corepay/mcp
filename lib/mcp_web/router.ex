@@ -98,6 +98,10 @@ defmodule McpWeb.Router do
       post "/consent", GdprController, :update_consent
       get "/audit-trail", GdprController, :get_audit_trail
     end
+
+    # AshAi Chat
+    live "/chat", ChatLive
+    live "/chat/:conversation_id", ChatLive
   end
 
   # Tenant-specific routes (require tenant context)

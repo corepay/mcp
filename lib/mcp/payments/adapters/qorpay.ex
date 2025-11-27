@@ -153,6 +153,7 @@ defmodule Mcp.Payments.Gateways.QorPay do
   # QorPay Specifics
 
   @impl true
+  @spec create_merchant(map(), map()) :: {:ok, map()} | {:error, any()}
   def create_merchant(_merchant_params, _context) do
     # Maps to POST /channels/new_merchant
     Logger.info("QorPay: Boarding new merchant")
@@ -160,6 +161,7 @@ defmodule Mcp.Payments.Gateways.QorPay do
   end
 
   @impl true
+  @spec create_form_session(map(), map()) :: {:ok, map()} | {:error, any()}
   def create_form_session(_form_params, _context) do
     # Maps to POST /payment/forms
     Logger.info("QorPay: Creating hosted form session")

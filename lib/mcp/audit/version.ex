@@ -2,7 +2,7 @@ defmodule Mcp.Audit.Version do
   use Ash.Resource,
     domain: Mcp.Audit,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshPaperTrail.Resource]
+    extensions: []
 
   postgres do
     table "versions"

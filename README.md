@@ -2,7 +2,9 @@
 
 🚀 **The First Truly Unified Full-Stack Development Ecosystem**
 
-This project implements the revolutionary integration between BMAD workflows, Ash framework (backend), and DaisyUI (frontend) - creating a consistent pattern language across the entire development stack.
+This project implements the revolutionary integration between BMAD workflows,
+Ash framework (backend), and DaisyUI (frontend) - creating a consistent pattern
+language across the entire development stack.
 
 ## 🎯 What This Solves
 
@@ -61,7 +63,8 @@ python3 lib/bmad_integration/validators/cross_stack_validator.py
 
 ### 3. Create Full-Stack Stories
 
-Use the template in `lib/bmad_integration/core/workflows/full_stack_story.yaml` to create stories that automatically generate:
+Use the template in `lib/bmad_integration/core/workflows/full_stack_story.yaml`
+to create stories that automatically generate:
 
 - ✅ Ash resources (backend)
 - ✅ DaisyUI components (frontend)
@@ -69,10 +72,10 @@ Use the template in `lib/bmad_integration/core/workflows/full_stack_story.yaml` 
 
 ## 🔄 Pattern Mapping
 
-| Ash Backend | DaisyUI Frontend | BMAD Workflow |
-|-------------|------------------|---------------|
-| `UserResource` | `user-card` | `user_lifecycle` |
-| `PostResource` | `post-card` | `post_lifecycle` |
+| Ash Backend       | DaisyUI Frontend | BMAD Workflow       |
+| ----------------- | ---------------- | ------------------- |
+| `UserResource`    | `user-card`      | `user_lifecycle`    |
+| `PostResource`    | `post-card`      | `post_lifecycle`    |
 | `CommentResource` | `comment-thread` | `comment_lifecycle` |
 
 ### Unified Syntax Pattern
@@ -140,6 +143,8 @@ The hybrid environment provides:
 
 **🎉 Welcome to the future of full-stack development!**
 
-Every layer speaks the same language. Every change stays in sync automatically. Every developer gets perfect consistency.
+Every layer speaks the same language. Every change stays in sync automatically.
+Every developer gets perfect consistency.
 
-This isn't just an integration - it's a **paradigm shift** in how we build full-stack applications.
+This isn't just an integration - it's a **paradigm shift** in how we build
+full-stack applications.

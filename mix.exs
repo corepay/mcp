@@ -61,8 +61,13 @@ defmodule Mcp.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:dotenvy, "~> 0.8"},
+      {:mdex, "~> 0.7"},
       {:ex_money_sql, "~> 1.0"},
       {:ex_cldr, "~> 2.0"},
+      {:ex_cldr_dates_times, "~> 2.0"},
+      {:ex_cldr_lists, "~> 2.0"},
+      {:ex_cldr_units, "~> 3.0"},
       {:bcrypt_elixir, "~> 3.0"},
       {:picosat_elixir, "~> 0.2"},
       {:absinthe_phoenix, "~> 2.0"},
@@ -111,7 +116,7 @@ defmodule Mcp.MixProject do
       {:lazy_html, ">= 0.1.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.3"},
       {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
-      {:tailwind, "~> 0.3", runtime: Mix.env() == :dev},
+      {:tailwind, "~> 0.4", runtime: Mix.env() == :dev},
       {:heroicons,
        github: "tailwindlabs/heroicons",
        tag: "v2.2.0",

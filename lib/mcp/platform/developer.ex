@@ -6,10 +6,9 @@ defmodule Mcp.Platform.Developer do
   use Ash.Resource,
     domain: Mcp.Platform,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshJsonApi.Resource, AshPaperTrail.Resource]
+    extensions: [AshJsonApi.Resource]
 
-  paper_trail do
-  end
+
 
   postgres do
     table "developers"

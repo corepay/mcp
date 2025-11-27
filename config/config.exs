@@ -7,16 +7,33 @@
 # General application configuration
 import Config
 
+# Load .env file manually to ensure variables are available for config files
+# This is necessary because dependencies (like Dotenvy) are not compiled
+# when config files are evaluated during the initial mix run.
+if File.exists?(".env") do
+  File.stream!(".env")
+  |> Stream.map(&String.trim/1)
+  |> Stream.reject(&(&1 == "" or String.starts_with?(&1, "#")))
+  |> Enum.each(fn line ->
+    case String.split(line, "=", parts: 2) do
+      [key, value] -> System.put_env(String.trim(key), String.trim(value))
+      _ -> :ok
+    end
+  end)
+end
+
 config :mcp,
   ecto_repos: [Mcp.Repo],
   generators: [timestamp_type: :utc_datetime],
   ash_domains: [
+    Mcp.Chat,
     Mcp.Accounts,
     Mcp.Platform,
     Mcp.Domains.Gdpr,
     Mcp.Payments,
     Mcp.Finance,
-    Mcp.Audit
+    Mcp.Audit,
+    Mcp.Ai
   ],
   base_domain: "localhost"
 
@@ -40,7 +57,9 @@ config :mcp, Oban,
     # Compliance monitoring
     gdpr_compliance: 2,
     # Data retention processing
-    gdpr_retention: 5
+    gdpr_retention: 5,
+    chat_responses: [limit: 10],
+    conversations: [limit: 10]
   ],
   plugins: [
     # Prune completed jobs after 24 hours
@@ -147,6 +166,21 @@ config :mcp, Mcp.Accounts.JWT,
   # JWT settings
   issuer: "mcp-platform",
   audience: "mcp-users"
+
+# AshAi Configuration
+config :ash_ai,
+  default_model: "llama3"
+
+# Ash type compatibility configuration
+config :ash, :compatible_foreign_key_types,
+  [
+    {Ash.Type.UUID, Ash.Type.String},
+    {Ash.Type.UUID, AshDoubleEntry.ULID},
+    {AshDoubleEntry.ULID, Ash.Type.UUID}
+  ]
+
+# Disable Tesla deprecation warning
+config :tesla, disable_deprecated_builder_warning: true
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

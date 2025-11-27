@@ -11,7 +11,6 @@ defmodule Mcp.Application do
     ensure_os_mon_apps()
 
     children = [
-      {Oban, Application.fetch_env!(:mcp, Oban)},
       # Platform-level services (shared resources)
       Mcp.Platform.Supervisor,
 
@@ -20,6 +19,9 @@ defmodule Mcp.Application do
 
       # Domain services (Ash domains)
       Mcp.Domains.Supervisor,
+
+      # Oban must start after Repo (in Infrastructure) and Domains
+      {Oban, Application.fetch_env!(:mcp, Oban)},
 
       # GDPR compliance module (comprehensive implementation)
       Mcp.Gdpr.Supervisor,

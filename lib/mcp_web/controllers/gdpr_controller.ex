@@ -426,6 +426,8 @@ defmodule McpWeb.GdprController do
     end
   end
 
+
+
   defp render_audit_trail_response(conn, audit_trail) do
     formatted_audit = format_audit_trail(audit_trail)
 
@@ -450,9 +452,7 @@ defmodule McpWeb.GdprController do
     end)
   end
 
-  def get_audit_trail(conn, _params) do
-    get_audit_trail(conn, %{"limit" => "100"})
-  end
+
 
   # Admin-only endpoints
 
@@ -684,6 +684,8 @@ defmodule McpWeb.GdprController do
     end
   end
 
+
+
   defp validate_consent_safety(consent_params) do
     consent_string = inspect(consent_params)
 
@@ -714,7 +716,7 @@ defmodule McpWeb.GdprController do
     end
   end
 
-  defp validate_consent_params(_), do: {:error, "Consent params must be a map"}
+
 
   defp update_multiple_consents(user_id, consent_updates, actor_id) do
     results =

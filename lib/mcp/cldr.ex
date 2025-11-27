@@ -3,5 +3,6 @@ defmodule Mcp.Cldr do
   use Cldr,
     locales: ["en", "fr"],
     default_locale: "en",
-    providers: [Cldr.Number, Cldr.DateTime, Cldr.List, Cldr.Unit]
+    providers: [Cldr.Number, Cldr.DateTime, Cldr.List, Cldr.Unit],
+    backend: Mcp.Cldr.Backend
 end

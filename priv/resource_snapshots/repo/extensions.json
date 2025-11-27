@@ -5,6 +5,8 @@
     "pgcrypto",
     "btree_gist",
     "citext",
-    "ash-functions"
+    "ash-functions",
+    "pg_partman",
+    "age"
   ]
 }

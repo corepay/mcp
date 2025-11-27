@@ -104,12 +104,52 @@ services:
       retries: 3
       start_period: 30s
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: mcp_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - mcp_network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: mcp_open_webui
+    ports:
+      - "3000:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - open_webui_data:/app/backend/data
+    networks:
+      - mcp_network
+    depends_on:
+      - ollama
+    restart: always
+
 volumes:
   postgres_data:
   redis_data:
   minio_data:
   vault_data:
   meilisearch_data:
+  ollama_data:
+  open_webui_data:
 
 networks:
   mcp_network:

@@ -8,7 +8,7 @@ defmodule Mcp.Platform.Merchant do
     data_layer: AshPostgres.DataLayer,
     extensions: [
       AshPostgres.DataLayer,
-      AshPaperTrail.Resource,
+      AshJsonApi.Resource,
       AshJsonApi.Resource,
       Mcp.Graph.Extension
     ]
