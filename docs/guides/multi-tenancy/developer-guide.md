@@ -6,12 +6,10 @@ This guide provides technical implementation details for developers and LLM agen
 
 The multi-tenancy framework follows a schema-based isolation approach:
 
-- **Tenant Management Layer**: Tenant provisioning, configuration, and lifecycle management
-- **Schema Isolation Layer**: PostgreSQL schema-based data separation and security
-- **Context Routing Layer**: Automatic tenant context detection and switching
-- **Resource Allocation Layer**: Dynamic resource management per tenant
-- **Security Boundary Layer**: Tenant isolation enforcement and access controls
-- **Migration Management Layer**: Schema migrations and tenant-specific updates
+- **Tenant Management Layer**: `Mcp.Infrastructure.TenantManager` handles schema lifecycle (create, drop, check).
+-   **Context Routing Layer**: `Mcp.Infrastructure.Context` manages process-dictionary based context switching.
+-   **Provisioning Layer**: `Mcp.Platform.Tenants.Changes.ProvisionTenant` orchestrates the onboarding flow.
+-   **Schema Isolation Layer**: PostgreSQL schema-based data separation and security.
 
 ## Database Schema Design
 
@@ -113,6 +111,26 @@ defmodule Mcp.MultiTenancy.Migrations.CreateTenancyTables do
     end
 
     create index(:tenant_usage_logs, [:tenant_id, :metric, :period, :timestamp])
+  end
+end
+```
+
+## Tenant Provisioning
+
+We use an **Ash Change** to orchestrate tenant creation. This ensures that the database schema is created and seeded transactionally when a `Tenant` resource is created.
+
+```elixir
+# lib/mcp/platform/tenants/changes/provision_tenant.ex
+defmodule Mcp.Platform.Tenants.Changes.ProvisionTenant do
+  use Ash.Resource.Change
+
+  def change(changeset, _opts, _context) do
+    Ash.Changeset.after_action(changeset, fn _changeset, tenant ->
+      case Mcp.Infrastructure.TenantManager.create_tenant_schema(tenant.schema_name) do
+        {:ok, _} -> {:ok, tenant}
+        {:error, reason} -> {:error, reason}
+      end
+    end)
   end
 end
 ```

@@ -6,7 +6,7 @@ defmodule Mcp.Platform.MID do
   use Ash.Resource,
     domain: Mcp.Platform,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshJsonApi.Resource]
+    extensions: [AshJsonApi.Resource, AshArchival]
 
   postgres do
     table "mids"

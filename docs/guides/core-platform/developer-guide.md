@@ -14,6 +14,41 @@ The core platform follows a microservices architecture built on Elixir/OTP princ
 - **Security Layer**: Vault for secrets management and encryption services
 - **Monitoring Layer**: Telemetry, logging, and health check systems
 
+## Data Management
+
+### Soft Deletes (AshArchival)
+
+We use `AshArchival` to handle soft deletes. This ensures that records are marked as archived instead of being physically removed from the database.
+
+**Usage**:
+1.  Add `AshArchival` to the resource extensions.
+2.  Run migrations to add the `archived_at` column.
+3.  Use `destroy` action as normal; Ash will intercept it.
+
+```elixir
+# In your resource
+use Ash.Resource, extensions: [AshArchival]
+```
+
+### Realistic Seeding
+
+The `priv/repo/seeds.exs` file orchestrates a complete environment setup.
+
+**Running Seeds**:
+```bash
+mix run priv/repo/seeds.exs
+```
+
+### SQL Linting
+
+We use **Splinter** to ensure database schema health.
+
+**Running the Linter**:
+```bash
+mix db.lint
+```
+This checks for missing indexes, mutable function search paths, and other best practices.
+
 ## Infrastructure Services
 
 ### Database Service (PostgreSQL + Extensions)

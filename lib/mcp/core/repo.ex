@@ -11,10 +11,9 @@ defmodule Mcp.Repo do
   # Advanced features for AI-powered MSP platform
 
   @impl true
-  def init(:runtime, config) do
+  def init(_type, config) do
     # Load environment variables for database configuration
-    config =
-      Keyword.merge(config,
+    defaults = [
         hostname: System.get_env("POSTGRES_HOST", "localhost"),
         port: String.to_integer(System.get_env("POSTGRES_PORT", "41789")),
         database: System.get_env("POSTGRES_DB", "base_mcp_dev"),
@@ -28,30 +27,30 @@ defmodule Mcp.Repo do
         prepare: :unnamed,
         parameters: [
           timezone: "UTC"
-        ]
-      )
+        ],
+        types: Mcp.PostgresTypes
+      ]
+
+    config = Keyword.merge(defaults, config)
+
+    # Apply environment-specific overrides
+    config = apply_env_config(Mix.env(), config)
 
     {:ok, config}
   end
 
-  @impl true
-  def init(:supervisor, config) do
-    init(:runtime, config)
-  end
-
-  @impl true
-  def init(:dev, config) do
+  defp apply_env_config(:test, config) do
     config
     |> put_repo_config()
-  end
-
-  @impl true
-  def init(:test, config) do
-    config
-    |> put_repo_config()
-    |> Keyword.put(:pool_size, 1)
     |> Keyword.put(:pool, Ecto.Adapters.SQL.Sandbox)
   end
+
+  defp apply_env_config(:dev, config) do
+    config
+    |> put_repo_config()
+  end
+
+  defp apply_env_config(_, config), do: config
 
   defp put_repo_config(config) do
     config
@@ -151,7 +150,7 @@ defmodule Mcp.Repo do
   def installed_extensions do
     # Return list of installed PostgreSQL extensions
     # This can be dynamic by querying the database
-    ["uuid-ossp", "pgcrypto", "btree_gist", "citext", "ash-functions", "pg_partman", "age"]
+    ["uuid-ossp", "pgcrypto", "btree_gist", "citext", "ash-functions"]
   end
 
   @impl true
@@ -169,7 +168,7 @@ defmodule Mcp.Repo do
   # Ash callback for constraint matching
   @impl true
   def default_constraint_match_type(:custom, _constraint_name) do
-    :unique
+    :exact
   end
 
   @impl true

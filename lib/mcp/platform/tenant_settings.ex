@@ -73,11 +73,20 @@ defmodule Mcp.Platform.TenantSettings do
       primary? true
     end
   end
+  
+  code_interface do
+    define :create_setting
+    define :update_setting
+    define :get_setting, args: [:tenant_id, :category, :key]
+    define :by_tenant, args: [:tenant_id]
+    define :by_category, args: [:tenant_id, :category]
+    define :destroy_setting
+  end
 
   attributes do
     uuid_primary_key :id
 
-    attribute :tenant_id, :string do
+    attribute :tenant_id, :uuid do
       allow_nil? false
     end
 

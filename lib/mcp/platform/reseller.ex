@@ -7,7 +7,7 @@ defmodule Mcp.Platform.Reseller do
     domain: Mcp.Platform,
     data_layer: AshPostgres.DataLayer,
     # , AshPaperTrail.Resource]
-    extensions: [AshJsonApi.Resource]
+    extensions: [AshJsonApi.Resource, AshArchival]
 
   # paper_trail do
   # end

@@ -142,18 +142,22 @@ defmodule McpWeb.ChatLive do
   def mount(_params, _session, socket) do
     socket = assign_new(socket, :current_user, fn -> nil end)
 
-    McpWeb.Endpoint.subscribe("chat:conversations:#{socket.assigns.current_user.id}")
+    if socket.assigns.current_user do
+      McpWeb.Endpoint.subscribe("chat:conversations:#{socket.assigns.current_user.id}")
 
-    socket =
-      socket
-      |> assign(:page_title, "Chat")
-      |> stream(
-        :conversations,
-        Mcp.Chat.my_conversations!(actor: socket.assigns.current_user)
-      )
-      |> assign(:messages, [])
+      socket =
+        socket
+        |> assign(:page_title, "Chat")
+        |> stream(
+          :conversations,
+          Mcp.Chat.my_conversations!(actor: socket.assigns.current_user)
+        )
+        |> assign(:messages, [])
 
-    {:ok, socket}
+      {:ok, socket}
+    else
+      {:ok, push_navigate(socket, to: ~p"/sign_in")}
+    end
   end
 
   def handle_params(%{"conversation_id" => conversation_id}, _, socket) do

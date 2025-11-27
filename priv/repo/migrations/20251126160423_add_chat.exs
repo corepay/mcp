@@ -17,7 +17,7 @@ defmodule Mcp.Repo.Migrations.AddChat do
         null: false,
         default: fragment("(now() AT TIME ZONE 'utc')")
 
-      add :id, :uuid, null: false, default: fragment("uuid_generate_v4()"), primary_key: true
+      add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :text, :text, null: false
       add :tool_calls, {:array, :map}
       add :tool_results, {:array, :map}
@@ -28,7 +28,7 @@ defmodule Mcp.Repo.Migrations.AddChat do
     end
 
     create table(:conversations, primary_key: false) do
-      add :id, :uuid, null: false, default: fragment("uuid_generate_v4()"), primary_key: true
+      add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
     alter table(:messages) do
@@ -54,15 +54,11 @@ defmodule Mcp.Repo.Migrations.AddChat do
         null: false,
         default: fragment("(now() AT TIME ZONE 'utc')")
 
-      add :user_id,
-          references(:users,
-            column: :id,
-            name: "conversations_user_id_fkey",
-            type: :uuid,
-            prefix: "platform"
-          ),
-          null: false
+      add :user_id, :uuid, null: false
     end
+
+    execute "ALTER TABLE conversations ADD CONSTRAINT conversations_user_id_fkey FOREIGN KEY (user_id) REFERENCES platform.users(id)",
+            "ALTER TABLE conversations DROP CONSTRAINT conversations_user_id_fkey"
   end
 
   def down do

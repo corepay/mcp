@@ -1,6 +1,10 @@
 services:
   postgres:
-    image: mcp/age:pg16
+    # image: ghcr.io/kayjay-madman/postgres-combo:latest
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+    command: ["postgres", "-c", "shared_preload_libraries=pg_cron,pg_graphql,age,pgsodium,timescaledb"]
     container_name: mcp_postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -62,29 +66,6 @@ services:
       retries: 3
       start_period: 30s
 
-  vault:
-    image: hashicorp/vault:1.15
-    container_name: mcp_vault
-    environment:
-      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID}
-      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
-      VAULT_ADDR: "http://localhost:${VAULT_PORT}"
-    ports:
-      - "${VAULT_PORT}:8200"
-    volumes:
-      - vault_data:/vault/data
-    networks:
-      - mcp_network
-    command: vault server -dev -dev-root-token-id=${VAULT_DEV_ROOT_TOKEN_ID}
-    healthcheck:
-      test: ["CMD", "vault", "status"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    depends_on:
-      - redis
-
   meilisearch:
     image: getmeili/meilisearch:v1.12
     container_name: mcp_meilisearch
@@ -108,18 +89,18 @@ services:
     image: ollama/ollama:latest
     container_name: mcp_ollama
     ports:
-      - "11434:11434"
+      - "${OLLAMA_PORT}:11434"
     volumes:
       - ollama_data:/root/.ollama
     networks:
       - mcp_network
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 30s
@@ -131,9 +112,9 @@ services:
     image: ghcr.io/open-webui/open-webui:main
     container_name: mcp_open_webui
     ports:
-      - "3000:8080"
+      - "${OPEN_WEBUI_PORT}:8080"
     environment:
-      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_BASE_URL=http://ollama:${OLLAMA_PORT}
     volumes:
       - open_webui_data:/app/backend/data
     networks:
@@ -146,7 +127,7 @@ volumes:
   postgres_data:
   redis_data:
   minio_data:
-  vault_data:
+
   meilisearch_data:
   ollama_data:
   open_webui_data:

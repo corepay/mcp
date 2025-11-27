@@ -20,7 +20,12 @@ The MCP platform provides a comprehensive foundation of core services including 
 
 ## Technical Overview
 
-The core platform uses Elixir/OTP for fault-tolerant services, PostgreSQL with advanced extensions for data storage, Redis for caching and session management, MinIO for S3-compatible object storage, and Vault for secure secrets management. Built on Phoenix LiveView for real-time monitoring and Ash Framework for declarative resource management.
+The core platform uses Elixir/OTP for fault-tolerant services, PostgreSQL with advanced extensions for data storage, Redis for caching, MinIO for object storage, and Vault for secrets. Key features include:
+
+-   **Soft Deletes**: Standardized archival using `AshArchival`.
+-   **Realistic Seeding**: Comprehensive development data generation.
+-   **SQL Linting**: Automated schema health checks via `mix db.lint`.
+-   **Real-time Monitoring**: Built on Phoenix LiveView and Ash Telemetry.
 
 ## Related Features
 

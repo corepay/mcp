@@ -10,7 +10,7 @@ defmodule Mcp.Platform.Tenant do
 
   postgres do
     table "tenants"
-    schema("platform")
+    schema "platform"
     repo(Mcp.Repo)
 
     custom_indexes do
@@ -39,6 +39,8 @@ defmodule Mcp.Platform.Tenant do
           "acq_#{Ecto.UUID.generate()}"
         )
       end
+
+      change Mcp.Platform.Tenants.Changes.ProvisionTenant
     end
 
     update :update do
@@ -60,6 +62,44 @@ defmodule Mcp.Platform.Tenant do
       argument :schema, :string, allow_nil?: false
       filter expr(company_schema == ^arg(:schema))
     end
+    update :suspend do
+      accept []
+      change set_attribute(:status, :suspended)
+    end
+
+    update :activate do
+      accept []
+      change set_attribute(:status, :active)
+    end
+
+    update :cancel do
+      accept []
+      change set_attribute(:status, :canceled)
+    end
+
+    update :update_plan do
+      accept [:plan]
+    end
+
+    update :complete_onboarding do
+      accept []
+      # Logic for onboarding completion could go here
+    end
+
+    read :by_slug do
+      argument :slug, :string, allow_nil?: false
+      filter expr(slug == ^arg(:slug))
+    end
+
+    read :by_status do
+      argument :status, :atom, allow_nil?: false
+      filter expr(status == ^arg(:status))
+    end
+
+    read :by_plan do
+      argument :plan, :atom, allow_nil?: false
+      filter expr(plan == ^arg(:plan))
+    end
   end
 
   attributes do
@@ -67,11 +107,11 @@ defmodule Mcp.Platform.Tenant do
 
     attribute :name, :string do
       allow_nil? false
-      source :company_name
     end
 
     attribute :slug, :string do
       allow_nil? false
+      constraints [match: ~r/^[a-z0-9-]+$/]
     end
 
     attribute :company_schema, :string do
@@ -92,7 +132,7 @@ defmodule Mcp.Platform.Tenant do
     end
 
     attribute :status, :atom do
-      constraints one_of: [:active, :trial, :suspended, :canceled, :deleted]
+      constraints one_of: [:active, :trial, :suspended, :canceled]
       default :active
       allow_nil? false
     end
@@ -112,14 +152,23 @@ defmodule Mcp.Platform.Tenant do
     define :update
     define :destroy
     define :get_by_id, action: :read, get_by: [:id]
-    define :by_subdomain, action: :by_subdomain, args: [:subdomain]
-    define :by_custom_domain, action: :by_custom_domain, args: [:domain]
+    define :by_subdomain, action: :by_subdomain, args: [:subdomain], get?: true
+    define :by_custom_domain, action: :by_custom_domain, args: [:domain], get?: true
     define :get_by_schema, action: :get_by_schema, args: [:schema], get?: true
+    
+    define :suspend
+    define :activate
+    define :cancel
+    define :update_plan
+    define :complete_onboarding
+    define :by_slug, action: :by_slug, args: [:slug], get?: true
+    define :by_status, action: :by_status, args: [:status]
+    define :by_plan, action: :by_plan, args: [:plan]
   end
 
   # Compatibility wrappers for existing code
   def get(id), do: get_by_id(id)
-  def delete(tenant), do: destroy(tenant)
+  def delete(tenant, _opts \\ []), do: destroy(tenant)
   def by_subdomain!(subdomain), do: by_subdomain(subdomain) |> handle_bang()
   def by_custom_domain!(domain), do: by_custom_domain(domain) |> handle_bang()
   def by_id!(id), do: get_by_id!(id)

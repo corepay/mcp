@@ -4,5 +4,6 @@ defmodule Mcp.Ai do
 
   resources do
     resource Mcp.Ai.Chat
+    resource Mcp.Ai.Document
   end
 end

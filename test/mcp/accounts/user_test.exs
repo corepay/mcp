@@ -1,5 +1,5 @@
 defmodule Mcp.Accounts.UserTest do
-  use ExUnit.Case, async: false
+  use Mcp.DataCase, async: true
 
   alias Mcp.Accounts.User
 

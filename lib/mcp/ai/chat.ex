@@ -14,7 +14,7 @@ defmodule Mcp.Ai.Chat do
         prompt: "You are a helpful assistant. User says: <%= message %>",
         model: LangChain.ChatModels.ChatOllamaAI.new!(%{
           model: "llama3",
-          base_url: "http://localhost:11434"
+          base_url: Application.get_env(:mcp, :ollama)[:base_url]
         })
       }
     end

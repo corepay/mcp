@@ -7,7 +7,7 @@ defmodule Mcp.Platform.Customer do
     domain: Mcp.Platform,
     data_layer: AshPostgres.DataLayer,
     # , Mcp.Graph.Extension]
-    extensions: [AshJsonApi.Resource]
+    extensions: [AshJsonApi.Resource, AshArchival]
 
   # use Mcp.Graph.Extension
 
@@ -56,8 +56,9 @@ defmodule Mcp.Platform.Customer do
     attribute :total_spent, :decimal, default: 0
 
     attribute :status, :atom do
-      constraints one_of: [:active, :suspended, :deleted]
+      constraints one_of: [:active, :suspended]
       default :active
+      allow_nil? false
     end
 
     # Enhanced Fields

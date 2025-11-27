@@ -1,11 +1,7 @@
-# Script for populating the database. You can run it as:
-#
-#     mix run priv/repo/seeds.exs
-#
-# Inside the script, you can read and write to any of your
-# repositories directly:
-#
-#     Mcp.Repo.insert!(%Mcp.SomeSchema{})
-#
-# We recommend using the bang functions (`insert!`, `update!`
-# and so on) as they will fail if something goes wrong.
+[:telemetry, :ecto, :postgrex, :ash, :ash_postgres]
+|> Enum.each(&Application.ensure_all_started/1)
+
+{:ok, _} = Mcp.Repo.start_link()
+{:ok, _} = Mcp.Secrets.start_link()
+
+Mcp.Seeder.run()

@@ -2,7 +2,7 @@ defmodule Mcp.Finance.Account do
   use Ash.Resource,
     domain: Mcp.Finance,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshDoubleEntry.Account]
+    extensions: [AshDoubleEntry.Account, AshArchival]
 
   postgres do
     table "accounts"

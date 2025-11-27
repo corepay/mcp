@@ -53,6 +53,15 @@ Each feature folder contains exactly 5 documents:
 
 ## Feature Documentation
 
+### AI & Vector Embeddings
+Native AI integration with vector embeddings, semantic search, and intelligent document processing.
+
+- **[README](ai/README.md)** - Feature overview
+- **[Developer Guide](ai/developer-guide.md)** - Technical implementation
+- **[API Reference](ai/api-reference.md)** - Complete API documentation
+- **[Stakeholder Guide](ai/stakeholder-guide.md)** - Business value and benefits
+- **[User Guide](ai/user-guide.md)** - End user instructions
+
 ### Authentication & Authorization
 Comprehensive authentication system supporting multiple providers, role-based access control, JWT tokens, and enterprise-grade security.
 
@@ -106,6 +115,24 @@ Real-time notification system with multiple channels, templates, scheduling, and
 - **[API Reference](notifications/api-reference.md)** - Complete API documentation
 - **[Stakeholder Guide](notifications/stakeholder-guide.md)** - Business value and benefits
 - **[User Guide](notifications/user-guide.md)** - End user instructions
+
+### Observability & Performance
+Comprehensive monitoring, telemetry, and database performance optimization tools.
+
+- **[README](observability/README.md)** - Feature overview
+- **[Developer Guide](observability/developer-guide.md)** - Technical implementation
+- **[API Reference](observability/api-reference.md)** - Complete API documentation
+- **[Stakeholder Guide](observability/stakeholder-guide.md)** - Business value and benefits
+- **[User Guide](observability/user-guide.md)** - End user instructions
+
+### Security & Data Protection
+Advanced security features including field-level encryption (AshCloak) and secure secrets management (Vault).
+
+- **[README](security/README.md)** - Feature overview
+- **[Developer Guide](security/developer-guide.md)** - Technical implementation
+- **[API Reference](security/api-reference.md)** - Complete API documentation
+- **[Stakeholder Guide](security/stakeholder-guide.md)** - Business value and benefits
+- **[User Guide](security/user-guide.md)** - End user instructions
 
 ### Storage & File Management
 S3-compatible object storage with encryption, versioning, CDN integration, and advanced file handling.

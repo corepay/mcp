@@ -16,7 +16,17 @@ if File.exists?(".env") do
   |> Stream.reject(&(&1 == "" or String.starts_with?(&1, "#")))
   |> Enum.each(fn line ->
     case String.split(line, "=", parts: 2) do
-      [key, value] -> System.put_env(String.trim(key), String.trim(value))
+      [key, value] ->
+        key = String.trim(key)
+        value = String.trim(value)
+        if is_nil(System.get_env(key)) do
+          System.put_env(key, value)
+        else
+          # Warn if .env value differs from system environment (helpful for debugging)
+          if System.get_env(key) != value and key not in ["PORT"] do
+            IO.puts("Config: Using system #{key}=#{System.get_env(key)} instead of .env value #{value}")
+          end
+        end
       _ -> :ok
     end
   end)
@@ -36,6 +46,9 @@ config :mcp,
     Mcp.Ai
   ],
   base_domain: "localhost"
+
+config :mcp, Mcp.Repo,
+  types: Mcp.PostgresTypes
 
 config :ash_typescript,
   output_file: "assets/js/ash_generated.ts"
@@ -171,6 +184,17 @@ config :mcp, Mcp.Accounts.JWT,
 config :ash_ai,
   default_model: "llama3"
 
+# Secrets / Cloak Configuration
+config :mcp, Mcp.Secrets,
+  json_library: Jason,
+  ciphers: [
+    default: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V1", key: System.get_env("CLOAK_KEY", "k8s_secret_key_must_be_32_bytes!")}
+  ]
+
+config :mcp, :ollama,
+  model: System.get_env("OLLAMA_MODEL", "llama3"),
+  base_url: System.get_env("OLLAMA_BASE_URL") || "http://localhost:#{System.get_env("OLLAMA_PORT", "11434")}"
+
 # Ash type compatibility configuration
 config :ash, :compatible_foreign_key_types,
   [
@@ -181,6 +205,21 @@ config :ash, :compatible_foreign_key_types,
 
 # Disable Tesla deprecation warning
 config :tesla, disable_deprecated_builder_warning: true
+
+# Libcluster Configuration
+config :libcluster,
+  topologies: [
+    postgres_cluster: [
+      strategy: LibclusterPostgres.Strategy,
+      config: [
+        hostname: "localhost",
+        username: System.get_env("POSTGRES_USER", "base_mcp_dev"),
+        password: System.get_env("POSTGRES_PASSWORD", "mcp_password"),
+        database: System.get_env("POSTGRES_DB", "base_mcp_dev"),
+        port: String.to_integer(System.get_env("POSTGRES_PORT", "41789"))
+      ]
+    ]
+  ]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

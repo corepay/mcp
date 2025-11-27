@@ -13,7 +13,7 @@ defmodule Mcp.Secrets.Supervisor do
   @impl true
   def init(_init_arg) do
     children = [
-      Mcp.Secrets.VaultClient,
+      Mcp.Secrets,
       Mcp.Secrets.EncryptionService,
       Mcp.Secrets.CredentialManager
     ]

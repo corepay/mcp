@@ -20,7 +20,11 @@ The MCP platform provides a comprehensive multi-tenancy framework that enables s
 
 ## Technical Overview
 
-The multi-tenancy framework uses PostgreSQL schema-based isolation with tenant-aware routing, dynamic resource allocation, and comprehensive tenant management. Built on Elixir/OTP for fault tolerance, with automatic tenant context switching and security boundary enforcement throughout the application stack.
+The multi-tenancy framework uses PostgreSQL schema-based isolation with tenant-aware routing, dynamic resource allocation, and comprehensive tenant management. Built on Elixir/OTP for fault tolerance, it features:
+
+-   **Tenant Provisioning Reactor**: Automated orchestration of schema creation, migration, and seeding.
+-   **Hardened Architecture**: Decoupled `TenantManager` and `Context` modules for secure isolation.
+-   **Automatic Context Switching**: Seamless tenant context detection and enforcement.
 
 ## Related Features
 

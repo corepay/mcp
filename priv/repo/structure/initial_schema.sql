@@ -9,7 +9,6 @@
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
-SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -57,7 +56,7 @@ CREATE EXTENSION IF NOT EXISTS age WITH SCHEMA ag_catalog;
 -- Name: citext; Type: EXTENSION; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA platform;
+CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public;
 
 
 --
@@ -202,16 +201,18 @@ DECLARE
 BEGIN
     -- Get schema name from tenants table
     SELECT company_schema INTO schema_name
-    FROM tenants
+    FROM platform.tenants
     WHERE id = tenant_uuid;
 
     -- Create schema if it doesn't exist
     IF schema_name IS NOT NULL THEN
         EXECUTE format('CREATE SCHEMA IF NOT EXISTS %I', schema_name);
 
-        -- Grant permissions
-        EXECUTE format('GRANT USAGE ON SCHEMA %I TO mcp_app', schema_name);
-        EXECUTE format('GRANT CREATE ON SCHEMA %I TO mcp_app', schema_name);
+        -- Grant permissions if role exists
+        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'mcp_app') THEN
+            EXECUTE format('GRANT USAGE ON SCHEMA %I TO mcp_app', schema_name);
+            EXECUTE format('GRANT CREATE ON SCHEMA %I TO mcp_app', schema_name);
+        END IF;
 
         -- Create tenant settings table in the schema if it doesn't exist
         EXECUTE format('
@@ -232,8 +233,8 @@ BEGIN
             )', schema_name);
 
         -- Create indexes in tenant schema
-        EXECUTE format('CREATE INDEX IF NOT EXISTS %I.idx_tenant_settings_category ON tenant_settings (category)', schema_name);
-        EXECUTE format('CREATE INDEX IF NOT EXISTS %I.idx_tenant_settings_public ON tenant_settings (public)', schema_name);
+        EXECUTE format('CREATE INDEX IF NOT EXISTS idx_tenant_settings_category ON %I.tenant_settings (category)', schema_name);
+        EXECUTE format('CREATE INDEX IF NOT EXISTS idx_tenant_settings_public ON %I.tenant_settings (public)', schema_name);
     END IF;
 END;
 $$;
@@ -276,7 +277,7 @@ SET default_table_access_method = heap;
 
 CREATE TABLE platform.users (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    email platform.citext NOT NULL,
+    email public.citext NOT NULL,
     hashed_password text NOT NULL,
     totp_secret text,
     backup_codes text[],
@@ -1009,7 +1010,7 @@ CREATE TABLE platform.emails (
     owner_id uuid NOT NULL,
     email_type text,
     label text,
-    email platform.citext NOT NULL,
+    email public.citext NOT NULL,
     is_verified boolean DEFAULT false,
     verified_at timestamp(0) without time zone,
     verification_token text,
@@ -1587,7 +1588,7 @@ CREATE TABLE platform.registration_requests (
     id uuid NOT NULL,
     tenant_id uuid NOT NULL,
     type character varying(255) DEFAULT 'customer'::character varying NOT NULL,
-    email platform.citext NOT NULL,
+    email public.citext NOT NULL,
     first_name character varying(255),
     last_name character varying(255),
     phone character varying(255),
@@ -1886,7 +1887,7 @@ CREATE TABLE platform.tenant_table_templates (
 CREATE TABLE platform.tenants (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     slug text NOT NULL,
-    company_name text NOT NULL,
+    name text NOT NULL,
     company_schema text NOT NULL,
     subdomain text NOT NULL,
     custom_domain text,

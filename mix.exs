@@ -42,7 +42,7 @@ defmodule Mcp.MixProject do
   def application do
     [
       mod: {Mcp.Application, []},
-      extra_applications: [:logger, :runtime_tools, :os_mon]
+      extra_applications: [:logger, :runtime_tools, :os_mon, :telemetry]
     ]
   end
 
@@ -105,6 +105,7 @@ defmodule Mcp.MixProject do
       {:ecto_sql, "~> 3.13"},
       {:uuid, "~> 1.1"},
       {:postgrex, ">= 0.0.0"},
+      {:pgvector, "~> 0.3.0"},
       {:ex_aws, "~> 2.4"},
       {:ex_aws_s3, "~> 2.4"},
       {:sweet_xml, "~> 0.7"},
@@ -132,6 +133,7 @@ defmodule Mcp.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
+      {:libcluster_postgres, "~> 0.2"},
 
       # Testing tools
       {:ex_machina, "~> 2.7", only: :test},

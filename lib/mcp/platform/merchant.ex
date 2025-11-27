@@ -10,7 +10,8 @@ defmodule Mcp.Platform.Merchant do
       AshPostgres.DataLayer,
       AshJsonApi.Resource,
       AshJsonApi.Resource,
-      Mcp.Graph.Extension
+      Mcp.Graph.Extension,
+      AshArchival
     ]
 
   use Mcp.Graph.Extension

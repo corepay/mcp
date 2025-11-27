@@ -117,11 +117,12 @@ defmodule Mcp.Payments.Gateways.QorPay do
   end
 
   @impl true
-  def create_customer(_customer_params, _context) do
-    # QorPay doesn't seem to have a standalone "Create Customer" endpoint in the snippets,
-    # but we can simulate success or implement if found.
-    # For now, return a mock success as per previous placeholder.
-    {:ok, %{id: "qor_cust_" <> Ecto.UUID.generate()}}
+  def create_customer(customer_params, _context) do
+    # QorPay does not support standalone customer creation.
+    # We log this and return a generated ID to satisfy the adapter contract,
+    # effectively treating it as an ephemeral customer.
+    Logger.info("QorPay: Customer creation requested (No-op), Params: #{inspect(customer_params)}")
+    {:ok, %{id: "qor_cust_ephemeral_#{Ecto.UUID.generate()}"}}
   end
 
   @impl true
@@ -154,18 +155,22 @@ defmodule Mcp.Payments.Gateways.QorPay do
 
   @impl true
   @spec create_merchant(map(), map()) :: {:ok, map()} | {:error, any()}
-  def create_merchant(_merchant_params, _context) do
-    # Maps to POST /channels/new_merchant
+  def create_merchant(merchant_params, _context) do
     Logger.info("QorPay: Boarding new merchant")
-    {:ok, %{merchant_id: "mer_" <> Ecto.UUID.generate(), status: "pending_underwriting"}}
+    
+    client()
+    |> Req.post(url: "/channels/new_merchant", json: merchant_params)
+    |> handle_response()
   end
 
   @impl true
   @spec create_form_session(map(), map()) :: {:ok, map()} | {:error, any()}
-  def create_form_session(_form_params, _context) do
-    # Maps to POST /payment/forms
+  def create_form_session(form_params, _context) do
     Logger.info("QorPay: Creating hosted form session")
-    {:ok, %{session_id: "sess_" <> Ecto.UUID.generate(), url: "https://qorpay.com/pay/sess_123"}}
+    
+    client()
+    |> Req.post(url: "/payment/forms", json: form_params)
+    |> handle_response()
   end
 
   @impl true

@@ -1,9 +1,7 @@
 defmodule Mcp.MultiTenantTest do
-  use ExUnit.Case, async: false
+  use Mcp.DataCase, async: false
 
   alias Mcp.MultiTenant
-  alias Mcp.Repo
-  import Ecto.Query
 
   @test_tenant_schema "test_multi_tenant"
 
@@ -148,15 +146,30 @@ defmodule Mcp.MultiTenantTest do
       assert {"item2", 200} in results
     end
 
+    defmodule TestItem do
+      use Ecto.Schema
+      import Ecto.Changeset
+
+      @primary_key {:id, :binary_id, autogenerate: true}
+      schema "tenant_isolated_items" do
+        field :name, :string
+        field :value, :integer
+      end
+
+      def changeset(item, attrs) do
+        item
+        |> cast(attrs, [:name, :value])
+      end
+    end
+
     test "tenant_isolated_insert works correctly" do
-      query = from(t in "tenant_isolated_items")
-      changeset = Ecto.Changeset.change(%{name: "item3", value: 300})
+      changeset = TestItem.changeset(%TestItem{}, %{name: "item3", value: 300})
 
       result = MultiTenant.tenant_isolated_insert(@test_tenant_schema, changeset)
       assert {:ok, _inserted} = result
 
       # Verify insertion
-      query = from(t in "tenant_isolated_items", where: t.name == "item3")
+      query = from(t in TestItem, where: t.name == "item3")
       results = MultiTenant.tenant_isolated_query(@test_tenant_schema, query)
       assert length(results) == 1
     end
@@ -165,6 +178,10 @@ defmodule Mcp.MultiTenantTest do
   describe "advanced database operations" do
     setup do
       if not MultiTenant.tenant_schema_exists?(@test_tenant_schema) do
+        # Ensure extensions exist
+        Repo.query("CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE")
+        Repo.query("CREATE EXTENSION IF NOT EXISTS postgis CASCADE")
+        
         {:ok, _} = MultiTenant.create_tenant_schema(@test_tenant_schema)
       end
 
@@ -174,6 +191,7 @@ defmodule Mcp.MultiTenantTest do
 
       :ok
     end
+
 
     test "creates hypertable for time-series data" do
       # Create base table first
@@ -226,6 +244,7 @@ defmodule Mcp.MultiTenantTest do
       assert {:ok, _} = result
     end
 
+
     test "creates geographic index" do
       # Create table with geometry column
       MultiTenant.with_tenant_context(@test_tenant_schema, fn ->
@@ -265,7 +284,7 @@ defmodule Mcp.MultiTenantTest do
 
       # Execute simple Cypher query
       cypher_query = "CREATE (n:TestNode {name: 'test'}) RETURN n"
-      result = MultiTenant.execute_cypher_query(@test_tenant_schema, cypher_query)
+      result = MultiTenant.execute_cypher_query(@test_tenant_schema, cypher_query, "test_graph")
 
       assert {:ok, _} = result
     end

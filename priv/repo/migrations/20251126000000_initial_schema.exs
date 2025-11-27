@@ -8,7 +8,12 @@ defmodule Mcp.Repo.Migrations.InitialSchema do
     # Execute the initial seeds (lookup tables)
     execute_sql_file("initial_seeds.sql")
 
-    # Ensure AGE is loaded and configured
+    execute "CREATE EXTENSION IF NOT EXISTS age"
+    execute("CREATE EXTENSION IF NOT EXISTS pgsodium")
+    execute("CREATE EXTENSION IF NOT EXISTS supabase_vault")
+    # execute "CREATE EXTENSION IF NOT EXISTS pg_cron"
+    execute "CREATE EXTENSION IF NOT EXISTS pg_graphql"
+    execute "CREATE EXTENSION IF NOT EXISTS pgmq"
     execute "LOAD 'age'"
     execute "SET search_path = ag_catalog, \"$user\", public, platform"
   end
@@ -36,6 +41,8 @@ defmodule Mcp.Repo.Migrations.InitialSchema do
       env = [{"PGPASSWORD", password}]
 
       args = [
+        "-v",
+        "ON_ERROR_STOP=1",
         "-q",
         "-h",
         hostname,

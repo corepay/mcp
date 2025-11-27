@@ -79,7 +79,21 @@ defmodule McpWeb.Telemetry do
       summary("vm.memory.total", unit: {:byte, :kilobyte}),
       summary("vm.total_run_queue_lengths.total"),
       summary("vm.total_run_queue_lengths.cpu"),
-      summary("vm.total_run_queue_lengths.io")
+      summary("vm.total_run_queue_lengths.io"),
+
+      # Ash Metrics
+      summary("ash.request.duration",
+        unit: {:native, :millisecond},
+        tags: [:resource, :action, :type, :result]
+      ),
+      summary("ash.query.duration",
+        unit: {:native, :millisecond},
+        tags: [:resource, :action, :result]
+      ),
+      summary("ash.flow.duration",
+        unit: {:native, :millisecond},
+        tags: [:flow, :step, :result]
+      )
     ]
   end
 

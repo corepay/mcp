@@ -21,5 +21,8 @@ defmodule Mcp.Platform do
     resource Mcp.Platform.Vendor
     resource Mcp.Platform.CustomerStore
     resource Mcp.Platform.VendorStore
+    resource Mcp.Platform.Address
+    resource Mcp.Platform.Email
+    resource Mcp.Platform.Phone
   end
 end

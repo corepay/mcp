@@ -1,13 +1,11 @@
 defmodule Mcp.Communication.EmailService do
   @moduledoc """
-  Email service for sending transactional and marketing emails.
-  Supports multiple providers with tenant isolation.
+  EmailService delegating to Mcp.Mailer (Swoosh).
   """
 
   use GenServer
   require Logger
-
-  @provider System.get_env("EMAIL_PROVIDER", "mock")
+  import Swoosh.Email
 
   def start_link(init_arg) do
     GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
@@ -15,8 +13,8 @@ defmodule Mcp.Communication.EmailService do
 
   @impl true
   def init(_init_arg) do
-    Logger.info("Starting Communication EmailService with provider: #{@provider}")
-    {:ok, %{provider: @provider, templates: %{}}}
+    Logger.info("Starting Communication EmailService")
+    {:ok, %{templates: %{}}}
   end
 
   def send_email(to, subject, body, opts \\ []) do
@@ -38,19 +36,25 @@ defmodule Mcp.Communication.EmailService do
     )
   end
 
-  def get_email_status(message_id, opts \\ []) do
-    GenServer.call(__MODULE__, {:get_email_status, message_id, opts})
+  def get_email_status(_message_id, _opts \\ []) do
+    # Swoosh doesn't track status for local adapter, return delivered
+    {:ok, %{status: :delivered, updated_at: DateTime.utc_now()}}
   end
 
   @impl true
   def handle_call({:send_email, to, subject, body, opts}, _from, state) do
-    tenant_id = Keyword.get(opts, :tenant_id, "global")
-    email_data = build_email_data(to, subject, body, opts)
+    email =
+      new()
+      |> to(to)
+      |> from(Keyword.get(opts, :from, "noreply@mcp.local"))
+      |> subject(subject)
+      |> html_body(body)
+      |> text_body(body) # Simple fallback
 
-    case send_email_via_provider(email_data, state.provider, tenant_id) do
-      {:ok, result} ->
-        Logger.info("Email sent successfully to #{length(to)} recipients")
-        {:reply, {:ok, result}, state}
+    case Mcp.Mailer.deliver(email) do
+      {:ok, _metadata} ->
+        Logger.info("Email sent to #{inspect(to)}")
+        {:reply, {:ok, %{status: :sent}}, state}
 
       {:error, reason} ->
         Logger.error("Failed to send email: #{inspect(reason)}")
@@ -60,41 +64,43 @@ defmodule Mcp.Communication.EmailService do
 
   @impl true
   def handle_call({:send_template_email, to, template_id, template_data, opts}, _from, state) do
-    tenant_id = Keyword.get(opts, :tenant_id, "global")
-
     case Map.get(state.templates, template_id) do
       nil ->
-        {:reply, {:error, :template_not_found}, state}
+        # Fallback to checking if it's a tenant-scoped template
+        tenant_id = Keyword.get(opts, :tenant_id)
+        full_id = "#{tenant_id}:#{template_id}"
+        
+        case Map.get(state.templates, full_id) do
+          nil -> {:reply, {:error, :template_not_found}, state}
+          template -> 
+            send_template(to, template, template_data, opts, state)
+        end
 
       template ->
-        subject = render_template(template.subject_template, template_data)
-        body = render_template(template.body_template, template_data)
-
-        send_email(to, subject, body, Keyword.put(opts, :tenant_id, tenant_id))
+        send_template(to, template, template_data, opts, state)
     end
   end
 
+
+
   @impl true
   def handle_call({:send_bulk_emails, recipients, subject, body, opts}, _from, state) do
-    tenant_id = Keyword.get(opts, :tenant_id, "global")
-    batch_size = Keyword.get(opts, :batch_size, 100)
-
+    # Simple iteration for now
     results =
-      recipients
-      |> Enum.chunk_every(batch_size)
-      |> Enum.with_index()
-      |> Enum.map(fn {batch, index} ->
-        email_data =
-          build_email_data(batch, subject, body, Keyword.put(opts, :batch_index, index))
-
-        case send_email_via_provider(email_data, state.provider, tenant_id) do
-          {:ok, result} -> {:ok, {index, result}}
+      Enum.with_index(recipients)
+      |> Enum.map(fn {recipient, index} ->
+        email =
+          new()
+          |> to(recipient)
+          |> from(Keyword.get(opts, :from, "noreply@mcp.local"))
+          |> subject(subject)
+          |> html_body(body)
+        
+        case Mcp.Mailer.deliver(email) do
+          {:ok, _} -> {:ok, {index, :sent}}
           {:error, reason} -> {:error, {index, reason}}
         end
       end)
-
-    successful = Enum.count(results, &match?({:ok, _}, &1))
-    Logger.info("Bulk email sent: #{successful}/#{length(results)} batches successful")
 
     {:reply, {:ok, results}, state}
   end
@@ -117,83 +123,33 @@ defmodule Mcp.Communication.EmailService do
     }
 
     new_templates = Map.put(state.templates, full_template_id, template)
-    new_state = %{state | templates: new_templates}
+    new_templates = Map.put(new_templates, template_id, template) # Also register under short ID if global or preferred
 
     Logger.info("Registered email template: #{full_template_id}")
-    {:reply, {:ok, template}, new_state}
+    {:reply, {:ok, template}, %{state | templates: new_templates}}
   end
 
-  @impl true
-  def handle_call({:get_email_status, message_id, opts}, _from, state) do
-    tenant_id = Keyword.get(opts, :tenant_id, "global")
+  defp send_template(to, template, template_data, opts, state) do
+    subject = render_template(template.subject_template, template_data)
+    body = render_template(template.body_template, template_data)
+    
+    # Re-use handle_call logic via internal call or just duplicate logic
+    # Calling internal function to avoid GenServer overhead for self-call
+    email =
+      new()
+      |> to(to)
+      |> from(Keyword.get(opts, :from, "noreply@mcp.local"))
+      |> subject(subject)
+      |> html_body(body)
+      |> text_body(body)
 
-    # get_email_status_from_provider always returns {:ok, _}, so no error handling needed
-    status = get_email_status_from_provider(message_id, state.provider, tenant_id)
-    {:reply, {:ok, status}, state}
-  end
-
-  defp build_email_data(recipients, subject, body, opts) do
-    from =
-      Keyword.get(opts, :from, System.get_env("DEFAULT_FROM_EMAIL", "noreply@mcp-platform.local"))
-
-    reply_to = Keyword.get(opts, :reply_to)
-    cc = Keyword.get(opts, :cc, [])
-    bcc = Keyword.get(opts, :bcc, [])
-    attachments = Keyword.get(opts, :attachments, [])
-
-    %{
-      from: from,
-      to: List.wrap(recipients),
-      subject: subject,
-      body: body,
-      reply_to: reply_to,
-      cc: cc,
-      bcc: bcc,
-      attachments: attachments,
-      html: Keyword.get(opts, :html, false),
-      tracking: Keyword.get(opts, :tracking, true)
-    }
-  end
-
-  defp send_email_via_provider(_email_data, "mock", _tenant_id) do
-    # Mock provider - simulate email sending
-    message_id = "mock_msg_#{:crypto.strong_rand_bytes(8) |> Base.encode16()}"
-    {:ok, %{message_id: message_id, status: :sent, provider: "mock"}}
-  end
-
-  defp send_email_via_provider(_email_data, "sendgrid", tenant_id) do
-    # SendGrid implementation would go here
-    Logger.info("Sending email via SendGrid for tenant: #{tenant_id}")
-    message_id = "sg_#{:crypto.strong_rand_bytes(12) |> Base.encode16()}"
-    {:ok, %{message_id: message_id, status: :sent, provider: "sendgrid"}}
-  end
-
-  defp send_email_via_provider(_email_data, "ses", tenant_id) do
-    # AWS SES implementation would go here
-    Logger.info("Sending email via SES for tenant: #{tenant_id}")
-    message_id = "ses_#{:crypto.strong_rand_bytes(12) |> Base.encode16()}"
-    {:ok, %{message_id: message_id, status: :sent, provider: "ses"}}
-  end
-
-  defp send_email_via_provider(_email_data, provider, _tenant_id) do
-    {:error, {:unsupported_provider, provider}}
-  end
-
-  defp get_email_status_from_provider(message_id, "mock", _tenant_id) do
-    # Mock status check
-    statuses = [:sent, :delivered, :opened, :clicked, :bounced]
-    status = Enum.random(statuses)
-    {:ok, %{message_id: message_id, status: status, updated_at: DateTime.utc_now()}}
-  end
-
-  defp get_email_status_from_provider(message_id, provider, tenant_id) do
-    # Provider-specific status check implementation
-    Logger.info("Getting email status from #{provider} for tenant: #{tenant_id}")
-    {:ok, %{message_id: message_id, status: :delivered, provider: provider}}
+    case Mcp.Mailer.deliver(email) do
+      {:ok, _} -> {:reply, {:ok, %{status: :sent}}, state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
+    end
   end
 
   defp render_template(template, data) do
-    # Simple template rendering - would use a proper template engine in production
     Enum.reduce(data, template, fn {key, value}, acc ->
       String.replace(acc, "{{#{key}}}", to_string(value))
     end)

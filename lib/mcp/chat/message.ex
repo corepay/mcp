@@ -2,7 +2,7 @@ defmodule Mcp.Chat.Message do
   use Ash.Resource,
     otp_app: :mcp,
     domain: Mcp.Chat,
-    extensions: [AshOban],
+    extensions: [AshOban, AshArchival],
     data_layer: AshPostgres.DataLayer,
     notifiers: [Ash.Notifier.PubSub]
 

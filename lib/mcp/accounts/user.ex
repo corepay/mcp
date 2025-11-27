@@ -9,7 +9,13 @@ defmodule Mcp.Accounts.User do
   use Ash.Resource,
     domain: Mcp.Accounts,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshAuthentication, AshJsonApi.Resource]
+    extensions: [AshAuthentication, AshJsonApi.Resource, AshCloak, AshArchival]
+
+  cloak do
+    vault Mcp.Secrets
+    attributes [:totp_secret, :backup_codes, :oauth_tokens]
+    decrypt_by_default [:totp_secret, :backup_codes, :oauth_tokens]
+  end
 
   postgres do
     table "users"
@@ -17,7 +23,6 @@ defmodule Mcp.Accounts.User do
     repo(Mcp.Repo)
 
     custom_indexes do
-      index([:email], unique: true)
       index([:status])
       index([:inserted_at])
     end
@@ -90,7 +95,7 @@ defmodule Mcp.Accounts.User do
 
     # Account status
     attribute :status, :atom do
-      constraints one_of: [:active, :suspended, :deleted]
+      constraints one_of: [:active, :suspended]
       default :active
       allow_nil? false
     end
@@ -99,7 +104,7 @@ defmodule Mcp.Accounts.User do
   end
 
   identities do
-    identity :unique_email, [:email]
+    identity :unique_email, [:email], pre_check?: true
   end
 
   actions do
@@ -136,7 +141,7 @@ defmodule Mcp.Accounts.User do
     end
 
     read :active_users do
-      filter expr(status == :active)
+      # AshArchival automatically filters out archived records
     end
 
     update :update do
@@ -169,10 +174,6 @@ defmodule Mcp.Accounts.User do
     update :activate do
       change set_attribute(:status, :active)
     end
-
-    update :soft_delete do
-      change set_attribute(:status, :deleted)
-    end
   end
 
   validations do
@@ -189,7 +190,6 @@ defmodule Mcp.Accounts.User do
     define :update_sign_in, args: [:ip_address]
     define :suspend
     define :activate
-    define :soft_delete
     define :destroy
   end
 

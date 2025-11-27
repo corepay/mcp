@@ -70,10 +70,17 @@ defmodule Mcp.Platform.TenantBranding do
     end
   end
 
+  code_interface do
+    define :create_branding
+    define :update_branding
+    define :activate
+    define :by_id, args: [:id], get?: true
+  end
+
   attributes do
     uuid_primary_key :id
 
-    attribute :tenant_id, :string do
+    attribute :tenant_id, :uuid do
       allow_nil? false
     end
 
