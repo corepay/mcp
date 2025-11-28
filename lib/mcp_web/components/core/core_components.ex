@@ -50,6 +50,7 @@ defmodule McpWeb.Core.CoreComponents do
   attr :class, :string, default: nil
   attr :required, :boolean, default: false
   attr :accept, :string, default: nil
+  attr :options, :list, default: []
   attr :rest, :global
 
   def input(%{field: %Phoenix.HTML.FormField{} = field} = assigns) do
@@ -61,6 +62,32 @@ defmodule McpWeb.Core.CoreComponents do
     |> assign_new(:name, fn -> field.name end)
     |> assign_new(:value, fn -> field.value end)
     |> input()
+  end
+
+  def input(%{type: "select"} = assigns) do
+    ~H"""
+    <div class="form-control w-full">
+      <label :if={@label} class="label" for={@id}>
+        <span class="label-text">{@label}</span>
+      </label>
+      <select
+        id={@id}
+        name={@name}
+        class={[
+          "select select-bordered w-full",
+          @errors != [] && "select-error",
+          @class
+        ]}
+        required={@required}
+        {@rest}
+      >
+        <option :for={opt <- @options} value={opt} selected={@value == opt}>{opt}</option>
+      </select>
+      <label :for={msg <- @errors} class="label">
+        <span class="label-text-alt text-error">{msg}</span>
+      </label>
+    </div>
+    """
   end
 
   def input(assigns) do

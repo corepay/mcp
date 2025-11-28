@@ -1,0 +1,33 @@
+<div class="flex flex-col items-center justify-center min-h-[60vh]">
+  <div class="w-full max-w-md space-y-8">
+    <div class="text-center">
+      <h2 class="text-3xl font-bold tracking-tight text-base-content">Create your account</h2>
+      <p class="mt-2 text-sm text-base-content/70">
+        Start your application in minutes.
+      </p>
+    </div>
+
+    <div class="bg-base-100 shadow-xl rounded-xl p-8 border border-base-200">
+      <.form for={@form} phx-change="validate" phx-submit="save" class="space-y-6">
+        <.input field={@form[:email]} type="email" label="Email address" required placeholder="you@company.com" />
+        
+        <.input field={@form[:password]} type="password" label="Password" required placeholder="••••••••" />
+        
+        <.input field={@form[:password_confirmation]} type="password" label="Confirm Password" required placeholder="••••••••" />
+
+        <div class="pt-2">
+          <.button type="submit" class="btn-primary w-full" phx-disable-with="Creating account...">
+            Create Account & Start Application
+          </.button>
+        </div>
+      </.form>
+
+      <div class="mt-6 text-center text-sm">
+        <span class="text-base-content/60">Already have an account?</span>
+        <.link href={~p"/online-application/login"} class="font-medium text-primary hover:text-primary-focus ml-1">
+          Sign in
+        </.link>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,231 @@
+<%= if @mode == :selection do %>
+  <div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold text-base-content">How would you like to apply?</h2>
+      <p class="mt-4 text-lg text-base-content/70">Choose the experience that suits you best.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- AI-Only Mode Card -->
+      <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all cursor-pointer border-2 border-transparent hover:border-primary group" phx-click="select_mode" phx-value-mode="chat">
+        <div class="card-body items-center text-center">
+          <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <.icon name="hero-chat-bubble-left-right" class="w-8 h-8 text-primary" />
+          </div>
+          <h3 class="card-title text-xl">Chat with Atlas</h3>
+          <p class="text-base-content/70">An interactive interview where our AI assistant asks the questions and fills the form for you.</p>
+          <div class="card-actions mt-6">
+            <button class="btn btn-primary">Start Chat</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI-Assist Mode Card -->
+      <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all cursor-pointer border-2 border-transparent hover:border-secondary group" phx-click="select_mode" phx-value-mode="form">
+        <div class="card-body items-center text-center">
+          <div class="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <.icon name="hero-document-text" class="w-8 h-8 text-secondary" />
+          </div>
+          <h3 class="card-title text-xl">Standard Form</h3>
+          <p class="text-base-content/70">Fill out the application yourself at your own pace, with Atlas available for help if you need it.</p>
+          <div class="card-actions mt-6">
+            <button class="btn btn-outline btn-secondary">Start Form</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<%= if @mode == :chat do %>
+  <div class="h-full flex flex-col max-w-3xl mx-auto p-4">
+    <!-- Chat Header -->
+    <div class="text-center mb-6">
+      <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+        <.icon name="hero-sparkles" class="w-8 h-8 text-primary" />
+      </div>
+      <h2 class="text-2xl font-bold">Chat with Atlas</h2>
+      <p class="text-base-content/70">Atlas is gathering your information.</p>
+    </div>
+
+    <!-- Chat Messages Area -->
+    <div class="flex-1 overflow-y-auto space-y-4 p-4 bg-base-100 rounded-xl shadow-inner mb-4 border border-base-200" id="main-chat-container" phx-update="stream">
+      <%= for msg <- @atlas_messages do %>
+        <div class={"chat #{if msg.sender == :user, do: "chat-end", else: "chat-start"}"}>
+          <div class="chat-image avatar">
+            <div class="w-10 h-10 rounded-full bg-base-200 flex items-center justify-center">
+              <%= if msg.sender == :user do %>
+                <.icon name="hero-user" class="w-6 h-6 text-base-content/50" />
+              <% else %>
+                <.icon name="hero-sparkles" class="w-6 h-6 text-primary" />
+              <% end %>
+            </div>
+          </div>
+          <div class="chat-header opacity-50 text-xs mb-1">
+            <%= if msg.sender == :user, do: "You", else: "Atlas" %>
+          </div>
+          <div class={"chat-bubble #{if msg.sender == :user, do: "chat-bubble-neutral", else: "chat-bubble-primary"}"}>
+            <%= msg.content %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Chat Input -->
+    <form phx-submit="send_chat" class="relative">
+      <input 
+        type="text" 
+        name="message" 
+        placeholder="Type your answer here..." 
+        class="input input-bordered w-full pr-12 shadow-lg"
+        autocomplete="off"
+        autofocus
+      />
+      <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-primary btn-sm btn-circle">
+        <.icon name="hero-paper-airplane" class="w-4 h-4" />
+      </button>
+    </form>
+    
+    <div class="mt-4 text-center">
+      <button class="btn btn-ghost btn-sm text-base-content/50" phx-click="select_mode" phx-value-mode="form">
+        Switch to Standard Form
+      </button>
+    </div>
+  </div>
+<% end %>
+
+<%= if @mode == :form do %>
+  <div class="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="bg-base-100 shadow-xl rounded-lg overflow-hidden">
+      <div class="bg-primary px-6 py-4 flex justify-between items-center">
+        <div>
+          <h2 class="text-xl font-bold text-primary-content">Merchant Application</h2>
+          <p class="text-primary-content/80 text-sm">Step <%= @step %> of 4</p>
+        </div>
+        <!-- Ask Atlas Button (Mobile/Tablet or just extra visibility) -->
+        <button class="btn btn-sm btn-secondary gap-2" onclick="document.getElementById('atlas-chat-input').focus()">
+          <.icon name="hero-sparkles" class="w-4 h-4" />
+          Ask Atlas
+        </button>
+      </div>
+
+      <div class="p-6">
+        <!-- Progress Bar -->
+        <div class="w-full bg-base-200 rounded-full h-2.5 mb-6">
+          <div class="bg-primary h-2.5 rounded-full" style={"width: #{@step * 25}%"}></div>
+        </div>
+
+        <.form for={@form} phx-change="validate" phx-submit="save">
+          <%= if @step == 1 do %>
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold">Business Information</h3>
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <.input field={@form[:business_name]} label="Business Name" />
+                <.input field={@form[:dba_name]} label="DBA Name" />
+                <.input field={@form[:business_type]} label="Business Type" type="select" options={["LLC", "Corporation", "Sole Proprietorship"]} />
+                <.input field={@form[:ein]} label="EIN / Tax ID" />
+              </div>
+            </div>
+          <% end %>
+
+          <%= if @step == 2 do %>
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold">Contact Information</h3>
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <.input field={@form[:email]} label="Email Address" type="email" />
+                <.input field={@form[:phone]} label="Phone Number" type="tel" />
+                <.input field={@form[:website]} label="Website URL" />
+              </div>
+              <div class="space-y-2">
+                <.input field={@form[:address_line1]} label="Address Line 1" />
+                <.input field={@form[:address_line2]} label="Address Line 2" />
+                <div class="grid grid-cols-3 gap-4">
+                  <.input field={@form[:city]} label="City" />
+                  <.input field={@form[:state]} label="State" />
+                  <.input field={@form[:zip]} label="ZIP Code" />
+                </div>
+              </div>
+            </div>
+          <% end %>
+
+          <%= if @step == 3 do %>
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold">Business Details</h3>
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <.input field={@form[:monthly_volume]} label="Est. Monthly Volume" type="number" />
+                <.input field={@form[:average_ticket]} label="Average Ticket Size" type="number" />
+              </div>
+              <.input field={@form[:description]} label="Description of Products/Services" type="textarea" />
+              
+              <div class="divider"></div>
+              
+              <h3 class="text-lg font-semibold">Documents</h3>
+              <div class="alert alert-info shadow-sm">
+                <.icon name="hero-phone" class="w-6 h-6" />
+                <div>
+                  <h3 class="font-bold">Upload via Mobile</h3>
+                  <div class="text-xs">Scan the QR code to upload documents from your phone.</div>
+                </div>
+                <div class="flex-none">
+                  <!-- Mock QR Code -->
+                  <div class="w-16 h-16 bg-white p-1 rounded">
+                    <div class="w-full h-full bg-black/10 flex items-center justify-center text-[10px] text-center leading-tight">
+                      [QR Code]
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="form-control w-full">
+                  <label class="label"><span class="label-text">Business License</span></label>
+                  <input type="file" class="file-input file-input-bordered w-full" />
+                </div>
+                <div class="form-control w-full">
+                  <label class="label"><span class="label-text">Driver's License (Front)</span></label>
+                  <input type="file" class="file-input file-input-bordered w-full" />
+                </div>
+              </div>
+              
+              <button type="button" class="btn btn-sm btn-ghost text-primary mt-2" phx-click="simulate_mobile_upload">
+                (Debug) Simulate Mobile Upload
+              </button>
+            </div>
+          <% end %>
+
+          <%= if @step == 4 do %>
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold">Review & Submit</h3>
+              <p class="text-base-content/70">Please review your information before submitting.</p>
+              
+              <div class="divider"></div>
+              
+              <h4 class="font-medium">Digital Signature</h4>
+              <p class="text-sm text-base-content/60">By signing below, you agree to the terms and conditions.</p>
+              
+              <McpWeb.CoreComponents.SignaturePad.signature_pad 
+                id="applicant-signature" 
+                name={@form[:signature].name} 
+                label="Applicant Signature" 
+              />
+            </div>
+          <% end %>
+
+          <div class="mt-8 flex justify-between">
+            <%= if @step > 1 do %>
+              <.button type="button" phx-click="prev_step" class="btn-ghost">Back</.button>
+            <% else %>
+              <div></div>
+            <% end %>
+
+            <%= if @step < 4 do %>
+              <.button type="button" phx-click="next_step" class="btn-primary">Next</.button>
+            <% else %>
+              <.button type="submit" class="btn-primary">Submit Application</.button>
+            <% end %>
+          </div>
+        </.form>
+      </div>
+    </div>
+  </div>
+<% end %>

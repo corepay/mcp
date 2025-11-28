@@ -37,7 +37,80 @@ const liveSocket = new LiveSocket("/live", Socket, {
     LineChartHook: AnalyticsHooks.LineChartHook,
     BarChartHook: AnalyticsHooks.BarChartHook,
     PieChartHook: AnalyticsHooks.PieChartHook,
-    WidgetHook: AnalyticsHooks.WidgetHook
+    WidgetHook: AnalyticsHooks.WidgetHook,
+    SignaturePad: {
+      mounted() {
+        const canvas = this.el.querySelector("canvas");
+        const input = this.el.querySelector("input[type=hidden]");
+        const uploadInput = this.el.querySelector("input[type=file]");
+        const clearBtn = this.el.querySelector("[data-action=clear]");
+        const ctx = canvas.getContext("2d");
+        let isDrawing = false;
+
+        // Set canvas size
+        const resizeCanvas = () => {
+          const rect = canvas.getBoundingClientRect();
+          canvas.width = rect.width;
+          canvas.height = rect.height;
+          ctx.lineWidth = 2;
+          ctx.lineCap = "round";
+          ctx.strokeStyle = "#000";
+        };
+        resizeCanvas();
+        window.addEventListener("resize", resizeCanvas);
+
+        // Drawing functions
+        const startDrawing = (e) => {
+          isDrawing = true;
+          draw(e);
+        };
+
+        const stopDrawing = () => {
+          isDrawing = false;
+          ctx.beginPath();
+          saveSignature();
+        };
+
+        const draw = (e) => {
+          if (!isDrawing) return;
+          e.preventDefault();
+          
+          const rect = canvas.getBoundingClientRect();
+          const x = (e.clientX || e.touches[0].clientX) - rect.left;
+          const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+          ctx.lineTo(x, y);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+        };
+
+        const saveSignature = () => {
+          input.value = canvas.toDataURL();
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        };
+
+        const clearSignature = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          input.value = "";
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        };
+
+        // Event listeners
+        canvas.addEventListener("mousedown", startDrawing);
+        canvas.addEventListener("mousemove", draw);
+        canvas.addEventListener("mouseup", stopDrawing);
+        canvas.addEventListener("mouseout", stopDrawing);
+
+        canvas.addEventListener("touchstart", startDrawing);
+        canvas.addEventListener("touchmove", draw);
+        canvas.addEventListener("touchend", stopDrawing);
+
+        clearBtn.addEventListener("click", clearSignature);
+
+        this.handleEvent("clear", clearSignature);
+      }
+    }
   },
 })
 

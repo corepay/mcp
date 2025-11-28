@@ -17,7 +17,9 @@ defmodule Mcp.Infrastructure.TenantManager do
         {:ok, schema_name}
 
       {:ok, true} ->
-        {:error, :schema_already_exists}
+        # We should ensure tables exist even if schema exists
+        execute_create_tenant_schema(tenant_schema_name)
+        {:ok, schema_name}
 
       {:error, reason} ->
         {:error, reason}

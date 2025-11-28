@@ -47,29 +47,24 @@ defmodule McpWeb.Auth.LiveAuth do
     # end
   end
 
-  def on_mount(:optional_auth, _params, _session, socket) do
-    # authenticate_from_session currently only returns {:error, :invalid_token or :no_token}
-    # case authenticate_from_session(session) do
-    #   {:ok, user, claims} ->
-    #     socket =
-    #       socket
-    #       |> assign(:current_user, user)
-    #       |> assign(:current_context, Auth.get_current_context(claims))
-    #       |> assign(:authorized_contexts, Auth.get_authorized_contexts(claims))
-    #       |> assign(:session_id, session["session_id"])
-    #
-    #     {:cont, socket}
-    #
-    #   {:error, _reason} ->
-    socket =
-      socket
-      |> assign(:current_user, nil)
-      |> assign(:current_context, %{})
-      |> assign(:authorized_contexts, [])
-      |> assign(:session_id, nil)
-
-    {:cont, socket}
-    # end
+  def on_mount(:optional_auth, _params, session, socket) do
+    if session["user_token"] do
+      # In a real app, verify token and get user.
+      # For now, we'll just check if user_id is in session or similar.
+      # Or if we are using the simple session auth from earlier:
+      
+      socket =
+        if user_id = session["user_id"] do
+           user = Mcp.Accounts.User.get_by_id!(user_id)
+           assign(socket, :current_user, user)
+        else
+           assign(socket, :current_user, nil)
+        end
+        
+      {:cont, socket}
+    else
+      {:cont, assign(socket, :current_user, nil)}
+    end
   end
 
   def on_mount(:redirect_if_user_is_authenticated, _params, _session, socket) do

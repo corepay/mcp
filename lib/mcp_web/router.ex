@@ -9,6 +9,7 @@ defmodule McpWeb.Router do
     plug :protect_from_forgery
     plug :put_secure_browser_headers
     plug McpWeb.TenantRouting
+    plug McpWeb.Plugs.PutTenantInSession
     plug McpWeb.Plugs.ThemePlug
   end
 
@@ -81,10 +82,13 @@ defmodule McpWeb.Router do
     pipe_through [:browser, :jwt_auth, :tenant_portal_layout]
 
     live "/dashboard", Tenant.DashboardLive
+    live "/applications", Tenant.ApplicationsLive
+    live "/applications/:id", Tenant.ApplicationDetailLive
     live "/settings", TenantSettingsLive
     live "/merchants", MockDashboardLive
     live "/gdpr", GdprLive
     live "/change-password", AuthLive.ChangePassword
+    post "/select", TenantSessionController, :create
   end
 
   # Merchant Portal
@@ -161,6 +165,7 @@ defmodule McpWeb.Router do
     pipe_through [:browser, :jwt_auth, :reseller_portal_layout]
 
     live "/dashboard", MockDashboardLive
+    live "/applications", Reseller.ApplicationsLive
     live "/merchants", MockDashboardLive
     live "/commissions", MockDashboardLive
   end
@@ -199,6 +204,21 @@ defmodule McpWeb.Router do
     live "/dashboard", MockDashboardLive
     live "/products", MockDashboardLive
     live "/orders", MockDashboardLive
+  end
+
+  pipeline :ola_layout do
+    plug :put_layout, html: {McpWeb.Layouts, :ola_layout}
+  end
+
+  # OLA (Online Application) Portal
+  scope "/online-application", McpWeb do
+    pipe_through [:browser, :ola_layout]
+
+    live_session :ola_auth, on_mount: [{McpWeb.Auth.LiveAuth, :optional_auth}], session: %{"portal_context" => "ola"} do
+      live "/", Ola.RegistrationLive, :index
+      live "/application", Ola.ApplicationLive, :index
+      live "/login", AuthLive.Login, :index
+    end
   end
 
   # Default/Public Routes

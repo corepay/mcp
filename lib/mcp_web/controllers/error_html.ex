@@ -21,4 +21,14 @@ defmodule McpWeb.ErrorHTML do
   def render(template, _assigns) do
     Phoenix.Controller.status_message_from_template(template)
   end
+
+  def sign_in_path(conn) do
+    path = conn.request_path
+    cond do
+      String.starts_with?(path, "/tenant") -> "/tenant/sign-in"
+      String.starts_with?(path, "/partners") -> "/partners/sign-in"
+      String.starts_with?(path, "/admin") -> "/admin/sign-in"
+      true -> "/sign-in"
+    end
+  end
 end

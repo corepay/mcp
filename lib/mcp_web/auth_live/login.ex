@@ -170,7 +170,16 @@ defmodule McpWeb.AuthLive.Login do
   defp default_redirect_path(:customer), do: "/store/account"
   defp default_redirect_path(:vendor), do: "/vendors"
   defp default_redirect_path(:tenant), do: "/tenant"
+  defp default_redirect_path(:ola), do: "/online-application/application"
   defp default_redirect_path(_), do: "/tenant"
+
+  defp portal_title(:ola), do: "Merchant Application"
+  defp portal_subtitle(:ola), do: "Apply for a merchant account in minutes."
+  defp portal_theme_color(:ola), do: "blue"
+  defp bg_color_class(:ola), do: "bg-blue-500"
+  defp portal_gradient(:ola), do: "from-blue-600 to-indigo-700"
+  defp portal_icon(:ola), do: "hero-document-text"
+  defp portal_features(:ola), do: ["Fast Approval", "Secure", "24/7 Support"]
 
   defp assign_flash_from_session(socket, session) do
     flash_messages = session["flash"] || %{}

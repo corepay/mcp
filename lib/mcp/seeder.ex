@@ -65,7 +65,13 @@ defmodule Mcp.Seeder do
   defp ensure_tenant(name, slug, subdomain) do
     case Tenant.by_subdomain(subdomain) do
       {:ok, tenant} ->
-        tenant
+        features = tenant.features || %{}
+        if features["underwriting"] != true do
+          IO.puts("  - Enabling underwriting for #{name}...")
+          Mcp.Platform.Tenant.update!(tenant, %{features: Map.put(features, "underwriting", true)})
+        else
+          tenant
+        end
 
       {:error, _} ->
         tenant =
@@ -73,7 +79,8 @@ defmodule Mcp.Seeder do
             name: name,
             slug: slug,
             subdomain: subdomain,
-            plan: :enterprise
+            plan: :enterprise,
+            features: %{"underwriting" => true}
           })
 
         IO.puts("  - Running migrations for #{tenant.company_schema}...")

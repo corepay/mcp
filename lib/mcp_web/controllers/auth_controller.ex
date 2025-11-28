@@ -146,17 +146,23 @@ defmodule McpWeb.AuthController do
   end
 
   defp get_redirect_path(conn, _user) do
-    # Determine redirect path based on tenant context
-    # In the future, we can also check user roles here
-    case conn.assigns[:current_tenant] do
-      nil ->
-        # Platform Admin context
-        ~p"/admin"
+    # Determine redirect path based on referer to keep user in the same portal
+    referer = get_req_header(conn, "referer") |> List.first()
+    uri = if referer, do: URI.parse(referer), else: nil
+    path = if uri, do: uri.path || "", else: ""
 
-      _tenant ->
-        # Tenant/Merchant context
-        # Default to tenant portal for now
-        ~p"/tenant"
+    cond do
+      String.starts_with?(path, "/admin") -> ~p"/admin/dashboard"
+      String.starts_with?(path, "/app") -> ~p"/app/dashboard"
+      String.starts_with?(path, "/developers") -> ~p"/developers/dashboard"
+      String.starts_with?(path, "/partners") -> ~p"/partners/dashboard"
+      String.starts_with?(path, "/store/account") -> ~p"/store/account/dashboard"
+      String.starts_with?(path, "/vendors") -> ~p"/vendors/dashboard"
+      String.starts_with?(path, "/tenant") -> ~p"/tenant/dashboard"
+      
+      # Fallback to context-based or default
+      conn.assigns[:current_tenant] -> ~p"/tenant/dashboard"
+      true -> ~p"/admin/dashboard"
     end
   end
 end

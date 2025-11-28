@@ -15,7 +15,19 @@ defmodule McpWeb.LandingLive do
     portal_context = String.to_atom(portal_context_str)
 
     if current_user do
-      {:ok, push_navigate(socket, to: default_redirect_path(portal_context))}
+      if portal_context == :tenant && is_nil(session["tenant_id"]) do
+        socket =
+          socket
+          |> assign(:page_title, portal_title(portal_context))
+          |> assign(:portal_context, portal_context)
+          |> assign(:portal_config, portal_config(portal_context))
+          |> assign(:show_login_modal, false)
+          |> assign(:return_to, session["return_to"])
+
+        {:ok, socket, layout: false}
+      else
+        {:ok, push_navigate(socket, to: default_redirect_path(portal_context))}
+      end
     else
       socket =
         socket

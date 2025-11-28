@@ -30,14 +30,18 @@ defmodule Mcp.Platform.Tenant do
 
     create :create do
       primary? true
-      accept [:name, :slug, :subdomain, :custom_domain, :plan]
+      accept [:name, :slug, :subdomain, :custom_domain, :plan, :company_schema, :features]
 
       change fn changeset, _ ->
-        Ash.Changeset.force_change_attribute(
-          changeset,
-          :company_schema,
-          "acq_#{Ecto.UUID.generate()}"
-        )
+        if Ash.Changeset.get_attribute(changeset, :company_schema) do
+          changeset
+        else
+          Ash.Changeset.force_change_attribute(
+            changeset,
+            :company_schema,
+            "acq_#{Ecto.UUID.generate()}"
+          )
+        end
       end
 
       change Mcp.Platform.Tenants.Changes.ProvisionTenant
@@ -45,7 +49,7 @@ defmodule Mcp.Platform.Tenant do
 
     update :update do
       primary? true
-      accept [:name, :slug, :subdomain, :custom_domain, :plan, :status]
+      accept [:name, :slug, :subdomain, :custom_domain, :plan, :status, :features]
     end
 
     read :by_subdomain do
@@ -117,7 +121,7 @@ defmodule Mcp.Platform.Tenant do
 
     attribute :company_schema, :string do
       allow_nil? false
-      writable? false
+      writable? true
     end
 
     attribute :subdomain, :string do
@@ -135,6 +139,11 @@ defmodule Mcp.Platform.Tenant do
     attribute :status, :atom do
       constraints one_of: [:active, :trial, :suspended, :canceled]
       default :active
+      allow_nil? false
+    end
+
+    attribute :features, :map do
+      default %{}
       allow_nil? false
     end
 
