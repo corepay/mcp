@@ -12,13 +12,14 @@ defmodule Mcp.Accounts.Auth do
   """
   def authenticate(email, password, _ip_address \\ nil)
       when is_binary(email) and is_binary(password) do
-    case User.by_email(email) do
-      {:ok, nil} ->
-        # User not found - use generic error for security
-        Bcrypt.no_user_verify()
-        {:error, :invalid_credentials}
+    # Use AshAuthentication's generated sign_in_with_password action
+    result =
+      User
+      |> Ash.Query.for_read(:sign_in_with_password, %{email: email, password: password})
+      |> Ash.read_one()
 
-      {:ok, user} ->
+    case result do
+      {:ok, user} when not is_nil(user) ->
         cond do
           user.status == :suspended ->
             {:error, :account_suspended}
@@ -26,16 +27,13 @@ defmodule Mcp.Accounts.Auth do
           user.status == :deleted ->
             {:error, :account_deleted}
 
-          Bcrypt.verify_pass(password, user.hashed_password) ->
-            {:ok, user}
-
           true ->
-            # Wrong password
-            {:error, :invalid_credentials}
+            {:ok, user}
         end
 
-      {:error, _reason} ->
-        Bcrypt.no_user_verify()
+      # Handle nil result (user not found) or error result
+      _ ->
+        # AshAuthentication handles timing attacks internally
         {:error, :invalid_credentials}
     end
   end
@@ -45,7 +43,10 @@ defmodule Mcp.Accounts.Auth do
   """
   def create_user_session(user, ip_address \\ nil) do
     # Update user's sign-in information
-    User.update_sign_in(user, ip_address)
+    case User.update_sign_in(user, ip_address) do
+      {:ok, _} -> :ok
+      {:error, reason} -> Logger.warning("Failed to update sign-in info: #{inspect(reason)}")
+    end
 
     # Generate JWT token pair
     context = %{
@@ -72,8 +73,8 @@ defmodule Mcp.Accounts.Auth do
       "exp" => DateTime.utc_now() |> DateTime.add(30, :day) |> DateTime.to_unix()
     }
 
-    with {:ok, access_token} <- JWT.generate_token(access_claims),
-         {:ok, refresh_token} <- JWT.generate_token(refresh_claims) do
+    with {:ok, access_token, _claims} <- JWT.generate_token(access_claims),
+         {:ok, refresh_token, _claims} <- JWT.generate_token(refresh_claims) do
       # Store tokens in database
       case store_tokens(user.id, access_token, refresh_token, context, device_info) do
         :ok ->
@@ -142,8 +143,8 @@ defmodule Mcp.Accounts.Auth do
               "exp" => DateTime.utc_now() |> DateTime.add(30, :day) |> DateTime.to_unix()
             }
 
-            with {:ok, new_access_token} <- JWT.generate_token(access_claims),
-                 {:ok, new_refresh_token} <- JWT.generate_token(refresh_claims) do
+            with {:ok, new_access_token, _claims} <- JWT.generate_token(access_claims),
+                 {:ok, new_refresh_token, _claims} <- JWT.generate_token(refresh_claims) do
               {:ok,
                %{
                  user_id: user_id,
@@ -211,12 +212,12 @@ defmodule Mcp.Accounts.Auth do
         # Determine contexts based on user role and status
         base_contexts = ["user:#{user_id}"]
 
-        role_contexts =
-          case user.role do
-            "admin" -> ["admin", "moderator"]
-            "moderator" -> ["moderator"]
-            _ -> []
-          end
+          role_contexts =
+            case user.role do
+              :admin -> ["admin", "moderator"]
+              :moderator -> ["moderator"]
+              _ -> []
+            end
 
         tenant_context =
           if user.tenant_id do
@@ -294,7 +295,7 @@ defmodule Mcp.Accounts.Auth do
     session_key = "tokens:#{user_id}:#{access_token}"
 
     case SessionStore.create_session(session_key, token_data, ttl: 86_400) do
-      :ok ->
+      {:ok, _} ->
         :ok
 
       {:error, reason} ->

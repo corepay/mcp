@@ -6,9 +6,7 @@ defmodule McpWeb.AuthLive.LoginComponent do
   import Phoenix.Component
   alias Mcp.Accounts.OAuth
 
-  @max_login_attempts 5
-  @lockout_duration_minutes 15
-  @oauth_providers ["google", "github"]
+@oauth_providers ["google", "github"]
 
   @impl true
   def mount(socket) do
@@ -52,7 +50,8 @@ defmodule McpWeb.AuthLive.LoginComponent do
 
       <.form
         for={@form}
-        phx-submit="login"
+        action={~p"/sign-in"}
+        method="post"
         phx-change="validate"
         phx-target={@myself}
         class="space-y-6"
@@ -198,20 +197,7 @@ defmodule McpWeb.AuthLive.LoginComponent do
     {:noreply, socket}
   end
 
-  @impl true
-  def handle_event("login", %{"login" => login_params}, socket) do
-    if rate_limited?(socket) do
-      {:noreply, handle_rate_limit(socket)}
-    else
-      socket = assign(socket, :loading, true)
-
-      # Simulate login delay
-      Process.sleep(500)
-
-      # For now, just simulate error as in original code
-      {:noreply, handle_login_error(socket, :invalid_credentials, login_params)}
-    end
-  end
+  # handle_event("login") is removed as we use standard form submission now
 
   @impl true
   def handle_event("oauth_login", %{"provider" => provider}, socket)
@@ -341,31 +327,6 @@ defmodule McpWeb.AuthLive.LoginComponent do
     end
   end
 
-  defp handle_login_error(socket, reason, _login_params) do
-    error_message = translate_login_error(reason)
-
-    socket =
-      socket
-      |> assign(:loading, false)
-      |> assign(:login_attempts, socket.assigns.login_attempts + 1)
-      |> put_flash(:error, error_message)
-      |> add_announcement("Login failed: #{error_message}")
-
-    if socket.assigns.login_attempts >= @max_login_attempts do
-      lock_until = DateTime.add(DateTime.utc_now(), @lockout_duration_minutes * 60, :second)
-
-      socket
-      |> assign(:locked_until, lock_until)
-      |> put_flash(
-        :error,
-        "Too many failed attempts. Account locked for #{@lockout_duration_minutes} minutes."
-      )
-      |> add_announcement("Account temporarily locked due to multiple failed attempts")
-    else
-      socket
-    end
-  end
-
   defp handle_rate_limit(socket) do
     socket
     |> put_flash(:error, "Please wait before trying again.")
@@ -455,11 +416,4 @@ defmodule McpWeb.AuthLive.LoginComponent do
     announcements = [message | socket.assigns.announcements] |> Enum.take(3)
     assign(socket, :announcements, announcements)
   end
-
-  defp translate_login_error(:invalid_credentials), do: "Invalid email or password"
-  defp translate_login_error(:account_locked), do: "Account is temporarily locked"
-  defp translate_login_error(:account_suspended), do: "Account has been suspended"
-  defp translate_login_error(:account_deleted), do: "Account has been deleted"
-  defp translate_login_error(:rate_limited), do: "Too many attempts. Please try again later."
-  defp translate_login_error(reason), do: "Authentication failed: #{inspect(reason)}"
 end

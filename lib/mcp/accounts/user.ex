@@ -29,6 +29,7 @@ defmodule Mcp.Accounts.User do
   end
 
   authentication do
+    domain Mcp.Accounts
     strategies do
       password :password do
         identity_field(:email)
@@ -87,7 +88,7 @@ defmodule Mcp.Accounts.User do
 
     # Session tracking
     attribute :last_sign_in_at, :utc_datetime
-    attribute :last_sign_in_ip, :string
+    attribute :last_sign_in_ip, Mcp.Types.Inet
 
     attribute :sign_in_count, :integer do
       default 0
@@ -99,6 +100,14 @@ defmodule Mcp.Accounts.User do
       default :active
       allow_nil? false
     end
+
+    attribute :role, :atom do
+      constraints one_of: [:user, :admin, :moderator]
+      default :user
+      allow_nil? false
+    end
+
+    attribute :tenant_id, :uuid
 
     timestamps()
   end
@@ -168,10 +177,12 @@ defmodule Mcp.Accounts.User do
     end
 
     update :suspend do
+      require_atomic? false
       change set_attribute(:status, :suspended)
     end
 
     update :activate do
+      require_atomic? false
       change set_attribute(:status, :active)
     end
   end

@@ -133,60 +133,73 @@ defmodule McpWeb.Auth.SessionPlug do
     end
   end
 
-  defp handle_existing_session(conn, _access_token, _refresh_token, _session_id, opts) do
-    # Auth.verify_jwt_access_token currently only returns {:error, :invalid_token}
-    # case Auth.verify_jwt_access_token(access_token) do
-    #   {:ok, claims} ->
-    #     # Set current user and session data
-    #     user_data = extract_user_data_from_claims(claims)
-    #
-    #     session_data = %{
-    #       access_token: access_token,
-    #       refresh_token: refresh_token,
-    #       session_id: session_id,
-    #       user: user_data,
-    #       current_context: Auth.get_current_context(claims),
-    #       authorized_contexts: Auth.get_authorized_contexts(claims),
-    #       expires_at: DateTime.from_unix!(claims["exp"])
-    #     }
-    #
-    #     conn
-    #     |> assign(:current_user, user_data)
-    #     |> assign(:current_session, session_data)
-    #     |> maybe_refresh_session(opts)
+  defp handle_existing_session(conn, access_token, refresh_token, session_id, opts) do
+    case Mcp.Accounts.Auth.verify_jwt_access_token(access_token) do
+      {:ok, claims} ->
+        # Set current user and session data
+        user_data = extract_user_data_from_claims(claims)
 
-    # {:error, reason} ->
-    # Access token invalid, try refresh
-    # Auth.refresh_jwt_session also currently only returns {:error, :invalid_token}
-    # case Auth.refresh_jwt_session(refresh_token, get_session_opts(conn)) do
-    #   {:ok, new_session_data} ->
-    #     set_jwt_session(conn, new_session_data)
-    #
-    #   {:error, _refresh_reason} ->
-    handle_invalid_session(conn, :invalid_token, opts)
-    # end
-    # end
-  end
+        session_data = %{
+          access_token: access_token,
+          refresh_token: refresh_token,
+          session_id: session_id,
+          user: user_data,
+          current_context: Mcp.Accounts.Auth.get_current_context(claims),
+          authorized_contexts: Mcp.Accounts.Auth.get_authorized_contexts(claims),
+          expires_at: DateTime.from_unix!(claims["exp"])
+        }
 
-  defp handle_no_session(conn, opts) do
-    if protected_route?(conn, opts) do
-      conn
-      |> send_resp(:unauthorized, "Authentication required")
-      |> halt()
-    else
-      assign(conn, :current_user, nil)
+        conn
+        |> assign(:current_user, user_data)
+        |> assign(:current_session, session_data)
+        |> maybe_refresh_session(opts)
+
+      {:error, _reason} ->
+        # Access token invalid, try refresh
+        case Mcp.Accounts.Auth.refresh_jwt_session(refresh_token, get_session_opts(conn)) do
+          {:ok, new_session_data} ->
+            conn
+            |> set_jwt_session(new_session_data)
+            |> assign(:current_session, new_session_data)
+            |> assign(:current_user, new_session_data.user)
+
+          {:error, _refresh_reason} ->
+            handle_invalid_session(conn, :invalid_token, opts)
+        end
     end
   end
 
-  defp handle_invalid_session(conn, _reason, opts) do
-    clear_jwt_session(conn)
+  defp handle_no_session(conn, _opts) do
+    home_path = get_home_path(conn)
 
-    if protected_route?(conn, opts) do
-      conn
-      |> send_resp(:unauthorized, "Invalid session")
-      |> halt()
-    else
-      conn
+    conn
+    |> put_status(:unauthorized)
+    |> Phoenix.Controller.put_view(McpWeb.ErrorHTML)
+    |> Phoenix.Controller.render("401.html", layout: false, home_path: home_path)
+    |> halt()
+  end
+
+  defp handle_invalid_session(conn, _reason, _opts) do
+    home_path = get_home_path(conn)
+
+    clear_jwt_session(conn)
+    |> put_status(:unauthorized)
+    |> Phoenix.Controller.put_view(McpWeb.ErrorHTML)
+    |> Phoenix.Controller.render("401.html", layout: false, home_path: home_path)
+    |> halt()
+  end
+
+  defp get_home_path(conn) do
+    path = conn.request_path
+
+    cond do
+      String.starts_with?(path, "/admin") -> "/admin"
+      String.starts_with?(path, "/app") -> "/app"
+      String.starts_with?(path, "/developers") -> "/developers"
+      String.starts_with?(path, "/partners") -> "/partners"
+      String.starts_with?(path, "/store/account") -> "/store/account"
+      String.starts_with?(path, "/vendors") -> "/vendors"
+      true -> "/tenant"
     end
   end
 
@@ -229,13 +242,17 @@ defmodule McpWeb.Auth.SessionPlug do
     expires_at && DateTime.diff(expires_at, now, :second) < threshold_seconds
   end
 
-  defp protected_route?(conn, opts) do
-    protected_routes = Keyword.get(opts, :protected_routes, [])
-    request_path = conn.request_path
+  defp extract_user_data_from_claims(claims) do
+    %{
+      id: claims["sub"],
+      tenant_id: claims["tenant_id"],
+      role: claims["role"]
+    }
+  end
 
-    Enum.any?(protected_routes, fn route ->
-      String.starts_with?(request_path, route)
-    end)
+  defp get_session_opts(_conn) do
+    # Extract options from conn or use defaults
+    []
   end
 
   defp get_current_session(conn) do

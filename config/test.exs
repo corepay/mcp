@@ -1,5 +1,6 @@
 import Config
 config :mcp, Oban, testing: :manual
+config :mcp, :token_signing_secret, "test-secret-for-jwt-signing"
 
 # Configure your database
 #

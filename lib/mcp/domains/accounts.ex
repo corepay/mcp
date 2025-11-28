@@ -11,12 +11,12 @@ defmodule Mcp.Accounts do
   """
 
   use Ash.Domain,
-    otp_app: :mcp
+    otp_app: :mcp,
+    extensions: [AshAuthentication]
 
   resources do
     resource Mcp.Accounts.User
     resource Mcp.Accounts.AuthToken
-
     resource Mcp.Accounts.RegistrationRequest
   end
 end

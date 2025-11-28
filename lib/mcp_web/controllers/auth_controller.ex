@@ -10,7 +10,11 @@ defmodule McpWeb.AuthController do
 
   alias Mcp.Accounts.Auth
 
-  def create(conn, %{"email" => email, "password" => password}) do
+  def create(conn, %{"login" => login_params}) do
+    create(conn, login_params)
+  end
+
+  def create(conn, %{"email" => email, "password" => password} = params) do
     ip_address = get_client_ip(conn)
 
     # Determine the sign-in path to redirect back to on failure
@@ -19,12 +23,14 @@ defmodule McpWeb.AuthController do
     sign_in_path = get_sign_in_path_from_referer(referer)
 
     case authenticate_user(email, password, ip_address) do
-      {:ok, session} ->
+      {:ok, session, user} ->
+        redirect_to = get_session(conn, :return_to) || get_redirect_path(conn, user)
+
         conn
-        |> put_session(:user_token, session.access_token)
-        |> put_session(:current_user, session.user)
+        |> McpWeb.Auth.SessionPlug.set_jwt_session(session)
+        |> put_session(:current_user, user)
         |> put_flash(:info, "Welcome back!")
-        |> redirect(to: get_session(conn, :return_to) || get_redirect_path(conn, session.user))
+        |> redirect(to: redirect_to)
 
       {:password_change_required, user} ->
         # Create a temporary token for password change
@@ -71,6 +77,7 @@ defmodule McpWeb.AuthController do
 
     conn
     |> clear_session()
+    |> McpWeb.Auth.SessionPlug.clear_jwt_session()
     |> put_flash(:info, "You have been signed out successfully.")
     |> redirect(to: sign_in_path)
   end
@@ -109,65 +116,15 @@ defmodule McpWeb.AuthController do
   end
 
   defp authenticate_user(email, password, ip_address) do
-    case find_user_by_email(email) do
+    case Auth.authenticate(email, password, ip_address) do
       {:ok, user} ->
-        with :ok <- validate_user_status(user),
-             :ok <- verify_user_password(user, password) do
-          reset_failed_attempts_if_needed(user)
-          Auth.create_user_session(user, ip_address)
-        else
-          {:error, :invalid_password} ->
-            Auth.record_failed_attempt(user)
-            {:error, :invalid_credentials}
-
-          {:error, reason} ->
-            {:error, reason}
+        case Auth.create_user_session(user, ip_address) do
+          {:ok, session} -> {:ok, session, user}
+          error -> error
         end
-
-      {:error, :not_found} ->
-        Bcrypt.no_user_verify()
-        {:error, :invalid_credentials}
 
       {:error, reason} ->
         {:error, reason}
-    end
-  end
-
-  defp validate_user_status(user) do
-    cond do
-      user.locked_at && user.locked_at > DateTime.add(DateTime.utc_now(), -1800, :second) ->
-        {:error, :account_locked}
-
-      user.status == :deleted ->
-        {:error, :account_deleted}
-
-      user.status == :suspended ->
-        {:error, :account_suspended}
-
-      true ->
-        :ok
-    end
-  end
-
-  defp reset_failed_attempts_if_needed(user) do
-    if user.failed_attempts > 0 do
-      Ash.update(Mcp.Accounts.User, user, %{failed_attempts: 0})
-    end
-  end
-
-  defp find_user_by_email(email) when is_binary(email) do
-    case Ash.read(Mcp.Accounts.User, action: :by_email, input: %{email: email}) do
-      {:ok, [user]} -> {:ok, user}
-      {:ok, []} -> {:error, :not_found}
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  defp verify_user_password(user, password) do
-    if Bcrypt.verify_pass(password, user.hashed_password) do
-      :ok
-    else
-      {:error, :invalid_password}
     end
   end
 

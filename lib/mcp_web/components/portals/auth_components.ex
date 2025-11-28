@@ -16,11 +16,17 @@ defmodule McpWeb.Portals.AuthComponents do
   attr :icon, :string, default: "hero-lock-closed"
   attr :features, :list, default: []
   attr :bg_color_class, :string, default: "bg-primary"
+  attr :flash, :map, default: %{}
   slot :inner_block, required: true
 
   def auth_layout(assigns) do
     ~H"""
     <div class="min-h-screen flex flex-col md:flex-row bg-base-200 font-sans">
+      <CoreComponents.flash kind={:info} title="Info" flash={@flash} />
+      <CoreComponents.flash kind={:error} title="Error" flash={@flash} />
+      <CoreComponents.flash kind={:success} title="Success" flash={@flash} />
+      <CoreComponents.flash kind={:warning} title="Warning" flash={@flash} />
+
       <!-- Left Side: Branding/Context (Hidden on mobile) -->
       <div class="hidden md:flex md:w-1/2 relative overflow-hidden bg-base-200">
         <!-- Background Gradients (Context Aware) -->

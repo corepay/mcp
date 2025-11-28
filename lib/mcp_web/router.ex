@@ -41,7 +41,7 @@ defmodule McpWeb.Router do
   end
 
   pipeline :jwt_auth do
-    plug McpWeb.Auth.SessionPlug, protected_routes: ["/dashboard", "/settings"]
+    plug McpWeb.Auth.SessionPlug
   end
 
   pipeline :api do

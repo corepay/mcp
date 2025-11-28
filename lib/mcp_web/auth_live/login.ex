@@ -44,6 +44,7 @@ defmodule McpWeb.AuthLive.Login do
       icon={@portal_config.icon}
       features={@portal_config.features}
       bg_color_class={@portal_config.bg_color_class}
+      flash={@flash}
     >
       <.live_component
         module={McpWeb.AuthLive.LoginComponent}
