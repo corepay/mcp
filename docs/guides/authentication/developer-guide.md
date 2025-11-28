@@ -2,7 +2,10 @@
 
 ## Implementation Overview
 
-This guide provides detailed technical implementation instructions for the MCP platform's authentication system. It covers code patterns, integration steps, and best practices for developers and LLM agents implementing authentication features.
+This guide provides detailed technical implementation instructions for the MCP
+platform's authentication system. It covers code patterns, integration steps,
+and best practices for developers and LLM agents implementing authentication
+features.
 
 ## Prerequisites
 
@@ -760,7 +763,7 @@ defmodule McpWeb.AuthControllerTest do
         }
       }
 
-      conn = post(conn, "/sign_in", attrs)
+      conn = post(conn, "/tenant/sign-in", attrs)
 
       assert %{"status" => "success"} = json_response(conn, 201)
     end
@@ -777,7 +780,7 @@ defmodule McpWeb.AuthControllerTest do
         }
       }
 
-      conn = post(conn, "/sign_in", attrs)
+      conn = post(conn, "/tenant/sign-in", attrs)
 
       response = json_response(conn, 200)
       assert %{"status" => "success"} = response
@@ -920,4 +923,6 @@ SESSION_TIMEOUT_HOURS=24
 MAX_LOGIN_ATTEMPTS=5
 ```
 
-This developer guide provides comprehensive technical implementation details for the authentication system, including code examples, security best practices, testing strategies, and configuration instructions.
+This developer guide provides comprehensive technical implementation details for
+the authentication system, including code examples, security best practices,
+testing strategies, and configuration instructions.

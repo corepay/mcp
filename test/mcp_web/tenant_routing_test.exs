@@ -1,6 +1,7 @@
 defmodule McpWeb.TenantRoutingTest do
   use ExUnit.Case, async: true
   use Plug.Test
+  import Mock
 
   alias Mcp.Platform.Tenant
   alias McpWeb.TenantRouting
@@ -9,7 +10,7 @@ defmodule McpWeb.TenantRoutingTest do
   @valid_tenant %Tenant{
     id: "123e4567-e89b-12d3-a456-426614174000",
     slug: "test-tenant",
-    company_name: "Test Company",
+    name: "Test Company",
     company_schema: "test_tenant",
     subdomain: "test",
     custom_domain: "test-company.com",
@@ -20,7 +21,7 @@ defmodule McpWeb.TenantRoutingTest do
   @tenant_with_custom_domain %Tenant{
     id: "123e4567-e89b-12d3-a456-426614174001",
     slug: "custom-tenant",
-    company_name: "Custom Domain Company",
+    name: "Custom Domain Company",
     company_schema: "custom_tenant",
     subdomain: "custom",
     custom_domain: "custom.example.com",

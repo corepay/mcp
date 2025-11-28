@@ -51,27 +51,56 @@ defmodule McpWeb.Router do
 
   # Platform Admin Portal
   scope "/admin", McpWeb do
+    pipe_through [:browser, :platform_admin_layout]
+    
+    live_session :admin_auth, session: %{"portal_context" => "admin"} do
+      live "/sign-in", AuthLive.Login, :index
+      live "/", LandingLive, :index
+    end
+  end
+
+  scope "/admin", McpWeb do
     pipe_through [:browser, :jwt_auth, :platform_admin_layout]
     
-    live "/", Platform.DashboardLive
+    live "/dashboard", Platform.DashboardLive
     live "/tenants", MockDashboardLive
     live "/settings", MockDashboardLive
   end
 
   # Tenant Portal
   scope "/tenant", McpWeb do
+    pipe_through [:browser, :tenant_portal_layout]
+    
+    live_session :tenant_auth, session: %{"portal_context" => "tenant"} do
+      live "/sign-in", AuthLive.Login, :index
+      live "/", LandingLive, :index
+    end
+  end
+
+  scope "/tenant", McpWeb do
     pipe_through [:browser, :jwt_auth, :tenant_portal_layout]
     
-    live "/", Tenant.DashboardLive
+    live "/dashboard", Tenant.DashboardLive
     live "/settings", TenantSettingsLive
     live "/merchants", MockDashboardLive
+    live "/gdpr", GdprLive
+    live "/change-password", AuthLive.ChangePassword
   end
 
   # Merchant Portal
   scope "/app", McpWeb do
+    pipe_through [:browser, :merchant_portal_layout]
+    
+    live_session :merchant_auth, session: %{"portal_context" => "merchant"} do
+      live "/sign-in", AuthLive.Login, :index
+      live "/", LandingLive, :index
+    end
+  end
+
+  scope "/app", McpWeb do
     pipe_through [:browser, :jwt_auth, :merchant_portal_layout]
     
-    live "/", MockDashboardLive
+    live "/dashboard", MockDashboardLive
     live "/orders", MockDashboardLive
     live "/products", MockDashboardLive
     live "/customers", MockDashboardLive
@@ -83,9 +112,18 @@ defmodule McpWeb.Router do
 
   # Store Portal
   scope "/app/stores/:store_slug", McpWeb do
+    pipe_through [:browser, :store_portal_layout]
+    
+    live_session :store_auth, session: %{"portal_context" => "store"} do
+      live "/sign-in", AuthLive.Login, :index
+      live "/", LandingLive, :index
+    end
+  end
+
+  scope "/app/stores/:store_slug", McpWeb do
     pipe_through [:browser, :jwt_auth, :store_portal_layout]
     
-    live "/", MockDashboardLive
+    live "/dashboard", MockDashboardLive
     live "/terminal", MockDashboardLive
     live "/invoices", MockDashboardLive
     live "/subscriptions", MockDashboardLive
@@ -93,36 +131,72 @@ defmodule McpWeb.Router do
 
   # Developer Portal
   scope "/developers", McpWeb do
+    pipe_through [:browser, :developer_portal_layout]
+    
+    live_session :developer_auth, session: %{"portal_context" => "developer"} do
+      live "/sign-in", AuthLive.Login, :index
+      live "/", LandingLive, :index
+    end
+  end
+
+  scope "/developers", McpWeb do
     pipe_through [:browser, :jwt_auth, :developer_portal_layout]
     
-    live "/", MockDashboardLive
+    live "/dashboard", MockDashboardLive
     live "/apps", MockDashboardLive
     live "/docs", MockDashboardLive
   end
 
   # Reseller Portal
   scope "/partners", McpWeb do
+    pipe_through [:browser, :reseller_portal_layout]
+    
+    live_session :reseller_auth, session: %{"portal_context" => "reseller"} do
+      live "/sign-in", AuthLive.Login, :index
+      live "/", LandingLive, :index
+    end
+  end
+
+  scope "/partners", McpWeb do
     pipe_through [:browser, :jwt_auth, :reseller_portal_layout]
     
-    live "/", MockDashboardLive
+    live "/dashboard", MockDashboardLive
     live "/merchants", MockDashboardLive
     live "/commissions", MockDashboardLive
   end
 
   # Customer Portal
   scope "/store/account", McpWeb do
+    pipe_through [:browser, :customer_portal_layout]
+    
+    live_session :customer_auth, session: %{"portal_context" => "customer"} do
+      live "/sign-in", AuthLive.Login, :index
+      live "/", LandingLive, :index
+    end
+  end
+
+  scope "/store/account", McpWeb do
     pipe_through [:browser, :jwt_auth, :customer_portal_layout]
     
-    live "/", MockDashboardLive
+    live "/dashboard", MockDashboardLive
     live "/orders", MockDashboardLive
     live "/profile", MockDashboardLive
   end
 
   # Vendor Portal
   scope "/vendors", McpWeb do
+    pipe_through [:browser, :vendor_portal_layout]
+    
+    live_session :vendor_auth, session: %{"portal_context" => "vendor"} do
+      live "/sign-in", AuthLive.Login, :index
+      live "/", LandingLive, :index
+    end
+  end
+
+  scope "/vendors", McpWeb do
     pipe_through [:browser, :jwt_auth, :vendor_portal_layout]
     
-    live "/", MockDashboardLive
+    live "/dashboard", MockDashboardLive
     live "/products", MockDashboardLive
     live "/orders", MockDashboardLive
   end
@@ -131,12 +205,11 @@ defmodule McpWeb.Router do
   scope "/", McpWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", LandingLive, :home
     
-    # Auth Routes
-    live "/sign_in", AuthLive.Login, :index
-    post "/sign_in", AuthController, :create
-    delete "/sign_out", AuthController, :delete
+    # Auth Routes - Global sign-in removed in favor of scoped routes
+    post "/sign-in", AuthController, :create
+    delete "/sign-out", AuthController, :delete
   end
 
   # API Routes

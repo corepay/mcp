@@ -1,4 +1,4 @@
-defmodule McpWeb.GdprComponents do
+defmodule McpWeb.Portals.GdprComponents do
   @moduledoc """
   Reusable GDPR-specific UI components.
 
@@ -13,7 +13,7 @@ defmodule McpWeb.GdprComponents do
   use Phoenix.Component
 
   # Import the icon function from CoreComponents
-  import McpWeb.CoreComponents, only: [icon: 1]
+  import McpWeb.Core.CoreComponents, only: [icon: 1]
 
   @doc """
   Renders a data export request form.

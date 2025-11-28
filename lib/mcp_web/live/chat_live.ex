@@ -104,18 +104,18 @@ defmodule McpWeb.ChatLive do
             Conversations
           </div>
           <div class="mb-4">
-            <.link navigate={~p"/chat"} class="btn btn-primary btn-lg mb-2">
+            <.link navigate={~p"/tenant"} class="btn btn-primary btn-lg mb-2">
               <div class="rounded-full bg-primary-content text-primary w-6 h-6 flex items-center justify-center">
                 <.icon name="hero-plus" />
               </div>
-              <span>New Chat</span>
+              <span>New Chat (Coming Soon)</span>
             </.link>
           </div>
           <ul class="flex flex-col-reverse" phx-update="stream" id="conversations-list">
             <%= for {id, conversation} <- @streams.conversations do %>
               <li id={id}>
                 <.link
-                  navigate={~p"/chat/#{conversation.id}"}
+                  navigate={~p"/tenant"}
                   phx-click="select_conversation"
                   phx-value-id={conversation.id}
                   class={"block py-2 px-3 transition border-l-4 pl-2 mb-2 #{if @conversation && @conversation.id == conversation.id, do: "border-primary font-medium", else: "border-transparent"}"}
@@ -156,7 +156,7 @@ defmodule McpWeb.ChatLive do
 
       {:ok, socket}
     else
-      {:ok, push_navigate(socket, to: ~p"/sign_in")}
+      {:ok, push_navigate(socket, to: ~p"/tenant/sign-in")}
     end
   end
 
@@ -209,9 +209,9 @@ defmodule McpWeb.ChatLive do
           |> stream_insert(:messages, message, at: 0)
           |> then(&{:noreply, &1})
         else
-          {:noreply,
-           socket
-           |> push_navigate(to: ~p"/chat/#{message.conversation_id}")}
+           {:noreply,
+            socket
+            |> push_navigate(to: ~p"/tenant")}
         end
 
       {:error, form} ->

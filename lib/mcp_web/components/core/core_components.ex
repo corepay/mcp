@@ -1,4 +1,4 @@
-defmodule McpWeb.CoreComponents do
+defmodule McpWeb.Core.CoreComponents do
   @moduledoc """
   Provides core UI components based on DaisyUI.
   """
@@ -99,7 +99,7 @@ defmodule McpWeb.CoreComponents do
 
   def modal(assigns) do
     ~H"""
-    <dialog id={@id} class="modal">
+    <dialog id={@id} class={["modal", @show && "modal-open"]}>
       <div class="modal-box">
         <h3 :if={@title != []} class="font-bold text-lg">{render_slot(@title)}</h3>
         <div class="py-4">
@@ -117,7 +117,7 @@ defmodule McpWeb.CoreComponents do
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
-        <button>close</button>
+        <button phx-click={@on_cancel}>close</button>
       </form>
     </dialog>
     """

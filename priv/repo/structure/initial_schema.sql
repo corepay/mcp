@@ -21,28 +21,18 @@ SET row_security = off;
 -- Name: ag_catalog; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA ag_catalog;
+CREATE SCHEMA IF NOT EXISTS ag_catalog;
 
 
 --
 -- Name: finance; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA finance;
+CREATE SCHEMA IF NOT EXISTS finance;
 
+CREATE SCHEMA IF NOT EXISTS platform;
 
---
--- Name: platform; Type: SCHEMA; Schema: -; Owner: -
---
-
-CREATE SCHEMA platform;
-
-
---
--- Name: shared; Type: SCHEMA; Schema: -; Owner: -
---
-
-CREATE SCHEMA shared;
+CREATE SCHEMA IF NOT EXISTS shared;
 
 
 --
@@ -84,22 +74,28 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA platform;
 -- Name: oban_job_state; Type: TYPE; Schema: public; Owner: -
 --
 
-CREATE TYPE public.oban_job_state AS ENUM (
-    'available',
-    'scheduled',
-    'executing',
-    'retryable',
-    'completed',
-    'discarded',
-    'cancelled'
-);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'oban_job_state') THEN
+        CREATE TYPE public.oban_job_state AS ENUM (
+            'available',
+            'scheduled',
+            'executing',
+            'retryable',
+            'completed',
+            'discarded',
+            'cancelled'
+        );
+    END IF;
+END
+$$;
 
 
 --
 -- Name: create_tenant_schema(text); Type: FUNCTION; Schema: ag_catalog; Owner: -
 --
 
-CREATE FUNCTION ag_catalog.create_tenant_schema(tenant_schema_name text) RETURNS void
+CREATE OR REPLACE FUNCTION ag_catalog.create_tenant_schema(tenant_schema_name text) RETURNS void
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -128,7 +124,7 @@ $$;
 -- Name: aggregate_hourly_metrics(); Type: FUNCTION; Schema: platform; Owner: -
 --
 
-CREATE FUNCTION platform.aggregate_hourly_metrics() RETURNS trigger
+CREATE OR REPLACE FUNCTION platform.aggregate_hourly_metrics() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
   BEGIN
@@ -143,7 +139,7 @@ CREATE FUNCTION platform.aggregate_hourly_metrics() RETURNS trigger
 -- Name: calculate_retention_expires(integer); Type: FUNCTION; Schema: platform; Owner: -
 --
 
-CREATE FUNCTION platform.calculate_retention_expires(retention_days integer) RETURNS timestamp with time zone
+CREATE OR REPLACE FUNCTION platform.calculate_retention_expires(retention_days integer) RETURNS timestamp with time zone
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -156,7 +152,7 @@ $$;
 -- Name: create_tenant_schema(text); Type: FUNCTION; Schema: platform; Owner: -
 --
 
-CREATE FUNCTION platform.create_tenant_schema(tenant_slug text) RETURNS void
+CREATE OR REPLACE FUNCTION platform.create_tenant_schema(tenant_slug text) RETURNS void
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -178,7 +174,7 @@ $$;
 -- Name: drop_tenant_schema(text); Type: FUNCTION; Schema: platform; Owner: -
 --
 
-CREATE FUNCTION platform.drop_tenant_schema(tenant_slug text) RETURNS void
+CREATE OR REPLACE FUNCTION platform.drop_tenant_schema(tenant_slug text) RETURNS void
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -193,7 +189,7 @@ $$;
 -- Name: ensure_tenant_settings_schema(uuid); Type: FUNCTION; Schema: platform; Owner: -
 --
 
-CREATE FUNCTION platform.ensure_tenant_settings_schema(tenant_uuid uuid) RETURNS void
+CREATE OR REPLACE FUNCTION platform.ensure_tenant_settings_schema(tenant_uuid uuid) RETURNS void
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -216,7 +212,7 @@ BEGIN
 
         -- Create tenant settings table in the schema if it doesn't exist
         EXECUTE format('
-            CREATE TABLE IF NOT EXISTS %I.tenant_settings (
+            CREATE TABLE IF NOT EXISTS IF NOT EXISTS %I.tenant_settings (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 category TEXT NOT NULL,
                 key TEXT NOT NULL,
@@ -233,8 +229,8 @@ BEGIN
             )', schema_name);
 
         -- Create indexes in tenant schema
-        EXECUTE format('CREATE INDEX IF NOT EXISTS idx_tenant_settings_category ON %I.tenant_settings (category)', schema_name);
-        EXECUTE format('CREATE INDEX IF NOT EXISTS idx_tenant_settings_public ON %I.tenant_settings (public)', schema_name);
+        EXECUTE format('CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_tenant_settings_category ON %I.tenant_settings (category)', schema_name);
+        EXECUTE format('CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_tenant_settings_public ON %I.tenant_settings (public)', schema_name);
     END IF;
 END;
 $$;
@@ -244,7 +240,7 @@ $$;
 -- Name: metric_aggregates(uuid, character varying, timestamp with time zone, timestamp with time zone, interval); Type: FUNCTION; Schema: platform; Owner: -
 --
 
-CREATE FUNCTION platform.metric_aggregates(p_tenant_id uuid, p_metric_key character varying, p_start_time timestamp with time zone, p_end_time timestamp with time zone, p_interval interval DEFAULT '01:00:00'::interval) RETURNS TABLE(time_bucket timestamp with time zone, count bigint, sum_val numeric, avg_val numeric, min_val numeric, max_val numeric)
+CREATE OR REPLACE FUNCTION platform.metric_aggregates(p_tenant_id uuid, p_metric_key character varying, p_start_time timestamp with time zone, p_end_time timestamp with time zone, p_interval interval DEFAULT '01:00:00'::interval) RETURNS TABLE(time_bucket timestamp with time zone, count bigint, sum_val numeric, avg_val numeric, min_val numeric, max_val numeric)
     LANGUAGE plpgsql
     AS $$
   BEGIN
@@ -275,7 +271,7 @@ SET default_table_access_method = heap;
 -- Name: users; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.users (
+CREATE TABLE IF NOT EXISTS platform.users (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     email public.citext NOT NULL,
     hashed_password text NOT NULL,
@@ -316,7 +312,7 @@ CREATE TABLE platform.users (
 -- Name: should_anonymize_user(platform.users); Type: FUNCTION; Schema: platform; Owner: -
 --
 
-CREATE FUNCTION platform.should_anonymize_user(user_record platform.users) RETURNS boolean
+CREATE OR REPLACE FUNCTION platform.should_anonymize_user(user_record platform.users) RETURNS boolean
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -333,7 +329,7 @@ $$;
 -- Name: tenant_schema_exists(text); Type: FUNCTION; Schema: platform; Owner: -
 --
 
-CREATE FUNCTION platform.tenant_schema_exists(tenant_slug text) RETURNS boolean
+CREATE OR REPLACE FUNCTION platform.tenant_schema_exists(tenant_slug text) RETURNS boolean
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -354,7 +350,7 @@ $$;
 -- Name: trigger_tenant_settings_schema(); Type: FUNCTION; Schema: platform; Owner: -
 --
 
-CREATE FUNCTION platform.trigger_tenant_settings_schema() RETURNS trigger
+CREATE OR REPLACE FUNCTION platform.trigger_tenant_settings_schema() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -368,7 +364,7 @@ $$;
 -- Name: update_consent_records(); Type: FUNCTION; Schema: platform; Owner: -
 --
 
-CREATE FUNCTION platform.update_consent_records() RETURNS trigger
+CREATE OR REPLACE FUNCTION platform.update_consent_records() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -391,7 +387,7 @@ $$;
 -- Name: accounts; Type: TABLE; Schema: finance; Owner: -
 --
 
-CREATE TABLE finance.accounts (
+CREATE TABLE IF NOT EXISTS finance.accounts (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     name text NOT NULL,
     identifier text NOT NULL,
@@ -410,7 +406,7 @@ CREATE TABLE finance.accounts (
 -- Name: balances; Type: TABLE; Schema: finance; Owner: -
 --
 
-CREATE TABLE finance.balances (
+CREATE TABLE IF NOT EXISTS finance.balances (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     balance numeric NOT NULL,
     currency text NOT NULL,
@@ -424,7 +420,7 @@ CREATE TABLE finance.balances (
 -- Name: transfers; Type: TABLE; Schema: finance; Owner: -
 --
 
-CREATE TABLE finance.transfers (
+CREATE TABLE IF NOT EXISTS finance.transfers (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     amount numeric NOT NULL,
     "timestamp" timestamp without time zone NOT NULL,
@@ -440,7 +436,7 @@ PARTITION BY RANGE (inserted_at);
 -- Name: transfers_default; Type: TABLE; Schema: finance; Owner: -
 --
 
-CREATE TABLE finance.transfers_default (
+CREATE TABLE IF NOT EXISTS finance.transfers_default (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     amount numeric NOT NULL,
     "timestamp" timestamp without time zone NOT NULL,
@@ -455,7 +451,7 @@ CREATE TABLE finance.transfers_default (
 -- Name: transfers_p2025_11; Type: TABLE; Schema: finance; Owner: -
 --
 
-CREATE TABLE finance.transfers_p2025_11 (
+CREATE TABLE IF NOT EXISTS finance.transfers_p2025_11 (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     amount numeric NOT NULL,
     "timestamp" timestamp without time zone NOT NULL,
@@ -470,7 +466,7 @@ CREATE TABLE finance.transfers_p2025_11 (
 -- Name: transfers_p2025_12; Type: TABLE; Schema: finance; Owner: -
 --
 
-CREATE TABLE finance.transfers_p2025_12 (
+CREATE TABLE IF NOT EXISTS finance.transfers_p2025_12 (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     amount numeric NOT NULL,
     "timestamp" timestamp without time zone NOT NULL,
@@ -485,7 +481,7 @@ CREATE TABLE finance.transfers_p2025_12 (
 -- Name: address_types; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.address_types (
+CREATE TABLE IF NOT EXISTS platform.address_types (
     value text NOT NULL,
     label text NOT NULL,
     description text,
@@ -499,7 +495,7 @@ CREATE TABLE platform.address_types (
 -- Name: addresses; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.addresses (
+CREATE TABLE IF NOT EXISTS platform.addresses (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     owner_type text NOT NULL,
     owner_id uuid NOT NULL,
@@ -525,7 +521,7 @@ CREATE TABLE platform.addresses (
 -- Name: analytics_alerts; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.analytics_alerts (
+CREATE TABLE IF NOT EXISTS platform.analytics_alerts (
     id uuid NOT NULL,
     tenant_id uuid NOT NULL,
     metric_id uuid NOT NULL,
@@ -555,7 +551,7 @@ CREATE TABLE platform.analytics_alerts (
 -- Name: analytics_dashboards; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.analytics_dashboards (
+CREATE TABLE IF NOT EXISTS platform.analytics_dashboards (
     id uuid NOT NULL,
     tenant_id uuid NOT NULL,
     name character varying(255) NOT NULL,
@@ -578,7 +574,7 @@ CREATE TABLE platform.analytics_dashboards (
 -- Name: analytics_metrics; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.analytics_metrics (
+CREATE TABLE IF NOT EXISTS platform.analytics_metrics (
     id uuid NOT NULL,
     tenant_id uuid NOT NULL,
     category character varying(255) NOT NULL,
@@ -600,7 +596,7 @@ CREATE TABLE platform.analytics_metrics (
 -- Name: analytics_metrics_daily; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.analytics_metrics_daily (
+CREATE TABLE IF NOT EXISTS platform.analytics_metrics_daily (
     tenant_id uuid NOT NULL,
     category character varying(255) NOT NULL,
     metric_key character varying(255) NOT NULL,
@@ -623,7 +619,7 @@ CREATE TABLE platform.analytics_metrics_daily (
 -- Name: analytics_metrics_hourly; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.analytics_metrics_hourly (
+CREATE TABLE IF NOT EXISTS platform.analytics_metrics_hourly (
     tenant_id uuid NOT NULL,
     category character varying(255) NOT NULL,
     metric_key character varying(255) NOT NULL,
@@ -645,7 +641,7 @@ CREATE TABLE platform.analytics_metrics_hourly (
 -- Name: analytics_reports; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.analytics_reports (
+CREATE TABLE IF NOT EXISTS platform.analytics_reports (
     id uuid NOT NULL,
     tenant_id uuid NOT NULL,
     name character varying(255) NOT NULL,
@@ -673,7 +669,7 @@ CREATE TABLE platform.analytics_reports (
 -- Name: analytics_widgets; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.analytics_widgets (
+CREATE TABLE IF NOT EXISTS platform.analytics_widgets (
     id uuid NOT NULL,
     dashboard_id uuid NOT NULL,
     widget_id character varying(255) NOT NULL,
@@ -697,7 +693,7 @@ CREATE TABLE platform.analytics_widgets (
 -- Name: api_keys; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.api_keys (
+CREATE TABLE IF NOT EXISTS platform.api_keys (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     owner_type text NOT NULL,
     owner_id uuid NOT NULL,
@@ -724,7 +720,7 @@ CREATE TABLE platform.api_keys (
 -- Name: audit_logs; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.audit_logs (
+CREATE TABLE IF NOT EXISTS platform.audit_logs (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     actor_type text,
     actor_id uuid,
@@ -745,7 +741,7 @@ CREATE TABLE platform.audit_logs (
 -- Name: auth_tokens; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.auth_tokens (
+CREATE TABLE IF NOT EXISTS platform.auth_tokens (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid NOT NULL,
     token text NOT NULL,
@@ -769,7 +765,7 @@ CREATE TABLE platform.auth_tokens (
 -- Name: data_migration_logs; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.data_migration_logs (
+CREATE TABLE IF NOT EXISTS platform.data_migration_logs (
     id uuid NOT NULL,
     migration_id uuid NOT NULL,
     log_level character varying(255) DEFAULT 'info'::character varying NOT NULL,
@@ -793,7 +789,7 @@ CREATE TABLE platform.data_migration_logs (
 -- Name: data_migration_records; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.data_migration_records (
+CREATE TABLE IF NOT EXISTS platform.data_migration_records (
     id uuid NOT NULL,
     migration_id uuid NOT NULL,
     batch_number integer,
@@ -821,7 +817,7 @@ CREATE TABLE platform.data_migration_records (
 -- Name: data_migrations; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.data_migrations (
+CREATE TABLE IF NOT EXISTS platform.data_migrations (
     id uuid NOT NULL,
     tenant_id uuid NOT NULL,
     migration_type character varying(255) NOT NULL,
@@ -861,7 +857,7 @@ CREATE TABLE platform.data_migrations (
 -- Name: data_retention_schedule; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.data_retention_schedule (
+CREATE TABLE IF NOT EXISTS platform.data_retention_schedule (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid NOT NULL,
     data_category text NOT NULL,
@@ -886,7 +882,7 @@ CREATE TABLE platform.data_retention_schedule (
 -- Name: developer_tenants; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.developer_tenants (
+CREATE TABLE IF NOT EXISTS platform.developer_tenants (
     developer_id uuid NOT NULL,
     tenant_id uuid NOT NULL,
     status text DEFAULT 'active'::text,
@@ -900,7 +896,7 @@ CREATE TABLE platform.developer_tenants (
 -- Name: developers; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.developers (
+CREATE TABLE IF NOT EXISTS platform.developers (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid,
     company_name text NOT NULL,
@@ -929,7 +925,7 @@ CREATE TABLE platform.developers (
 -- Name: developers_versions; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.developers_versions (
+CREATE TABLE IF NOT EXISTS platform.developers_versions (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     version_action_type text NOT NULL,
     version_source_id uuid NOT NULL,
@@ -943,7 +939,7 @@ CREATE TABLE platform.developers_versions (
 -- Name: document_types; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.document_types (
+CREATE TABLE IF NOT EXISTS platform.document_types (
     value text NOT NULL,
     label text NOT NULL,
     description text,
@@ -961,7 +957,7 @@ CREATE TABLE platform.document_types (
 -- Name: documents; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.documents (
+CREATE TABLE IF NOT EXISTS platform.documents (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     owner_type text NOT NULL,
     owner_id uuid NOT NULL,
@@ -991,7 +987,7 @@ CREATE TABLE platform.documents (
 -- Name: email_types; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.email_types (
+CREATE TABLE IF NOT EXISTS platform.email_types (
     value text NOT NULL,
     label text NOT NULL,
     is_active boolean DEFAULT true,
@@ -1004,7 +1000,7 @@ CREATE TABLE platform.email_types (
 -- Name: emails; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.emails (
+CREATE TABLE IF NOT EXISTS platform.emails (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     owner_type text NOT NULL,
     owner_id uuid NOT NULL,
@@ -1027,7 +1023,7 @@ CREATE TABLE platform.emails (
 -- Name: entity_types; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.entity_types (
+CREATE TABLE IF NOT EXISTS platform.entity_types (
     value text NOT NULL,
     label text NOT NULL,
     description text,
@@ -1044,7 +1040,7 @@ CREATE TABLE platform.entity_types (
 -- Name: feature_toggles; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.feature_toggles (
+CREATE TABLE IF NOT EXISTS platform.feature_toggles (
     id uuid NOT NULL,
     tenant_id uuid NOT NULL,
     feature character varying(255) NOT NULL,
@@ -1063,7 +1059,7 @@ CREATE TABLE platform.feature_toggles (
 -- Name: gdpr_anonymization_records; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.gdpr_anonymization_records (
+CREATE TABLE IF NOT EXISTS platform.gdpr_anonymization_records (
     id uuid NOT NULL,
     user_id uuid NOT NULL,
     table_name character varying(255) NOT NULL,
@@ -1083,7 +1079,7 @@ CREATE TABLE platform.gdpr_anonymization_records (
 -- Name: gdpr_audit_logs; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.gdpr_audit_logs (
+CREATE TABLE IF NOT EXISTS platform.gdpr_audit_logs (
     id uuid NOT NULL,
     user_id uuid,
     actor_id uuid,
@@ -1107,7 +1103,7 @@ CREATE TABLE platform.gdpr_audit_logs (
 -- Name: gdpr_audit_trail; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.gdpr_audit_trail (
+CREATE TABLE IF NOT EXISTS platform.gdpr_audit_trail (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid NOT NULL,
     action_type text NOT NULL,
@@ -1132,7 +1128,7 @@ CREATE TABLE platform.gdpr_audit_trail (
 -- Name: gdpr_consent_records; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.gdpr_consent_records (
+CREATE TABLE IF NOT EXISTS platform.gdpr_consent_records (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid NOT NULL,
     consent_type text NOT NULL,
@@ -1159,7 +1155,7 @@ CREATE TABLE platform.gdpr_consent_records (
 -- Name: gdpr_consents; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.gdpr_consents (
+CREATE TABLE IF NOT EXISTS platform.gdpr_consents (
     id uuid NOT NULL,
     user_id uuid NOT NULL,
     purpose character varying(255) NOT NULL,
@@ -1179,7 +1175,7 @@ CREATE TABLE platform.gdpr_consents (
 -- Name: gdpr_data_export_requests; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.gdpr_data_export_requests (
+CREATE TABLE IF NOT EXISTS platform.gdpr_data_export_requests (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid NOT NULL,
     export_token uuid NOT NULL,
@@ -1211,7 +1207,7 @@ CREATE TABLE platform.gdpr_data_export_requests (
 -- Name: gdpr_exports; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.gdpr_exports (
+CREATE TABLE IF NOT EXISTS platform.gdpr_exports (
     id uuid NOT NULL,
     user_id uuid NOT NULL,
     request_id uuid NOT NULL,
@@ -1233,7 +1229,7 @@ CREATE TABLE platform.gdpr_exports (
 -- Name: gdpr_legal_holds; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.gdpr_legal_holds (
+CREATE TABLE IF NOT EXISTS platform.gdpr_legal_holds (
     id uuid NOT NULL,
     user_id uuid NOT NULL,
     case_reference character varying(255) NOT NULL,
@@ -1252,7 +1248,7 @@ CREATE TABLE platform.gdpr_legal_holds (
 -- Name: gdpr_requests; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.gdpr_requests (
+CREATE TABLE IF NOT EXISTS platform.gdpr_requests (
     id uuid NOT NULL,
     user_id uuid NOT NULL,
     type character varying(255) NOT NULL,
@@ -1272,7 +1268,7 @@ CREATE TABLE platform.gdpr_requests (
 -- Name: gdpr_retention_policies; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.gdpr_retention_policies (
+CREATE TABLE IF NOT EXISTS platform.gdpr_retention_policies (
     id uuid NOT NULL,
     tenant_id uuid NOT NULL,
     entity_type character varying(255) NOT NULL,
@@ -1296,7 +1292,7 @@ CREATE TABLE platform.gdpr_retention_policies (
 -- Name: gdpr_retention_schedules; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.gdpr_retention_schedules (
+CREATE TABLE IF NOT EXISTS platform.gdpr_retention_schedules (
     id uuid NOT NULL,
     user_id uuid NOT NULL,
     data_category character varying(255) NOT NULL,
@@ -1317,7 +1313,7 @@ CREATE TABLE platform.gdpr_retention_schedules (
 -- Name: image_types; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.image_types (
+CREATE TABLE IF NOT EXISTS platform.image_types (
     value text NOT NULL,
     label text NOT NULL,
     max_file_size integer,
@@ -1332,7 +1328,7 @@ CREATE TABLE platform.image_types (
 -- Name: images; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.images (
+CREATE TABLE IF NOT EXISTS platform.images (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     owner_type text NOT NULL,
     owner_id uuid NOT NULL,
@@ -1361,7 +1357,7 @@ CREATE TABLE platform.images (
 -- Name: notes; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.notes (
+CREATE TABLE IF NOT EXISTS platform.notes (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     owner_type text NOT NULL,
     owner_id uuid NOT NULL,
@@ -1383,7 +1379,7 @@ CREATE TABLE platform.notes (
 -- Name: payment_charges; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.payment_charges (
+CREATE TABLE IF NOT EXISTS platform.payment_charges (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     amount bigint NOT NULL,
     currency text NOT NULL,
@@ -1403,7 +1399,7 @@ CREATE TABLE platform.payment_charges (
 -- Name: payment_customers; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.payment_customers (
+CREATE TABLE IF NOT EXISTS platform.payment_customers (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     email text NOT NULL,
     name text,
@@ -1418,7 +1414,7 @@ CREATE TABLE platform.payment_customers (
 -- Name: payment_gateway_transactions; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.payment_gateway_transactions (
+CREATE TABLE IF NOT EXISTS platform.payment_gateway_transactions (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     provider text NOT NULL,
     provider_ref text,
@@ -1437,7 +1433,7 @@ CREATE TABLE platform.payment_gateway_transactions (
 -- Name: payment_gateways; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.payment_gateways (
+CREATE TABLE IF NOT EXISTS platform.payment_gateways (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     name text NOT NULL,
     slug text NOT NULL,
@@ -1468,7 +1464,7 @@ CREATE TABLE platform.payment_gateways (
 -- Name: payment_methods; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.payment_methods (
+CREATE TABLE IF NOT EXISTS platform.payment_methods (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     type text,
     provider text NOT NULL,
@@ -1491,7 +1487,7 @@ CREATE TABLE platform.payment_methods (
 -- Name: payment_refunds; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.payment_refunds (
+CREATE TABLE IF NOT EXISTS platform.payment_refunds (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     amount bigint NOT NULL,
     currency text NOT NULL,
@@ -1508,7 +1504,7 @@ CREATE TABLE platform.payment_refunds (
 -- Name: phone_types; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.phone_types (
+CREATE TABLE IF NOT EXISTS platform.phone_types (
     value text NOT NULL,
     label text NOT NULL,
     is_active boolean DEFAULT true,
@@ -1522,7 +1518,7 @@ CREATE TABLE platform.phone_types (
 -- Name: phones; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.phones (
+CREATE TABLE IF NOT EXISTS platform.phones (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     owner_type text NOT NULL,
     owner_id uuid NOT NULL,
@@ -1547,7 +1543,7 @@ CREATE TABLE platform.phones (
 -- Name: plan_types; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.plan_types (
+CREATE TABLE IF NOT EXISTS platform.plan_types (
     value text NOT NULL,
     label text NOT NULL,
     description text,
@@ -1565,7 +1561,7 @@ CREATE TABLE platform.plan_types (
 -- Name: recent_metrics; Type: VIEW; Schema: platform; Owner: -
 --
 
-CREATE VIEW platform.recent_metrics AS
+CREATE OR REPLACE VIEW platform.recent_metrics AS
  SELECT tenant_id,
     category,
     metric_key,
@@ -1584,7 +1580,7 @@ CREATE VIEW platform.recent_metrics AS
 -- Name: registration_requests; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.registration_requests (
+CREATE TABLE IF NOT EXISTS platform.registration_requests (
     id uuid NOT NULL,
     tenant_id uuid NOT NULL,
     type character varying(255) DEFAULT 'customer'::character varying NOT NULL,
@@ -1610,7 +1606,7 @@ CREATE TABLE platform.registration_requests (
 -- Name: registration_settings; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.registration_settings (
+CREATE TABLE IF NOT EXISTS platform.registration_settings (
     id uuid NOT NULL,
     tenant_id uuid NOT NULL,
     customer_registration_enabled boolean DEFAULT false NOT NULL,
@@ -1663,7 +1659,7 @@ CREATE TABLE platform.registration_settings (
 -- Name: reseller_tenants; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.reseller_tenants (
+CREATE TABLE IF NOT EXISTS platform.reseller_tenants (
     reseller_id uuid NOT NULL,
     tenant_id uuid NOT NULL,
     status text DEFAULT 'active'::text,
@@ -1677,7 +1673,7 @@ CREATE TABLE platform.reseller_tenants (
 -- Name: resellers; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.resellers (
+CREATE TABLE IF NOT EXISTS platform.resellers (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid,
     slug text NOT NULL,
@@ -1708,7 +1704,7 @@ CREATE TABLE platform.resellers (
 -- Name: resellers_versions; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.resellers_versions (
+CREATE TABLE IF NOT EXISTS platform.resellers_versions (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     version_action_type text NOT NULL,
     version_source_id uuid NOT NULL,
@@ -1722,7 +1718,7 @@ CREATE TABLE platform.resellers_versions (
 -- Name: schema_migrations; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.schema_migrations (
+CREATE TABLE IF NOT EXISTS platform.schema_migrations (
     version bigint NOT NULL,
     inserted_at timestamp(0) without time zone
 );
@@ -1732,7 +1728,7 @@ CREATE TABLE platform.schema_migrations (
 -- Name: social_platforms; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.social_platforms (
+CREATE TABLE IF NOT EXISTS platform.social_platforms (
     value text NOT NULL,
     label text NOT NULL,
     icon text,
@@ -1747,7 +1743,7 @@ CREATE TABLE platform.social_platforms (
 -- Name: socials; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.socials (
+CREATE TABLE IF NOT EXISTS platform.socials (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     owner_type text NOT NULL,
     owner_id uuid NOT NULL,
@@ -1766,7 +1762,7 @@ CREATE TABLE platform.socials (
 -- Name: status_types; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.status_types (
+CREATE TABLE IF NOT EXISTS platform.status_types (
     value text NOT NULL,
     label text NOT NULL,
     category text,
@@ -1782,7 +1778,7 @@ CREATE TABLE platform.status_types (
 -- Name: team_members; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.team_members (
+CREATE TABLE IF NOT EXISTS platform.team_members (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     team_id uuid NOT NULL,
     user_profile_id uuid NOT NULL,
@@ -1800,7 +1796,7 @@ CREATE TABLE platform.team_members (
 -- Name: teams; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.teams (
+CREATE TABLE IF NOT EXISTS platform.teams (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     entity_type text NOT NULL,
     entity_id uuid NOT NULL,
@@ -1819,7 +1815,7 @@ CREATE TABLE platform.teams (
 -- Name: tenant_branding; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.tenant_branding (
+CREATE TABLE IF NOT EXISTS platform.tenant_branding (
     id uuid NOT NULL,
     tenant_id uuid NOT NULL,
     name character varying(255) NOT NULL,
@@ -1850,7 +1846,7 @@ CREATE TABLE platform.tenant_branding (
 -- Name: tenant_settings; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.tenant_settings (
+CREATE TABLE IF NOT EXISTS platform.tenant_settings (
     id uuid NOT NULL,
     tenant_id uuid NOT NULL,
     category character varying(255) NOT NULL,
@@ -1871,7 +1867,7 @@ CREATE TABLE platform.tenant_settings (
 -- Name: tenant_table_templates; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.tenant_table_templates (
+CREATE TABLE IF NOT EXISTS platform.tenant_table_templates (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     table_name text NOT NULL,
     create_sql text NOT NULL,
@@ -1884,7 +1880,7 @@ CREATE TABLE platform.tenant_table_templates (
 -- Name: tenants; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.tenants (
+CREATE TABLE IF NOT EXISTS platform.tenants (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     slug text NOT NULL,
     name text NOT NULL,
@@ -1916,7 +1912,7 @@ CREATE TABLE platform.tenants (
 -- Name: todos; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.todos (
+CREATE TABLE IF NOT EXISTS platform.todos (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     owner_type text NOT NULL,
     owner_id uuid NOT NULL,
@@ -1940,7 +1936,7 @@ CREATE TABLE platform.todos (
 -- Name: user_profiles; Type: TABLE; Schema: platform; Owner: -
 --
 
-CREATE TABLE platform.user_profiles (
+CREATE TABLE IF NOT EXISTS platform.user_profiles (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid NOT NULL,
     entity_type text NOT NULL,
@@ -1975,7 +1971,7 @@ CREATE TABLE platform.user_profiles (
 -- Name: oban_jobs; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.oban_jobs (
+CREATE TABLE IF NOT EXISTS public.oban_jobs (
     id bigint NOT NULL,
     state public.oban_job_state DEFAULT 'available'::public.oban_job_state NOT NULL,
     queue text DEFAULT 'default'::text NOT NULL,
@@ -2005,7 +2001,7 @@ CREATE TABLE public.oban_jobs (
 -- Name: oban_jobs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.oban_jobs_id_seq
+CREATE SEQUENCE IF NOT EXISTS public.oban_jobs_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -2024,7 +2020,7 @@ ALTER SEQUENCE public.oban_jobs_id_seq OWNED BY public.oban_jobs.id;
 -- Name: oban_peers; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE UNLOGGED TABLE public.oban_peers (
+CREATE UNLOGGED TABLE IF NOT EXISTS public.oban_peers (
     name text NOT NULL,
     node text NOT NULL,
     started_at timestamp without time zone NOT NULL,
@@ -2036,21 +2032,57 @@ CREATE UNLOGGED TABLE public.oban_peers (
 -- Name: transfers_default; Type: TABLE ATTACH; Schema: finance; Owner: -
 --
 
-ALTER TABLE ONLY finance.transfers ATTACH PARTITION finance.transfers_default DEFAULT;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_inherits i
+        JOIN pg_class c ON i.inhrelid = c.oid
+        JOIN pg_class p ON i.inhparent = p.oid
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relname = 'transfers_default' AND n.nspname = 'finance'
+    ) THEN
+        ALTER TABLE ONLY finance.transfers ATTACH PARTITION finance.transfers_default DEFAULT;
+    END IF;
+END
+$$;
 
 
 --
 -- Name: transfers_p2025_11; Type: TABLE ATTACH; Schema: finance; Owner: -
 --
 
-ALTER TABLE ONLY finance.transfers ATTACH PARTITION finance.transfers_p2025_11 FOR VALUES FROM ('2025-11-01 00:00:00') TO ('2025-12-01 00:00:00');
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_inherits i
+        JOIN pg_class c ON i.inhrelid = c.oid
+        JOIN pg_class p ON i.inhparent = p.oid
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relname = 'transfers_p2025_11' AND n.nspname = 'finance'
+    ) THEN
+        ALTER TABLE ONLY finance.transfers ATTACH PARTITION finance.transfers_p2025_11 FOR VALUES FROM ('2025-11-01 00:00:00') TO ('2025-12-01 00:00:00');
+    END IF;
+END
+$$;
 
 
 --
 -- Name: transfers_p2025_12; Type: TABLE ATTACH; Schema: finance; Owner: -
 --
 
-ALTER TABLE ONLY finance.transfers ATTACH PARTITION finance.transfers_p2025_12 FOR VALUES FROM ('2025-12-01 00:00:00') TO ('2026-01-01 00:00:00');
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_inherits i
+        JOIN pg_class c ON i.inhrelid = c.oid
+        JOIN pg_class p ON i.inhparent = p.oid
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relname = 'transfers_p2025_12' AND n.nspname = 'finance'
+    ) THEN
+        ALTER TABLE ONLY finance.transfers ATTACH PARTITION finance.transfers_p2025_12 FOR VALUES FROM ('2025-12-01 00:00:00') TO ('2026-01-01 00:00:00');
+    END IF;
+END
+$$;
 
 
 --
@@ -2656,1708 +2688,1708 @@ ALTER TABLE ONLY public.oban_peers
 -- Name: accounts_identifier_index; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE UNIQUE INDEX accounts_identifier_index ON finance.accounts USING btree (identifier);
+CREATE UNIQUE INDEX IF NOT EXISTS accounts_identifier_index ON finance.accounts USING btree (identifier);
 
 
 --
 -- Name: accounts_merchant_id_index; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX accounts_merchant_id_index ON finance.accounts USING btree (merchant_id);
+CREATE INDEX IF NOT EXISTS accounts_merchant_id_index ON finance.accounts USING btree (merchant_id);
 
 
 --
 -- Name: accounts_mid_id_index; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX accounts_mid_id_index ON finance.accounts USING btree (mid_id);
+CREATE INDEX IF NOT EXISTS accounts_mid_id_index ON finance.accounts USING btree (mid_id);
 
 
 --
 -- Name: accounts_tenant_id_index; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX accounts_tenant_id_index ON finance.accounts USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS accounts_tenant_id_index ON finance.accounts USING btree (tenant_id);
 
 
 --
 -- Name: balances_account_id_index; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX balances_account_id_index ON finance.balances USING btree (account_id);
+CREATE INDEX IF NOT EXISTS balances_account_id_index ON finance.balances USING btree (account_id);
 
 
 --
 -- Name: transfers_from_account_id_index; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX transfers_from_account_id_index ON ONLY finance.transfers USING btree (from_account_id);
+CREATE INDEX IF NOT EXISTS transfers_from_account_id_index ON ONLY finance.transfers USING btree (from_account_id);
 
 
 --
 -- Name: transfers_default_from_account_id_idx; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX transfers_default_from_account_id_idx ON finance.transfers_default USING btree (from_account_id);
+CREATE INDEX IF NOT EXISTS transfers_default_from_account_id_idx ON finance.transfers_default USING btree (from_account_id);
 
 
 --
 -- Name: transfers_inserted_at_index; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX transfers_inserted_at_index ON ONLY finance.transfers USING btree (inserted_at);
+CREATE INDEX IF NOT EXISTS transfers_inserted_at_index ON ONLY finance.transfers USING btree (inserted_at);
 
 
 --
 -- Name: transfers_default_inserted_at_idx; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX transfers_default_inserted_at_idx ON finance.transfers_default USING btree (inserted_at);
+CREATE INDEX IF NOT EXISTS transfers_default_inserted_at_idx ON finance.transfers_default USING btree (inserted_at);
 
 
 --
 -- Name: transfers_to_account_id_index; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX transfers_to_account_id_index ON ONLY finance.transfers USING btree (to_account_id);
+CREATE INDEX IF NOT EXISTS transfers_to_account_id_index ON ONLY finance.transfers USING btree (to_account_id);
 
 
 --
 -- Name: transfers_default_to_account_id_idx; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX transfers_default_to_account_id_idx ON finance.transfers_default USING btree (to_account_id);
+CREATE INDEX IF NOT EXISTS transfers_default_to_account_id_idx ON finance.transfers_default USING btree (to_account_id);
 
 
 --
 -- Name: transfers_p2025_11_from_account_id_idx; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX transfers_p2025_11_from_account_id_idx ON finance.transfers_p2025_11 USING btree (from_account_id);
+CREATE INDEX IF NOT EXISTS transfers_p2025_11_from_account_id_idx ON finance.transfers_p2025_11 USING btree (from_account_id);
 
 
 --
 -- Name: transfers_p2025_11_inserted_at_idx; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX transfers_p2025_11_inserted_at_idx ON finance.transfers_p2025_11 USING btree (inserted_at);
+CREATE INDEX IF NOT EXISTS transfers_p2025_11_inserted_at_idx ON finance.transfers_p2025_11 USING btree (inserted_at);
 
 
 --
 -- Name: transfers_p2025_11_to_account_id_idx; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX transfers_p2025_11_to_account_id_idx ON finance.transfers_p2025_11 USING btree (to_account_id);
+CREATE INDEX IF NOT EXISTS transfers_p2025_11_to_account_id_idx ON finance.transfers_p2025_11 USING btree (to_account_id);
 
 
 --
 -- Name: transfers_p2025_12_from_account_id_idx; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX transfers_p2025_12_from_account_id_idx ON finance.transfers_p2025_12 USING btree (from_account_id);
+CREATE INDEX IF NOT EXISTS transfers_p2025_12_from_account_id_idx ON finance.transfers_p2025_12 USING btree (from_account_id);
 
 
 --
 -- Name: transfers_p2025_12_inserted_at_idx; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX transfers_p2025_12_inserted_at_idx ON finance.transfers_p2025_12 USING btree (inserted_at);
+CREATE INDEX IF NOT EXISTS transfers_p2025_12_inserted_at_idx ON finance.transfers_p2025_12 USING btree (inserted_at);
 
 
 --
 -- Name: transfers_p2025_12_to_account_id_idx; Type: INDEX; Schema: finance; Owner: -
 --
 
-CREATE INDEX transfers_p2025_12_to_account_id_idx ON finance.transfers_p2025_12 USING btree (to_account_id);
+CREATE INDEX IF NOT EXISTS transfers_p2025_12_to_account_id_idx ON finance.transfers_p2025_12 USING btree (to_account_id);
 
 
 --
 -- Name: addresses_address_type_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX addresses_address_type_index ON platform.addresses USING btree (address_type);
+CREATE INDEX IF NOT EXISTS addresses_address_type_index ON platform.addresses USING btree (address_type);
 
 
 --
 -- Name: addresses_owner_type_owner_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX addresses_owner_type_owner_id_index ON platform.addresses USING btree (owner_type, owner_id);
+CREATE INDEX IF NOT EXISTS addresses_owner_type_owner_id_index ON platform.addresses USING btree (owner_type, owner_id);
 
 
 --
 -- Name: addresses_owner_type_owner_id_is_primary_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX addresses_owner_type_owner_id_is_primary_index ON platform.addresses USING btree (owner_type, owner_id, is_primary) WHERE (is_primary = true);
+CREATE INDEX IF NOT EXISTS addresses_owner_type_owner_id_is_primary_index ON platform.addresses USING btree (owner_type, owner_id, is_primary) WHERE (is_primary = true);
 
 
 --
 -- Name: analytics_alerts_metric_id_is_enabled_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_alerts_metric_id_is_enabled_index ON platform.analytics_alerts USING btree (metric_id, is_enabled);
+CREATE INDEX IF NOT EXISTS analytics_alerts_metric_id_is_enabled_index ON platform.analytics_alerts USING btree (metric_id, is_enabled);
 
 
 --
 -- Name: analytics_alerts_tenant_id_is_enabled_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_alerts_tenant_id_is_enabled_index ON platform.analytics_alerts USING btree (tenant_id, is_enabled);
+CREATE INDEX IF NOT EXISTS analytics_alerts_tenant_id_is_enabled_index ON platform.analytics_alerts USING btree (tenant_id, is_enabled);
 
 
 --
 -- Name: analytics_alerts_tenant_id_is_triggered_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_alerts_tenant_id_is_triggered_index ON platform.analytics_alerts USING btree (tenant_id, is_triggered);
+CREATE INDEX IF NOT EXISTS analytics_alerts_tenant_id_is_triggered_index ON platform.analytics_alerts USING btree (tenant_id, is_triggered);
 
 
 --
 -- Name: analytics_alerts_tenant_id_metric_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_alerts_tenant_id_metric_id_index ON platform.analytics_alerts USING btree (tenant_id, metric_id);
+CREATE INDEX IF NOT EXISTS analytics_alerts_tenant_id_metric_id_index ON platform.analytics_alerts USING btree (tenant_id, metric_id);
 
 
 --
 -- Name: analytics_alerts_tenant_id_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_alerts_tenant_id_status_index ON platform.analytics_alerts USING btree (tenant_id, status);
+CREATE INDEX IF NOT EXISTS analytics_alerts_tenant_id_status_index ON platform.analytics_alerts USING btree (tenant_id, status);
 
 
 --
 -- Name: analytics_dashboards_tenant_id_category_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_dashboards_tenant_id_category_index ON platform.analytics_dashboards USING btree (tenant_id, category);
+CREATE INDEX IF NOT EXISTS analytics_dashboards_tenant_id_category_index ON platform.analytics_dashboards USING btree (tenant_id, category);
 
 
 --
 -- Name: analytics_dashboards_tenant_id_is_default_role_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_dashboards_tenant_id_is_default_role_index ON platform.analytics_dashboards USING btree (tenant_id, is_default, role);
+CREATE INDEX IF NOT EXISTS analytics_dashboards_tenant_id_is_default_role_index ON platform.analytics_dashboards USING btree (tenant_id, is_default, role);
 
 
 --
 -- Name: analytics_dashboards_tenant_id_is_public_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_dashboards_tenant_id_is_public_index ON platform.analytics_dashboards USING btree (tenant_id, is_public);
+CREATE INDEX IF NOT EXISTS analytics_dashboards_tenant_id_is_public_index ON platform.analytics_dashboards USING btree (tenant_id, is_public);
 
 
 --
 -- Name: analytics_dashboards_tenant_id_role_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_dashboards_tenant_id_role_index ON platform.analytics_dashboards USING btree (tenant_id, role);
+CREATE INDEX IF NOT EXISTS analytics_dashboards_tenant_id_role_index ON platform.analytics_dashboards USING btree (tenant_id, role);
 
 
 --
 -- Name: analytics_dashboards_tenant_id_slug_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX analytics_dashboards_tenant_id_slug_index ON platform.analytics_dashboards USING btree (tenant_id, slug);
+CREATE UNIQUE INDEX IF NOT EXISTS analytics_dashboards_tenant_id_slug_index ON platform.analytics_dashboards USING btree (tenant_id, slug);
 
 
 --
 -- Name: analytics_metrics_daily_tenant_id_category_time_bucket_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_metrics_daily_tenant_id_category_time_bucket_index ON platform.analytics_metrics_daily USING btree (tenant_id, category, time_bucket);
+CREATE INDEX IF NOT EXISTS analytics_metrics_daily_tenant_id_category_time_bucket_index ON platform.analytics_metrics_daily USING btree (tenant_id, category, time_bucket);
 
 
 --
 -- Name: analytics_metrics_daily_tenant_id_metric_key_time_bucket_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_metrics_daily_tenant_id_metric_key_time_bucket_index ON platform.analytics_metrics_daily USING btree (tenant_id, metric_key, time_bucket);
+CREATE INDEX IF NOT EXISTS analytics_metrics_daily_tenant_id_metric_key_time_bucket_index ON platform.analytics_metrics_daily USING btree (tenant_id, metric_key, time_bucket);
 
 
 --
 -- Name: analytics_metrics_daily_tenant_id_time_bucket_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_metrics_daily_tenant_id_time_bucket_index ON platform.analytics_metrics_daily USING btree (tenant_id, time_bucket);
+CREATE INDEX IF NOT EXISTS analytics_metrics_daily_tenant_id_time_bucket_index ON platform.analytics_metrics_daily USING btree (tenant_id, time_bucket);
 
 
 --
 -- Name: analytics_metrics_hourly_tenant_id_category_time_bucket_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_metrics_hourly_tenant_id_category_time_bucket_index ON platform.analytics_metrics_hourly USING btree (tenant_id, category, time_bucket);
+CREATE INDEX IF NOT EXISTS analytics_metrics_hourly_tenant_id_category_time_bucket_index ON platform.analytics_metrics_hourly USING btree (tenant_id, category, time_bucket);
 
 
 --
 -- Name: analytics_metrics_hourly_tenant_id_metric_key_time_bucket_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_metrics_hourly_tenant_id_metric_key_time_bucket_index ON platform.analytics_metrics_hourly USING btree (tenant_id, metric_key, time_bucket);
+CREATE INDEX IF NOT EXISTS analytics_metrics_hourly_tenant_id_metric_key_time_bucket_index ON platform.analytics_metrics_hourly USING btree (tenant_id, metric_key, time_bucket);
 
 
 --
 -- Name: analytics_metrics_hourly_tenant_id_time_bucket_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_metrics_hourly_tenant_id_time_bucket_index ON platform.analytics_metrics_hourly USING btree (tenant_id, time_bucket);
+CREATE INDEX IF NOT EXISTS analytics_metrics_hourly_tenant_id_time_bucket_index ON platform.analytics_metrics_hourly USING btree (tenant_id, time_bucket);
 
 
 --
 -- Name: analytics_metrics_metric_key_recorded_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_metrics_metric_key_recorded_at_index ON platform.analytics_metrics USING btree (metric_key, recorded_at);
+CREATE INDEX IF NOT EXISTS analytics_metrics_metric_key_recorded_at_index ON platform.analytics_metrics USING btree (metric_key, recorded_at);
 
 
 --
 -- Name: analytics_metrics_source_recorded_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_metrics_source_recorded_at_index ON platform.analytics_metrics USING btree (source, recorded_at);
+CREATE INDEX IF NOT EXISTS analytics_metrics_source_recorded_at_index ON platform.analytics_metrics USING btree (source, recorded_at);
 
 
 --
 -- Name: analytics_metrics_tenant_id_category_recorded_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_metrics_tenant_id_category_recorded_at_index ON platform.analytics_metrics USING btree (tenant_id, category, recorded_at);
+CREATE INDEX IF NOT EXISTS analytics_metrics_tenant_id_category_recorded_at_index ON platform.analytics_metrics USING btree (tenant_id, category, recorded_at);
 
 
 --
 -- Name: analytics_metrics_tenant_id_metric_key_recorded_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_metrics_tenant_id_metric_key_recorded_at_index ON platform.analytics_metrics USING btree (tenant_id, metric_key, recorded_at);
+CREATE INDEX IF NOT EXISTS analytics_metrics_tenant_id_metric_key_recorded_at_index ON platform.analytics_metrics USING btree (tenant_id, metric_key, recorded_at);
 
 
 --
 -- Name: analytics_metrics_tenant_id_recorded_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_metrics_tenant_id_recorded_at_index ON platform.analytics_metrics USING btree (tenant_id, recorded_at);
+CREATE INDEX IF NOT EXISTS analytics_metrics_tenant_id_recorded_at_index ON platform.analytics_metrics USING btree (tenant_id, recorded_at);
 
 
 --
 -- Name: analytics_reports_tenant_id_next_run_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_reports_tenant_id_next_run_at_index ON platform.analytics_reports USING btree (tenant_id, next_run_at);
+CREATE INDEX IF NOT EXISTS analytics_reports_tenant_id_next_run_at_index ON platform.analytics_reports USING btree (tenant_id, next_run_at);
 
 
 --
 -- Name: analytics_reports_tenant_id_report_type_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_reports_tenant_id_report_type_index ON platform.analytics_reports USING btree (tenant_id, report_type);
+CREATE INDEX IF NOT EXISTS analytics_reports_tenant_id_report_type_index ON platform.analytics_reports USING btree (tenant_id, report_type);
 
 
 --
 -- Name: analytics_reports_tenant_id_slug_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX analytics_reports_tenant_id_slug_index ON platform.analytics_reports USING btree (tenant_id, slug);
+CREATE UNIQUE INDEX IF NOT EXISTS analytics_reports_tenant_id_slug_index ON platform.analytics_reports USING btree (tenant_id, slug);
 
 
 --
 -- Name: analytics_reports_tenant_id_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_reports_tenant_id_status_index ON platform.analytics_reports USING btree (tenant_id, status);
+CREATE INDEX IF NOT EXISTS analytics_reports_tenant_id_status_index ON platform.analytics_reports USING btree (tenant_id, status);
 
 
 --
 -- Name: analytics_widgets_dashboard_id_is_visible_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_widgets_dashboard_id_is_visible_index ON platform.analytics_widgets USING btree (dashboard_id, is_visible);
+CREATE INDEX IF NOT EXISTS analytics_widgets_dashboard_id_is_visible_index ON platform.analytics_widgets USING btree (dashboard_id, is_visible);
 
 
 --
 -- Name: analytics_widgets_dashboard_id_widget_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX analytics_widgets_dashboard_id_widget_id_index ON platform.analytics_widgets USING btree (dashboard_id, widget_id);
+CREATE UNIQUE INDEX IF NOT EXISTS analytics_widgets_dashboard_id_widget_id_index ON platform.analytics_widgets USING btree (dashboard_id, widget_id);
 
 
 --
 -- Name: analytics_widgets_dashboard_id_widget_type_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX analytics_widgets_dashboard_id_widget_type_index ON platform.analytics_widgets USING btree (dashboard_id, widget_type);
+CREATE INDEX IF NOT EXISTS analytics_widgets_dashboard_id_widget_type_index ON platform.analytics_widgets USING btree (dashboard_id, widget_type);
 
 
 --
 -- Name: api_keys_expires_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX api_keys_expires_at_index ON platform.api_keys USING btree (expires_at) WHERE (expires_at IS NOT NULL);
+CREATE INDEX IF NOT EXISTS api_keys_expires_at_index ON platform.api_keys USING btree (expires_at) WHERE (expires_at IS NOT NULL);
 
 
 --
 -- Name: api_keys_key_prefix_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX api_keys_key_prefix_index ON platform.api_keys USING btree (key_prefix);
+CREATE UNIQUE INDEX IF NOT EXISTS api_keys_key_prefix_index ON platform.api_keys USING btree (key_prefix);
 
 
 --
 -- Name: api_keys_owner_type_owner_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX api_keys_owner_type_owner_id_index ON platform.api_keys USING btree (owner_type, owner_id);
+CREATE INDEX IF NOT EXISTS api_keys_owner_type_owner_id_index ON platform.api_keys USING btree (owner_type, owner_id);
 
 
 --
 -- Name: api_keys_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX api_keys_status_index ON platform.api_keys USING btree (status);
+CREATE INDEX IF NOT EXISTS api_keys_status_index ON platform.api_keys USING btree (status);
 
 
 --
 -- Name: audit_logs_action_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX audit_logs_action_index ON platform.audit_logs USING btree (action);
+CREATE INDEX IF NOT EXISTS audit_logs_action_index ON platform.audit_logs USING btree (action);
 
 
 --
 -- Name: audit_logs_actor_type_actor_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX audit_logs_actor_type_actor_id_index ON platform.audit_logs USING btree (actor_type, actor_id);
+CREATE INDEX IF NOT EXISTS audit_logs_actor_type_actor_id_index ON platform.audit_logs USING btree (actor_type, actor_id);
 
 
 --
 -- Name: audit_logs_created_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX audit_logs_created_at_index ON platform.audit_logs USING btree (created_at);
+CREATE INDEX IF NOT EXISTS audit_logs_created_at_index ON platform.audit_logs USING btree (created_at);
 
 
 --
 -- Name: audit_logs_request_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX audit_logs_request_id_index ON platform.audit_logs USING btree (request_id);
+CREATE INDEX IF NOT EXISTS audit_logs_request_id_index ON platform.audit_logs USING btree (request_id);
 
 
 --
 -- Name: audit_logs_target_type_target_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX audit_logs_target_type_target_id_index ON platform.audit_logs USING btree (target_type, target_id);
+CREATE INDEX IF NOT EXISTS audit_logs_target_type_target_id_index ON platform.audit_logs USING btree (target_type, target_id);
 
 
 --
 -- Name: auth_tokens_device_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX auth_tokens_device_id_index ON platform.auth_tokens USING btree (device_id);
+CREATE INDEX IF NOT EXISTS auth_tokens_device_id_index ON platform.auth_tokens USING btree (device_id);
 
 
 --
 -- Name: auth_tokens_expires_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX auth_tokens_expires_at_index ON platform.auth_tokens USING btree (expires_at);
+CREATE INDEX IF NOT EXISTS auth_tokens_expires_at_index ON platform.auth_tokens USING btree (expires_at);
 
 
 --
 -- Name: auth_tokens_jti_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX auth_tokens_jti_index ON platform.auth_tokens USING btree (jti) WHERE (jti IS NOT NULL);
+CREATE UNIQUE INDEX IF NOT EXISTS auth_tokens_jti_index ON platform.auth_tokens USING btree (jti) WHERE (jti IS NOT NULL);
 
 
 --
 -- Name: auth_tokens_revoked_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX auth_tokens_revoked_at_index ON platform.auth_tokens USING btree (revoked_at);
+CREATE INDEX IF NOT EXISTS auth_tokens_revoked_at_index ON platform.auth_tokens USING btree (revoked_at);
 
 
 --
 -- Name: auth_tokens_session_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX auth_tokens_session_id_index ON platform.auth_tokens USING btree (session_id);
+CREATE INDEX IF NOT EXISTS auth_tokens_session_id_index ON platform.auth_tokens USING btree (session_id);
 
 
 --
 -- Name: auth_tokens_token_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX auth_tokens_token_index ON platform.auth_tokens USING btree (token);
+CREATE UNIQUE INDEX IF NOT EXISTS auth_tokens_token_index ON platform.auth_tokens USING btree (token);
 
 
 --
 -- Name: auth_tokens_type_expires_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX auth_tokens_type_expires_at_index ON platform.auth_tokens USING btree (type, expires_at);
+CREATE INDEX IF NOT EXISTS auth_tokens_type_expires_at_index ON platform.auth_tokens USING btree (type, expires_at);
 
 
 --
 -- Name: auth_tokens_type_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX auth_tokens_type_index ON platform.auth_tokens USING btree (type);
+CREATE INDEX IF NOT EXISTS auth_tokens_type_index ON platform.auth_tokens USING btree (type);
 
 
 --
 -- Name: auth_tokens_user_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX auth_tokens_user_id_index ON platform.auth_tokens USING btree (user_id);
+CREATE INDEX IF NOT EXISTS auth_tokens_user_id_index ON platform.auth_tokens USING btree (user_id);
 
 
 --
 -- Name: auth_tokens_user_id_type_revoked_at_expires_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX auth_tokens_user_id_type_revoked_at_expires_at_index ON platform.auth_tokens USING btree (user_id, type, revoked_at, expires_at);
+CREATE INDEX IF NOT EXISTS auth_tokens_user_id_type_revoked_at_expires_at_index ON platform.auth_tokens USING btree (user_id, type, revoked_at, expires_at);
 
 
 --
 -- Name: data_migration_logs_inserted_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_logs_inserted_at_index ON platform.data_migration_logs USING btree (inserted_at);
+CREATE INDEX IF NOT EXISTS data_migration_logs_inserted_at_index ON platform.data_migration_logs USING btree (inserted_at);
 
 
 --
 -- Name: data_migration_logs_log_level_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_logs_log_level_index ON platform.data_migration_logs USING btree (log_level);
+CREATE INDEX IF NOT EXISTS data_migration_logs_log_level_index ON platform.data_migration_logs USING btree (log_level);
 
 
 --
 -- Name: data_migration_logs_log_level_inserted_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_logs_log_level_inserted_at_index ON platform.data_migration_logs USING btree (log_level, inserted_at);
+CREATE INDEX IF NOT EXISTS data_migration_logs_log_level_inserted_at_index ON platform.data_migration_logs USING btree (log_level, inserted_at);
 
 
 --
 -- Name: data_migration_logs_migration_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_logs_migration_id_index ON platform.data_migration_logs USING btree (migration_id);
+CREATE INDEX IF NOT EXISTS data_migration_logs_migration_id_index ON platform.data_migration_logs USING btree (migration_id);
 
 
 --
 -- Name: data_migration_logs_migration_id_inserted_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_logs_migration_id_inserted_at_index ON platform.data_migration_logs USING btree (migration_id, inserted_at);
+CREATE INDEX IF NOT EXISTS data_migration_logs_migration_id_inserted_at_index ON platform.data_migration_logs USING btree (migration_id, inserted_at);
 
 
 --
 -- Name: data_migration_logs_migration_id_log_level_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_logs_migration_id_log_level_index ON platform.data_migration_logs USING btree (migration_id, log_level);
+CREATE INDEX IF NOT EXISTS data_migration_logs_migration_id_log_level_index ON platform.data_migration_logs USING btree (migration_id, log_level);
 
 
 --
 -- Name: data_migration_logs_migration_id_log_level_inserted_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_logs_migration_id_log_level_inserted_at_index ON platform.data_migration_logs USING btree (migration_id, log_level, inserted_at);
+CREATE INDEX IF NOT EXISTS data_migration_logs_migration_id_log_level_inserted_at_index ON platform.data_migration_logs USING btree (migration_id, log_level, inserted_at);
 
 
 --
 -- Name: data_migration_records_batch_number_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_records_batch_number_index ON platform.data_migration_records USING btree (batch_number);
+CREATE INDEX IF NOT EXISTS data_migration_records_batch_number_index ON platform.data_migration_records USING btree (batch_number);
 
 
 --
 -- Name: data_migration_records_inserted_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_records_inserted_at_index ON platform.data_migration_records USING btree (inserted_at);
+CREATE INDEX IF NOT EXISTS data_migration_records_inserted_at_index ON platform.data_migration_records USING btree (inserted_at);
 
 
 --
 -- Name: data_migration_records_migration_id_batch_number_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_records_migration_id_batch_number_index ON platform.data_migration_records USING btree (migration_id, batch_number);
+CREATE INDEX IF NOT EXISTS data_migration_records_migration_id_batch_number_index ON platform.data_migration_records USING btree (migration_id, batch_number);
 
 
 --
 -- Name: data_migration_records_migration_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_records_migration_id_index ON platform.data_migration_records USING btree (migration_id);
+CREATE INDEX IF NOT EXISTS data_migration_records_migration_id_index ON platform.data_migration_records USING btree (migration_id);
 
 
 --
 -- Name: data_migration_records_migration_id_status_batch_number_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_records_migration_id_status_batch_number_index ON platform.data_migration_records USING btree (migration_id, status, batch_number);
+CREATE INDEX IF NOT EXISTS data_migration_records_migration_id_status_batch_number_index ON platform.data_migration_records USING btree (migration_id, status, batch_number);
 
 
 --
 -- Name: data_migration_records_migration_id_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_records_migration_id_status_index ON platform.data_migration_records USING btree (migration_id, status);
+CREATE INDEX IF NOT EXISTS data_migration_records_migration_id_status_index ON platform.data_migration_records USING btree (migration_id, status);
 
 
 --
 -- Name: data_migration_records_migration_id_target_table_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_records_migration_id_target_table_status_index ON platform.data_migration_records USING btree (migration_id, target_table, status);
+CREATE INDEX IF NOT EXISTS data_migration_records_migration_id_target_table_status_index ON platform.data_migration_records USING btree (migration_id, target_table, status);
 
 
 --
 -- Name: data_migration_records_source_record_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_records_source_record_id_index ON platform.data_migration_records USING btree (source_record_id);
+CREATE INDEX IF NOT EXISTS data_migration_records_source_record_id_index ON platform.data_migration_records USING btree (source_record_id);
 
 
 --
 -- Name: data_migration_records_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_records_status_index ON platform.data_migration_records USING btree (status);
+CREATE INDEX IF NOT EXISTS data_migration_records_status_index ON platform.data_migration_records USING btree (status);
 
 
 --
 -- Name: data_migration_records_status_inserted_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_records_status_inserted_at_index ON platform.data_migration_records USING btree (status, inserted_at);
+CREATE INDEX IF NOT EXISTS data_migration_records_status_inserted_at_index ON platform.data_migration_records USING btree (status, inserted_at);
 
 
 --
 -- Name: data_migration_records_target_record_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_records_target_record_id_index ON platform.data_migration_records USING btree (target_record_id);
+CREATE INDEX IF NOT EXISTS data_migration_records_target_record_id_index ON platform.data_migration_records USING btree (target_record_id);
 
 
 --
 -- Name: data_migration_records_target_table_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migration_records_target_table_index ON platform.data_migration_records USING btree (target_table);
+CREATE INDEX IF NOT EXISTS data_migration_records_target_table_index ON platform.data_migration_records USING btree (target_table);
 
 
 --
 -- Name: data_migrations_inserted_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migrations_inserted_at_index ON platform.data_migrations USING btree (inserted_at);
+CREATE INDEX IF NOT EXISTS data_migrations_inserted_at_index ON platform.data_migrations USING btree (inserted_at);
 
 
 --
 -- Name: data_migrations_migration_type_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migrations_migration_type_index ON platform.data_migrations USING btree (migration_type);
+CREATE INDEX IF NOT EXISTS data_migrations_migration_type_index ON platform.data_migrations USING btree (migration_type);
 
 
 --
 -- Name: data_migrations_priority_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migrations_priority_index ON platform.data_migrations USING btree (priority);
+CREATE INDEX IF NOT EXISTS data_migrations_priority_index ON platform.data_migrations USING btree (priority);
 
 
 --
 -- Name: data_migrations_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migrations_status_index ON platform.data_migrations USING btree (status);
+CREATE INDEX IF NOT EXISTS data_migrations_status_index ON platform.data_migrations USING btree (status);
 
 
 --
 -- Name: data_migrations_status_inserted_at_priority_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migrations_status_inserted_at_priority_index ON platform.data_migrations USING btree (status, inserted_at, priority);
+CREATE INDEX IF NOT EXISTS data_migrations_status_inserted_at_priority_index ON platform.data_migrations USING btree (status, inserted_at, priority);
 
 
 --
 -- Name: data_migrations_status_priority_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migrations_status_priority_index ON platform.data_migrations USING btree (status, priority);
+CREATE INDEX IF NOT EXISTS data_migrations_status_priority_index ON platform.data_migrations USING btree (status, priority);
 
 
 --
 -- Name: data_migrations_tenant_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migrations_tenant_id_index ON platform.data_migrations USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS data_migrations_tenant_id_index ON platform.data_migrations USING btree (tenant_id);
 
 
 --
 -- Name: data_migrations_tenant_id_migration_type_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migrations_tenant_id_migration_type_status_index ON platform.data_migrations USING btree (tenant_id, migration_type, status);
+CREATE INDEX IF NOT EXISTS data_migrations_tenant_id_migration_type_status_index ON platform.data_migrations USING btree (tenant_id, migration_type, status);
 
 
 --
 -- Name: data_migrations_tenant_id_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_migrations_tenant_id_status_index ON platform.data_migrations USING btree (tenant_id, status);
+CREATE INDEX IF NOT EXISTS data_migrations_tenant_id_status_index ON platform.data_migrations USING btree (tenant_id, status);
 
 
 --
 -- Name: data_retention_schedule_data_category_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_retention_schedule_data_category_index ON platform.data_retention_schedule USING btree (data_category);
+CREATE INDEX IF NOT EXISTS data_retention_schedule_data_category_index ON platform.data_retention_schedule USING btree (data_category);
 
 
 --
 -- Name: data_retention_schedule_expires_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_retention_schedule_expires_at_index ON platform.data_retention_schedule USING btree (expires_at);
+CREATE INDEX IF NOT EXISTS data_retention_schedule_expires_at_index ON platform.data_retention_schedule USING btree (expires_at);
 
 
 --
 -- Name: data_retention_schedule_oban_job_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX data_retention_schedule_oban_job_id_index ON platform.data_retention_schedule USING btree (oban_job_id) WHERE (oban_job_id IS NOT NULL);
+CREATE UNIQUE INDEX IF NOT EXISTS data_retention_schedule_oban_job_id_index ON platform.data_retention_schedule USING btree (oban_job_id) WHERE (oban_job_id IS NOT NULL);
 
 
 --
 -- Name: data_retention_schedule_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_retention_schedule_status_index ON platform.data_retention_schedule USING btree (status);
+CREATE INDEX IF NOT EXISTS data_retention_schedule_status_index ON platform.data_retention_schedule USING btree (status);
 
 
 --
 -- Name: data_retention_schedule_user_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX data_retention_schedule_user_id_index ON platform.data_retention_schedule USING btree (user_id);
+CREATE INDEX IF NOT EXISTS data_retention_schedule_user_id_index ON platform.data_retention_schedule USING btree (user_id);
 
 
 --
 -- Name: developer_tenants_developer_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX developer_tenants_developer_id_index ON platform.developer_tenants USING btree (developer_id);
+CREATE INDEX IF NOT EXISTS developer_tenants_developer_id_index ON platform.developer_tenants USING btree (developer_id);
 
 
 --
 -- Name: developer_tenants_tenant_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX developer_tenants_tenant_id_index ON platform.developer_tenants USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS developer_tenants_tenant_id_index ON platform.developer_tenants USING btree (tenant_id);
 
 
 --
 -- Name: developers_contact_email_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX developers_contact_email_index ON platform.developers USING btree (contact_email);
+CREATE INDEX IF NOT EXISTS developers_contact_email_index ON platform.developers USING btree (contact_email);
 
 
 --
 -- Name: developers_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX developers_status_index ON platform.developers USING btree (status);
+CREATE INDEX IF NOT EXISTS developers_status_index ON platform.developers USING btree (status);
 
 
 --
 -- Name: developers_user_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX developers_user_id_index ON platform.developers USING btree (user_id);
+CREATE INDEX IF NOT EXISTS developers_user_id_index ON platform.developers USING btree (user_id);
 
 
 --
 -- Name: documents_document_type_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX documents_document_type_index ON platform.documents USING btree (document_type);
+CREATE INDEX IF NOT EXISTS documents_document_type_index ON platform.documents USING btree (document_type);
 
 
 --
 -- Name: documents_expires_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX documents_expires_at_index ON platform.documents USING btree (expires_at) WHERE (expires_at IS NOT NULL);
+CREATE INDEX IF NOT EXISTS documents_expires_at_index ON platform.documents USING btree (expires_at) WHERE (expires_at IS NOT NULL);
 
 
 --
 -- Name: documents_owner_type_owner_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX documents_owner_type_owner_id_index ON platform.documents USING btree (owner_type, owner_id);
+CREATE INDEX IF NOT EXISTS documents_owner_type_owner_id_index ON platform.documents USING btree (owner_type, owner_id);
 
 
 --
 -- Name: emails_email_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX emails_email_index ON platform.emails USING btree (email);
+CREATE INDEX IF NOT EXISTS emails_email_index ON platform.emails USING btree (email);
 
 
 --
 -- Name: emails_email_type_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX emails_email_type_index ON platform.emails USING btree (email_type);
+CREATE INDEX IF NOT EXISTS emails_email_type_index ON platform.emails USING btree (email_type);
 
 
 --
 -- Name: emails_owner_type_owner_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX emails_owner_type_owner_id_index ON platform.emails USING btree (owner_type, owner_id);
+CREATE INDEX IF NOT EXISTS emails_owner_type_owner_id_index ON platform.emails USING btree (owner_type, owner_id);
 
 
 --
 -- Name: emails_owner_type_owner_id_is_primary_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX emails_owner_type_owner_id_is_primary_index ON platform.emails USING btree (owner_type, owner_id, is_primary) WHERE (is_primary = true);
+CREATE INDEX IF NOT EXISTS emails_owner_type_owner_id_is_primary_index ON platform.emails USING btree (owner_type, owner_id, is_primary) WHERE (is_primary = true);
 
 
 --
 -- Name: entity_types_category_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX entity_types_category_index ON platform.entity_types USING btree (category);
+CREATE INDEX IF NOT EXISTS entity_types_category_index ON platform.entity_types USING btree (category);
 
 
 --
 -- Name: entity_types_is_active_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX entity_types_is_active_index ON platform.entity_types USING btree (is_active) WHERE (is_active = true);
+CREATE INDEX IF NOT EXISTS entity_types_is_active_index ON platform.entity_types USING btree (is_active) WHERE (is_active = true);
 
 
 --
 -- Name: feature_toggles_feature_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX feature_toggles_feature_index ON platform.feature_toggles USING btree (feature);
+CREATE INDEX IF NOT EXISTS feature_toggles_feature_index ON platform.feature_toggles USING btree (feature);
 
 
 --
 -- Name: feature_toggles_tenant_id_enabled_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX feature_toggles_tenant_id_enabled_index ON platform.feature_toggles USING btree (tenant_id, enabled);
+CREATE INDEX IF NOT EXISTS feature_toggles_tenant_id_enabled_index ON platform.feature_toggles USING btree (tenant_id, enabled);
 
 
 --
 -- Name: feature_toggles_tenant_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX feature_toggles_tenant_id_index ON platform.feature_toggles USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS feature_toggles_tenant_id_index ON platform.feature_toggles USING btree (tenant_id);
 
 
 --
 -- Name: gdpr_anonymization_records_table_name_column_name_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_anonymization_records_table_name_column_name_index ON platform.gdpr_anonymization_records USING btree (table_name, column_name);
+CREATE INDEX IF NOT EXISTS gdpr_anonymization_records_table_name_column_name_index ON platform.gdpr_anonymization_records USING btree (table_name, column_name);
 
 
 --
 -- Name: gdpr_anonymization_records_user_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_anonymization_records_user_id_index ON platform.gdpr_anonymization_records USING btree (user_id);
+CREATE INDEX IF NOT EXISTS gdpr_anonymization_records_user_id_index ON platform.gdpr_anonymization_records USING btree (user_id);
 
 
 --
 -- Name: gdpr_audit_logs_action_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_audit_logs_action_index ON platform.gdpr_audit_logs USING btree (action);
+CREATE INDEX IF NOT EXISTS gdpr_audit_logs_action_index ON platform.gdpr_audit_logs USING btree (action);
 
 
 --
 -- Name: gdpr_audit_logs_actor_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_audit_logs_actor_id_index ON platform.gdpr_audit_logs USING btree (actor_id);
+CREATE INDEX IF NOT EXISTS gdpr_audit_logs_actor_id_index ON platform.gdpr_audit_logs USING btree (actor_id);
 
 
 --
 -- Name: gdpr_audit_logs_resource_type_resource_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_audit_logs_resource_type_resource_id_index ON platform.gdpr_audit_logs USING btree (resource_type, resource_id);
+CREATE INDEX IF NOT EXISTS gdpr_audit_logs_resource_type_resource_id_index ON platform.gdpr_audit_logs USING btree (resource_type, resource_id);
 
 
 --
 -- Name: gdpr_audit_logs_timestamp_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_audit_logs_timestamp_index ON platform.gdpr_audit_logs USING btree ("timestamp");
+CREATE INDEX IF NOT EXISTS gdpr_audit_logs_timestamp_index ON platform.gdpr_audit_logs USING btree ("timestamp");
 
 
 --
 -- Name: gdpr_audit_logs_user_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_audit_logs_user_id_index ON platform.gdpr_audit_logs USING btree (user_id);
+CREATE INDEX IF NOT EXISTS gdpr_audit_logs_user_id_index ON platform.gdpr_audit_logs USING btree (user_id);
 
 
 --
 -- Name: gdpr_audit_trail_action_type_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_audit_trail_action_type_index ON platform.gdpr_audit_trail USING btree (action_type);
+CREATE INDEX IF NOT EXISTS gdpr_audit_trail_action_type_index ON platform.gdpr_audit_trail USING btree (action_type);
 
 
 --
 -- Name: gdpr_audit_trail_actor_type_actor_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_audit_trail_actor_type_actor_id_index ON platform.gdpr_audit_trail USING btree (actor_type, actor_id);
+CREATE INDEX IF NOT EXISTS gdpr_audit_trail_actor_type_actor_id_index ON platform.gdpr_audit_trail USING btree (actor_type, actor_id);
 
 
 --
 -- Name: gdpr_audit_trail_inserted_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_audit_trail_inserted_at_index ON platform.gdpr_audit_trail USING btree (inserted_at);
+CREATE INDEX IF NOT EXISTS gdpr_audit_trail_inserted_at_index ON platform.gdpr_audit_trail USING btree (inserted_at);
 
 
 --
 -- Name: gdpr_audit_trail_processed_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_audit_trail_processed_at_index ON platform.gdpr_audit_trail USING btree (processed_at);
+CREATE INDEX IF NOT EXISTS gdpr_audit_trail_processed_at_index ON platform.gdpr_audit_trail USING btree (processed_at);
 
 
 --
 -- Name: gdpr_audit_trail_user_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_audit_trail_user_id_index ON platform.gdpr_audit_trail USING btree (user_id);
+CREATE INDEX IF NOT EXISTS gdpr_audit_trail_user_id_index ON platform.gdpr_audit_trail USING btree (user_id);
 
 
 --
 -- Name: gdpr_consent_records_consent_type_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_consent_records_consent_type_index ON platform.gdpr_consent_records USING btree (consent_type);
+CREATE INDEX IF NOT EXISTS gdpr_consent_records_consent_type_index ON platform.gdpr_consent_records USING btree (consent_type);
 
 
 --
 -- Name: gdpr_consent_records_expires_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_consent_records_expires_at_index ON platform.gdpr_consent_records USING btree (expires_at);
+CREATE INDEX IF NOT EXISTS gdpr_consent_records_expires_at_index ON platform.gdpr_consent_records USING btree (expires_at);
 
 
 --
 -- Name: gdpr_consent_records_granted_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_consent_records_granted_at_index ON platform.gdpr_consent_records USING btree (granted_at);
+CREATE INDEX IF NOT EXISTS gdpr_consent_records_granted_at_index ON platform.gdpr_consent_records USING btree (granted_at);
 
 
 --
 -- Name: gdpr_consent_records_is_current_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_consent_records_is_current_index ON platform.gdpr_consent_records USING btree (is_current);
+CREATE INDEX IF NOT EXISTS gdpr_consent_records_is_current_index ON platform.gdpr_consent_records USING btree (is_current);
 
 
 --
 -- Name: gdpr_consent_records_user_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_consent_records_user_id_index ON platform.gdpr_consent_records USING btree (user_id);
+CREATE INDEX IF NOT EXISTS gdpr_consent_records_user_id_index ON platform.gdpr_consent_records USING btree (user_id);
 
 
 --
 -- Name: gdpr_consents_purpose_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_consents_purpose_status_index ON platform.gdpr_consents USING btree (purpose, status);
+CREATE INDEX IF NOT EXISTS gdpr_consents_purpose_status_index ON platform.gdpr_consents USING btree (purpose, status);
 
 
 --
 -- Name: gdpr_consents_user_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_consents_user_id_index ON platform.gdpr_consents USING btree (user_id);
+CREATE INDEX IF NOT EXISTS gdpr_consents_user_id_index ON platform.gdpr_consents USING btree (user_id);
 
 
 --
 -- Name: gdpr_consents_user_id_purpose_version_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX gdpr_consents_user_id_purpose_version_index ON platform.gdpr_consents USING btree (user_id, purpose, version);
+CREATE UNIQUE INDEX IF NOT EXISTS gdpr_consents_user_id_purpose_version_index ON platform.gdpr_consents USING btree (user_id, purpose, version);
 
 
 --
 -- Name: gdpr_data_export_requests_expires_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_data_export_requests_expires_at_index ON platform.gdpr_data_export_requests USING btree (expires_at);
+CREATE INDEX IF NOT EXISTS gdpr_data_export_requests_expires_at_index ON platform.gdpr_data_export_requests USING btree (expires_at);
 
 
 --
 -- Name: gdpr_data_export_requests_export_token_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX gdpr_data_export_requests_export_token_index ON platform.gdpr_data_export_requests USING btree (export_token);
+CREATE UNIQUE INDEX IF NOT EXISTS gdpr_data_export_requests_export_token_index ON platform.gdpr_data_export_requests USING btree (export_token);
 
 
 --
 -- Name: gdpr_data_export_requests_oban_job_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX gdpr_data_export_requests_oban_job_id_index ON platform.gdpr_data_export_requests USING btree (oban_job_id) WHERE (oban_job_id IS NOT NULL);
+CREATE UNIQUE INDEX IF NOT EXISTS gdpr_data_export_requests_oban_job_id_index ON platform.gdpr_data_export_requests USING btree (oban_job_id) WHERE (oban_job_id IS NOT NULL);
 
 
 --
 -- Name: gdpr_data_export_requests_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_data_export_requests_status_index ON platform.gdpr_data_export_requests USING btree (status);
+CREATE INDEX IF NOT EXISTS gdpr_data_export_requests_status_index ON platform.gdpr_data_export_requests USING btree (status);
 
 
 --
 -- Name: gdpr_data_export_requests_user_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_data_export_requests_user_id_index ON platform.gdpr_data_export_requests USING btree (user_id);
+CREATE INDEX IF NOT EXISTS gdpr_data_export_requests_user_id_index ON platform.gdpr_data_export_requests USING btree (user_id);
 
 
 --
 -- Name: gdpr_exports_request_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_exports_request_id_index ON platform.gdpr_exports USING btree (request_id);
+CREATE INDEX IF NOT EXISTS gdpr_exports_request_id_index ON platform.gdpr_exports USING btree (request_id);
 
 
 --
 -- Name: gdpr_exports_status_expires_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_exports_status_expires_at_index ON platform.gdpr_exports USING btree (status, expires_at);
+CREATE INDEX IF NOT EXISTS gdpr_exports_status_expires_at_index ON platform.gdpr_exports USING btree (status, expires_at);
 
 
 --
 -- Name: gdpr_exports_user_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_exports_user_id_index ON platform.gdpr_exports USING btree (user_id);
+CREATE INDEX IF NOT EXISTS gdpr_exports_user_id_index ON platform.gdpr_exports USING btree (user_id);
 
 
 --
 -- Name: gdpr_legal_holds_case_reference_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_legal_holds_case_reference_index ON platform.gdpr_legal_holds USING btree (case_reference);
+CREATE INDEX IF NOT EXISTS gdpr_legal_holds_case_reference_index ON platform.gdpr_legal_holds USING btree (case_reference);
 
 
 --
 -- Name: gdpr_legal_holds_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_legal_holds_status_index ON platform.gdpr_legal_holds USING btree (status);
+CREATE INDEX IF NOT EXISTS gdpr_legal_holds_status_index ON platform.gdpr_legal_holds USING btree (status);
 
 
 --
 -- Name: gdpr_legal_holds_user_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_legal_holds_user_id_index ON platform.gdpr_legal_holds USING btree (user_id);
+CREATE INDEX IF NOT EXISTS gdpr_legal_holds_user_id_index ON platform.gdpr_legal_holds USING btree (user_id);
 
 
 --
 -- Name: gdpr_requests_expires_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_requests_expires_at_index ON platform.gdpr_requests USING btree (expires_at);
+CREATE INDEX IF NOT EXISTS gdpr_requests_expires_at_index ON platform.gdpr_requests USING btree (expires_at);
 
 
 --
 -- Name: gdpr_requests_type_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_requests_type_status_index ON platform.gdpr_requests USING btree (type, status);
+CREATE INDEX IF NOT EXISTS gdpr_requests_type_status_index ON platform.gdpr_requests USING btree (type, status);
 
 
 --
 -- Name: gdpr_requests_user_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_requests_user_id_index ON platform.gdpr_requests USING btree (user_id);
+CREATE INDEX IF NOT EXISTS gdpr_requests_user_id_index ON platform.gdpr_requests USING btree (user_id);
 
 
 --
 -- Name: gdpr_retention_policies_active_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_retention_policies_active_index ON platform.gdpr_retention_policies USING btree (active);
+CREATE INDEX IF NOT EXISTS gdpr_retention_policies_active_index ON platform.gdpr_retention_policies USING btree (active);
 
 
 --
 -- Name: gdpr_retention_policies_active_legal_hold_last_processed_at_ind; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_retention_policies_active_legal_hold_last_processed_at_ind ON platform.gdpr_retention_policies USING btree (active, legal_hold, last_processed_at);
+CREATE INDEX IF NOT EXISTS gdpr_retention_policies_active_legal_hold_last_processed_at_ind ON platform.gdpr_retention_policies USING btree (active, legal_hold, last_processed_at);
 
 
 --
 -- Name: gdpr_retention_policies_entity_type_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_retention_policies_entity_type_index ON platform.gdpr_retention_policies USING btree (entity_type);
+CREATE INDEX IF NOT EXISTS gdpr_retention_policies_entity_type_index ON platform.gdpr_retention_policies USING btree (entity_type);
 
 
 --
 -- Name: gdpr_retention_policies_last_processed_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_retention_policies_last_processed_at_index ON platform.gdpr_retention_policies USING btree (last_processed_at);
+CREATE INDEX IF NOT EXISTS gdpr_retention_policies_last_processed_at_index ON platform.gdpr_retention_policies USING btree (last_processed_at);
 
 
 --
 -- Name: gdpr_retention_policies_legal_hold_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_retention_policies_legal_hold_index ON platform.gdpr_retention_policies USING btree (legal_hold);
+CREATE INDEX IF NOT EXISTS gdpr_retention_policies_legal_hold_index ON platform.gdpr_retention_policies USING btree (legal_hold);
 
 
 --
 -- Name: gdpr_retention_policies_tenant_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_retention_policies_tenant_id_index ON platform.gdpr_retention_policies USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS gdpr_retention_policies_tenant_id_index ON platform.gdpr_retention_policies USING btree (tenant_id);
 
 
 --
 -- Name: gdpr_retention_schedules_expires_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_retention_schedules_expires_at_index ON platform.gdpr_retention_schedules USING btree (expires_at);
+CREATE INDEX IF NOT EXISTS gdpr_retention_schedules_expires_at_index ON platform.gdpr_retention_schedules USING btree (expires_at);
 
 
 --
 -- Name: gdpr_retention_schedules_status_priority_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_retention_schedules_status_priority_index ON platform.gdpr_retention_schedules USING btree (status, priority);
+CREATE INDEX IF NOT EXISTS gdpr_retention_schedules_status_priority_index ON platform.gdpr_retention_schedules USING btree (status, priority);
 
 
 --
 -- Name: gdpr_retention_schedules_user_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX gdpr_retention_schedules_user_id_index ON platform.gdpr_retention_schedules USING btree (user_id);
+CREATE INDEX IF NOT EXISTS gdpr_retention_schedules_user_id_index ON platform.gdpr_retention_schedules USING btree (user_id);
 
 
 --
 -- Name: idx_documents_tags; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX idx_documents_tags ON platform.documents USING gin (tags);
+CREATE INDEX IF NOT EXISTS idx_documents_tags ON platform.documents USING gin (tags);
 
 
 --
 -- Name: idx_notes_content_search; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX idx_notes_content_search ON platform.notes USING gin (to_tsvector('english'::regconfig, content));
+CREATE INDEX IF NOT EXISTS idx_notes_content_search ON platform.notes USING gin (to_tsvector('english'::regconfig, content));
 
 
 --
 -- Name: idx_notes_tags; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX idx_notes_tags ON platform.notes USING gin (tags);
+CREATE INDEX IF NOT EXISTS idx_notes_tags ON platform.notes USING gin (tags);
 
 
 --
 -- Name: images_image_type_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX images_image_type_index ON platform.images USING btree (image_type);
+CREATE INDEX IF NOT EXISTS images_image_type_index ON platform.images USING btree (image_type);
 
 
 --
 -- Name: images_is_public_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX images_is_public_index ON platform.images USING btree (is_public) WHERE (is_public = true);
+CREATE INDEX IF NOT EXISTS images_is_public_index ON platform.images USING btree (is_public) WHERE (is_public = true);
 
 
 --
 -- Name: images_owner_type_owner_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX images_owner_type_owner_id_index ON platform.images USING btree (owner_type, owner_id);
+CREATE INDEX IF NOT EXISTS images_owner_type_owner_id_index ON platform.images USING btree (owner_type, owner_id);
 
 
 --
 -- Name: images_storage_provider_storage_bucket_storage_key_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX images_storage_provider_storage_bucket_storage_key_index ON platform.images USING btree (storage_provider, storage_bucket, storage_key);
+CREATE INDEX IF NOT EXISTS images_storage_provider_storage_bucket_storage_key_index ON platform.images USING btree (storage_provider, storage_bucket, storage_key);
 
 
 --
 -- Name: notes_is_pinned_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX notes_is_pinned_index ON platform.notes USING btree (is_pinned) WHERE (is_pinned = true);
+CREATE INDEX IF NOT EXISTS notes_is_pinned_index ON platform.notes USING btree (is_pinned) WHERE (is_pinned = true);
 
 
 --
 -- Name: notes_owner_type_owner_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX notes_owner_type_owner_id_index ON platform.notes USING btree (owner_type, owner_id);
+CREATE INDEX IF NOT EXISTS notes_owner_type_owner_id_index ON platform.notes USING btree (owner_type, owner_id);
 
 
 --
 -- Name: notes_related_to_type_related_to_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX notes_related_to_type_related_to_id_index ON platform.notes USING btree (related_to_type, related_to_id);
+CREATE INDEX IF NOT EXISTS notes_related_to_type_related_to_id_index ON platform.notes USING btree (related_to_type, related_to_id);
 
 
 --
 -- Name: payment_gateways_is_default_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX payment_gateways_is_default_index ON platform.payment_gateways USING btree (is_default) WHERE (is_default = true);
+CREATE INDEX IF NOT EXISTS payment_gateways_is_default_index ON platform.payment_gateways USING btree (is_default) WHERE (is_default = true);
 
 
 --
 -- Name: payment_gateways_provider_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX payment_gateways_provider_index ON platform.payment_gateways USING btree (provider);
+CREATE INDEX IF NOT EXISTS payment_gateways_provider_index ON platform.payment_gateways USING btree (provider);
 
 
 --
 -- Name: payment_gateways_slug_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX payment_gateways_slug_index ON platform.payment_gateways USING btree (slug);
+CREATE UNIQUE INDEX IF NOT EXISTS payment_gateways_slug_index ON platform.payment_gateways USING btree (slug);
 
 
 --
 -- Name: payment_gateways_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX payment_gateways_status_index ON platform.payment_gateways USING btree (status);
+CREATE INDEX IF NOT EXISTS payment_gateways_status_index ON platform.payment_gateways USING btree (status);
 
 
 --
 -- Name: phones_can_sms_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX phones_can_sms_index ON platform.phones USING btree (can_sms) WHERE (can_sms = true);
+CREATE INDEX IF NOT EXISTS phones_can_sms_index ON platform.phones USING btree (can_sms) WHERE (can_sms = true);
 
 
 --
 -- Name: phones_owner_type_owner_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX phones_owner_type_owner_id_index ON platform.phones USING btree (owner_type, owner_id);
+CREATE INDEX IF NOT EXISTS phones_owner_type_owner_id_index ON platform.phones USING btree (owner_type, owner_id);
 
 
 --
 -- Name: phones_phone_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX phones_phone_index ON platform.phones USING btree (phone);
+CREATE INDEX IF NOT EXISTS phones_phone_index ON platform.phones USING btree (phone);
 
 
 --
 -- Name: phones_phone_type_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX phones_phone_type_index ON platform.phones USING btree (phone_type);
+CREATE INDEX IF NOT EXISTS phones_phone_type_index ON platform.phones USING btree (phone_type);
 
 
 --
 -- Name: registration_requests_approved_by_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX registration_requests_approved_by_id_index ON platform.registration_requests USING btree (approved_by_id);
+CREATE INDEX IF NOT EXISTS registration_requests_approved_by_id_index ON platform.registration_requests USING btree (approved_by_id);
 
 
 --
 -- Name: registration_requests_email_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX registration_requests_email_index ON platform.registration_requests USING btree (email);
+CREATE INDEX IF NOT EXISTS registration_requests_email_index ON platform.registration_requests USING btree (email);
 
 
 --
 -- Name: registration_requests_status_inserted_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX registration_requests_status_inserted_at_index ON platform.registration_requests USING btree (status, inserted_at);
+CREATE INDEX IF NOT EXISTS registration_requests_status_inserted_at_index ON platform.registration_requests USING btree (status, inserted_at);
 
 
 --
 -- Name: registration_requests_tenant_id_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX registration_requests_tenant_id_status_index ON platform.registration_requests USING btree (tenant_id, status);
+CREATE INDEX IF NOT EXISTS registration_requests_tenant_id_status_index ON platform.registration_requests USING btree (tenant_id, status);
 
 
 --
 -- Name: registration_settings_tenant_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX registration_settings_tenant_id_index ON platform.registration_settings USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS registration_settings_tenant_id_index ON platform.registration_settings USING btree (tenant_id);
 
 
 --
 -- Name: reseller_tenants_reseller_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX reseller_tenants_reseller_id_index ON platform.reseller_tenants USING btree (reseller_id);
+CREATE INDEX IF NOT EXISTS reseller_tenants_reseller_id_index ON platform.reseller_tenants USING btree (reseller_id);
 
 
 --
 -- Name: reseller_tenants_tenant_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX reseller_tenants_tenant_id_index ON platform.reseller_tenants USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS reseller_tenants_tenant_id_index ON platform.reseller_tenants USING btree (tenant_id);
 
 
 --
 -- Name: resellers_custom_domain_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX resellers_custom_domain_index ON platform.resellers USING btree (custom_domain) WHERE (custom_domain IS NOT NULL);
+CREATE UNIQUE INDEX IF NOT EXISTS resellers_custom_domain_index ON platform.resellers USING btree (custom_domain) WHERE (custom_domain IS NOT NULL);
 
 
 --
 -- Name: resellers_developer_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX resellers_developer_id_index ON platform.resellers USING btree (developer_id);
+CREATE INDEX IF NOT EXISTS resellers_developer_id_index ON platform.resellers USING btree (developer_id);
 
 
 --
 -- Name: resellers_slug_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX resellers_slug_index ON platform.resellers USING btree (slug);
+CREATE UNIQUE INDEX IF NOT EXISTS resellers_slug_index ON platform.resellers USING btree (slug);
 
 
 --
 -- Name: resellers_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX resellers_status_index ON platform.resellers USING btree (status);
+CREATE INDEX IF NOT EXISTS resellers_status_index ON platform.resellers USING btree (status);
 
 
 --
 -- Name: resellers_subdomain_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX resellers_subdomain_index ON platform.resellers USING btree (subdomain);
+CREATE UNIQUE INDEX IF NOT EXISTS resellers_subdomain_index ON platform.resellers USING btree (subdomain);
 
 
 --
 -- Name: resellers_user_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX resellers_user_id_index ON platform.resellers USING btree (user_id);
+CREATE INDEX IF NOT EXISTS resellers_user_id_index ON platform.resellers USING btree (user_id);
 
 
 --
 -- Name: socials_is_public_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX socials_is_public_index ON platform.socials USING btree (is_public) WHERE (is_public = true);
+CREATE INDEX IF NOT EXISTS socials_is_public_index ON platform.socials USING btree (is_public) WHERE (is_public = true);
 
 
 --
 -- Name: socials_owner_type_owner_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX socials_owner_type_owner_id_index ON platform.socials USING btree (owner_type, owner_id);
+CREATE INDEX IF NOT EXISTS socials_owner_type_owner_id_index ON platform.socials USING btree (owner_type, owner_id);
 
 
 --
 -- Name: socials_owner_type_owner_id_platform_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX socials_owner_type_owner_id_platform_index ON platform.socials USING btree (owner_type, owner_id, platform);
+CREATE UNIQUE INDEX IF NOT EXISTS socials_owner_type_owner_id_platform_index ON platform.socials USING btree (owner_type, owner_id, platform);
 
 
 --
 -- Name: socials_platform_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX socials_platform_index ON platform.socials USING btree (platform);
+CREATE INDEX IF NOT EXISTS socials_platform_index ON platform.socials USING btree (platform);
 
 
 --
 -- Name: team_members_team_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX team_members_team_id_index ON platform.team_members USING btree (team_id);
+CREATE INDEX IF NOT EXISTS team_members_team_id_index ON platform.team_members USING btree (team_id);
 
 
 --
 -- Name: team_members_team_id_user_profile_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX team_members_team_id_user_profile_id_index ON platform.team_members USING btree (team_id, user_profile_id);
+CREATE UNIQUE INDEX IF NOT EXISTS team_members_team_id_user_profile_id_index ON platform.team_members USING btree (team_id, user_profile_id);
 
 
 --
 -- Name: team_members_user_profile_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX team_members_user_profile_id_index ON platform.team_members USING btree (user_profile_id);
+CREATE INDEX IF NOT EXISTS team_members_user_profile_id_index ON platform.team_members USING btree (user_profile_id);
 
 
 --
 -- Name: teams_entity_type_entity_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX teams_entity_type_entity_id_index ON platform.teams USING btree (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS teams_entity_type_entity_id_index ON platform.teams USING btree (entity_type, entity_id);
 
 
 --
 -- Name: teams_entity_type_entity_id_slug_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX teams_entity_type_entity_id_slug_index ON platform.teams USING btree (entity_type, entity_id, slug);
+CREATE UNIQUE INDEX IF NOT EXISTS teams_entity_type_entity_id_slug_index ON platform.teams USING btree (entity_type, entity_id, slug);
 
 
 --
 -- Name: teams_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX teams_status_index ON platform.teams USING btree (status);
+CREATE INDEX IF NOT EXISTS teams_status_index ON platform.teams USING btree (status);
 
 
 --
 -- Name: tenant_branding_tenant_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX tenant_branding_tenant_id_index ON platform.tenant_branding USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS tenant_branding_tenant_id_index ON platform.tenant_branding USING btree (tenant_id);
 
 
 --
 -- Name: tenant_branding_tenant_id_is_active_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX tenant_branding_tenant_id_is_active_index ON platform.tenant_branding USING btree (tenant_id, is_active);
+CREATE INDEX IF NOT EXISTS tenant_branding_tenant_id_is_active_index ON platform.tenant_branding USING btree (tenant_id, is_active);
 
 
 --
 -- Name: tenant_settings_tenant_id_category_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX tenant_settings_tenant_id_category_index ON platform.tenant_settings USING btree (tenant_id, category);
+CREATE INDEX IF NOT EXISTS tenant_settings_tenant_id_category_index ON platform.tenant_settings USING btree (tenant_id, category);
 
 
 --
 -- Name: tenant_settings_tenant_id_category_public_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX tenant_settings_tenant_id_category_public_index ON platform.tenant_settings USING btree (tenant_id, category, public);
+CREATE INDEX IF NOT EXISTS tenant_settings_tenant_id_category_public_index ON platform.tenant_settings USING btree (tenant_id, category, public);
 
 
 --
 -- Name: tenant_settings_tenant_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX tenant_settings_tenant_id_index ON platform.tenant_settings USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS tenant_settings_tenant_id_index ON platform.tenant_settings USING btree (tenant_id);
 
 
 --
 -- Name: tenants_company_schema_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX tenants_company_schema_index ON platform.tenants USING btree (company_schema);
+CREATE UNIQUE INDEX IF NOT EXISTS tenants_company_schema_index ON platform.tenants USING btree (company_schema);
 
 
 --
 -- Name: tenants_custom_domain_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX tenants_custom_domain_index ON platform.tenants USING btree (custom_domain) WHERE (custom_domain IS NOT NULL);
+CREATE UNIQUE INDEX IF NOT EXISTS tenants_custom_domain_index ON platform.tenants USING btree (custom_domain) WHERE (custom_domain IS NOT NULL);
 
 
 --
 -- Name: tenants_plan_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX tenants_plan_index ON platform.tenants USING btree (plan);
+CREATE INDEX IF NOT EXISTS tenants_plan_index ON platform.tenants USING btree (plan);
 
 
 --
 -- Name: tenants_slug_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX tenants_slug_index ON platform.tenants USING btree (slug);
+CREATE UNIQUE INDEX IF NOT EXISTS tenants_slug_index ON platform.tenants USING btree (slug);
 
 
 --
 -- Name: tenants_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX tenants_status_index ON platform.tenants USING btree (status);
+CREATE INDEX IF NOT EXISTS tenants_status_index ON platform.tenants USING btree (status);
 
 
 --
 -- Name: tenants_subdomain_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX tenants_subdomain_index ON platform.tenants USING btree (subdomain);
+CREATE UNIQUE INDEX IF NOT EXISTS tenants_subdomain_index ON platform.tenants USING btree (subdomain);
 
 
 --
 -- Name: todos_assigned_to_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX todos_assigned_to_index ON platform.todos USING btree (assigned_to) WHERE (assigned_to IS NOT NULL);
+CREATE INDEX IF NOT EXISTS todos_assigned_to_index ON platform.todos USING btree (assigned_to) WHERE (assigned_to IS NOT NULL);
 
 
 --
 -- Name: todos_due_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX todos_due_at_index ON platform.todos USING btree (due_at) WHERE (due_at IS NOT NULL);
+CREATE INDEX IF NOT EXISTS todos_due_at_index ON platform.todos USING btree (due_at) WHERE (due_at IS NOT NULL);
 
 
 --
 -- Name: todos_owner_type_owner_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX todos_owner_type_owner_id_index ON platform.todos USING btree (owner_type, owner_id);
+CREATE INDEX IF NOT EXISTS todos_owner_type_owner_id_index ON platform.todos USING btree (owner_type, owner_id);
 
 
 --
 -- Name: todos_related_to_type_related_to_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX todos_related_to_type_related_to_id_index ON platform.todos USING btree (related_to_type, related_to_id);
+CREATE INDEX IF NOT EXISTS todos_related_to_type_related_to_id_index ON platform.todos USING btree (related_to_type, related_to_id);
 
 
 --
 -- Name: todos_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX todos_status_index ON platform.todos USING btree (status);
+CREATE INDEX IF NOT EXISTS todos_status_index ON platform.todos USING btree (status);
 
 
 --
 -- Name: unique_daily_metric_bucket; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX unique_daily_metric_bucket ON platform.analytics_metrics_daily USING btree (tenant_id, metric_key, time_bucket);
+CREATE UNIQUE INDEX IF NOT EXISTS unique_daily_metric_bucket ON platform.analytics_metrics_daily USING btree (tenant_id, metric_key, time_bucket);
 
 
 --
 -- Name: unique_hourly_metric_bucket; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX unique_hourly_metric_bucket ON platform.analytics_metrics_hourly USING btree (tenant_id, metric_key, time_bucket);
+CREATE UNIQUE INDEX IF NOT EXISTS unique_hourly_metric_bucket ON platform.analytics_metrics_hourly USING btree (tenant_id, metric_key, time_bucket);
 
 
 --
 -- Name: unique_tenant_branding_name; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX unique_tenant_branding_name ON platform.tenant_branding USING btree (tenant_id, name);
+CREATE UNIQUE INDEX IF NOT EXISTS unique_tenant_branding_name ON platform.tenant_branding USING btree (tenant_id, name);
 
 
 --
 -- Name: unique_tenant_feature; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX unique_tenant_feature ON platform.feature_toggles USING btree (tenant_id, feature);
+CREATE UNIQUE INDEX IF NOT EXISTS unique_tenant_feature ON platform.feature_toggles USING btree (tenant_id, feature);
 
 
 --
 -- Name: unique_tenant_setting; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX unique_tenant_setting ON platform.tenant_settings USING btree (tenant_id, category, key);
+CREATE UNIQUE INDEX IF NOT EXISTS unique_tenant_setting ON platform.tenant_settings USING btree (tenant_id, category, key);
 
 
 --
 -- Name: user_profiles_entity_type_entity_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX user_profiles_entity_type_entity_id_index ON platform.user_profiles USING btree (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS user_profiles_entity_type_entity_id_index ON platform.user_profiles USING btree (entity_type, entity_id);
 
 
 --
 -- Name: user_profiles_invitation_token_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX user_profiles_invitation_token_index ON platform.user_profiles USING btree (invitation_token) WHERE (invitation_token IS NOT NULL);
+CREATE INDEX IF NOT EXISTS user_profiles_invitation_token_index ON platform.user_profiles USING btree (invitation_token) WHERE (invitation_token IS NOT NULL);
 
 
 --
 -- Name: user_profiles_is_admin_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX user_profiles_is_admin_index ON platform.user_profiles USING btree (is_admin) WHERE (is_admin = true);
+CREATE INDEX IF NOT EXISTS user_profiles_is_admin_index ON platform.user_profiles USING btree (is_admin) WHERE (is_admin = true);
 
 
 --
 -- Name: user_profiles_is_developer_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX user_profiles_is_developer_index ON platform.user_profiles USING btree (is_developer) WHERE (is_developer = true);
+CREATE INDEX IF NOT EXISTS user_profiles_is_developer_index ON platform.user_profiles USING btree (is_developer) WHERE (is_developer = true);
 
 
 --
 -- Name: user_profiles_status_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX user_profiles_status_index ON platform.user_profiles USING btree (status);
+CREATE INDEX IF NOT EXISTS user_profiles_status_index ON platform.user_profiles USING btree (status);
 
 
 --
 -- Name: user_profiles_user_id_entity_type_entity_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX user_profiles_user_id_entity_type_entity_id_index ON platform.user_profiles USING btree (user_id, entity_type, entity_id);
+CREATE UNIQUE INDEX IF NOT EXISTS user_profiles_user_id_entity_type_entity_id_index ON platform.user_profiles USING btree (user_id, entity_type, entity_id);
 
 
 --
 -- Name: user_profiles_user_id_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX user_profiles_user_id_index ON platform.user_profiles USING btree (user_id);
+CREATE INDEX IF NOT EXISTS user_profiles_user_id_index ON platform.user_profiles USING btree (user_id);
 
 
 --
 -- Name: users_email_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX users_email_index ON platform.users USING btree (email);
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_index ON platform.users USING btree (email);
 
 
 --
 -- Name: users_failed_attempts_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX users_failed_attempts_index ON platform.users USING btree (failed_attempts);
+CREATE INDEX IF NOT EXISTS users_failed_attempts_index ON platform.users USING btree (failed_attempts);
 
 
 --
 -- Name: users_gdpr_anonymized_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX users_gdpr_anonymized_at_index ON platform.users USING btree (gdpr_anonymized_at);
+CREATE INDEX IF NOT EXISTS users_gdpr_anonymized_at_index ON platform.users USING btree (gdpr_anonymized_at);
 
 
 --
 -- Name: users_gdpr_data_export_token_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE UNIQUE INDEX users_gdpr_data_export_token_index ON platform.users USING btree (gdpr_data_export_token) WHERE (gdpr_data_export_token IS NOT NULL);
+CREATE UNIQUE INDEX IF NOT EXISTS users_gdpr_data_export_token_index ON platform.users USING btree (gdpr_data_export_token) WHERE (gdpr_data_export_token IS NOT NULL);
 
 
 --
 -- Name: users_gdpr_deletion_requested_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX users_gdpr_deletion_requested_at_index ON platform.users USING btree (gdpr_deletion_requested_at);
+CREATE INDEX IF NOT EXISTS users_gdpr_deletion_requested_at_index ON platform.users USING btree (gdpr_deletion_requested_at);
 
 
 --
 -- Name: users_gdpr_retention_expires_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX users_gdpr_retention_expires_at_index ON platform.users USING btree (gdpr_retention_expires_at);
+CREATE INDEX IF NOT EXISTS users_gdpr_retention_expires_at_index ON platform.users USING btree (gdpr_retention_expires_at);
 
 
 --
 -- Name: users_inserted_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX users_inserted_at_index ON platform.users USING btree (inserted_at);
+CREATE INDEX IF NOT EXISTS users_inserted_at_index ON platform.users USING btree (inserted_at);
 
 
 --
 -- Name: users_locked_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX users_locked_at_index ON platform.users USING btree (locked_at);
+CREATE INDEX IF NOT EXISTS users_locked_at_index ON platform.users USING btree (locked_at);
 
 
 --
 -- Name: users_password_change_required_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX users_password_change_required_index ON platform.users USING btree (password_change_required);
+CREATE INDEX IF NOT EXISTS users_password_change_required_index ON platform.users USING btree (password_change_required);
 
 
 --
 -- Name: users_unlock_token_expires_at_index; Type: INDEX; Schema: platform; Owner: -
 --
 
-CREATE INDEX users_unlock_token_expires_at_index ON platform.users USING btree (unlock_token_expires_at) WHERE (unlock_token_expires_at IS NOT NULL);
+CREATE INDEX IF NOT EXISTS users_unlock_token_expires_at_index ON platform.users USING btree (unlock_token_expires_at) WHERE (unlock_token_expires_at IS NOT NULL);
 
 
 --
 -- Name: oban_jobs_args_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX oban_jobs_args_index ON public.oban_jobs USING gin (args);
+CREATE INDEX IF NOT EXISTS oban_jobs_args_index ON public.oban_jobs USING gin (args);
 
 
 --
 -- Name: oban_jobs_meta_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX oban_jobs_meta_index ON public.oban_jobs USING gin (meta);
+CREATE INDEX IF NOT EXISTS oban_jobs_meta_index ON public.oban_jobs USING gin (meta);
 
 
 --
 -- Name: oban_jobs_state_cancelled_at_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX oban_jobs_state_cancelled_at_index ON public.oban_jobs USING btree (state, cancelled_at);
+CREATE INDEX IF NOT EXISTS oban_jobs_state_cancelled_at_index ON public.oban_jobs USING btree (state, cancelled_at);
 
 
 --
 -- Name: oban_jobs_state_discarded_at_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX oban_jobs_state_discarded_at_index ON public.oban_jobs USING btree (state, discarded_at);
+CREATE INDEX IF NOT EXISTS oban_jobs_state_discarded_at_index ON public.oban_jobs USING btree (state, discarded_at);
 
 
 --
 -- Name: oban_jobs_state_queue_priority_scheduled_at_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX oban_jobs_state_queue_priority_scheduled_at_id_index ON public.oban_jobs USING btree (state, queue, priority, scheduled_at, id);
+CREATE INDEX IF NOT EXISTS oban_jobs_state_queue_priority_scheduled_at_id_index ON public.oban_jobs USING btree (state, queue, priority, scheduled_at, id);
 
 
 --

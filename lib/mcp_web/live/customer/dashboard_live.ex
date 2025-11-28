@@ -10,27 +10,27 @@ defmodule McpWeb.Customer.DashboardLive do
   def render(assigns) do
     ~H"""
     <div>
-      <McpWeb.CoreComponents.header>
+      <McpWeb.Core.CoreComponents.header>
         My Account
         <:subtitle>Manage your orders and profile.</:subtitle>
-      </McpWeb.CoreComponents.header>
+      </McpWeb.Core.CoreComponents.header>
       
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-        <McpWeb.CoreComponents.card>
+        <McpWeb.Core.CoreComponents.card>
           <h3 class="font-bold text-lg">My Orders</h3>
           <p class="py-4">Track and view your order history.</p>
           <div class="card-actions justify-end">
-            <McpWeb.CoreComponents.button variant="primary" size="sm">View Orders</McpWeb.CoreComponents.button>
+            <McpWeb.Core.CoreComponents.button variant="primary" size="sm">View Orders</McpWeb.Core.CoreComponents.button>
           </div>
-        </McpWeb.CoreComponents.card>
+        </McpWeb.Core.CoreComponents.card>
         
-        <McpWeb.CoreComponents.card>
+        <McpWeb.Core.CoreComponents.card>
           <h3 class="font-bold text-lg">Profile</h3>
           <p class="py-4">Update your personal information.</p>
           <div class="card-actions justify-end">
-            <McpWeb.CoreComponents.button variant="secondary" size="sm">Edit Profile</McpWeb.CoreComponents.button>
+            <McpWeb.Core.CoreComponents.button variant="secondary" size="sm">Edit Profile</McpWeb.Core.CoreComponents.button>
           </div>
-        </McpWeb.CoreComponents.card>
+        </McpWeb.Core.CoreComponents.card>
       </div>
     </div>
     """

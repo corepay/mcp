@@ -18,23 +18,23 @@ defmodule McpWeb.MockDashboardLive do
   def render(assigns) do
     ~H"""
     <div>
-      <McpWeb.CoreComponents.header>
+      <McpWeb.Core.CoreComponents.header>
         {String.capitalize(Atom.to_string(@context))} Dashboard
         <:subtitle>Overview of your {@context} operations.</:subtitle>
         <:actions>
-          <McpWeb.CoreComponents.button variant="primary" size="sm">
-            <McpWeb.CoreComponents.icon name="hero-plus" class="size-4 mr-2" />
+          <McpWeb.Core.CoreComponents.button variant="primary" size="sm">
+            <McpWeb.Core.CoreComponents.icon name="hero-plus" class="size-4 mr-2" />
             New Action
-          </McpWeb.CoreComponents.button>
+          </McpWeb.Core.CoreComponents.button>
         </:actions>
-      </McpWeb.CoreComponents.header>
+      </McpWeb.Core.CoreComponents.header>
 
       <!-- Stats Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
         <div :for={stat <- @stats} class="stats shadow bg-base-100 border border-base-200">
           <div class="stat">
             <div class="stat-figure text-primary">
-              <McpWeb.CoreComponents.icon name={stat.icon} class="size-8" />
+              <McpWeb.Core.CoreComponents.icon name={stat.icon} class="size-8" />
             </div>
             <div class="stat-title">{stat.label}</div>
             <div class="stat-value text-primary">{stat.value}</div>
@@ -47,7 +47,7 @@ defmodule McpWeb.MockDashboardLive do
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
         <!-- Recent Activity -->
         <div class="lg:col-span-2 space-y-6">
-          <McpWeb.CoreComponents.card>
+          <McpWeb.Core.CoreComponents.card>
             <h3 class="font-bold text-lg mb-4">Recent Activity</h3>
             <div class="overflow-x-auto">
               <table class="table">
@@ -85,33 +85,33 @@ defmodule McpWeb.MockDashboardLive do
                 </tbody>
               </table>
             </div>
-          </McpWeb.CoreComponents.card>
+          </McpWeb.Core.CoreComponents.card>
 
           <!-- Chart Placeholder -->
-          <McpWeb.CoreComponents.card>
+          <McpWeb.Core.CoreComponents.card>
             <h3 class="font-bold text-lg mb-4">Performance Overview</h3>
             <div class="h-64 bg-base-200 rounded-box flex items-center justify-center text-base-content/30">
               [Chart Component Placeholder]
             </div>
-          </McpWeb.CoreComponents.card>
+          </McpWeb.Core.CoreComponents.card>
         </div>
 
         <!-- Sidebar / Quick Actions -->
         <div class="space-y-6">
-          <McpWeb.CoreComponents.card>
+          <McpWeb.Core.CoreComponents.card>
             <h3 class="font-bold text-lg mb-4">Quick Actions</h3>
             <ul class="menu bg-base-200 w-full rounded-box">
-              <li><a><McpWeb.CoreComponents.icon name="hero-cog-6-tooth" /> Settings</a></li>
-              <li><a><McpWeb.CoreComponents.icon name="hero-users" /> Manage Users</a></li>
-              <li><a><McpWeb.CoreComponents.icon name="hero-document-text" /> View Reports</a></li>
+              <li><a><McpWeb.Core.CoreComponents.icon name="hero-cog-6-tooth" /> Settings</a></li>
+              <li><a><McpWeb.Core.CoreComponents.icon name="hero-users" /> Manage Users</a></li>
+              <li><a><McpWeb.Core.CoreComponents.icon name="hero-document-text" /> View Reports</a></li>
             </ul>
-          </McpWeb.CoreComponents.card>
+          </McpWeb.Core.CoreComponents.card>
 
-          <McpWeb.CoreComponents.card class="bg-primary text-primary-content">
+          <McpWeb.Core.CoreComponents.card class="bg-primary text-primary-content">
             <h3 class="font-bold text-lg">System Status</h3>
             <p class="py-2">All systems operational.</p>
             <progress class="progress progress-success w-full" value="100" max="100"></progress>
-          </McpWeb.CoreComponents.card>
+          </McpWeb.Core.CoreComponents.card>
         </div>
       </div>
     </div>

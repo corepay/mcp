@@ -17,7 +17,7 @@ defmodule McpWeb.PageController do
     else
       conn
       |> put_flash(:error, "Please sign in to access dashboard")
-      |> redirect(to: ~p"/sign_in")
+      |> redirect(to: ~p"/tenant/sign-in")
     end
   end
 
@@ -29,7 +29,7 @@ defmodule McpWeb.PageController do
     else
       conn
       |> put_flash(:error, "Please sign in to access settings")
-      |> redirect(to: ~p"/sign_in")
+      |> redirect(to: ~p"/tenant/sign-in")
     end
   end
 
@@ -41,7 +41,7 @@ defmodule McpWeb.PageController do
     else
       conn
       |> put_flash(:error, "Please sign in to access security settings")
-      |> redirect(to: ~p"/sign_in")
+      |> redirect(to: ~p"/tenant/sign-in")
     end
   end
 

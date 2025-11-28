@@ -13,7 +13,7 @@ defmodule McpWeb.Layouts.PortalLayouts do
         <li><.link navigate={~p"/admin/settings"}>Settings</.link></li>
       </:sidebar>
       <:user_menu>
-        <li><.link method="delete" href={~p"/sign_out"}>Sign out</.link></li>
+        <li><.link method="delete" href={~p"/sign-out"}>Sign out</.link></li>
       </:user_menu>
       {@inner_content}
     </.app_shell>
@@ -32,7 +32,7 @@ defmodule McpWeb.Layouts.PortalLayouts do
         <li><.link navigate={~p"/tenant/settings"}>Settings</.link></li>
       </:sidebar>
       <:user_menu>
-        <li><.link method="delete" href={~p"/sign_out"}>Sign out</.link></li>
+        <li><.link method="delete" href={~p"/sign-out"}>Sign out</.link></li>
       </:user_menu>
       {@inner_content}
     </.app_shell>
@@ -52,7 +52,7 @@ defmodule McpWeb.Layouts.PortalLayouts do
         <li><.link navigate={~p"/app/customers"}>Customers</.link></li>
       </:sidebar>
       <:user_menu>
-        <li><.link method="delete" href={~p"/sign_out"}>Sign out</.link></li>
+        <li><.link method="delete" href={~p"/sign-out"}>Sign out</.link></li>
       </:user_menu>
       {@inner_content}
     </.app_shell>
@@ -71,7 +71,7 @@ defmodule McpWeb.Layouts.PortalLayouts do
         <li><.link navigate={~p"/developers/docs"}>Documentation</.link></li>
       </:sidebar>
       <:user_menu>
-        <li><.link method="delete" href={~p"/sign_out"}>Sign out</.link></li>
+        <li><.link method="delete" href={~p"/sign-out"}>Sign out</.link></li>
       </:user_menu>
       {@inner_content}
     </.app_shell>
@@ -90,7 +90,7 @@ defmodule McpWeb.Layouts.PortalLayouts do
         <li><.link navigate={~p"/partners/commissions"}>Commissions</.link></li>
       </:sidebar>
       <:user_menu>
-        <li><.link method="delete" href={~p"/sign_out"}>Sign out</.link></li>
+        <li><.link method="delete" href={~p"/sign-out"}>Sign out</.link></li>
       </:user_menu>
       {@inner_content}
     </.app_shell>
@@ -109,7 +109,7 @@ defmodule McpWeb.Layouts.PortalLayouts do
         <li><.link navigate={~p"/store/account/profile"}>Profile</.link></li>
       </:sidebar>
       <:user_menu>
-        <li><.link method="delete" href={~p"/sign_out"}>Sign out</.link></li>
+        <li><.link method="delete" href={~p"/sign-out"}>Sign out</.link></li>
       </:user_menu>
       {@inner_content}
     </.app_shell>
@@ -128,7 +128,7 @@ defmodule McpWeb.Layouts.PortalLayouts do
         <li><.link navigate={~p"/vendors/orders"}>Orders</.link></li>
       </:sidebar>
       <:user_menu>
-        <li><.link method="delete" href={~p"/sign_out"}>Sign out</.link></li>
+        <li><.link method="delete" href={~p"/sign-out"}>Sign out</.link></li>
       </:user_menu>
       {@inner_content}
     </.app_shell>
@@ -148,7 +148,7 @@ defmodule McpWeb.Layouts.PortalLayouts do
         <li><.link navigate={~p"/app/stores/#{@conn.params["store_slug"]}/subscriptions"}>Subscriptions</.link></li>
       </:sidebar>
       <:user_menu>
-        <li><.link method="delete" href={~p"/sign_out"}>Sign out</.link></li>
+        <li><.link method="delete" href={~p"/sign-out"}>Sign out</.link></li>
       </:user_menu>
       {@inner_content}
     </.app_shell>

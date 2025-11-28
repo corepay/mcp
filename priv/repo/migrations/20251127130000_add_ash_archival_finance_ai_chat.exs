@@ -2,23 +2,24 @@ defmodule Mcp.Repo.Migrations.AddAshArchivalFinanceAiChat do
   use Ecto.Migration
 
   def up do
+    IO.puts("Running AddAshArchivalFinanceAiChat migration...")
     # Finance Accounts
     alter table(:accounts, prefix: "finance") do
       add :archived_at, :utc_datetime_usec
     end
 
-    # AI Documents (public schema usually, but let's check resource def - it says table "documents", no schema, so public)
-    alter table(:documents) do
+    # AI Documents (platform schema)
+    alter table(:documents, prefix: "platform") do
       add :archived_at, :utc_datetime_usec
     end
 
     # Chat Conversations (public schema)
-    alter table(:conversations) do
+    alter table(:conversations, prefix: "public") do
       add :archived_at, :utc_datetime_usec
     end
 
     # Chat Messages (public schema)
-    alter table(:messages) do
+    alter table(:messages, prefix: "public") do
       add :archived_at, :utc_datetime_usec
     end
   end

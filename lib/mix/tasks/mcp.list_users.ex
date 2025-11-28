@@ -4,7 +4,6 @@ defmodule Mix.Tasks.Mcp.ListUsers do
   """
   use Mix.Task
 
-  alias Mcp.Accounts.User
   alias Mcp.Platform.Tenant
   alias Mcp.Platform.TenantUserManager
 

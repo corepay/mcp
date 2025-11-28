@@ -1,6 +1,7 @@
 # Authentication API Reference
 
-Complete API specification for MCP platform authentication and authorization system based on actual Phoenix router implementation.
+Complete API specification for MCP platform authentication and authorization
+system based on actual Phoenix router implementation.
 
 ## Base URL and Authentication
 
@@ -44,11 +45,14 @@ All API responses follow Phoenix LiveView/Controller response patterns:
 
 ### Sign In
 
-**Endpoint:** `POST /sign_in`
+**Endpoint:** `POST /sign-in`
 
-Authenticate user with email and password using Phoenix session management.
+Authenticate user with email and password using Phoenix session management. Note
+that this endpoint is available under each portal scope (e.g., `/admin/sign-in`,
+`/tenant/sign-in`).
 
 **Request:**
+
 ```json
 {
   "session": {
@@ -60,6 +64,7 @@ Authenticate user with email and password using Phoenix session management.
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "info": "Successfully signed in",
@@ -77,12 +82,12 @@ Authenticate user with email and password using Phoenix session management.
 
 ### Sign Out
 
-**Endpoint:** `DELETE /sign_out`
+**Endpoint:** `DELETE /sign-out`
 
 Sign out user and destroy session.
 
-**Request:** (No body required)
-**Response (200 OK):**
+**Request:** (No body required) **Response (200 OK):**
+
 ```json
 {
   "info": "Successfully signed out"
@@ -95,8 +100,8 @@ Sign out user and destroy session.
 
 Force password change for user session (for security compliance).
 
-**Request:** (No body required, loads change password form)
-**Response:** (HTML form rendered by ChangePasswordController)
+**Request:** (No body required, loads change password form) **Response:** (HTML
+form rendered by ChangePasswordController)
 
 ## OAuth Authentication Endpoints
 
@@ -107,6 +112,7 @@ Force password change for user session (for security compliance).
 Initiate OAuth authentication with external provider (Google, GitHub).
 
 **Parameters:**
+
 - `provider`: OAuth provider name (`google`, `github`)
 
 **Response:** (Redirect to OAuth provider)
@@ -118,6 +124,7 @@ Initiate OAuth authentication with external provider (Google, GitHub).
 Handle OAuth callback from external provider.
 
 **Parameters:**
+
 - `provider`: OAuth provider name (`google`, `github`)
 - `code`: Authorization code from OAuth provider
 - `state`: State parameter for CSRF protection
@@ -133,6 +140,7 @@ Handle OAuth callback from external provider.
 Link additional OAuth provider to existing user account.
 
 **Parameters:**
+
 - `provider`: OAuth provider name (`google`, `github`)
 
 **Response:** (Redirect to OAuth provider)
@@ -144,6 +152,7 @@ Link additional OAuth provider to existing user account.
 Handle OAuth linking callback.
 
 **Parameters:**
+
 - `provider`: OAuth provider name (`google`, `github`)
 - `code`: Authorization code from OAuth provider
 - `state`: State parameter for CSRF protection
@@ -157,9 +166,11 @@ Handle OAuth linking callback.
 Unlink OAuth provider from user account.
 
 **Parameters:**
+
 - `provider`: OAuth provider name (`google`, `github`)
 
 **Response (200 OK):**
+
 ```json
 {
   "info": "OAuth provider unlinked successfully",
@@ -177,9 +188,11 @@ Unlink OAuth provider from user account.
 Get information about linked OAuth provider.
 
 **Parameters:**
+
 - `provider`: OAuth provider name (`google`, `github`)
 
 **Response (200 OK):**
+
 ```json
 {
   "info": "OAuth provider information",
@@ -199,6 +212,7 @@ Get information about linked OAuth provider.
 Get list of all linked OAuth providers for current user.
 
 **Response (200 OK):**
+
 ```json
 {
   "info": "Linked OAuth providers",
@@ -223,9 +237,11 @@ Get list of all linked OAuth providers for current user.
 Refresh OAuth access token for linked provider.
 
 **Parameters:**
+
 - `provider`: OAuth provider name (`google`, `github`)
 
 **Response (200 OK):**
+
 ```json
 {
   "info": "OAuth token refreshed successfully",
@@ -245,6 +261,7 @@ Refresh OAuth access token for linked provider.
 Phoenix LiveView interface for setting up two-factor authentication.
 
 **Features:**
+
 - QR code generation for TOTP apps
 - Backup code generation
 - Verification process
@@ -257,6 +274,7 @@ Phoenix LiveView interface for setting up two-factor authentication.
 Phoenix LiveView interface for managing existing 2FA setup.
 
 **Features:**
+
 - View current 2FA status
 - Generate new backup codes
 - Disable 2FA (with confirmation)
@@ -271,6 +289,7 @@ Phoenix LiveView interface for managing existing 2FA setup.
 Access current authenticated user session information.
 
 **Response (Available in conn.assigns.current_user):**
+
 ```elixir
 %Mcp.Accounts.User{
   id: "user-uuid",
@@ -283,6 +302,7 @@ Access current authenticated user session information.
 ### Session Validation
 
 Phoenix handles session validation automatically through:
+
 - Session cookies with JWT tokens
 - Session timeout and expiration
 - CSRF protection for form submissions
@@ -290,13 +310,16 @@ Phoenix handles session validation automatically through:
 
 ## API Authentication (Future Implementation)
 
-Currently the platform uses Phoenix session-based authentication. JWT token API authentication is planned for future releases and will be added to `/api/` routes when implemented.
+Currently the platform uses Phoenix session-based authentication. JWT token API
+authentication is planned for future releases and will be added to `/api/`
+routes when implemented.
 
 ## Error Handling
 
 ### Authentication Errors
 
 **400 Bad Request:**
+
 ```json
 {
   "error": {
@@ -307,6 +330,7 @@ Currently the platform uses Phoenix session-based authentication. JWT token API 
 ```
 
 **401 Unauthorized:**
+
 ```json
 {
   "error": {
@@ -317,6 +341,7 @@ Currently the platform uses Phoenix session-based authentication. JWT token API 
 ```
 
 **403 Forbidden:**
+
 ```json
 {
   "error": {
@@ -357,7 +382,7 @@ defmodule McpWeb.RequireAuth do
           nil ->
             socket
             |> put_flash(:error, "You must be signed in to access this page.")
-            |> push_redirect(to: "/sign_in")
+            |> push_redirect(to: "/tenant/sign-in")
             {:halt, :stop}
           user ->
             assign(socket, :current_user, user)
@@ -368,4 +393,7 @@ defmodule McpWeb.RequireAuth do
 end
 ```
 
-This API reference documentation reflects the actual Phoenix router implementation and includes all actual authentication endpoints, OAuth integration, 2FA management, and session management features from the real codebase.
+This API reference documentation reflects the actual Phoenix router
+implementation and includes all actual authentication endpoints, OAuth
+integration, 2FA management, and session management features from the real
+codebase.

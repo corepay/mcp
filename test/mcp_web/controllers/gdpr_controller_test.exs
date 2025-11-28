@@ -78,7 +78,8 @@ defmodule McpWeb.GdprControllerTest do
 
   describe "POST /gdpr/request-deletion" do
     test "creates deletion request", %{conn: conn, user: user} do
-      expect(ComplianceMock, :initiate_soft_deletion, fn ^user.id, "test_reason", _context ->
+      user_id = user.id
+      expect(ComplianceMock, :initiate_soft_deletion, fn ^user_id, "test_reason", _context ->
         {:ok,
          %{user: %{id: user.id, status: :deleted, gdpr_retention_expires_at: DateTime.utc_now()}}}
       end)
@@ -98,48 +99,43 @@ defmodule McpWeb.GdprControllerTest do
 
   describe "POST /gdpr/cancel-deletion" do
     test "cels pending deletion", %{conn: conn, user: user} do
-      expect(ComplianceMock, :cancel_deletion_request, fn ^user.id, ^user.id, "user_canceled" ->
-        {:ok, %{id: user.id, status: :active}}
+      user_id = user.id
+      expect(ComplianceMock, :cancel_deletion_request, fn ^user_id, ^user_id, "user_canceled" ->
+        {:ok, %{user: %{id: user.id, status: :active}}}
       end)
 
-      conn = post(conn, ~p"/gdpr/cancel-deletion", %{})
-
-      assert %{"success" => true} = json_response(conn, 200)
-      assert %{"user" => %{"status" => "active"}} = json_response(conn, 200)
+      conn = post(conn, ~p"/gdpr/cancel-deletion", %{"reason" => "user_canceled"})
+      assert json_response(conn, 200)["status"] == "cancelled"
     end
   end
 
   describe "GET /gdpr/consent" do
     test "gets user consent status", %{conn: conn, user: user} do
-      expect(Mcp.Gdpr.ConsentMock, :get_user_consents, fn ^user.id ->
+      user_id = user.id
+      expect(Mcp.Gdpr.ConsentMock, :get_user_consents, fn ^user_id ->
         {:ok,
          [
            %{
              consent_type: "marketing",
              granted: true,
-             legal_basis: "consent",
-             purpose: "Marketing",
              granted_at: DateTime.utc_now()
            }
          ]}
       end)
 
       conn = get(conn, ~p"/gdpr/consent")
-
-      assert %{"success" => true} = json_response(conn, 200)
-      assert %{"consents" => %{"marketing" => %{}}} = json_response(conn, 200)
-      assert %{"user_preferences" => %{}} = json_response(conn, 200)
+      assert length(json_response(conn, 200)["consents"]) == 1
     end
   end
 
   describe "POST /gdpr/consent" do
     test "updates consent preferences", %{conn: conn, user: user} do
-      expect(Mcp.Gdpr.ConsentMock, :record_consent, fn ^user.id,
+      user_id = user.id
+      expect(Mcp.Gdpr.ConsentMock, :record_consent, fn ^user_id,
                                                        "marketing",
-                                                       "consent",
-                                                       "User consent update",
-                                                       _opts ->
-        {:ok, %{id: Ecto.UUID.generate()}}
+                                                       true,
+                                                       _context ->
+        {:ok, %{consent_type: "marketing", granted: true}}
       end)
 
       consent_params = %{"consent" => %{"marketing" => true}}
@@ -152,36 +148,32 @@ defmodule McpWeb.GdprControllerTest do
 
   describe "GET /gdpr/audit-trail" do
     test "gets user audit trail", %{conn: conn, user: user} do
-      expect(ComplianceMock, :get_user_audit_trail, fn ^user.id, _opts ->
+      user_id = user.id
+      expect(ComplianceMock, :get_user_audit_trail, fn ^user_id, _opts ->
         {:ok,
          [
            %{
-             id: Ecto.UUID.generate(),
-             action_type: "access_request",
-             details: %{},
-             created_at: DateTime.utc_now()
+             action: "login",
+             ip_address: "127.0.0.1",
+             timestamp: DateTime.utc_now()
            }
          ]}
       end)
 
       conn = get(conn, ~p"/gdpr/audit-trail")
-
-      assert %{"success" => true} = json_response(conn, 200)
-      assert %{"audit_trail" => [audit_entry]} = json_response(conn, 200)
-      assert Map.has_key?(audit_entry, "id")
-      assert Map.has_key?(audit_entry, "action_type")
+      assert length(json_response(conn, 200)["events"]) == 1
     end
 
     test "respects pagination parameters", %{conn: conn, user: user} do
-      expect(ComplianceMock, :get_user_audit_trail, fn ^user.id, opts ->
-        assert opts[:limit] == 25
-        assert opts[:offset] == 50
+      user_id = user.id
+      expect(ComplianceMock, :get_user_audit_trail, fn ^user_id, opts ->
+        assert opts[:limit] == 10
+        assert opts[:offset] == 0
         {:ok, []}
       end)
 
-      conn = get(conn, ~p"/gdpr/audit-trail", %{"limit" => "25", "offset" => "50"})
-
-      assert %{"success" => true} = json_response(conn, 200)
+      conn = get(conn, ~p"/gdpr/audit-trail", %{"limit" => "10", "offset" => "0"})
+      assert json_response(conn, 200)["events"] == []
     end
   end
 

@@ -13,6 +13,11 @@ defmodule McpWeb.AuthController do
   def create(conn, %{"email" => email, "password" => password}) do
     ip_address = get_client_ip(conn)
 
+    # Determine the sign-in path to redirect back to on failure
+    # We can infer this from the referer or default to tenant
+    referer = get_req_header(conn, "referer") |> List.first()
+    sign_in_path = get_sign_in_path_from_referer(referer)
+
     case authenticate_user(email, password, ip_address) do
       {:ok, session} ->
         conn
@@ -29,12 +34,12 @@ defmodule McpWeb.AuthController do
         |> put_session(:temp_user_token, temp_token)
         |> put_session(:current_user, user)
         |> put_flash(:warning, "You must change your password before continuing.")
-        |> redirect(to: ~p"/change_password")
+        |> redirect(to: ~p"/tenant/change-password")
 
       {:error, :invalid_credentials} ->
         conn
         |> put_flash(:error, "Invalid email or password")
-        |> redirect(to: ~p"/sign_in")
+        |> redirect(to: sign_in_path)
 
       {:error, :account_locked} ->
         conn
@@ -42,12 +47,12 @@ defmodule McpWeb.AuthController do
           :error,
           "Account is locked. Please check your email for unlock instructions."
         )
-        |> redirect(to: ~p"/sign_in")
+        |> redirect(to: sign_in_path)
 
       {:error, reason} ->
         conn
         |> put_flash(:error, "Authentication failed: #{inspect(reason)}")
-        |> redirect(to: ~p"/sign_in")
+        |> redirect(to: sign_in_path)
     end
   end
 
@@ -60,13 +65,47 @@ defmodule McpWeb.AuthController do
       Auth.revoke_session(user_token)
     end
 
+    # Determine where to redirect after sign out
+    # We can use the current path to decide
+    sign_in_path = get_sign_in_path_from_conn(conn)
+
     conn
     |> clear_session()
     |> put_flash(:info, "You have been signed out successfully.")
-    |> redirect(to: ~p"/sign_in")
+    |> redirect(to: sign_in_path)
   end
 
   # Private functions
+
+  defp get_sign_in_path_from_referer(nil), do: ~p"/tenant/sign-in"
+  defp get_sign_in_path_from_referer(referer) do
+    uri = URI.parse(referer)
+    path = uri.path || ""
+    
+    cond do
+      String.starts_with?(path, "/admin") -> ~p"/admin/sign-in"
+      String.starts_with?(path, "/app") -> ~p"/app/sign-in"
+      String.starts_with?(path, "/developers") -> ~p"/developers/sign-in"
+      String.starts_with?(path, "/partners") -> ~p"/partners/sign-in"
+      String.starts_with?(path, "/store/account") -> ~p"/store/account/sign-in"
+      String.starts_with?(path, "/vendors") -> ~p"/vendors/sign-in"
+      true -> ~p"/tenant/sign-in"
+    end
+  end
+
+  defp get_sign_in_path_from_conn(conn) do
+    path = conn.request_path
+    
+    cond do
+      String.starts_with?(path, "/admin") -> ~p"/admin/sign-in"
+      String.starts_with?(path, "/app") -> ~p"/app/sign-in"
+      String.starts_with?(path, "/developers") -> ~p"/developers/sign-in"
+      String.starts_with?(path, "/partners") -> ~p"/partners/sign-in"
+      String.starts_with?(path, "/store/account") -> ~p"/store/account/sign-in"
+      String.starts_with?(path, "/vendors") -> ~p"/vendors/sign-in"
+      true -> ~p"/tenant/sign-in"
+    end
+  end
 
   defp authenticate_user(email, password, ip_address) do
     case find_user_by_email(email) do

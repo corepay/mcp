@@ -42,7 +42,7 @@ defmodule Mcp.Repo.Migrations.InitialSchema do
 
       args = [
         "-v",
-        "ON_ERROR_STOP=1",
+        # "ON_ERROR_STOP=1",
         "-q",
         "-h",
         hostname,

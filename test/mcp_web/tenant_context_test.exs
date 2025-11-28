@@ -18,7 +18,7 @@ defmodule McpWeb.TenantContextTest do
     test_tenant = %Tenant{
       id: "123e4567-e89b-12d3-a456-426614174000",
       slug: "test-tenant",
-      company_name: "Test Company",
+      name: "Test Company",
       company_schema: "test_tenant",
       subdomain: "test",
       status: :active,
@@ -320,6 +320,7 @@ defmodule McpWeb.TenantContextTest do
     test "processes tenant context for matching routes" do
       test_tenant = %Tenant{
         id: "test-id",
+        name: "Test Tenant",
         company_schema: "test_schema",
         status: :active
       }

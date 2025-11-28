@@ -93,7 +93,7 @@ mix assets.deploy      # Build/minify for prod
 
 ### Configuration & Ports
 - **NO HARDCODED PORTS**: Always use `System.get_env/2` with a fallback.
-- **Source of Truth**: The `.env` file is the authority for port assignments.
+- **Source of Truth**: The `.env` file is the authority for port assignments. **DO NOT WRITE TO .ENV - READ ONLY.**
 - **Verification**: Check `.env` before adding new services to ensure no conflicts.
 - **Dynamic Ports**:
     - Postgres: `${POSTGRES_PORT}`

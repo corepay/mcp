@@ -2,9 +2,7 @@ defmodule Mcp.Repo.Migrations.AddNameToTenants do
   use Ecto.Migration
 
   def up do
-    alter table(:tenants, prefix: "platform") do
-      add :name, :text
-    end
+    execute "ALTER TABLE platform.tenants ADD COLUMN IF NOT EXISTS name text"
   end
 
   def down do

@@ -22,7 +22,7 @@ defmodule McpWeb.ChangePasswordController do
     else
       conn
       |> put_flash(:error, "Invalid password change request")
-      |> redirect(to: ~p"/sign_in")
+      |> redirect(to: ~p"/tenant/sign-in")
     end
   end
 end

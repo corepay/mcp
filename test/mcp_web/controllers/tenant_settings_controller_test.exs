@@ -1,8 +1,8 @@
 defmodule McpWeb.TenantSettingsControllerTest do
   use McpWeb.ConnCase
 
-  import Mcp.AccountsFixtures
-  import Mcp.TenantFixtures
+
+
 
   alias Mcp.Platform.{FeatureToggle, TenantSettingsManager}
 
@@ -378,7 +378,7 @@ defmodule McpWeb.TenantSettingsControllerTest do
 
       conn = get(conn, ~p"/#{tenant.company_schema}/settings/dashboard")
 
-      assert html_response(conn, 200) =~ tenant.company_name
+      assert html_response(conn, 200) =~ tenant.name
       assert html_response(conn, 200) =~ to_string(tenant.plan)
     end
   end
@@ -454,13 +454,28 @@ defmodule McpWeb.TenantSettingsControllerTest do
     |> assign(:tenant_schema, tenant.company_schema)
   end
 
+  defp user_fixture(attrs \\ %{}) do
+    default_attrs = %{
+      email: "test-#{System.unique_integer()}@example.com",
+      password: "Password123!",
+      password_confirmation: "Password123!",
+      status: :active
+    }
+
+    # Filter out attributes not in User resource (like role)
+    # In a real app, we would set up roles via TeamMember or similar
+    valid_attrs = Map.drop(attrs, [:role])
+
+    Mcp.Accounts.User.register!(Map.merge(default_attrs, valid_attrs))
+  end
+
   defp tenant_fixture do
     %Mcp.Platform.Tenant{}
     |> Ecto.Changeset.change(%{
-      company_name: "Test ISP",
-      company_schema: "test_isp",
-      subdomain: "testisp",
-      slug: "testisp",
+      name: "Test ISP",
+      company_schema: "test_isp_#{System.unique_integer([:positive])}",
+      subdomain: "testisp#{System.unique_integer([:positive])}",
+      slug: "testisp#{System.unique_integer([:positive])}",
       plan: :starter,
       status: :active
     })

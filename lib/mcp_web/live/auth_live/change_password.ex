@@ -7,8 +7,6 @@ defmodule McpWeb.AuthLive.ChangePassword do
   """
 
   use McpWeb, :live_view
-  # import Phoenix.HTML.Form  # Unused
-  # alias Mcp.Accounts.User    # Unused
   alias Mcp.Accounts.Auth
 
   @impl true
@@ -25,7 +23,7 @@ defmodule McpWeb.AuthLive.ChangePassword do
        |> assign_form_changeset()}
     else
       # Invalid temporary token or user doesn't need password change
-      {:ok, push_navigate(socket, to: ~p"/sign_in")}
+      {:ok, push_navigate(socket, to: ~p"/tenant/sign-in")}
     end
   end
 
@@ -40,13 +38,13 @@ defmodule McpWeb.AuthLive.ChangePassword do
        |> assign_form_changeset()}
     else
       # No valid session, redirect to sign in
-      {:ok, push_navigate(socket, to: ~p"/sign_in")}
+      {:ok, push_navigate(socket, to: ~p"/tenant/sign-in")}
     end
   end
 
   def mount(_params, _session, socket) do
     # No valid session, redirect to sign in
-    {:ok, push_navigate(socket, to: ~p"/sign_in")}
+    {:ok, push_navigate(socket, to: ~p"/tenant/sign-in")}
   end
 
   @impl true
@@ -78,7 +76,7 @@ defmodule McpWeb.AuthLive.ChangePassword do
             {:noreply,
              socket
              |> put_flash(:error, "Password change still required")
-             |> push_navigate(to: ~p"/sign_in")}
+             |> push_navigate(to: ~p"/tenant/sign-in")}
         end
 
       {:error, changeset} ->

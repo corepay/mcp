@@ -25,7 +25,7 @@ defmodule McpWeb.OAuthController do
   def authorize(conn, _params) do
     conn
     |> put_flash(:error, "Invalid OAuth provider")
-    |> redirect(to: ~p"/sign_in")
+    |> redirect(to: ~p"/tenant/sign-in")
   end
 
   def callback(conn, %{"provider" => provider} = params) when provider in @providers do
@@ -77,7 +77,7 @@ defmodule McpWeb.OAuthController do
     conn
     |> clean_oauth_session()
     |> put_flash(:error, error_message)
-    |> redirect(to: ~p"/sign_in")
+    |> redirect(to: ~p"/tenant/sign-in")
   end
 
   # Unlink OAuth provider
@@ -90,7 +90,7 @@ defmodule McpWeb.OAuthController do
         {:ok, _updated_user} ->
           conn
           |> put_flash(:info, "#{String.capitalize(provider)} account unlinked successfully")
-          |> redirect(to: ~p"/settings/security")
+          |> redirect(to: ~p"/tenant/settings")
 
           # OAuth.unlink_oauth currently only returns {:ok, user}
           # {:error, reason} ->
@@ -104,14 +104,14 @@ defmodule McpWeb.OAuthController do
     else
       conn
       |> put_flash(:error, "#{String.capitalize(provider)} is not linked to your account")
-      |> redirect(to: ~p"/settings/security")
+      |> redirect(to: ~p"/tenant/settings")
     end
   end
 
   def unlink(conn, _params) do
     conn
     |> put_flash(:error, "Invalid OAuth provider")
-    |> redirect(to: ~p"/settings/security")
+    |> redirect(to: ~p"/tenant/settings")
   end
 
   # Link additional OAuth provider
@@ -129,7 +129,7 @@ defmodule McpWeb.OAuthController do
   def link(conn, _params) do
     conn
     |> put_flash(:error, "Invalid OAuth provider")
-    |> redirect(to: ~p"/settings/security")
+    |> redirect(to: ~p"/tenant/settings")
   end
 
   def link_callback(conn, %{"provider" => provider} = params) when provider in @providers do
@@ -178,14 +178,14 @@ defmodule McpWeb.OAuthController do
       :error,
       "Failed to authenticate with #{String.capitalize(provider)}: #{inspect(reason)}"
     )
-    |> redirect(to: ~p"/settings/security")
+    |> redirect(to: ~p"/tenant/settings")
   end
 
   defp handle_invalid_oauth_request(conn, _provider) do
     conn
     |> cleanup_oauth_session()
     |> put_flash(:error, "Invalid OAuth linking request")
-    |> redirect(to: ~p"/settings/security")
+    |> redirect(to: ~p"/tenant/settings")
   end
 
   defp cleanup_oauth_session(conn) do

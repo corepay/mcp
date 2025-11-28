@@ -11,6 +11,7 @@ config :mcp, Mcp.Repo,
   password: "mcp_password",
   hostname: "localhost",
   database: "mcp_test#{System.get_env("MIX_TEST_PARTITION")}",
+  port: String.to_integer(System.get_env("POSTGRES_PORT") || "41789"),
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 10,
   parameters: [search_path: "public,platform"]

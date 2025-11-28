@@ -17,7 +17,7 @@ defmodule McpWeb.GdprLive do
   alias Mcp.Accounts.UserSchema
   alias Mcp.Gdpr.Compliance
   alias Mcp.Repo
-  alias McpWeb.GdprComponents
+  alias McpWeb.Portals.GdprComponents
 
   @impl true
   def mount(_params, %{"current_user" => current_user}, socket) do
@@ -32,13 +32,13 @@ defmodule McpWeb.GdprLive do
        |> load_gdpr_data()}
     else
       # No valid session, redirect to sign in
-      {:ok, push_navigate(socket, to: ~p"/sign_in")}
+      {:ok, push_navigate(socket, to: ~p"/tenant/sign-in")}
     end
   end
 
   def mount(_params, _session, socket) do
     # No valid session, redirect to sign in
-    {:ok, push_navigate(socket, to: ~p"/sign_in")}
+    {:ok, push_navigate(socket, to: ~p"/tenant/sign-in")}
   end
 
   @impl true
@@ -52,7 +52,7 @@ defmodule McpWeb.GdprLive do
     {:noreply,
      socket
      |> assign(:active_tab, tab)
-     |> push_patch(to: ~p"/gdpr?tab=#{tab}")}
+     |> push_patch(to: ~p"/tenant/gdpr?tab=#{tab}")}
   end
 
   # Data export events

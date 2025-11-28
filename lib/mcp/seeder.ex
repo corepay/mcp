@@ -88,9 +88,9 @@ defmodule Mcp.Seeder do
     unless Enum.any?(users, fn u -> u["user_id"] == user.id end) do
       # Simulate adding user to tenant settings
       current_settings = tenant.settings || %{}
-      current_users = Map.get(current_settings, "users", [])
+      _current_users = Map.get(current_settings, "users", [])
       
-      new_user_entry = %{
+      _new_user_entry = %{
         "user_id" => user.id,
         "email" => user.email,
         "role" => to_string(role),
