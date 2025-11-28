@@ -11,7 +11,7 @@ defmodule Mcp.Repo.Migrations.AddAshArchivalPlatform do
       add :status, :text, null: false, default: "active"
       add :reseller_id, references(:resellers, type: :uuid, prefix: "platform")
       add :archived_at, :utc_datetime_usec
-      
+
       timestamps()
     end
 
@@ -42,7 +42,7 @@ defmodule Mcp.Repo.Migrations.AddAshArchivalPlatform do
 
       timestamps()
     end
-    
+
     # Composite PK is handled by primary_key: true on both fields above? 
     # Ecto might complain if I don't set primary_key: false on table and explicit keys.
     # Actually, let's just use standard id PK for simplicity in migration unless strictly required.

@@ -42,4 +42,3 @@ defmodule Mcp.Graph.Extension do
     []
   end
 end
-

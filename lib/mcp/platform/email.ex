@@ -7,8 +7,8 @@ defmodule Mcp.Platform.Email do
 
   postgres do
     table "emails"
-    schema "platform"
-    repo Mcp.Repo
+    schema("platform")
+    repo(Mcp.Repo)
   end
 
   actions do

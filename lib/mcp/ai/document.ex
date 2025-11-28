@@ -6,14 +6,15 @@ defmodule Mcp.Ai.Document do
 
   postgres do
     table "documents"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
 
     custom_indexes do
       # Create an HNSW index for fast similarity search
       # This requires the pgvector extension to be enabled
-      index ["embedding vector_cosine_ops"],
+      index(["embedding vector_cosine_ops"],
         name: "documents_embedding_index",
         using: "hnsw"
+      )
     end
   end
 
@@ -33,7 +34,7 @@ defmodule Mcp.Ai.Document do
     # We'll use 1536 as a safe default for compatibility, or 768 if we stick to local.
     # Let's use 1536 to be safe.
     attribute :embedding, Mcp.Type.Vector do
-      constraints [dimensions: 1536]
+      constraints dimensions: 1536
     end
 
     timestamps()
@@ -53,7 +54,7 @@ defmodule Mcp.Ai.Document do
 
     read :search do
       argument :query_embedding, :vector do
-        constraints [dimensions: 1536]
+        constraints dimensions: 1536
       end
 
       argument :similarity_threshold, :float do
@@ -61,19 +62,20 @@ defmodule Mcp.Ai.Document do
       end
 
       # Filter by cosine similarity
-      filter expr(cosine_similarity(embedding, ^arg(:query_embedding)) > ^arg(:similarity_threshold))
-      
-
+      filter expr(
+               cosine_similarity(embedding, ^arg(:query_embedding)) > ^arg(:similarity_threshold)
+             )
     end
   end
 
   calculations do
     calculate :similarity, :float, expr(cosine_similarity(embedding, ^arg(:query_embedding))) do
       argument :query_embedding, :vector do
-        constraints [dimensions: 1536]
+        constraints dimensions: 1536
       end
     end
   end
+
   code_interface do
     domain Mcp.Ai
     define :create, action: :create

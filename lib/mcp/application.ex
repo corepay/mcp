@@ -12,7 +12,8 @@ defmodule Mcp.Application do
       Mcp.Platform.Supervisor,
 
       # Clustering Supervisor
-      {Cluster.Supervisor, [Application.get_env(:libcluster, :topologies) || [], [name: Mcp.ClusterSupervisor]]},
+      {Cluster.Supervisor,
+       [Application.get_env(:libcluster, :topologies) || [], [name: Mcp.ClusterSupervisor]]},
 
       # Infrastructure services (with dependencies)
       Mcp.Infrastructure.Supervisor,

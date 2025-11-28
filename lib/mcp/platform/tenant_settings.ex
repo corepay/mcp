@@ -73,7 +73,7 @@ defmodule Mcp.Platform.TenantSettings do
       primary? true
     end
   end
-  
+
   code_interface do
     define :create_setting
     define :update_setting

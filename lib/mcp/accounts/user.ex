@@ -12,9 +12,9 @@ defmodule Mcp.Accounts.User do
     extensions: [AshAuthentication, AshJsonApi.Resource, AshCloak, AshArchival]
 
   cloak do
-    vault Mcp.Secrets
-    attributes [:totp_secret, :backup_codes, :oauth_tokens]
-    decrypt_by_default [:totp_secret, :backup_codes, :oauth_tokens]
+    vault(Mcp.Secrets)
+    attributes([:totp_secret, :backup_codes, :oauth_tokens])
+    decrypt_by_default([:totp_secret, :backup_codes, :oauth_tokens])
   end
 
   postgres do

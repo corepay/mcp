@@ -33,7 +33,9 @@ defmodule Mix.Tasks.Db.Analyze do
 
   defp print_results(%Postgrex.Result{rows: rows, columns: columns}) do
     if Enum.empty?(rows) do
-      IO.puts("✅ No index recommendations found. The query might already be optimal or no indexes can improve it.")
+      IO.puts(
+        "✅ No index recommendations found. The query might already be optimal or no indexes can improve it."
+      )
     else
       # Map columns to rows
       results =
@@ -63,10 +65,12 @@ defmodule Mix.Tasks.Db.Analyze do
 
         if index_statements && index_statements != [] do
           IO.puts("\n💡 Suggested Indexes:")
+
           Enum.each(index_statements, fn stmt ->
             IO.puts("\n   #{stmt}")
           end)
         end
+
         IO.puts("---------------------------------------------------\n")
       end)
     end

@@ -9,7 +9,7 @@ defmodule McpWeb.LandingLive do
   def mount(_params, session, socket) do
     # Check if user is already authenticated
     current_user = session["current_user"]
-    
+
     # Get portal context
     portal_context_str = session["portal_context"] || "tenant"
     portal_context = String.to_atom(portal_context_str)
@@ -34,54 +34,84 @@ defmodule McpWeb.LandingLive do
     ~H"""
     <div class="min-h-screen bg-base-200 font-sans relative overflow-hidden">
       <!-- Background Gradients (Context Aware) -->
-      <div class={["absolute inset-0 bg-gradient-to-br opacity-10", @portal_config.gradient_class]}></div>
-      
-      <!-- Animated Background Shapes -->
-      <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class={["absolute -top-24 -left-24 w-96 h-96 rounded-full blur-3xl opacity-20 animate-pulse", bg_color_class(@portal_context)]}></div>
-        <div class={["absolute top-1/2 right-0 w-64 h-64 rounded-full blur-2xl opacity-20", bg_color_class(@portal_context)]}></div>
+      <div class={["absolute inset-0 bg-gradient-to-br opacity-10", @portal_config.gradient_class]}>
       </div>
-
-      <!-- Navbar -->
+      
+    <!-- Animated Background Shapes -->
+      <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class={[
+          "absolute -top-24 -left-24 w-96 h-96 rounded-full blur-3xl opacity-20 animate-pulse",
+          bg_color_class(@portal_context)
+        ]}>
+        </div>
+        <div class={[
+          "absolute top-1/2 right-0 w-64 h-64 rounded-full blur-2xl opacity-20",
+          bg_color_class(@portal_context)
+        ]}>
+        </div>
+      </div>
+      
+    <!-- Navbar -->
       <nav class="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
         <div class="flex items-center gap-3">
-          <div class={["p-2 rounded-xl text-white shadow-lg bg-gradient-to-br", @portal_config.gradient_class]}>
+          <div class={[
+            "p-2 rounded-xl text-white shadow-lg bg-gradient-to-br",
+            @portal_config.gradient_class
+          ]}>
             <McpWeb.Core.CoreComponents.icon name={@portal_config.icon} class="size-6" />
           </div>
           <span class="text-xl font-bold tracking-tight text-base-content">
             MCP <span class="opacity-60 font-normal">Platform</span>
           </span>
         </div>
-        
+
         <button phx-click="show_login" class="btn btn-primary shadow-lg shadow-primary/20">
           Sign In
         </button>
       </nav>
-
-      <!-- Hero Section -->
+      
+    <!-- Hero Section -->
       <main class="relative z-10 w-full max-w-7xl mx-auto px-6 py-12 md:py-24 flex flex-col md:flex-row items-center gap-12">
         <div class="flex-1 text-center md:text-left space-y-8">
-          <div class={["inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border bg-base-100/50 backdrop-blur-sm", border_color_class(@portal_context), text_color_class(@portal_context)]}>
+          <div class={[
+            "inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border bg-base-100/50 backdrop-blur-sm",
+            border_color_class(@portal_context),
+            text_color_class(@portal_context)
+          ]}>
             <span class="relative flex h-2 w-2">
-              <span class={["animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", bg_color_class(@portal_context)]}></span>
-              <span class={["relative inline-flex rounded-full h-2 w-2", bg_color_class(@portal_context)]}></span>
+              <span class={[
+                "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                bg_color_class(@portal_context)
+              ]}>
+              </span>
+              <span class={[
+                "relative inline-flex rounded-full h-2 w-2",
+                bg_color_class(@portal_context)
+              ]}>
+              </span>
             </span>
             {@portal_config.title}
           </div>
-          
+
           <h1 class="text-5xl md:text-7xl font-bold tracking-tight text-base-content leading-tight">
             {@portal_config.hero_title}
-            <span class={["text-transparent bg-clip-text bg-gradient-to-r", @portal_config.gradient_class]}>
+            <span class={[
+              "text-transparent bg-clip-text bg-gradient-to-r",
+              @portal_config.gradient_class
+            ]}>
               {@portal_config.hero_highlight}
             </span>
           </h1>
-          
+
           <p class="text-xl text-base-content/70 max-w-2xl mx-auto md:mx-0 leading-relaxed">
             {@portal_config.subtitle}
           </p>
-          
+
           <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-            <.link navigate={sign_in_path(@portal_context)} class="btn btn-primary btn-lg shadow-xl shadow-primary/20">
+            <.link
+              navigate={sign_in_path(@portal_context)}
+              class="btn btn-primary btn-lg shadow-xl shadow-primary/20"
+            >
               Get Started
               <McpWeb.Core.CoreComponents.icon name="hero-arrow-right" class="size-5 ml-2" />
             </.link>
@@ -89,21 +119,29 @@ defmodule McpWeb.LandingLive do
               Learn More
             </button>
           </div>
-
-          <!-- Feature Grid -->
+          
+    <!-- Feature Grid -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-base-content/10">
             <div :for={feature <- @portal_config.features} class="flex items-center gap-3">
-              <div class={["p-2 rounded-lg bg-opacity-10", bg_color_class(@portal_context), text_color_class(@portal_context)]}>
+              <div class={[
+                "p-2 rounded-lg bg-opacity-10",
+                bg_color_class(@portal_context),
+                text_color_class(@portal_context)
+              ]}>
                 <McpWeb.Core.CoreComponents.icon name="hero-check" class="size-5" />
               </div>
               <span class="font-medium text-base-content/80">{feature}</span>
             </div>
           </div>
         </div>
-
-        <!-- Hero Image / Visual -->
+        
+    <!-- Hero Image / Visual -->
         <div class="flex-1 w-full max-w-lg md:max-w-none relative">
-          <div class={["absolute inset-0 rounded-3xl blur-3xl opacity-30 bg-gradient-to-tr", @portal_config.gradient_class]}></div>
+          <div class={[
+            "absolute inset-0 rounded-3xl blur-3xl opacity-30 bg-gradient-to-tr",
+            @portal_config.gradient_class
+          ]}>
+          </div>
           <div class="relative bg-base-100/40 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl p-6 md:p-8 transform rotate-3 transition-transform hover:rotate-0 duration-500">
             <!-- Mock UI Interface -->
             <div class="space-y-6">
@@ -126,23 +164,30 @@ defmodule McpWeb.LandingLive do
           </div>
         </div>
       </main>
-
-      <!-- Footer -->
+      
+    <!-- Footer -->
       <footer class="relative z-10 w-full max-w-7xl mx-auto px-6 py-8 text-center text-sm text-base-content/40">
         &copy; {Date.utc_today().year} MCP Platform. All rights reserved.
       </footer>
-
-      <!-- Login Modal -->
-      <McpWeb.Core.CoreComponents.modal id="login_modal" show={@show_login_modal} on_cancel="hide_login">
+      
+    <!-- Login Modal -->
+      <McpWeb.Core.CoreComponents.modal
+        id="login_modal"
+        show={@show_login_modal}
+        on_cancel="hide_login"
+      >
         <:title>
           <div class="flex items-center gap-3 mb-2">
-            <div class={["p-2 rounded-lg text-white shadow-md bg-gradient-to-br", @portal_config.gradient_class]}>
+            <div class={[
+              "p-2 rounded-lg text-white shadow-md bg-gradient-to-br",
+              @portal_config.gradient_class
+            ]}>
               <McpWeb.Core.CoreComponents.icon name={@portal_config.icon} class="size-5" />
             </div>
             <span>Sign In to {@portal_config.title}</span>
           </div>
         </:title>
-        
+
         <.live_component
           module={McpWeb.AuthLive.LoginComponent}
           id="landing-login-form"
@@ -171,7 +216,7 @@ defmodule McpWeb.LandingLive do
   end
 
   # Private Helpers (Duplicated from Login.ex for now, ideally extracted to shared module)
-  
+
   defp portal_title(:admin), do: "Platform Admin"
   defp portal_title(:merchant), do: "Merchant Portal"
   defp portal_title(:developer), do: "Developer Portal"
@@ -193,13 +238,26 @@ defmodule McpWeb.LandingLive do
     }
   end
 
-  defp portal_subtitle(:admin), do: "Secure access to the platform infrastructure and management tools."
-  defp portal_subtitle(:merchant), do: "Everything you need to manage your store, orders, and customers in one place."
-  defp portal_subtitle(:developer), do: "Access API keys, webhooks, and comprehensive documentation for your integrations."
-  defp portal_subtitle(:reseller), do: "Track commissions, manage merchants, and grow your partnership business."
-  defp portal_subtitle(:customer), do: "View your order history, manage subscriptions, and update your profile."
-  defp portal_subtitle(:vendor), do: "Manage your product catalog, track shipments, and handle invoicing."
-  defp portal_subtitle(:tenant), do: "Collaborate with your team in a secure, dedicated workspace."
+  defp portal_subtitle(:admin),
+    do: "Secure access to the platform infrastructure and management tools."
+
+  defp portal_subtitle(:merchant),
+    do: "Everything you need to manage your store, orders, and customers in one place."
+
+  defp portal_subtitle(:developer),
+    do: "Access API keys, webhooks, and comprehensive documentation for your integrations."
+
+  defp portal_subtitle(:reseller),
+    do: "Track commissions, manage merchants, and grow your partnership business."
+
+  defp portal_subtitle(:customer),
+    do: "View your order history, manage subscriptions, and update your profile."
+
+  defp portal_subtitle(:vendor),
+    do: "Manage your product catalog, track shipments, and handle invoicing."
+
+  defp portal_subtitle(:tenant),
+    do: "Collaborate with your team in a secure, dedicated workspace."
 
   defp portal_hero_title(:admin), do: "Control Center for"
   defp portal_hero_title(:merchant), do: "Grow your business with"
@@ -270,12 +328,20 @@ defmodule McpWeb.LandingLive do
 
   # Features
   defp portal_features(:admin), do: ["System Monitoring", "User Management", "Audit Logs"]
-  defp portal_features(:merchant), do: ["Real-time Analytics", "Inventory Management", "Order Processing"]
+
+  defp portal_features(:merchant),
+    do: ["Real-time Analytics", "Inventory Management", "Order Processing"]
+
   defp portal_features(:developer), do: ["API Access", "Webhooks", "Developer Tools"]
-  defp portal_features(:reseller), do: ["Commission Tracking", "Merchant Onboarding", "Performance Reports"]
+
+  defp portal_features(:reseller),
+    do: ["Commission Tracking", "Merchant Onboarding", "Performance Reports"]
+
   defp portal_features(:customer), do: ["Order History", "Subscription Management", "Support"]
   defp portal_features(:vendor), do: ["Product Catalog", "Shipment Tracking", "Invoicing"]
-  defp portal_features(:tenant), do: ["Team Collaboration", "Project Management", "Secure Workspace"]
+
+  defp portal_features(:tenant),
+    do: ["Team Collaboration", "Project Management", "Secure Workspace"]
 
   defp default_redirect_path(:admin), do: "/admin/dashboard"
   defp default_redirect_path(:merchant), do: "/app/dashboard"

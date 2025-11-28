@@ -10,6 +10,7 @@ end)
 
 IO.puts("DATABASE_URL: #{System.get_env("DATABASE_URL")}")
 IO.puts("Checking Mcp.Repo...")
+
 case Process.whereis(Mcp.Repo) do
   nil -> IO.puts("Mcp.Repo is NOT running!")
   pid -> IO.puts("Mcp.Repo is running at #{inspect(pid)}")

@@ -49,7 +49,8 @@ defmodule Mcp.Communication.EmailService do
       |> from(Keyword.get(opts, :from, "noreply@mcp.local"))
       |> subject(subject)
       |> html_body(body)
-      |> text_body(body) # Simple fallback
+      # Simple fallback
+      |> text_body(body)
 
     case Mcp.Mailer.deliver(email) do
       {:ok, _metadata} ->
@@ -69,10 +70,12 @@ defmodule Mcp.Communication.EmailService do
         # Fallback to checking if it's a tenant-scoped template
         tenant_id = Keyword.get(opts, :tenant_id)
         full_id = "#{tenant_id}:#{template_id}"
-        
+
         case Map.get(state.templates, full_id) do
-          nil -> {:reply, {:error, :template_not_found}, state}
-          template -> 
+          nil ->
+            {:reply, {:error, :template_not_found}, state}
+
+          template ->
             send_template(to, template, template_data, opts, state)
         end
 
@@ -80,8 +83,6 @@ defmodule Mcp.Communication.EmailService do
         send_template(to, template, template_data, opts, state)
     end
   end
-
-
 
   @impl true
   def handle_call({:send_bulk_emails, recipients, subject, body, opts}, _from, state) do
@@ -95,7 +96,7 @@ defmodule Mcp.Communication.EmailService do
           |> from(Keyword.get(opts, :from, "noreply@mcp.local"))
           |> subject(subject)
           |> html_body(body)
-        
+
         case Mcp.Mailer.deliver(email) do
           {:ok, _} -> {:ok, {index, :sent}}
           {:error, reason} -> {:error, {index, reason}}
@@ -123,7 +124,8 @@ defmodule Mcp.Communication.EmailService do
     }
 
     new_templates = Map.put(state.templates, full_template_id, template)
-    new_templates = Map.put(new_templates, template_id, template) # Also register under short ID if global or preferred
+    # Also register under short ID if global or preferred
+    new_templates = Map.put(new_templates, template_id, template)
 
     Logger.info("Registered email template: #{full_template_id}")
     {:reply, {:ok, template}, %{state | templates: new_templates}}
@@ -132,7 +134,7 @@ defmodule Mcp.Communication.EmailService do
   defp send_template(to, template, template_data, opts, state) do
     subject = render_template(template.subject_template, template_data)
     body = render_template(template.body_template, template_data)
-    
+
     # Re-use handle_call logic via internal call or just duplicate logic
     # Calling internal function to avoid GenServer overhead for self-call
     email =

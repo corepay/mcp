@@ -35,7 +35,9 @@ defmodule Mcp.Platform.Graph do
       # We use dollar quoting for the query to handle quotes within it.
       # SECURITY: cypher_query must be trusted!
       # We select 1 to avoid agtype decoding issues in Postgrex for now
-      query = "SELECT 1 FROM ag_catalog.cypher('#{graph_name}', $$#{cypher_query}$$) AS (result ag_catalog.agtype);"
+      query =
+        "SELECT 1 FROM ag_catalog.cypher('#{graph_name}', $$#{cypher_query}$$) AS (result ag_catalog.agtype);"
+
       Repo.query(query)
     end)
   end

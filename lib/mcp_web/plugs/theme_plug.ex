@@ -8,7 +8,7 @@ defmodule McpWeb.Plugs.ThemePlug do
 
   def call(conn, _opts) do
     theme = get_theme(conn)
-    
+
     conn
     |> assign(:theme, theme)
     |> put_session(:theme, theme)

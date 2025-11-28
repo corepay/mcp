@@ -85,7 +85,7 @@ defmodule Mcp.Storage.S3Client do
     |> case do
       {:ok, %{headers: headers}} ->
         headers_map = Map.new(headers)
-        
+
         {:ok,
          %{
            content_type: Map.get(headers_map, "Content-Type"),
@@ -105,9 +105,9 @@ defmodule Mcp.Storage.S3Client do
   @impl true
   def generate_presigned_url(bucket, key, expires_in \\ 3600, opts \\ []) do
     Logger.info("Generating presigned URL for S3: #{bucket}/#{key}")
-    
+
     config = ExAws.Config.new(:s3)
-    
+
     case S3.presigned_url(config, :get, bucket, key, [expires_in: expires_in] ++ opts) do
       {:ok, url} -> {:ok, url}
       {:error, reason} -> {:error, reason}
@@ -119,7 +119,7 @@ defmodule Mcp.Storage.S3Client do
     # This assumes a standard S3-style URL or MinIO URL
     host = Application.get_env(:ex_aws, :s3)[:host] || "s3.amazonaws.com"
     scheme = Application.get_env(:ex_aws, :s3)[:scheme] || "https"
-    
+
     "#{scheme}://#{host}/#{bucket}/#{key}"
   end
 end

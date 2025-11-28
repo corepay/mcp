@@ -8,7 +8,9 @@ defmodule Mcp.Repo.Migrations.FixFunctionSearchPaths do
     execute "ALTER FUNCTION platform.ensure_tenant_settings_schema(uuid) SET search_path = ''"
     execute "ALTER FUNCTION platform.tenant_schema_exists(text) SET search_path = ''"
     execute "ALTER FUNCTION platform.create_tenant_schema(text) SET search_path = ''"
+
     execute "ALTER FUNCTION platform.metric_aggregates(uuid, varchar, timestamptz, timestamptz, interval) SET search_path = ''"
+
     execute "ALTER FUNCTION platform.should_anonymize_user(platform.users) SET search_path = ''"
     execute "ALTER FUNCTION platform.update_consent_records() SET search_path = ''"
     execute "ALTER FUNCTION platform.calculate_retention_expires(integer) SET search_path = ''"

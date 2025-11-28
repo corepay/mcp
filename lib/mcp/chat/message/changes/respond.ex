@@ -30,11 +30,13 @@ defmodule Mcp.Chat.Message.Changes.Respond do
       new_message_id = Ash.UUIDv7.generate()
 
       ollama_config = Application.get_env(:mcp, :ollama, [])
+
       %{
-        llm: ChatOllamaAI.new!(%{
-          model: ollama_config[:model] || "llama3", 
-          base_url: ollama_config[:base_url]
-        }),
+        llm:
+          ChatOllamaAI.new!(%{
+            model: ollama_config[:model] || "llama3",
+            base_url: ollama_config[:base_url]
+          }),
         custom_context: Map.new(Ash.Context.to_opts(context))
       }
       |> LLMChain.new!()

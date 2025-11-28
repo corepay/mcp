@@ -26,7 +26,7 @@ defmodule Mcp.Seeder do
 
   defp seed_tenant(name, slug, subdomain) do
     tenant = ensure_tenant(name, slug, subdomain)
-    
+
     # Create Tenant Admin
     admin_email = "admin@#{slug}.local"
     user = ensure_user(admin_email, @password)
@@ -47,7 +47,8 @@ defmodule Mcp.Seeder do
         m1 = ensure_merchant(tenant, "Globex Supplies", "globex-supplies")
         ensure_store(tenant, m1, "Globex HQ", "hq")
 
-      _ -> :ok
+      _ ->
+        :ok
     end
   end
 
@@ -67,16 +68,21 @@ defmodule Mcp.Seeder do
         tenant
 
       {:error, _} ->
-        tenant = Tenant.create!(%{
-          name: name,
-          slug: slug,
-          subdomain: subdomain,
-          plan: :enterprise
-        })
-        
+        tenant =
+          Tenant.create!(%{
+            name: name,
+            slug: slug,
+            subdomain: subdomain,
+            plan: :enterprise
+          })
+
         IO.puts("  - Running migrations for #{tenant.company_schema}...")
-        Ecto.Migrator.run(Mcp.Repo, "priv/repo/tenant_migrations", :up, all: true, prefix: tenant.company_schema)
-        
+
+        Ecto.Migrator.run(Mcp.Repo, "priv/repo/tenant_migrations", :up,
+          all: true,
+          prefix: tenant.company_schema
+        )
+
         tenant
     end
   end
@@ -84,71 +90,77 @@ defmodule Mcp.Seeder do
   defp ensure_tenant_user(tenant, user, role) do
     # Check if already linked
     users = TenantUserManager.get_tenant_users(tenant.id) |> elem(1)
-    
+
     unless Enum.any?(users, fn u -> u["user_id"] == user.id end) do
       # Simulate adding user to tenant settings
       current_settings = tenant.settings || %{}
       _current_users = Map.get(current_settings, "users", [])
-      
+
       _new_user_entry = %{
         "user_id" => user.id,
         "email" => user.email,
         "role" => to_string(role),
         "joined_at" => DateTime.utc_now() |> DateTime.to_iso8601()
       }
-      
+
       # updated_users = [new_user_entry | current_users]
       # updated_settings = Map.put(current_settings, "users", updated_users)
-      
+
       # Tenant.update!(tenant, %{settings: updated_settings})
     end
   end
 
   defp ensure_merchant(tenant, name, slug) do
     require Ash.Query
-    
-    exists = 
+
+    exists =
       Merchant
       |> Ash.Query.filter(slug == ^slug)
       |> Ash.Query.set_tenant(tenant.company_schema)
       |> Ash.read_one()
-      
+
     IO.inspect(exists, label: "Merchant Search Result (#{slug})")
 
     case exists do
       {:ok, nil} ->
         IO.puts("Merchant search returned {:ok, nil}, creating...")
         create_merchant(tenant, name, slug)
-      {:ok, merchant} -> 
+
+      {:ok, merchant} ->
         IO.inspect(merchant, label: "Found Merchant")
         merchant
-      {:error, _} -> 
+
+      {:error, _} ->
         IO.puts("Merchant not found (error), creating...")
         create_merchant(tenant, name, slug)
-      nil -> 
+
+      nil ->
         IO.puts("Merchant search returned nil, creating...")
         create_merchant(tenant, name, slug)
     end
   end
 
   defp create_merchant(tenant, name, slug) do
-    Merchant.create!(%{
-      business_name: name,
-      slug: slug,
-      subdomain: "#{slug}-#{tenant.slug}",
-      status: :active
-    }, tenant: tenant.company_schema)
+    Merchant.create!(
+      %{
+        business_name: name,
+        slug: slug,
+        subdomain: "#{slug}-#{tenant.slug}",
+        status: :active
+      },
+      tenant: tenant.company_schema
+    )
   end
 
   defp ensure_store(tenant, merchant, name, slug) do
     require Ash.Query
-    
+
     exists =
       Store
       |> Ash.Query.filter(slug == ^slug and merchant_id == ^merchant.id)
       |> Ash.Query.set_tenant(tenant.company_schema)
       |> Ash.read_one()
-      
+
     case exists do
       {:ok, store} -> store
       {:error, _} -> create_store(tenant, merchant, name, slug)
@@ -157,11 +169,14 @@ defmodule Mcp.Seeder do
   end
 
   defp create_store(tenant, merchant, name, slug) do
-    Store.create!(%{
-      name: name,
-      slug: slug,
-      merchant_id: merchant.id,
-      status: :active
-    }, tenant: tenant.company_schema)
+    Store.create!(
+      %{
+        name: name,
+        slug: slug,
+        merchant_id: merchant.id,
+        status: :active
+      },
+      tenant: tenant.company_schema
+    )
   end
 end

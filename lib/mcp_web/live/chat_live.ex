@@ -209,9 +209,9 @@ defmodule McpWeb.ChatLive do
           |> stream_insert(:messages, message, at: 0)
           |> then(&{:noreply, &1})
         else
-           {:noreply,
-            socket
-            |> push_navigate(to: ~p"/tenant")}
+          {:noreply,
+           socket
+           |> push_navigate(to: ~p"/tenant")}
         end
 
       {:error, form} ->

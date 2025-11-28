@@ -1,9 +1,6 @@
 defmodule McpWeb.TenantSettingsControllerTest do
   use McpWeb.ConnCase
 
-
-
-
   alias Mcp.Platform.{FeatureToggle, TenantSettingsManager}
 
   @moduletag :capture_log

@@ -6,17 +6,18 @@ defmodule Mcp.Ai.Chat do
   actions do
     action :chat, :string do
       description "Chat with the AI."
+
       argument :message, :string do
         allow_nil? false
       end
 
       run {AshAi.Actions.Prompt,
-        prompt: "You are a helpful assistant. User says: <%= message %>",
-        model: LangChain.ChatModels.ChatOllamaAI.new!(%{
-          model: "llama3",
-          base_url: Application.compile_env(:mcp, :ollama)[:base_url]
-        })
-      }
+           prompt: "You are a helpful assistant. User says: <%= message %>",
+           model:
+             LangChain.ChatModels.ChatOllamaAI.new!(%{
+               model: "llama3",
+               base_url: Application.compile_env(:mcp, :ollama)[:base_url]
+             })}
     end
   end
 end

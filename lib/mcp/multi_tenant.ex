@@ -33,17 +33,39 @@ defmodule Mcp.MultiTenant do
   # Complete Graph queries using Apache AGE
 
   defdelegate create_graph(tenant_schema_name, graph_name \\ "tenant_graph"), to: Graph
-  defdelegate execute_cypher_query(tenant_schema_name, cypher_query, graph_name \\ "tenant_graph"), to: Graph
+
+  defdelegate execute_cypher_query(
+                tenant_schema_name,
+                cypher_query,
+                graph_name \\ "tenant_graph"
+              ),
+              to: Graph
+
   defdelegate find_similar_merchants(tenant_schema_name, merchant_id, threshold \\ 0.8), to: Graph
   defdelegate create_merchant_relationship_graph(tenant_schema_name), to: Graph
 
   # Complete AI/Vector operations with pgvector
 
-  defdelegate create_vector_index(tenant_schema_name, table_name, column_name, index_name \\ nil), to: VectorStore
-  defdelegate create_hnsw_index(tenant_schema_name, table_name, column_name, index_name \\ nil), to: VectorStore
-  defdelegate vector_similarity_search(tenant_schema_name, table_name, column_name, query_vector, limit \\ 10), to: VectorStore
-  defdelegate ai_merchant_recommendations(tenant_schema_name, merchant_vector, limit \\ 5), to: VectorStore
-  defdelegate ai_mid_routing_optimization(tenant_schema_name, transaction_vector, limit \\ 3), to: VectorStore
+  defdelegate create_vector_index(tenant_schema_name, table_name, column_name, index_name \\ nil),
+    to: VectorStore
+
+  defdelegate create_hnsw_index(tenant_schema_name, table_name, column_name, index_name \\ nil),
+    to: VectorStore
+
+  defdelegate vector_similarity_search(
+                tenant_schema_name,
+                table_name,
+                column_name,
+                query_vector,
+                limit \\ 10
+              ),
+              to: VectorStore
+
+  defdelegate ai_merchant_recommendations(tenant_schema_name, merchant_vector, limit \\ 5),
+    to: VectorStore
+
+  defdelegate ai_mid_routing_optimization(tenant_schema_name, transaction_vector, limit \\ 3),
+    to: VectorStore
 
   # Complete Time-series operations (TimescaleDB)
   # TODO: Move to Mcp.Analytics.TimeSeries

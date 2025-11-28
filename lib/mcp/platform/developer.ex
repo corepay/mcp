@@ -8,8 +8,6 @@ defmodule Mcp.Platform.Developer do
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshArchival]
 
-
-
   postgres do
     table "developers"
     repo(Mcp.Repo)

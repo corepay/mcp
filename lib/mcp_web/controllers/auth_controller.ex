@@ -78,10 +78,11 @@ defmodule McpWeb.AuthController do
   # Private functions
 
   defp get_sign_in_path_from_referer(nil), do: ~p"/tenant/sign-in"
+
   defp get_sign_in_path_from_referer(referer) do
     uri = URI.parse(referer)
     path = uri.path || ""
-    
+
     cond do
       String.starts_with?(path, "/admin") -> ~p"/admin/sign-in"
       String.starts_with?(path, "/app") -> ~p"/app/sign-in"
@@ -95,7 +96,7 @@ defmodule McpWeb.AuthController do
 
   defp get_sign_in_path_from_conn(conn) do
     path = conn.request_path
-    
+
     cond do
       String.starts_with?(path, "/admin") -> ~p"/admin/sign-in"
       String.starts_with?(path, "/app") -> ~p"/app/sign-in"

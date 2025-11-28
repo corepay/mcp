@@ -94,7 +94,6 @@ defmodule McpWeb.AuthLive.Login do
       theme_color: portal_theme_color(context),
       gradient_class: portal_gradient(context),
       icon: portal_icon(context),
-      icon: portal_icon(context),
       features: portal_features(context),
       bg_color_class: bg_color_class(context)
     }
@@ -145,12 +144,20 @@ defmodule McpWeb.AuthLive.Login do
 
   # Features
   defp portal_features(:admin), do: ["System Monitoring", "User Management", "Audit Logs"]
-  defp portal_features(:merchant), do: ["Real-time Analytics", "Inventory Management", "Order Processing"]
+
+  defp portal_features(:merchant),
+    do: ["Real-time Analytics", "Inventory Management", "Order Processing"]
+
   defp portal_features(:developer), do: ["API Access", "Webhooks", "Developer Tools"]
-  defp portal_features(:reseller), do: ["Commission Tracking", "Merchant Onboarding", "Performance Reports"]
+
+  defp portal_features(:reseller),
+    do: ["Commission Tracking", "Merchant Onboarding", "Performance Reports"]
+
   defp portal_features(:customer), do: ["Order History", "Subscription Management", "Support"]
   defp portal_features(:vendor), do: ["Product Catalog", "Shipment Tracking", "Invoicing"]
-  defp portal_features(:tenant), do: ["Team Collaboration", "Project Management", "Secure Workspace"]
+
+  defp portal_features(:tenant),
+    do: ["Team Collaboration", "Project Management", "Secure Workspace"]
 
   # Placeholder images
   defp portal_image(_), do: nil

@@ -7,8 +7,8 @@ defmodule Mcp.Platform.Phone do
 
   postgres do
     table "phones"
-    schema "platform"
-    repo Mcp.Repo
+    schema("platform")
+    repo(Mcp.Repo)
   end
 
   actions do

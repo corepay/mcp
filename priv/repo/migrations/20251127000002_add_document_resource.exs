@@ -9,12 +9,15 @@ defmodule Mcp.Repo.Migrations.AddDocumentResource do
       add :content, :text, null: false
       add :metadata, :map, null: false, default: %{}
       add :embedding, :vector, size: 1536
-      
+
       add :inserted_at, :utc_datetime_usec, null: false, default: fragment("now()")
       add :updated_at, :utc_datetime_usec, null: false, default: fragment("now()")
     end
 
-    create index(:documents, ["embedding vector_cosine_ops"], name: "documents_embedding_index", using: "hnsw")
+    create index(:documents, ["embedding vector_cosine_ops"],
+             name: "documents_embedding_index",
+             using: "hnsw"
+           )
   end
 
   def down do

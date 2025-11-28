@@ -10,7 +10,7 @@ defmodule Mcp.Platform.Tenant do
 
   postgres do
     table "tenants"
-    schema "platform"
+    schema("platform")
     repo(Mcp.Repo)
 
     custom_indexes do
@@ -62,6 +62,7 @@ defmodule Mcp.Platform.Tenant do
       argument :schema, :string, allow_nil?: false
       filter expr(company_schema == ^arg(:schema))
     end
+
     update :suspend do
       accept []
       change set_attribute(:status, :suspended)
@@ -111,7 +112,7 @@ defmodule Mcp.Platform.Tenant do
 
     attribute :slug, :string do
       allow_nil? false
-      constraints [match: ~r/^[a-z0-9-]+$/]
+      constraints match: ~r/^[a-z0-9-]+$/
     end
 
     attribute :company_schema, :string do
@@ -155,7 +156,7 @@ defmodule Mcp.Platform.Tenant do
     define :by_subdomain, action: :by_subdomain, args: [:subdomain], get?: true
     define :by_custom_domain, action: :by_custom_domain, args: [:domain], get?: true
     define :get_by_schema, action: :get_by_schema, args: [:schema], get?: true
-    
+
     define :suspend
     define :activate
     define :cancel

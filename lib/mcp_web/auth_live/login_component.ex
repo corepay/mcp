@@ -50,7 +50,13 @@ defmodule McpWeb.AuthLive.LoginComponent do
         <p class="text-base-content/60">Please enter your details to sign in.</p>
       </div>
 
-      <.form for={@form} phx-submit="login" phx-change="validate" phx-target={@myself} class="space-y-6">
+      <.form
+        for={@form}
+        phx-submit="login"
+        phx-change="validate"
+        phx-target={@myself}
+        class="space-y-6"
+      >
         <McpWeb.Portals.AuthComponents.auth_input
           field={@form[:email]}
           type="email"
@@ -96,7 +102,12 @@ defmodule McpWeb.AuthLive.LoginComponent do
           </label>
           <div class="label">
             <span class="label-text-alt"></span>
-            <a href="#" phx-click="show_recovery" phx-target={@myself} class="label-text-alt link link-primary font-medium">
+            <a
+              href="#"
+              phx-click="show_recovery"
+              phx-target={@myself}
+              class="label-text-alt link link-primary font-medium"
+            >
               Forgot password?
             </a>
           </div>
@@ -104,7 +115,12 @@ defmodule McpWeb.AuthLive.LoginComponent do
 
         <div class="form-control">
           <label class="label cursor-pointer justify-start gap-3">
-            <input type="checkbox" name="login[remember_me]" class="checkbox checkbox-primary checkbox-sm" checked={@remember_me} />
+            <input
+              type="checkbox"
+              name="login[remember_me]"
+              class="checkbox checkbox-primary checkbox-sm"
+              checked={@remember_me}
+            />
             <span class="label-text font-medium">Remember me for 30 days</span>
           </label>
         </div>
@@ -131,21 +147,36 @@ defmodule McpWeb.AuthLive.LoginComponent do
           disabled={@loading || @oauth_loading[provider]}
         >
           <span :if={@oauth_loading[provider]} class="loading loading-spinner loading-xs"></span>
-          <McpWeb.Core.CoreComponents.icon name={"hero-globe-alt"} class="size-5 mr-2" />
+          <McpWeb.Core.CoreComponents.icon name="hero-globe-alt" class="size-5 mr-2" />
           {String.capitalize(provider)}
         </button>
       </div>
-
-      <!-- Modals -->
-      <McpWeb.Core.CoreComponents.modal id="recovery_modal" show={@show_recovery_modal} on_cancel="hide_recovery">
+      
+    <!-- Modals -->
+      <McpWeb.Core.CoreComponents.modal
+        id="recovery_modal"
+        show={@show_recovery_modal}
+        on_cancel="hide_recovery"
+      >
         <:title>Reset Password</:title>
-        <p class="py-4 text-base-content/70">Enter your email address and we'll send you instructions to reset your password.</p>
+        <p class="py-4 text-base-content/70">
+          Enter your email address and we'll send you instructions to reset your password.
+        </p>
         <.form for={%{}} as={:recovery} phx-submit="request_recovery" phx-target={@myself}>
           <div class="form-control w-full mb-4">
-            <input type="email" name="email" value={@recovery_email} placeholder="you@example.com" class="input input-bordered w-full" required />
+            <input
+              type="email"
+              name="email"
+              value={@recovery_email}
+              placeholder="you@example.com"
+              class="input input-bordered w-full"
+              required
+            />
           </div>
           <div class="modal-action">
-            <button type="button" class="btn" phx-click="hide_recovery" phx-target={@myself}>Cancel</button>
+            <button type="button" class="btn" phx-click="hide_recovery" phx-target={@myself}>
+              Cancel
+            </button>
             <button type="submit" class="btn btn-primary">Send Instructions</button>
           </div>
         </.form>
@@ -173,10 +204,10 @@ defmodule McpWeb.AuthLive.LoginComponent do
       {:noreply, handle_rate_limit(socket)}
     else
       socket = assign(socket, :loading, true)
-      
+
       # Simulate login delay
       Process.sleep(500)
-      
+
       # For now, just simulate error as in original code
       {:noreply, handle_login_error(socket, :invalid_credentials, login_params)}
     end
@@ -270,7 +301,7 @@ defmodule McpWeb.AuthLive.LoginComponent do
   end
 
   # Private helpers (copied from Login.ex)
-  
+
   defp validate_form(socket, login_params) do
     errors = %{}
     password = login_params["password"] || ""

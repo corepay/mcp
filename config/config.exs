@@ -19,15 +19,20 @@ if File.exists?(".env") do
       [key, value] ->
         key = String.trim(key)
         value = String.trim(value)
+
         if is_nil(System.get_env(key)) do
           System.put_env(key, value)
         else
           # Warn if .env value differs from system environment (helpful for debugging)
           if System.get_env(key) != value and key not in ["PORT"] do
-            IO.puts("Config: Using system #{key}=#{System.get_env(key)} instead of .env value #{value}")
+            IO.puts(
+              "Config: Using system #{key}=#{System.get_env(key)} instead of .env value #{value}"
+            )
           end
         end
-      _ -> :ok
+
+      _ ->
+        :ok
     end
   end)
 end
@@ -47,8 +52,7 @@ config :mcp,
   ],
   base_domain: "localhost"
 
-config :mcp, Mcp.Repo,
-  types: Mcp.PostgresTypes
+config :mcp, Mcp.Repo, types: Mcp.PostgresTypes
 
 config :ash_typescript,
   output_file: "assets/js/ash_generated.ts"
@@ -188,20 +192,23 @@ config :ash_ai,
 config :mcp, Mcp.Secrets,
   json_library: Jason,
   ciphers: [
-    default: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V1", key: System.get_env("CLOAK_KEY", "k8s_secret_key_must_be_32_bytes!")}
+    default:
+      {Cloak.Ciphers.AES.GCM,
+       tag: "AES.GCM.V1", key: System.get_env("CLOAK_KEY", "k8s_secret_key_must_be_32_bytes!")}
   ]
 
 config :mcp, :ollama,
   model: System.get_env("OLLAMA_MODEL", "llama3"),
-  base_url: System.get_env("OLLAMA_BASE_URL") || "http://localhost:#{System.get_env("OLLAMA_PORT", "11434")}"
+  base_url:
+    System.get_env("OLLAMA_BASE_URL") ||
+      "http://localhost:#{System.get_env("OLLAMA_PORT", "11434")}"
 
 # Ash type compatibility configuration
-config :ash, :compatible_foreign_key_types,
-  [
-    {Ash.Type.UUID, Ash.Type.String},
-    {Ash.Type.UUID, AshDoubleEntry.ULID},
-    {AshDoubleEntry.ULID, Ash.Type.UUID}
-  ]
+config :ash, :compatible_foreign_key_types, [
+  {Ash.Type.UUID, Ash.Type.String},
+  {Ash.Type.UUID, AshDoubleEntry.ULID},
+  {AshDoubleEntry.ULID, Ash.Type.UUID}
+]
 
 # Disable Tesla deprecation warning
 config :tesla, disable_deprecated_builder_warning: true

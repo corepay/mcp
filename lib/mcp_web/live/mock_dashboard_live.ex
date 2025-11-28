@@ -4,7 +4,7 @@ defmodule McpWeb.MockDashboardLive do
   def mount(_params, _session, socket) do
     host = get_connect_info(socket, :host) || "localhost"
     context = get_portal_context(host)
-    
+
     socket =
       socket
       |> assign(:page_title, "#{String.capitalize(Atom.to_string(context))} Dashboard")
@@ -23,13 +23,12 @@ defmodule McpWeb.MockDashboardLive do
         <:subtitle>Overview of your {@context} operations.</:subtitle>
         <:actions>
           <McpWeb.Core.CoreComponents.button variant="primary" size="sm">
-            <McpWeb.Core.CoreComponents.icon name="hero-plus" class="size-4 mr-2" />
-            New Action
+            <McpWeb.Core.CoreComponents.icon name="hero-plus" class="size-4 mr-2" /> New Action
           </McpWeb.Core.CoreComponents.button>
         </:actions>
       </McpWeb.Core.CoreComponents.header>
-
-      <!-- Stats Grid -->
+      
+    <!-- Stats Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
         <div :for={stat <- @stats} class="stats shadow bg-base-100 border border-base-200">
           <div class="stat">
@@ -42,8 +41,8 @@ defmodule McpWeb.MockDashboardLive do
           </div>
         </div>
       </div>
-
-      <!-- Main Content Area -->
+      
+    <!-- Main Content Area -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
         <!-- Recent Activity -->
         <div class="lg:col-span-2 space-y-6">
@@ -86,8 +85,8 @@ defmodule McpWeb.MockDashboardLive do
               </table>
             </div>
           </McpWeb.Core.CoreComponents.card>
-
-          <!-- Chart Placeholder -->
+          
+    <!-- Chart Placeholder -->
           <McpWeb.Core.CoreComponents.card>
             <h3 class="font-bold text-lg mb-4">Performance Overview</h3>
             <div class="h-64 bg-base-200 rounded-box flex items-center justify-center text-base-content/30">
@@ -95,15 +94,17 @@ defmodule McpWeb.MockDashboardLive do
             </div>
           </McpWeb.Core.CoreComponents.card>
         </div>
-
-        <!-- Sidebar / Quick Actions -->
+        
+    <!-- Sidebar / Quick Actions -->
         <div class="space-y-6">
           <McpWeb.Core.CoreComponents.card>
             <h3 class="font-bold text-lg mb-4">Quick Actions</h3>
             <ul class="menu bg-base-200 w-full rounded-box">
               <li><a><McpWeb.Core.CoreComponents.icon name="hero-cog-6-tooth" /> Settings</a></li>
               <li><a><McpWeb.Core.CoreComponents.icon name="hero-users" /> Manage Users</a></li>
-              <li><a><McpWeb.Core.CoreComponents.icon name="hero-document-text" /> View Reports</a></li>
+              <li>
+                <a><McpWeb.Core.CoreComponents.icon name="hero-document-text" /> View Reports</a>
+              </li>
             </ul>
           </McpWeb.Core.CoreComponents.card>
 
@@ -132,19 +133,59 @@ defmodule McpWeb.MockDashboardLive do
 
   defp get_mock_stats(:admin) do
     [
-      %{label: "Total Tenants", value: "124", desc: "↗︎ 12% more than last month", icon: "hero-building-office-2"},
-      %{label: "Active Users", value: "4.2k", desc: "↗︎ 8% more than last month", icon: "hero-users"},
-      %{label: "System Load", value: "24%", desc: "↘︎ 2% less than last month", icon: "hero-server"},
-      %{label: "Revenue", value: "$45k", desc: "↗︎ 18% more than last month", icon: "hero-currency-dollar"}
+      %{
+        label: "Total Tenants",
+        value: "124",
+        desc: "↗︎ 12% more than last month",
+        icon: "hero-building-office-2"
+      },
+      %{
+        label: "Active Users",
+        value: "4.2k",
+        desc: "↗︎ 8% more than last month",
+        icon: "hero-users"
+      },
+      %{
+        label: "System Load",
+        value: "24%",
+        desc: "↘︎ 2% less than last month",
+        icon: "hero-server"
+      },
+      %{
+        label: "Revenue",
+        value: "$45k",
+        desc: "↗︎ 18% more than last month",
+        icon: "hero-currency-dollar"
+      }
     ]
   end
 
   defp get_mock_stats(:merchant) do
     [
-      %{label: "Total Orders", value: "1,204", desc: "↗︎ 22% more than last month", icon: "hero-shopping-cart"},
-      %{label: "Revenue", value: "$84.2k", desc: "↗︎ 14% more than last month", icon: "hero-currency-dollar"},
-      %{label: "Customers", value: "892", desc: "↗︎ 5% more than last month", icon: "hero-user-group"},
-      %{label: "Avg Order", value: "$72", desc: "↘︎ 1% less than last month", icon: "hero-chart-bar"}
+      %{
+        label: "Total Orders",
+        value: "1,204",
+        desc: "↗︎ 22% more than last month",
+        icon: "hero-shopping-cart"
+      },
+      %{
+        label: "Revenue",
+        value: "$84.2k",
+        desc: "↗︎ 14% more than last month",
+        icon: "hero-currency-dollar"
+      },
+      %{
+        label: "Customers",
+        value: "892",
+        desc: "↗︎ 5% more than last month",
+        icon: "hero-user-group"
+      },
+      %{
+        label: "Avg Order",
+        value: "$72",
+        desc: "↘︎ 1% less than last month",
+        icon: "hero-chart-bar"
+      }
     ]
   end
 
@@ -159,11 +200,41 @@ defmodule McpWeb.MockDashboardLive do
 
   defp get_mock_activities(_) do
     [
-      %{event: "Login", user: "Alice Smith", date: "2 mins ago", id: "EVT-1023", status: "success"},
-      %{event: "Update Profile", user: "Bob Jones", date: "15 mins ago", id: "EVT-1022", status: "info"},
-      %{event: "Failed Login", user: "Unknown", date: "1 hour ago", id: "EVT-1021", status: "error"},
-      %{event: "Subscription Renewed", user: "Charlie Brown", date: "2 hours ago", id: "EVT-1020", status: "success"},
-      %{event: "Settings Changed", user: "Alice Smith", date: "5 hours ago", id: "EVT-1019", status: "warning"}
+      %{
+        event: "Login",
+        user: "Alice Smith",
+        date: "2 mins ago",
+        id: "EVT-1023",
+        status: "success"
+      },
+      %{
+        event: "Update Profile",
+        user: "Bob Jones",
+        date: "15 mins ago",
+        id: "EVT-1022",
+        status: "info"
+      },
+      %{
+        event: "Failed Login",
+        user: "Unknown",
+        date: "1 hour ago",
+        id: "EVT-1021",
+        status: "error"
+      },
+      %{
+        event: "Subscription Renewed",
+        user: "Charlie Brown",
+        date: "2 hours ago",
+        id: "EVT-1020",
+        status: "success"
+      },
+      %{
+        event: "Settings Changed",
+        user: "Alice Smith",
+        date: "5 hours ago",
+        id: "EVT-1019",
+        status: "warning"
+      }
     ]
   end
 

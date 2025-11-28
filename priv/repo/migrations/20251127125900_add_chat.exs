@@ -15,8 +15,15 @@ defmodule Mcp.Repo.Migrations.AddChat do
     create table(:conversations, primary_key: false, prefix: "public") do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :title, :text
-      add :inserted_at, :utc_datetime_usec, null: false, default: fragment("(now() AT TIME ZONE 'utc')")
-      add :updated_at, :utc_datetime_usec, null: false, default: fragment("(now() AT TIME ZONE 'utc')")
+
+      add :inserted_at, :utc_datetime_usec,
+        null: false,
+        default: fragment("(now() AT TIME ZONE 'utc')")
+
+      add :updated_at, :utc_datetime_usec,
+        null: false,
+        default: fragment("(now() AT TIME ZONE 'utc')")
+
       add :user_id, :uuid, null: false
     end
 
@@ -27,10 +34,21 @@ defmodule Mcp.Repo.Migrations.AddChat do
       add :tool_results, {:array, :map}
       add :source, :text, null: false, default: "user"
       add :complete, :boolean, null: false, default: true
-      add :conversation_id, references(:conversations, type: :uuid, on_delete: :nothing, prefix: "public"), null: false
-      add :response_to_id, references(:messages, type: :uuid, on_delete: :nothing, prefix: "public")
-      add :inserted_at, :utc_datetime_usec, null: false, default: fragment("(now() AT TIME ZONE 'utc')")
-      add :updated_at, :utc_datetime_usec, null: false, default: fragment("(now() AT TIME ZONE 'utc')")
+
+      add :conversation_id,
+          references(:conversations, type: :uuid, on_delete: :nothing, prefix: "public"),
+          null: false
+
+      add :response_to_id,
+          references(:messages, type: :uuid, on_delete: :nothing, prefix: "public")
+
+      add :inserted_at, :utc_datetime_usec,
+        null: false,
+        default: fragment("(now() AT TIME ZONE 'utc')")
+
+      add :updated_at, :utc_datetime_usec,
+        null: false,
+        default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
     execute "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'conversations_user_id_fkey') THEN ALTER TABLE public.conversations ADD CONSTRAINT conversations_user_id_fkey FOREIGN KEY (user_id) REFERENCES platform.users(id); END IF; END $$;",

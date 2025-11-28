@@ -143,9 +143,19 @@ defmodule McpWeb.Layouts.PortalLayouts do
     <.app_shell title="Store Portal">
       <:sidebar>
         <li><.link navigate={~p"/app/stores/#{@conn.params["store_slug"]}"}>Dashboard</.link></li>
-        <li><.link navigate={~p"/app/stores/#{@conn.params["store_slug"]}/terminal"}>Virtual Terminal</.link></li>
-        <li><.link navigate={~p"/app/stores/#{@conn.params["store_slug"]}/invoices"}>Invoices</.link></li>
-        <li><.link navigate={~p"/app/stores/#{@conn.params["store_slug"]}/subscriptions"}>Subscriptions</.link></li>
+        <li>
+          <.link navigate={~p"/app/stores/#{@conn.params["store_slug"]}/terminal"}>
+            Virtual Terminal
+          </.link>
+        </li>
+        <li>
+          <.link navigate={~p"/app/stores/#{@conn.params["store_slug"]}/invoices"}>Invoices</.link>
+        </li>
+        <li>
+          <.link navigate={~p"/app/stores/#{@conn.params["store_slug"]}/subscriptions"}>
+            Subscriptions
+          </.link>
+        </li>
       </:sidebar>
       <:user_menu>
         <li><.link method="delete" href={~p"/sign-out"}>Sign out</.link></li>
@@ -179,27 +189,27 @@ defmodule McpWeb.Layouts.PortalLayouts do
           <div class="flex-1 px-2 mx-2">{@title}</div>
         </div>
         
-        <!-- Page Content -->
+    <!-- Page Content -->
         <main class="flex-1 p-6">
           {@inner_content}
         </main>
-      </div> 
+      </div>
       
-      <!-- Sidebar -->
+    <!-- Sidebar -->
       <div class="drawer-side z-20">
-        <label for="app-drawer" aria-label="close sidebar" class="drawer-overlay"></label> 
+        <label for="app-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
         <ul class="menu p-4 w-80 min-h-full bg-base-100 text-base-content gap-2">
           <!-- Sidebar Header -->
           <li class="mb-4">
             <span class="text-xl font-bold px-4">{@title}</span>
           </li>
           
-          <!-- Sidebar Content -->
+    <!-- Sidebar Content -->
           {render_slot(@sidebar)}
-          
+
           <div class="divider mt-auto"></div>
           
-          <!-- User Menu -->
+    <!-- User Menu -->
           {render_slot(@user_menu)}
         </ul>
       </div>

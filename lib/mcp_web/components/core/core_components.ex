@@ -11,7 +11,11 @@ defmodule McpWeb.Core.CoreComponents do
   """
   attr :type, :string, default: "button"
   attr :class, :string, default: nil
-  attr :variant, :string, default: "primary", values: ~w(primary secondary accent info success warning error ghost link outline)
+
+  attr :variant, :string,
+    default: "primary",
+    values: ~w(primary secondary accent info success warning error ghost link outline)
+
   attr :size, :string, default: nil, values: [nil, "lg", "sm", "xs"]
   attr :rest, :global, include: ~w(disabled form name value)
   slot :inner_block, required: true
@@ -128,9 +132,11 @@ defmodule McpWeb.Core.CoreComponents do
   """
   attr :id, :string
   attr :rows, :list, required: true
+
   slot :col, required: true do
     attr :label, :string
   end
+
   slot :action
 
   def table(assigns) do

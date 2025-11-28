@@ -121,7 +121,10 @@ defmodule Mcp.Payments.Gateways.QorPay do
     # QorPay does not support standalone customer creation.
     # We log this and return a generated ID to satisfy the adapter contract,
     # effectively treating it as an ephemeral customer.
-    Logger.info("QorPay: Customer creation requested (No-op), Params: #{inspect(customer_params)}")
+    Logger.info(
+      "QorPay: Customer creation requested (No-op), Params: #{inspect(customer_params)}"
+    )
+
     {:ok, %{id: "qor_cust_ephemeral_#{Ecto.UUID.generate()}"}}
   end
 
@@ -157,7 +160,7 @@ defmodule Mcp.Payments.Gateways.QorPay do
   @spec create_merchant(map(), map()) :: {:ok, map()} | {:error, any()}
   def create_merchant(merchant_params, _context) do
     Logger.info("QorPay: Boarding new merchant")
-    
+
     client()
     |> Req.post(url: "/channels/new_merchant", json: merchant_params)
     |> handle_response()
@@ -167,7 +170,7 @@ defmodule Mcp.Payments.Gateways.QorPay do
   @spec create_form_session(map(), map()) :: {:ok, map()} | {:error, any()}
   def create_form_session(form_params, _context) do
     Logger.info("QorPay: Creating hosted form session")
-    
+
     client()
     |> Req.post(url: "/payment/forms", json: form_params)
     |> handle_response()

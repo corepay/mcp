@@ -80,6 +80,7 @@ defmodule Mix.Tasks.Db.Lint do
           for stmt <- query_stmts do
             repo.query!(stmt)
           end
+
           final_result = repo.query!(final_query)
           print_results(final_result)
         end)
@@ -117,9 +118,11 @@ defmodule Mix.Tasks.Db.Lint do
         IO.puts("#{color}[#{level}] #{title} (#{name})#{IO.ANSI.reset()}")
         IO.puts("    #{detail}")
         IO.puts("    #{IO.ANSI.light_black()}#{description}#{IO.ANSI.reset()}")
+
         if remediation do
           IO.puts("    👉 Fix: #{remediation}")
         end
+
         IO.puts("")
       end)
     end

@@ -181,7 +181,7 @@ defmodule Mcp.MultiTenantTest do
         # Ensure extensions exist
         Repo.query("CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE")
         Repo.query("CREATE EXTENSION IF NOT EXISTS postgis CASCADE")
-        
+
         {:ok, _} = MultiTenant.create_tenant_schema(@test_tenant_schema)
       end
 
@@ -191,7 +191,6 @@ defmodule Mcp.MultiTenantTest do
 
       :ok
     end
-
 
     test "creates hypertable for time-series data" do
       # Create base table first
@@ -243,7 +242,6 @@ defmodule Mcp.MultiTenantTest do
 
       assert {:ok, _} = result
     end
-
 
     test "creates geographic index" do
       # Create table with geometry column

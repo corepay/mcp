@@ -7,8 +7,8 @@ defmodule Mcp.Platform.Address do
 
   postgres do
     table "addresses"
-    schema "platform"
-    repo Mcp.Repo
+    schema("platform")
+    repo(Mcp.Repo)
   end
 
   actions do

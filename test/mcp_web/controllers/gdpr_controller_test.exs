@@ -79,6 +79,7 @@ defmodule McpWeb.GdprControllerTest do
   describe "POST /gdpr/request-deletion" do
     test "creates deletion request", %{conn: conn, user: user} do
       user_id = user.id
+
       expect(ComplianceMock, :initiate_soft_deletion, fn ^user_id, "test_reason", _context ->
         {:ok,
          %{user: %{id: user.id, status: :deleted, gdpr_retention_expires_at: DateTime.utc_now()}}}
@@ -100,6 +101,7 @@ defmodule McpWeb.GdprControllerTest do
   describe "POST /gdpr/cancel-deletion" do
     test "cels pending deletion", %{conn: conn, user: user} do
       user_id = user.id
+
       expect(ComplianceMock, :cancel_deletion_request, fn ^user_id, ^user_id, "user_canceled" ->
         {:ok, %{user: %{id: user.id, status: :active}}}
       end)
@@ -112,6 +114,7 @@ defmodule McpWeb.GdprControllerTest do
   describe "GET /gdpr/consent" do
     test "gets user consent status", %{conn: conn, user: user} do
       user_id = user.id
+
       expect(Mcp.Gdpr.ConsentMock, :get_user_consents, fn ^user_id ->
         {:ok,
          [
@@ -131,10 +134,8 @@ defmodule McpWeb.GdprControllerTest do
   describe "POST /gdpr/consent" do
     test "updates consent preferences", %{conn: conn, user: user} do
       user_id = user.id
-      expect(Mcp.Gdpr.ConsentMock, :record_consent, fn ^user_id,
-                                                       "marketing",
-                                                       true,
-                                                       _context ->
+
+      expect(Mcp.Gdpr.ConsentMock, :record_consent, fn ^user_id, "marketing", true, _context ->
         {:ok, %{consent_type: "marketing", granted: true}}
       end)
 
@@ -149,6 +150,7 @@ defmodule McpWeb.GdprControllerTest do
   describe "GET /gdpr/audit-trail" do
     test "gets user audit trail", %{conn: conn, user: user} do
       user_id = user.id
+
       expect(ComplianceMock, :get_user_audit_trail, fn ^user_id, _opts ->
         {:ok,
          [
@@ -166,6 +168,7 @@ defmodule McpWeb.GdprControllerTest do
 
     test "respects pagination parameters", %{conn: conn, user: user} do
       user_id = user.id
+
       expect(ComplianceMock, :get_user_audit_trail, fn ^user_id, opts ->
         assert opts[:limit] == 10
         assert opts[:offset] == 0

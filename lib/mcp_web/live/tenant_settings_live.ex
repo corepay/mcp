@@ -213,13 +213,16 @@ defmodule McpWeb.TenantSettingsLive do
             <h3 class="text-lg font-semibold mb-4">Help & Resources</h3>
             <div class="space-y-3">
               <a href="#" class="block text-sm text-blue-600 hover:text-blue-800">
-                <McpWeb.Core.CoreComponents.icon name="hero-book-open" class="mr-2" /> Settings Documentation
+                <McpWeb.Core.CoreComponents.icon name="hero-book-open" class="mr-2" />
+                Settings Documentation
               </a>
               <a href="#" class="block text-sm text-blue-600 hover:text-blue-800">
-                <McpWeb.Core.CoreComponents.icon name="hero-video-camera" class="mr-2" /> Video Tutorials
+                <McpWeb.Core.CoreComponents.icon name="hero-video-camera" class="mr-2" />
+                Video Tutorials
               </a>
               <a href="#" class="block text-sm text-blue-600 hover:text-blue-800">
-                <McpWeb.Core.CoreComponents.icon name="hero-question-mark-circle" class="mr-2" /> Support Center
+                <McpWeb.Core.CoreComponents.icon name="hero-question-mark-circle" class="mr-2" />
+                Support Center
               </a>
             </div>
           </McpWeb.Core.CoreComponents.card>
@@ -253,7 +256,11 @@ defmodule McpWeb.TenantSettingsLive do
         />
 
         <div class="flex justify-end space-x-3 mt-6">
-          <McpWeb.Core.CoreComponents.button variant="primary" type="button" phx-click="hide_import_modal">
+          <McpWeb.Core.CoreComponents.button
+            variant="primary"
+            type="button"
+            phx-click="hide_import_modal"
+          >
             Cancel
           </McpWeb.Core.CoreComponents.button>
           <McpWeb.Core.CoreComponents.button type="submit" phx-disable-with="Importing...">

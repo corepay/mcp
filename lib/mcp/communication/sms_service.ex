@@ -50,8 +50,9 @@ defmodule Mcp.Communication.SmsService do
         Message: #{message}
         Tenant: #{tenant_id}
         """)
-        
-        {:reply, {:ok, %{status: :sent, message_id: "console_#{Ecto.UUID.generate()}"}}, %{state | rate_limits: new_limits}}
+
+        {:reply, {:ok, %{status: :sent, message_id: "console_#{Ecto.UUID.generate()}"}},
+         %{state | rate_limits: new_limits}}
 
       {:error, :rate_limited} ->
         {:reply, {:error, :rate_limited}, state}
@@ -61,8 +62,8 @@ defmodule Mcp.Communication.SmsService do
   @impl true
   def handle_call({:send_bulk_sms, recipients, message, opts}, _from, state) do
     _tenant_id = Keyword.get(opts, :tenant_id, "global")
-    
-    results = 
+
+    results =
       Enum.with_index(recipients)
       |> Enum.map(fn {recipient, index} ->
         Logger.info("[BULK SMS] To: #{recipient} | Msg: #{message}")

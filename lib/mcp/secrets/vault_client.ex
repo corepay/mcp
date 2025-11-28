@@ -10,7 +10,9 @@ defmodule Mcp.Secrets.VaultClient do
     tenant_id = Keyword.get(opts, :tenant_id)
     full_path = build_tenant_path(path, tenant_id)
 
-    case Repo.query("SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = $1", [full_path]) do
+    case Repo.query("SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = $1", [
+           full_path
+         ]) do
       {:ok, %{rows: [[secret]]}} -> {:ok, secret}
       {:ok, %{rows: []}} -> {:error, :not_found}
       error -> error
@@ -24,11 +26,11 @@ defmodule Mcp.Secrets.VaultClient do
     # vault.create_secret(new_secret text, new_name text, new_description text DEFAULT NULL::text, new_key_id uuid DEFAULT NULL::uuid)
     # We use upsert-like logic by deleting first (simple approach) or handling conflict if vault supports it.
     # Supabase vault doesn't support upsert easily on name, so we delete first.
-    
+
     Repo.transaction(fn ->
       Repo.query!("SELECT vault.create_secret($1, $2)", [value, full_path])
     end)
-    
+
     {:ok, full_path}
   rescue
     e -> {:error, e}
@@ -41,7 +43,7 @@ defmodule Mcp.Secrets.VaultClient do
     # We need to find the secret ID to delete it, or delete by name if possible.
     # The vault.secrets table has 'name'.
     # DELETE FROM vault.secrets WHERE name = $1
-    
+
     case Repo.query("DELETE FROM vault.secrets WHERE name = $1", [full_path]) do
       {:ok, _} -> :ok
       error -> error
@@ -54,6 +56,7 @@ defmodule Mcp.Secrets.VaultClient do
 
     # List secrets starting with prefix
     query = "SELECT name FROM vault.secrets WHERE name LIKE $1"
+
     case Repo.query(query, ["#{full_path_prefix}%"]) do
       {:ok, %{rows: rows}} -> {:ok, List.flatten(rows)}
       error -> error
@@ -62,6 +65,7 @@ defmodule Mcp.Secrets.VaultClient do
 
   # Helper to maintain tenant isolation naming convention
   defp build_tenant_path(path, nil), do: path
+
   defp build_tenant_path(path, tenant_id) do
     if String.starts_with?(path, "tenants/") do
       path
