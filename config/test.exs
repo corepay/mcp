@@ -1,6 +1,7 @@
 import Config
 config :mcp, Oban, testing: :manual
 config :mcp, :token_signing_secret, "test-secret-for-jwt-signing"
+config :mcp, env: :test
 
 # Configure your database
 #
@@ -37,8 +38,19 @@ config :logger, level: :warning
 config :phoenix, :plug_init_mode, :runtime
 
 # Enable helpful, but potentially expensive runtime checks
+# Enable helpful, but potentially expensive runtime checks
 config :phoenix_live_view,
   enable_expensive_runtime_checks: true
+
+config :ex_aws, :s3,
+  scheme: "http://",
+  host: "localhost",
+  port: 9000,
+  region: "local"
+
+config :ex_aws,
+  access_key_id: "minioadmin",
+  secret_access_key: "minioadmin"
 
 # Coverage configuration
 if System.get_env("MIX_ENV") == "test" do

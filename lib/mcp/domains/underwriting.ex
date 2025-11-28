@@ -15,5 +15,8 @@ defmodule Mcp.Underwriting do
     resource Mcp.Underwriting.Address
     resource Mcp.Underwriting.Document
     resource Mcp.Underwriting.Check
+    resource Mcp.Underwriting.VendorSettings
+    resource Mcp.Underwriting.Activity
+    resource Mcp.Underwriting.DocumentAnalysis
   end
 end

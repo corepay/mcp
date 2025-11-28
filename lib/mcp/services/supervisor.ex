@@ -15,6 +15,7 @@ defmodule Mcp.Services.Supervisor do
     children = [
       # Core services will be added as they're implemented
       # SchemaManager, ConversationManager, ModelRouter, ProcessorPool, etc.
+      Mcp.Underwriting.CircuitBreaker
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

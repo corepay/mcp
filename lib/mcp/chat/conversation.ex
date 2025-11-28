@@ -35,6 +35,12 @@ defmodule Mcp.Chat.Conversation do
       change relate_actor(:user)
     end
 
+    create :create_for_user do
+      accept [:title]
+      argument :user_id, :uuid, allow_nil?: false
+      change manage_relationship(:user_id, :user, type: :append_and_remove)
+    end
+
     update :generate_name do
       accept []
       transaction? false

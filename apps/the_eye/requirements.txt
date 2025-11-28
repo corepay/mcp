@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+python-multipart
+requests
+marker-pdf
+# chandra-ocr # Commented out for now as it might require specific index or build steps, will verify installation

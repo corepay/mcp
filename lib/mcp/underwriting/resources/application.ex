@@ -24,7 +24,7 @@ defmodule Mcp.Underwriting.Application do
 
     update :update do
       primary? true
-      accept [:status, :application_data, :risk_score]
+      accept [:status, :application_data, :risk_score, :submitted_at, :sla_due_at]
     end
   end
 
@@ -44,6 +44,9 @@ defmodule Mcp.Underwriting.Application do
       default 0
     end
 
+    attribute :submitted_at, :utc_datetime_usec
+    attribute :sla_due_at, :utc_datetime_usec
+
     timestamps()
   end
 
@@ -56,6 +59,7 @@ defmodule Mcp.Underwriting.Application do
     has_many :clients, Mcp.Underwriting.Client
     has_many :documents, Mcp.Underwriting.Document
     has_one :risk_assessment, Mcp.Underwriting.RiskAssessment
+    has_many :activities, Mcp.Underwriting.Activity
   end
 
   code_interface do

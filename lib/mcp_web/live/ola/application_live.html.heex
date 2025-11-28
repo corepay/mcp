@@ -49,12 +49,12 @@
     </div>
 
     <!-- Chat Messages Area -->
-    <div class="flex-1 overflow-y-auto space-y-4 p-4 bg-base-100 rounded-xl shadow-inner mb-4 border border-base-200" id="main-chat-container" phx-update="stream">
-      <%= for msg <- @atlas_messages do %>
-        <div class={"chat #{if msg.sender == :user, do: "chat-end", else: "chat-start"}"}>
+    <div class="flex-1 overflow-y-auto space-y-4 p-4 bg-base-100 rounded-xl shadow-inner mb-4 border border-base-200" id="main-chat-container">
+      <%= for msg <- @messages do %>
+        <div class={"chat #{if msg.source == :user, do: "chat-end", else: "chat-start"}"}>
           <div class="chat-image avatar">
             <div class="w-10 h-10 rounded-full bg-base-200 flex items-center justify-center">
-              <%= if msg.sender == :user do %>
+              <%= if msg.source == :user do %>
                 <.icon name="hero-user" class="w-6 h-6 text-base-content/50" />
               <% else %>
                 <.icon name="hero-sparkles" class="w-6 h-6 text-primary" />
@@ -62,28 +62,49 @@
             </div>
           </div>
           <div class="chat-header opacity-50 text-xs mb-1">
-            <%= if msg.sender == :user, do: "You", else: "Atlas" %>
+            <%= if msg.source == :user, do: "You", else: "Atlas" %>
           </div>
-          <div class={"chat-bubble #{if msg.sender == :user, do: "chat-bubble-neutral", else: "chat-bubble-primary"}"}>
-            <%= msg.content %>
+          <div class={"chat-bubble #{if msg.source == :user, do: "chat-bubble-neutral", else: "chat-bubble-primary"}"}>
+            <%= msg.text %>
           </div>
         </div>
       <% end %>
     </div>
 
     <!-- Chat Input -->
-    <form phx-submit="send_chat" class="relative">
-      <input 
-        type="text" 
-        name="message" 
-        placeholder="Type your answer here..." 
-        class="input input-bordered w-full pr-12 shadow-lg"
-        autocomplete="off"
-        autofocus
-      />
-      <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-primary btn-sm btn-circle">
-        <.icon name="hero-paper-airplane" class="w-4 h-4" />
-      </button>
+    <form phx-submit="send_chat" phx-change="validate_chat" class="relative">
+      <div class="flex gap-2 items-center">
+        <!-- File Upload Button -->
+        <button type="button" class="btn btn-circle btn-ghost btn-sm" onclick="document.getElementById('chat-file-input').click()">
+          <.icon name="hero-paper-clip" class="w-5 h-5" />
+        </button>
+        
+        <div class="relative flex-1">
+          <input 
+            type="text" 
+            name="message" 
+            placeholder="Type your answer here..." 
+            class="input input-bordered w-full pr-12 shadow-lg"
+            autocomplete="off"
+            autofocus
+          />
+          <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-primary btn-sm btn-circle">
+            <.icon name="hero-paper-airplane" class="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      
+      <!-- Hidden File Input -->
+      <.live_file_input upload={@uploads.chat_files} class="hidden" id="chat-file-input" />
+      
+      <!-- Pending Uploads Preview -->
+      <%= for entry <- @uploads.chat_files.entries do %>
+         <div class="absolute bottom-full left-12 mb-2 bg-base-200 p-2 rounded shadow text-xs flex items-center gap-2 border border-base-300">
+            <.icon name="hero-document" class="w-4 h-4 text-primary" />
+            <span class="max-w-[150px] truncate"><%= entry.client_name %></span>
+            <button type="button" phx-click="cancel-upload" phx-value-ref={entry.ref} class="btn btn-ghost btn-xs btn-circle h-4 w-4 min-h-0">&times;</button>
+         </div>
+      <% end %>
     </form>
     
     <div class="mt-4 text-center">

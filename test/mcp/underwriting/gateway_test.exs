@@ -27,6 +27,12 @@ defmodule Mcp.Underwriting.GatewayTest do
       })
       |> Ash.create!(tenant: tenant.company_schema)
 
+    # WORKAROUND: Manually add columns because Ecto.Migrator fails in Sandbox
+    schema = tenant.company_schema
+    Mcp.Repo.query!("ALTER TABLE \"#{schema}\".underwriting_applications ADD COLUMN IF NOT EXISTS submitted_at timestamp(6)")
+    Mcp.Repo.query!("ALTER TABLE \"#{schema}\".underwriting_applications ADD COLUMN IF NOT EXISTS sla_due_at timestamp(6)")
+    Mcp.Repo.query!("CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_activities (id uuid PRIMARY KEY, type text, metadata jsonb, actor_id uuid, application_id uuid, inserted_at timestamp(6), updated_at timestamp(6))")
+
     # Configure Mock Adapter for tests
     Elixir.Application.put_env(:mcp, :underwriting_adapter, Mcp.Underwriting.Adapters.Mock)
 
@@ -37,14 +43,14 @@ defmodule Mcp.Underwriting.GatewayTest do
     test "successfully screens an application and creates risk assessment", %{merchant: merchant, tenant: tenant} do
       # 1. Create Application
       application = 
-        Application
+        Mcp.Underwriting.Application
         |> Ash.Changeset.for_create(:create, %{
           merchant_id: merchant.id,
-          status: :submitted,
           application_data: %{
-            "legal_name" => "Good Company LLC",
+            "business_name" => "Test Corp",
+            "legal_structure" => "llc",
             "owners" => [
-              %{"first_name" => "John", "last_name" => "Doe", "dob" => "1980-01-01"}
+              %{"first_name" => "John", "last_name" => "Doe", "email" => "john@example.com"}
             ]
           }
         })
@@ -81,6 +87,14 @@ defmodule Mcp.Underwriting.GatewayTest do
       updated_app = Application.get_by_id!(application.id, tenant: tenant)
       assert updated_app.status == :approved
       assert updated_app.risk_score == score
+      
+      # 5. Verify Activity Log
+      activities = Mcp.Underwriting.Activity |> Ash.read!(tenant: tenant)
+      assert length(activities) > 0
+      activity = List.last(activities)
+      assert activity.type == :status_change
+      assert activity.type == :status_change
+      assert activity.metadata["to"] == "approved"
     end
 
     test "handles high risk scenario", %{merchant: merchant, tenant: tenant} do

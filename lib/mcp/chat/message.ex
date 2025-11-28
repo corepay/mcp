@@ -66,7 +66,7 @@ defmodule Mcp.Chat.Message do
       end
 
       argument :conversation_id, :uuid do
-        public? false
+        public? true
       end
 
       change Mcp.Chat.Message.Changes.CreateConversationIfNotProvided

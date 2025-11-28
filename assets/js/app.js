@@ -26,6 +26,7 @@ import {hooks as colocatedHooks} from "phoenix-colocated/mcp"
 import topbar from "../vendor/topbar"
 import AuthHook from "./hooks/auth_hook"
 import AnalyticsHooks from "./hooks/analytics_hooks"
+import KanbanHook from "./hooks/kanban_hook"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
@@ -34,6 +35,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
   hooks: {
     ...colocatedHooks,
     Auth: AuthHook,
+    Kanban: KanbanHook,
     LineChartHook: AnalyticsHooks.LineChartHook,
     BarChartHook: AnalyticsHooks.BarChartHook,
     PieChartHook: AnalyticsHooks.PieChartHook,

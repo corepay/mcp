@@ -70,6 +70,8 @@ defmodule McpWeb.Router do
     live_session :admin_underwriting,
       on_mount: [{McpWeb.Auth.LiveAuth, :require_authenticated}, {McpWeb.Auth.LiveAuth, :require_admin}] do
       live "/underwriting", Admin.UnderwritingLive
+      live "/underwriting/board", Admin.Underwriting.KanbanLive
+      live "/underwriting/settings", Admin.Underwriting.SettingsLive
       live "/underwriting/:id", Admin.ReviewLive
     end
   end

@@ -7,6 +7,8 @@ defmodule Mcp.Underwriting.Gateway do
   alias Mcp.Underwriting.RiskAssessment
 
 
+  alias Mcp.Underwriting.CircuitBreaker
+
   def get_adapter(context \\ %{}) do
     Mcp.Underwriting.VendorRouter.select_adapter(context)
   end
@@ -20,13 +22,13 @@ defmodule Mcp.Underwriting.Gateway do
     adapter = get_adapter()
 
     # 1. Screen Business (KYB)
-    with {:ok, kyb_result} <- adapter.screen_business(application.application_data, %{}),
+    with {:ok, kyb_result} <- call_adapter(adapter, :screen_business, [application.application_data, %{}]),
          {:ok, _check} <- record_check(application, :extensive_screening_check, kyb_result),
          
          # 2. Screen Owners (KYC) - Simplified loop
          owners = Map.get(application.application_data, "owners", []),
          _ <- Enum.each(owners, fn owner -> 
-            {:ok, _kyc_result} = adapter.verify_identity(owner, %{}) 
+            {:ok, _kyc_result} = call_adapter(adapter, :verify_identity, [owner, %{}])
             # Ideally we'd link this to a Client record, but for now we just run it
          end),
 
@@ -54,25 +56,38 @@ defmodule Mcp.Underwriting.Gateway do
            # For this implementation, let's skip if no client_id, or try to use a default one from the application context if we had one.
            
            if context[:client_id] do
-             adapter.document_check(file_content, doc.document_type, context)
+             call_adapter(adapter, :document_check, [file_content, doc.document_type, context])
            else
              {:error, :no_client_linked}
            end
          end),
          
-         # 4. Calculate Risk Score
-         score = calculate_risk_score(kyb_result) do
+  alias Mcp.Underwriting.RiskEngine
+
+  # ... (previous code)
+
+    do
+      # 4. Calculate Risk Score
+      vendor_data = %{kyb: kyb_result, documents: doc_results}
+      evaluation = RiskEngine.evaluate(application, vendor_data)
+      score = evaluation.score
+      reasons = evaluation.reasons
+      
+      # Calculate SLA
+      now = DateTime.utc_now()
+      submitted_at = application.submitted_at || now
+      sla_due_at = Mcp.Underwriting.SlaCalculator.calculate_due_at(submitted_at)
       
       # 5. Create Risk Assessment
       RiskAssessment.create!(%{
         merchant_id: application.merchant_id,
         application_id: application.id,
         score: score,
-        factors: %{kyb: kyb_result, documents: doc_results},
+        factors: %{kyb: kyb_result, documents: doc_results, risk_reasons: reasons},
         recommendation: if(score > 80, do: :approve, else: :manual_review)
       }, tenant: tenant)
       
-      # 6. Update Application Status
+      # 6. Update Application Status & SLA
       new_status = 
         cond do
           score >= 90 -> :approved # Auto-approve high scores
@@ -82,7 +97,22 @@ defmodule Mcp.Underwriting.Gateway do
 
       Application.update!(application, %{
         status: new_status,
-        risk_score: score
+        risk_score: score,
+        submitted_at: submitted_at,
+        sla_due_at: sla_due_at
+      }, tenant: tenant)
+      
+      # 7. Log Activity
+      Mcp.Underwriting.Activity.create!(%{
+        application_id: application.id,
+        type: :status_change,
+        metadata: %{
+          from: :submitted, # Assumption
+          to: new_status,
+          score: score,
+          reasons: reasons
+        },
+        actor_id: nil # System
       }, tenant: tenant)
       
       {:ok, score}
@@ -91,22 +121,41 @@ defmodule Mcp.Underwriting.Gateway do
     end
   end
 
+  # Remove old calculate_risk_score if unused, or keep as fallback?
+  # The RiskEngine replaces it.
+
+
+  defp call_adapter(adapter, function, args) do
+    service_name = Atom.to_string(adapter)
+    
+    try do
+      result = apply(adapter, function, args)
+      
+      case result do
+        {:ok, _} -> 
+          CircuitBreaker.report_success(service_name)
+          result
+        {:error, _reason} ->
+          # Determine if this is a system error or business error
+          # For now, treat all errors as potential system errors unless specific known business errors
+          # This is a simplification. In reality, we'd check `reason`.
+          CircuitBreaker.report_failure(service_name)
+          result
+        _ ->
+          CircuitBreaker.report_success(service_name)
+          result
+      end
+    catch
+      kind, reason ->
+        CircuitBreaker.report_failure(service_name)
+        :erlang.raise(kind, reason, __STACKTRACE__)
+    end
+  end
+
   defp record_check(_application, _type, _result) do
     # Placeholder: In a real implementation, we would create a Check record linked to a Client
     {:ok, :check_recorded}
   end
 
-  defp calculate_risk_score(kyb_result) do
-    base_score = if kyb_result.status == :clear, do: 90, else: 50
-    
-    # Example of vendor-specific adjustment
-    # e.g. iDenfy might be considered stricter or looser, or we just normalize.
-    # For now, we just ensure the score is consistent.
-    
-    case kyb_result[:provider] do
-      "idenfy" -> base_score # iDenfy specific logic if needed
-      "comply_cube" -> base_score # ComplyCube specific logic if needed
-      _ -> base_score
-    end
-  end
+
 end

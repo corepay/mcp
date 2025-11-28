@@ -15,6 +15,10 @@ defmodule Mcp.Underwriting.Document do
       primary? true
       accept [:file_path, :file_name, :mime_type, :document_type, :application_id]
     end
+
+    update :update_status do
+      accept [:status]
+    end
   end
 
   attributes do
@@ -54,6 +58,7 @@ defmodule Mcp.Underwriting.Document do
   code_interface do
     define :create
     define :read
+    define :update_status
     define :destroy
   end
 end

@@ -123,6 +123,24 @@ services:
       - ollama
     restart: always
 
+  the_eye:
+    build:
+      context: ./apps/the_eye
+      dockerfile: Dockerfile
+    container_name: mcp_the_eye
+    ports:
+      - "${THE_EYE_PORT}:8000"
+    volumes:
+      - ./apps/the_eye:/app
+    networks:
+      - mcp_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
 volumes:
   postgres_data:
   redis_data:

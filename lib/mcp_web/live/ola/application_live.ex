@@ -2,41 +2,110 @@ defmodule McpWeb.Ola.ApplicationLive do
   use McpWeb, :live_view
 
   alias Mcp.Underwriting.Application, as: UnderwritingApplication
-
+  require Ash.Query
 
   @impl true
   def mount(_params, session, socket) do
     tenant_id = session["tenant_id"]
-    
-    {:ok,
-     socket
-     |> assign(:page_title, "Merchant Application")
-     |> assign(:tenant_id, tenant_id)
-     |> assign(:mode, :selection) # :selection, :chat, :form
-     |> assign(:step, 1)
-     |> assign(:form, to_form(%{}, as: :application))
-      |> assign(:atlas_messages, [
-        %{sender: :ai, content: "Hello! I'm Atlas. How would you like to complete your application today?"}
+    current_user = socket.assigns[:current_user]
+
+    socket =
+      socket
+      |> assign(:page_title, "Merchant Application")
+      |> assign(:tenant_id, tenant_id)
+      |> assign(:mode, :selection) # :selection, :chat, :form
+      |> assign(:step, 1)
+      |> assign(:form, to_form(%{}, as: :application))
+      |> allow_upload(:documents, accept: ~w(.jpg .jpeg .png .pdf), max_entries: 5)
+      |> allow_upload(:chat_files, accept: ~w(.jpg .jpeg .png .pdf .txt .csv), max_entries: 1)
+
+    if current_user do
+      # Find or create conversation
+      conversation =
+        Mcp.Chat.Conversation
+        |> Ash.Query.filter(user_id == ^current_user.id)
+        |> Ash.Query.sort(updated_at: :desc)
+        |> Ash.Query.limit(1)
+        |> Ash.read_one!()
+
+      conversation =
+        if conversation do
+          conversation
+        else
+          Mcp.Chat.Conversation
+          |> Ash.Changeset.for_create(:create_for_user, %{title: "Application Support", user_id: current_user.id})
+          |> Ash.create!()
+        end
+
+      # Load messages
+      messages =
+        Mcp.Chat.Message
+        |> Ash.Query.for_read(:for_conversation, %{conversation_id: conversation.id})
+        |> Ash.read!(page: [limit: 50])
+
+      # Subscribe to conversation updates
+      if connected?(socket) do
+        Phoenix.PubSub.subscribe(Mcp.PubSub, "chat:messages:#{conversation.id}")
+      end
+      
+      # Try to find existing application
+      tenant_schema = Mcp.Platform.Tenant.get_by_id!(tenant_id).company_schema
+      
+      # We need to use a fragment or map access for jsonb
+      # Ash doesn't support map access in filter easily without calculation or fragment
+      # But basic map access might work if supported by data layer.
+      # Actually, AshPostgres supports map access.
+      # But let's try to be safe.
+      # Wait, application_data is a map attribute.
+      # Ash query: filter(application_data["contact_email"] == ^current_user.email)
+      
+      existing_application =
+        UnderwritingApplication
+        |> Ash.Query.filter(application_data["contact_email"] == ^current_user.email)
+        |> Ash.Query.sort(inserted_at: :desc)
+        |> Ash.Query.limit(1)
+        |> Ash.read_one(tenant: tenant_schema)
+        |> case do
+          {:ok, app} -> app
+          _ -> nil
+        end
+
+      socket
+      |> assign(:conversation_id, conversation.id)
+      |> assign(:messages, Enum.reverse(messages.results))
+      |> assign(:existing_application, existing_application)
+    else
+      # Fallback for guest/unauthenticated users (Mock Mode)
+      socket
+      |> assign(:conversation_id, nil)
+      |> assign(:messages, [
+        %{id: "mock-1", sender: :ai, source: :agent, text: "Hello! I'm Atlas. Please sign in to save your progress."}
       ])
-      |> allow_upload(:documents, accept: ~w(.jpg .jpeg .png .pdf), max_entries: 5)}
+      |> assign(:existing_application, nil)
+    end
+    |> then(&{:ok, &1})
   end
 
   @impl true
   def handle_event("select_mode", %{"mode" => mode}, socket) do
     mode = String.to_existing_atom(mode)
     
-    messages = 
-      case mode do
-        :chat -> 
-          [%{sender: :ai, content: "Great choice! I'll ask you a few questions to get your business approved. First, what is the legal name of your business?"}]
-        :form -> 
-          [%{sender: :ai, content: "No problem. I'll stay here in the sidebar if you need any help while you fill out the form."}]
+    # If switching to chat and we have a conversation, ensure we have the welcome message if empty
+    messages = socket.assigns.messages
+    
+    updated_messages = 
+      if mode == :chat && Enum.empty?(messages) && socket.assigns[:conversation_id] do
+        # We could auto-send a welcome message here if we wanted to persist it
+        # For now, just relying on the view to show empty state or initial prompt
+        messages
+      else
+        messages
       end
 
     {:noreply, 
      socket 
      |> assign(:mode, mode)
-     |> assign(:atlas_messages, messages)}
+     |> assign(:messages, updated_messages)}
   end
 
   @impl true
@@ -53,8 +122,7 @@ defmodule McpWeb.Ola.ApplicationLive do
     
     {:noreply, 
      socket 
-     |> put_flash(:info, "Document received from mobile device!")
-     |> assign(:atlas_messages, socket.assigns.atlas_messages ++ [%{sender: :ai, content: "I've received your Business License from your mobile device. Looks good!"}])}
+     |> put_flash(:info, "Document received from mobile device!")}
   end
 
   @impl true
@@ -67,10 +135,6 @@ defmodule McpWeb.Ola.ApplicationLive do
     # This ensures data from previous steps (not in DOM) is preserved
     accumulated_params = socket.assigns.form.params || %{}
     final_params = Map.merge(accumulated_params, params)
-    
-    # Placeholder: Fetch or create a merchant for this user
-    # For this demo, we'll just query the first merchant or create a dummy one if needed
-    # But strictly, we should have a merchant_id from the context.
     
     tenant = Mcp.Platform.Tenant.get_by_id!(socket.assigns.tenant_id)
     
@@ -128,26 +192,97 @@ defmodule McpWeb.Ola.ApplicationLive do
   end
 
   @impl true
-  def handle_event("send_chat", %{"message" => message}, socket) do
-    # 1. Add user message to chat history
-    messages = socket.assigns.atlas_messages ++ [%{sender: :user, content: message}]
-    
-    # 2. Process message based on current context/question
-    # For this mock, we'll just map the answer to the current field and move to next
-    
-    # Simple state machine for demo purposes
-    {response, _next_field, updated_form} = process_chat_input(socket.assigns.form, message)
-    
-    # 3. Add AI response
-    messages = messages ++ [%{sender: :ai, content: response}]
-
-    {:noreply, 
-     socket 
-     |> assign(:atlas_messages, messages)
-     |> assign(:form, updated_form)}
+  def handle_event("validate_chat", _params, socket) do
+    {:noreply, socket}
   end
 
+  @impl true
+  def handle_event("send_chat", %{"message" => text}, socket) do
+    if socket.assigns[:conversation_id] do
+      # 1. Handle File Uploads
+      uploaded_files =
+        consume_uploaded_entries(socket, :chat_files, fn %{path: path}, entry ->
+          file_name = entry.client_name
+          mime_type = entry.client_type
+          bucket = Application.get_env(:mcp, :uploads)[:bucket] || "underwriting-documents"
+          
+          # For now, let's assume we can find the application or just store it.
+          
+          # Try to find application for this user/tenant
+          tenant = Mcp.Platform.Tenant.get_by_id!(socket.assigns.tenant_id)
+          
+          application = socket.assigns[:existing_application]
+          
+          if application do
+             s3_path = "applications/#{application.id}/chat/#{file_name}"
+             
+             unless Application.get_env(:mcp, :env) == :test do
+               ExAws.S3.put_object(bucket, s3_path, File.read!(path)) |> ExAws.request!()
+             end
+             
+             Mcp.Underwriting.Document.create!(%{
+                application_id: application.id,
+                file_path: s3_path,
+                file_name: file_name,
+                mime_type: mime_type,
+                document_type: :other
+             }, tenant: tenant.company_schema)
+             
+             {:ok, file_name}
+          else
+             # If no application, we can't create a Document (FK constraint).
+             # Fallback: Just upload to S3 and mention it in chat.
+             # We could create a "Lead" or "Draft" here if we wanted.
+             {:ok, file_name}
+          end
+        end)
+      
+      # 2. Send Text Message
+      if text != "" do
+        Mcp.Chat.Message
+        |> Ash.Changeset.for_create(:create, %{
+          text: text,
+          conversation_id: socket.assigns.conversation_id
+        })
+        |> Ash.create!()
+      end
+      
+      # 3. Send System Messages for Uploads
+      Enum.each(uploaded_files, fn 
+        {:ok, file_name} ->
+          Mcp.Chat.Message
+          |> Ash.Changeset.for_create(:create, %{
+            text: "Uploaded document: #{file_name}",
+            conversation_id: socket.assigns.conversation_id
+          })
+          |> Ash.create!()
+        
+        file_name when is_binary(file_name) ->
+          Mcp.Chat.Message
+          |> Ash.Changeset.for_create(:create, %{
+            text: "Uploaded document: #{file_name}",
+            conversation_id: socket.assigns.conversation_id
+          })
+          |> Ash.create!()
+          
+        _ -> :ok
+      end)
+      
+      {:noreply, socket}
+    else
+      # Mock mode
+      messages = socket.assigns.messages ++ [%{id: "mock-user-#{System.unique_integer()}", sender: :user, source: :user, text: text}]
+      
+      # Simple mock response
+      {response, _, updated_form} = process_chat_input(socket.assigns.form, text)
+      messages = messages ++ [%{id: "mock-ai-#{System.unique_integer()}", sender: :ai, source: :agent, text: response}]
 
+      {:noreply, 
+       socket 
+       |> assign(:messages, messages)
+       |> assign(:form, updated_form)}
+    end
+  end
 
   @impl true
   def handle_event("prev_step", _params, socket) do
@@ -157,6 +292,23 @@ defmodule McpWeb.Ola.ApplicationLive do
   @impl true
   def handle_event("next_step", _params, socket) do
     {:noreply, assign(socket, :step, socket.assigns.step + 1)}
+  end
+
+  @impl true
+  def handle_info(%Phoenix.Socket.Broadcast{payload: message}, socket) do
+    # Handle both create and update (upsert)
+    # The payload contains the transformed message: %{id: ..., text: ..., source: ...}
+    
+    messages = 
+      if Enum.any?(socket.assigns.messages, &(&1.id == message.id)) do
+        Enum.map(socket.assigns.messages, fn msg -> 
+          if msg.id == message.id, do: message, else: msg
+        end)
+      else
+        socket.assigns.messages ++ [message]
+      end
+
+    {:noreply, assign(socket, :messages, messages)}
   end
 
   defp process_chat_input(form, input) do

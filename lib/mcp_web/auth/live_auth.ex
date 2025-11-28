@@ -49,22 +49,19 @@ defmodule McpWeb.Auth.LiveAuth do
 
 
   def on_mount(:optional_auth, _params, session, socket) do
-    if session["user_token"] do
-      # In a real app, verify token and get user.
-      # For now, we'll just check if user_id is in session or similar.
-      # Or if we are using the simple session auth from earlier:
-      
-      socket =
-        if user_id = session["user_id"] do
-           user = Mcp.Accounts.User.get_by_id!(user_id)
-           assign(socket, :current_user, user)
-        else
-           assign(socket, :current_user, nil)
-        end
-        
-      {:cont, socket}
-    else
-      {:cont, assign(socket, :current_user, nil)}
+    case authenticate_from_session(session) do
+      {:ok, user, claims} ->
+        socket =
+          socket
+          |> assign(:current_user, user)
+          |> assign(:current_context, Auth.get_current_context(claims))
+          |> assign(:authorized_contexts, Auth.get_authorized_contexts(claims))
+          |> assign(:session_id, session["session_id"])
+
+        {:cont, socket}
+
+      {:error, _reason} ->
+        {:cont, assign(socket, :current_user, nil)}
     end
   end
 
@@ -82,6 +79,19 @@ defmodule McpWeb.Auth.LiveAuth do
     #   {:error, _reason} ->
     {:cont, socket}
     # end
+  end
+
+  def on_mount(:require_admin, _params, _session, socket) do
+    if admin?(socket) do
+      {:cont, socket}
+    else
+      socket =
+        socket
+        |> put_flash(:error, "Unauthorized access")
+        |> redirect(to: "/")
+
+      {:halt, socket}
+    end
   end
 
   @doc """
@@ -188,18 +198,7 @@ defmodule McpWeb.Auth.LiveAuth do
     "admin" in authorized_contexts or "super_admin" in authorized_contexts
   end
 
-  def on_mount(:require_admin, _params, _session, socket) do
-    if admin?(socket) do
-      {:cont, socket}
-    else
-      socket =
-        socket
-        |> put_flash(:error, "Unauthorized access")
-        |> redirect(to: "/")
 
-      {:halt, socket}
-    end
-  end
 
   # Private helper functions
 

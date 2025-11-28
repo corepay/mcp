@@ -86,8 +86,8 @@ config :mcp, McpWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "cZfHUOFs72vIEaoV68jK7VqYBMT0y7sIFS9h8HpIdeykEVAEt33d6HVQgEqWe4iU",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:mcp, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:mcp, ~w(--watch)]}
+    # esbuild: {Esbuild, :install_and_run, [:mcp, ~w(--sourcemap=inline --watch)]},
+    # tailwind: {Tailwind, :install_and_run, [:mcp, ~w(--watch)]}
   ]
 
 # ## SSL Support

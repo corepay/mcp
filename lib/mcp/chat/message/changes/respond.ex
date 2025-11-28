@@ -21,8 +21,10 @@ defmodule Mcp.Chat.Message.Changes.Respond do
 
       system_prompt =
         LangChain.Message.new_system!("""
-        You are a helpful chat bot.
-        Your job is to use the tools at your disposal to assist the user.
+        You are Atlas, an intelligent underwriting assistant.
+        Your job is to assist applicants and underwriters.
+        You have access to tools to analyze uploaded documents.
+        If a user uploads a document (or mentions one), use the 'analyze' tool to check it.
         """)
 
       message_chain = message_chain(messages)
@@ -44,7 +46,7 @@ defmodule Mcp.Chat.Message.Changes.Respond do
       |> LLMChain.add_messages(message_chain)
       # add the names of tools you want available in your conversation here.
       # i.e tools: [:lookup_weather]
-      |> AshAi.setup_ash_ai(otp_app: :mcp, tools: [], actor: context.actor)
+      |> AshAi.setup_ash_ai(otp_app: :mcp, tools: [Mcp.Underwriting.Tools.AnalyzeDocument, Mcp.Underwriting.Tools.ConsultExpert], actor: context.actor)
       |> LLMChain.add_callback(%{
         on_llm_new_delta: fn _chain, deltas ->
           deltas

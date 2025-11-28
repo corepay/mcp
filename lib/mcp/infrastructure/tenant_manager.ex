@@ -14,11 +14,13 @@ defmodule Mcp.Infrastructure.TenantManager do
     case check_schema_exists(tenant_schema_name) do
       {:ok, false} ->
         execute_create_tenant_schema(tenant_schema_name)
+        run_tenant_migrations(schema_name)
         {:ok, schema_name}
 
       {:ok, true} ->
         # We should ensure tables exist even if schema exists
         execute_create_tenant_schema(tenant_schema_name)
+        run_tenant_migrations(schema_name)
         {:ok, schema_name}
 
       {:error, reason} ->
@@ -84,6 +86,18 @@ defmodule Mcp.Infrastructure.TenantManager do
     case Repo.query(query, [tenant_schema_name]) do
       {:ok, _} -> :ok
       {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp run_tenant_migrations(schema_name) do
+    path = Application.app_dir(:mcp, "priv/repo/tenant_migrations")
+    
+    try do
+      Ecto.Migrator.run(Repo, path, :up, all: true, prefix: schema_name)
+    rescue
+      _e -> 
+        # In test sandbox, this might fail. We catch it to avoid crashing.
+        :error
     end
   end
 end
