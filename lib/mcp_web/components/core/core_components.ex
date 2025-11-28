@@ -17,23 +17,43 @@ defmodule McpWeb.Core.CoreComponents do
     values: ~w(primary secondary accent info success warning error ghost link outline)
 
   attr :size, :string, default: nil, values: [nil, "lg", "sm", "xs"]
+  attr :navigate, :string, default: nil
+  attr :patch, :string, default: nil
+  attr :href, :string, default: nil
   attr :rest, :global, include: ~w(disabled form name value)
   slot :inner_block, required: true
 
   def button(assigns) do
     ~H"""
-    <button
-      type={@type}
-      class={[
-        "btn",
-        "btn-#{@variant}",
-        @size && "btn-#{@size}",
-        @class
-      ]}
-      {@rest}
-    >
-      {render_slot(@inner_block)}
-    </button>
+    <%= if @navigate || @patch || @href do %>
+      <.link
+        navigate={@navigate}
+        patch={@patch}
+        href={@href}
+        class={[
+          "btn",
+          "btn-#{@variant}",
+          @size && "btn-#{@size}",
+          @class
+        ]}
+        {@rest}
+      >
+        {render_slot(@inner_block)}
+      </.link>
+    <% else %>
+      <button
+        type={@type}
+        class={[
+          "btn",
+          "btn-#{@variant}",
+          @size && "btn-#{@size}",
+          @class
+        ]}
+        {@rest}
+      >
+        {render_slot(@inner_block)}
+      </button>
+    <% end %>
     """
   end
 

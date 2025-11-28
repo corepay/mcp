@@ -18,7 +18,7 @@ if File.exists?(".env") do
     case String.split(line, "=", parts: 2) do
       [key, value] ->
         key = String.trim(key)
-        value = String.trim(value)
+        value = String.trim(value) |> String.trim("\"") |> String.trim("'")
 
         if is_nil(System.get_env(key)) do
           System.put_env(key, value)
@@ -64,6 +64,14 @@ config :mcp, :qorpay,
   client_key: System.get_env("QORPAY_SANDBOX_CLIENT_KEY", "01dffeb784c64d098c8c691ea589eb82"),
   mid: System.get_env("QORPAY_SANDBOX_MID", "887728202")
 
+config :mcp, :comply_cube,
+  api_key: System.get_env("COMPLY_CUBE_API_KEY"),
+  base_url: System.get_env("COMPLY_CUBE_BASE_URL", "https://api.complycube.com/v1")
+
+config :mcp, :idenfy,
+  api_key: System.get_env("IDENFY_API_KEY"),
+  api_secret: System.get_env("IDENFY_API_SECRET")
+
 # Oban configuration
 config :mcp, Oban,
   repo: Mcp.Repo,
@@ -104,6 +112,21 @@ config :mcp, Oban,
 config :ex_cldr, default_backend: Mcp.Cldr
 
 # Configures the endpoint
+config :ex_aws,
+  debug_requests: true,
+  json_codec: Jason,
+  access_key_id: {:system, "MINIO_ACCESS_KEY", "minioadmin"},
+  secret_access_key: {:system, "MINIO_SECRET_KEY", "minioadmin"}
+
+config :ex_aws, :s3,
+  scheme: "http://",
+  host: {:system, "MINIO_HOST", "localhost"},
+  port: {:system, "MINIO_PORT", "9000"},
+  region: "local"
+
+config :mcp, :uploads,
+  bucket: "underwriting-documents"
+
 config :mcp, McpWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,

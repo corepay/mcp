@@ -8,47 +8,52 @@ defmodule Mcp.Underwriting.Document do
     repo Mcp.Repo
   end
 
-  multitenancy do
-    strategy :context
-  end
-
   actions do
     defaults [:read, :destroy]
 
     create :create do
       primary? true
-      accept [:type, :issuing_country, :external_id, :status]
-      argument :client_id, :uuid, allow_nil?: false
-      change manage_relationship(:client_id, :client, type: :append_and_remove)
-    end
-
-    update :update do
-      primary? true
-      accept [:status, :external_id]
+      accept [:file_path, :file_name, :mime_type, :document_type, :application_id]
     end
   end
 
   attributes do
     uuid_primary_key :id
 
-    attribute :type, :atom do
-      constraints one_of: [:passport, :driving_license, :national_identity_card, :utility_bill, :bank_statement, :other]
+    attribute :file_path, :string do
       allow_nil? false
     end
 
-    attribute :issuing_country, :string # ISO 2
-    attribute :external_id, :string # ComplyCube Document ID
+    attribute :file_name, :string do
+      allow_nil? false
+    end
+
+    attribute :mime_type, :string do
+      allow_nil? false
+    end
+
+    attribute :document_type, :atom do
+      constraints [one_of: [:identity, :address, :incorporation, :other]]
+      default :other
+    end
 
     attribute :status, :atom do
-      constraints one_of: [:uploaded, :verified, :rejected, :pending]
+      constraints [one_of: [:pending, :verified, :rejected]]
       default :pending
     end
 
-    timestamps()
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
   end
 
   relationships do
+    belongs_to :application, Mcp.Underwriting.Application
     belongs_to :client, Mcp.Underwriting.Client
-    has_many :checks, Mcp.Underwriting.Check
+  end
+
+  code_interface do
+    define :create
+    define :read
+    define :destroy
   end
 end

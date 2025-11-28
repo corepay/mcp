@@ -86,6 +86,7 @@ defmodule McpWeb.AuthLive.Login do
   defp portal_title(:customer), do: "Customer Account"
   defp portal_title(:vendor), do: "Vendor Portal"
   defp portal_title(:tenant), do: "Tenant Portal"
+  defp portal_title(:ola), do: "Merchant Application"
 
   defp portal_config(context) do
     %{
@@ -107,6 +108,7 @@ defmodule McpWeb.AuthLive.Login do
   defp portal_subtitle(:customer), do: "View your order history and manage subscriptions."
   defp portal_subtitle(:vendor), do: "Manage your products and fulfillment."
   defp portal_subtitle(:tenant), do: "Sign in to your organization's workspace."
+  defp portal_subtitle(:ola), do: "Apply for a merchant account in minutes."
 
   # Theme Colors (Tailwind classes)
   defp portal_theme_color(:admin), do: "slate"
@@ -116,6 +118,7 @@ defmodule McpWeb.AuthLive.Login do
   defp portal_theme_color(:customer), do: "rose"
   defp portal_theme_color(:vendor), do: "cyan"
   defp portal_theme_color(:tenant), do: "indigo"
+  defp portal_theme_color(:ola), do: "blue"
 
   defp bg_color_class(:admin), do: "bg-slate-500"
   defp bg_color_class(:merchant), do: "bg-emerald-500"
@@ -124,6 +127,7 @@ defmodule McpWeb.AuthLive.Login do
   defp bg_color_class(:customer), do: "bg-rose-500"
   defp bg_color_class(:vendor), do: "bg-cyan-500"
   defp bg_color_class(:tenant), do: "bg-indigo-500"
+  defp bg_color_class(:ola), do: "bg-blue-500"
 
   # Gradients
   defp portal_gradient(:admin), do: "from-slate-800 to-zinc-900"
@@ -133,6 +137,7 @@ defmodule McpWeb.AuthLive.Login do
   defp portal_gradient(:customer), do: "from-rose-500 to-pink-600"
   defp portal_gradient(:vendor), do: "from-cyan-600 to-sky-700"
   defp portal_gradient(:tenant), do: "from-blue-600 to-indigo-700"
+  defp portal_gradient(:ola), do: "from-blue-600 to-indigo-700"
 
   # Icons
   defp portal_icon(:admin), do: "hero-server-stack"
@@ -142,6 +147,7 @@ defmodule McpWeb.AuthLive.Login do
   defp portal_icon(:customer), do: "hero-heart"
   defp portal_icon(:vendor), do: "hero-truck"
   defp portal_icon(:tenant), do: "hero-building-office-2"
+  defp portal_icon(:ola), do: "hero-document-text"
 
   # Features
   defp portal_features(:admin), do: ["System Monitoring", "User Management", "Audit Logs"]
@@ -160,6 +166,8 @@ defmodule McpWeb.AuthLive.Login do
   defp portal_features(:tenant),
     do: ["Team Collaboration", "Project Management", "Secure Workspace"]
 
+  defp portal_features(:ola), do: ["Fast Approval", "Secure", "24/7 Support"]
+
   # Placeholder images
   defp portal_image(_), do: nil
 
@@ -173,13 +181,7 @@ defmodule McpWeb.AuthLive.Login do
   defp default_redirect_path(:ola), do: "/online-application/application"
   defp default_redirect_path(_), do: "/tenant"
 
-  defp portal_title(:ola), do: "Merchant Application"
-  defp portal_subtitle(:ola), do: "Apply for a merchant account in minutes."
-  defp portal_theme_color(:ola), do: "blue"
-  defp bg_color_class(:ola), do: "bg-blue-500"
-  defp portal_gradient(:ola), do: "from-blue-600 to-indigo-700"
-  defp portal_icon(:ola), do: "hero-document-text"
-  defp portal_features(:ola), do: ["Fast Approval", "Secure", "24/7 Support"]
+
 
   defp assign_flash_from_session(socket, session) do
     flash_messages = session["flash"] || %{}

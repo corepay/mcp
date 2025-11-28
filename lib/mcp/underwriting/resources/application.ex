@@ -32,7 +32,7 @@ defmodule Mcp.Underwriting.Application do
     uuid_primary_key :id
 
     attribute :status, :atom do
-      constraints one_of: [:draft, :submitted, :under_review, :approved, :rejected, :more_info_required]
+      constraints one_of: [:draft, :submitted, :under_review, :manual_review, :approved, :rejected, :more_info_required]
       default :draft
     end
 
@@ -54,6 +54,8 @@ defmodule Mcp.Underwriting.Application do
 
     has_many :reviews, Mcp.Underwriting.Review
     has_many :clients, Mcp.Underwriting.Client
+    has_many :documents, Mcp.Underwriting.Document
+    has_one :risk_assessment, Mcp.Underwriting.RiskAssessment
   end
 
   code_interface do

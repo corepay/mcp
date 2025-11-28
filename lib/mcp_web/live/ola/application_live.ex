@@ -1,10 +1,8 @@
 defmodule McpWeb.Ola.ApplicationLive do
   use McpWeb, :live_view
 
-  alias Mcp.Underwriting
-  alias Mcp.Underwriting.Application
+  alias Mcp.Underwriting.Application, as: UnderwritingApplication
 
-  alias Mcp.Underwriting.DocumentStorage
 
   @impl true
   def mount(_params, session, socket) do
@@ -16,10 +14,11 @@ defmodule McpWeb.Ola.ApplicationLive do
      |> assign(:tenant_id, tenant_id)
      |> assign(:mode, :selection) # :selection, :chat, :form
      |> assign(:step, 1)
-     |> assign(:form, to_form(%{}))
-     |> assign(:atlas_messages, [
-       %{sender: :ai, content: "Hello! I'm Atlas. How would you like to complete your application today?"}
-     ])}
+     |> assign(:form, to_form(%{}, as: :application))
+      |> assign(:atlas_messages, [
+        %{sender: :ai, content: "Hello! I'm Atlas. How would you like to complete your application today?"}
+      ])
+      |> allow_upload(:documents, accept: ~w(.jpg .jpeg .png .pdf), max_entries: 5)}
   end
 
   @impl true
@@ -42,8 +41,9 @@ defmodule McpWeb.Ola.ApplicationLive do
 
   @impl true
   def handle_event("validate", %{"application" => params}, socket) do
-    # Validation logic will go here
-    {:noreply, assign(socket, :form, to_form(params))}
+    existing_params = socket.assigns.form.params || %{}
+    new_params = Map.merge(existing_params, params)
+    {:noreply, assign(socket, :form, to_form(new_params, as: :application))}
   end
 
   @impl true
@@ -59,32 +59,72 @@ defmodule McpWeb.Ola.ApplicationLive do
 
   @impl true
   def handle_event("save", %{"application" => params}, socket) do
-    # If we have a signature and we are on the last step (or submitting)
-    # We should upload it.
+    # Create the application record
+    # For now, we assume we have a merchant_id in the session or create a placeholder one
+    # In a real flow, the merchant would be created during registration
     
-    # For now, let's assume we create the application record first to get an ID
-    # But we might not have an ID yet if we haven't saved.
-    # We can use a temporary ID or just the tenant_id and a timestamp/random string for now
-    # until we actually create the record.
+    # Use accumulated params from the form assign, merged with current submission
+    # This ensures data from previous steps (not in DOM) is preserved
+    accumulated_params = socket.assigns.form.params || %{}
+    final_params = Map.merge(accumulated_params, params)
     
-    # In a real app, we'd probably create the Application record early (draft status).
+    # Placeholder: Fetch or create a merchant for this user
+    # For this demo, we'll just query the first merchant or create a dummy one if needed
+    # But strictly, we should have a merchant_id from the context.
     
-    # Let's simulate saving the signature if present
-    if params["signature"] && params["signature"] != "" do
-      # We need an applicant_id. For now, use a placeholder or generate one.
-      applicant_id = "temp_#{Ecto.UUID.generate()}" 
-      
-      case DocumentStorage.upload_signature(socket.assigns.tenant_id, applicant_id, params["signature"]) do
-        {:ok, key} -> 
-          IO.puts("Signature uploaded to: #{key}")
-          # Update params with the key or store it separately
-        {:error, reason} ->
-          IO.inspect(reason, label: "Signature Upload Failed")
+    tenant = Mcp.Platform.Tenant.get_by_id!(socket.assigns.tenant_id)
+    
+    # HACK: For demo purposes, finding ANY merchant to attach to.
+    # In production, `socket.assigns.current_user.merchant_id` would be used.
+    merchant = Mcp.Platform.Merchant.read!(tenant: tenant.company_schema) |> List.first()
+    
+    if merchant do
+      case UnderwritingApplication.create(%{
+        merchant_id: merchant.id,
+        status: :submitted,
+        application_data: final_params
+      }, tenant: tenant.company_schema) do
+        {:ok, application} ->
+          # Consume uploaded files
+          consume_uploaded_entries(socket, :documents, fn %{path: path}, entry ->
+            file_name = entry.client_name
+            mime_type = entry.client_type
+            
+            # Upload to S3/MinIO
+            bucket = Application.get_env(:mcp, :uploads)[:bucket]
+            s3_path = "applications/#{application.id}/#{file_name}"
+            
+            ExAws.S3.put_object(bucket, s3_path, File.read!(path))
+            |> ExAws.request!()
+            
+            # Create Document record
+            Mcp.Underwriting.Document.create!(%{
+              application_id: application.id,
+              file_path: s3_path,
+              file_name: file_name,
+              mime_type: mime_type,
+              document_type: :other # Default for now, could be mapped from input name if we used separate uploads
+            }, tenant: tenant.company_schema)
+            
+            {:ok, s3_path}
+          end)
+        
+          # Trigger Async Screening
+          Task.start(fn -> 
+            Mcp.Underwriting.Gateway.screen_application(application.id, tenant: tenant.company_schema) 
+          end)
+          
+          {:noreply, 
+           socket
+           |> put_flash(:info, "Application submitted successfully!")
+           |> push_navigate(to: ~p"/online-application/login")}
+           
+        {:error, changeset} ->
+          {:noreply, assign(socket, :form, to_form(changeset))}
       end
+    else
+      {:noreply, put_flash(socket, :error, "No merchant account found. Please contact support.")}
     end
-
-    # Proceed with saving application...
-    {:noreply, socket}
   end
 
   @impl true
@@ -96,7 +136,7 @@ defmodule McpWeb.Ola.ApplicationLive do
     # For this mock, we'll just map the answer to the current field and move to next
     
     # Simple state machine for demo purposes
-    {response, next_field, updated_form} = process_chat_input(socket.assigns.form, message)
+    {response, _next_field, updated_form} = process_chat_input(socket.assigns.form, message)
     
     # 3. Add AI response
     messages = messages ++ [%{sender: :ai, content: response}]
@@ -105,6 +145,18 @@ defmodule McpWeb.Ola.ApplicationLive do
      socket 
      |> assign(:atlas_messages, messages)
      |> assign(:form, updated_form)}
+  end
+
+
+
+  @impl true
+  def handle_event("prev_step", _params, socket) do
+    {:noreply, assign(socket, :step, socket.assigns.step - 1)}
+  end
+
+  @impl true
+  def handle_event("next_step", _params, socket) do
+    {:noreply, assign(socket, :step, socket.assigns.step + 1)}
   end
 
   defp process_chat_input(form, input) do
@@ -133,10 +185,5 @@ defmodule McpWeb.Ola.ApplicationLive do
       true ->
         {"I think I have everything I need for the basics! You can review the application form now.", "done", form}
     end
-  end
-
-  @impl true
-  def handle_event("prev_step", _params, socket) do
-    {:noreply, assign(socket, :step, socket.assigns.step - 1)}
   end
 end

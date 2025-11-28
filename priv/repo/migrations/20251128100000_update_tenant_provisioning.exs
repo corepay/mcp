@@ -87,6 +87,7 @@ defmodule Mcp.Repo.Migrations.UpdateTenantProvisioning do
                 recommendation TEXT,
                 risk_level TEXT,
                 merchant_id UUID,
+                application_id UUID,
                 inserted_at TIMESTAMP NOT NULL,
                 updated_at TIMESTAMP NOT NULL
             )', schema_name);
@@ -126,10 +127,12 @@ defmodule Mcp.Repo.Migrations.UpdateTenantProvisioning do
         EXECUTE format('
             CREATE TABLE IF NOT EXISTS %I.underwriting_documents (
                 id UUID PRIMARY KEY,
-                type TEXT NOT NULL,
-                issuing_country TEXT,
-                external_id TEXT,
+                file_path TEXT NOT NULL,
+                file_name TEXT NOT NULL,
+                mime_type TEXT NOT NULL,
+                document_type TEXT DEFAULT ''other'',
                 status TEXT DEFAULT ''pending'',
+                application_id UUID,
                 client_id UUID,
                 inserted_at TIMESTAMP NOT NULL,
                 updated_at TIMESTAMP NOT NULL

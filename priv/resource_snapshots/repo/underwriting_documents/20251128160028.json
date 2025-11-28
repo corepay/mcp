@@ -13,8 +13,56 @@
       "type": "uuid"
     },
     {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "file_path",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "file_name",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "mime_type",
+      "type": "text"
+    },
+    {
       "allow_nil?": true,
-      "default": "\"draft\"",
+      "default": "\"other\"",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "document_type",
+      "type": "text"
+    },
+    {
+      "allow_nil?": true,
+      "default": "\"pending\"",
       "generated?": false,
       "precision": null,
       "primary_key?": false,
@@ -23,30 +71,6 @@
       "size": null,
       "source": "status",
       "type": "text"
-    },
-    {
-      "allow_nil?": true,
-      "default": "%{}",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "application_data",
-      "type": "map"
-    },
-    {
-      "allow_nil?": true,
-      "default": "0",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "risk_score",
-      "type": "bigint"
     },
     {
       "allow_nil?": false,
@@ -91,16 +115,16 @@
           "global": false,
           "strategy": "context"
         },
-        "name": "underwriting_applications_merchant_id_fkey",
+        "name": "underwriting_documents_application_id_fkey",
         "on_delete": null,
         "on_update": null,
         "primary_key?": true,
         "schema": "public",
-        "table": "merchants"
+        "table": "underwriting_applications"
       },
       "scale": null,
       "size": null,
-      "source": "merchant_id",
+      "source": "application_id",
       "type": "uuid"
     }
   ],
@@ -109,14 +133,14 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "AC4D27865272A56F14F8D8EEDC5D951D75E704589FE5AACDA91D11751494D341",
+  "hash": "5336FA848E626D5C1DFC76C68127FB9D1EF565773C79151743F40B5F3F678178",
   "identities": [],
   "multitenancy": {
     "attribute": null,
-    "global": false,
-    "strategy": "context"
+    "global": null,
+    "strategy": null
   },
   "repo": "Elixir.Mcp.Repo",
   "schema": null,
-  "table": "underwriting_applications"
+  "table": "underwriting_documents"
 }

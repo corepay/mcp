@@ -13,51 +13,15 @@
       "type": "uuid"
     },
     {
-      "allow_nil?": false,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "type",
-      "type": "text"
-    },
-    {
       "allow_nil?": true,
-      "default": "nil",
+      "default": "\"draft\"",
       "generated?": false,
       "precision": null,
       "primary_key?": false,
       "references": null,
       "scale": null,
       "size": null,
-      "source": "email",
-      "type": "text"
-    },
-    {
-      "allow_nil?": true,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "phone",
-      "type": "text"
-    },
-    {
-      "allow_nil?": true,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "external_id",
+      "source": "status",
       "type": "text"
     },
     {
@@ -69,20 +33,20 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "person_details",
+      "source": "application_data",
       "type": "map"
     },
     {
       "allow_nil?": true,
-      "default": "%{}",
+      "default": "0",
       "generated?": false,
       "precision": null,
       "primary_key?": false,
       "references": null,
       "scale": null,
       "size": null,
-      "source": "company_details",
-      "type": "map"
+      "source": "risk_score",
+      "type": "bigint"
     },
     {
       "allow_nil?": false,
@@ -124,19 +88,19 @@
         "match_with": null,
         "multitenancy": {
           "attribute": null,
-          "global": null,
-          "strategy": null
+          "global": false,
+          "strategy": "context"
         },
-        "name": "underwriting_clients_application_id_fkey",
+        "name": "underwriting_applications_merchant_id_fkey",
         "on_delete": null,
         "on_update": null,
         "primary_key?": true,
         "schema": "public",
-        "table": "underwriting_applications"
+        "table": "merchants"
       },
       "scale": null,
       "size": null,
-      "source": "application_id",
+      "source": "merchant_id",
       "type": "uuid"
     }
   ],
@@ -145,14 +109,14 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "392E7B5D23C04A336F20DCB9921C813CE72B27F6F9FC67D0383B3A5FC2EA7FEF",
+  "hash": "E041E2C1F5ED459DADA1F1ADD50F4CBB06B9DA6924E4DDA56DB1100794C10C27",
   "identities": [],
   "multitenancy": {
     "attribute": null,
-    "global": null,
-    "strategy": null
+    "global": false,
+    "strategy": "context"
   },
   "repo": "Elixir.Mcp.Repo",
   "schema": null,
-  "table": "underwriting_clients"
+  "table": "underwriting_applications"
 }

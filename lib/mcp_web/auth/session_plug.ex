@@ -152,6 +152,7 @@ defmodule McpWeb.Auth.SessionPlug do
         conn
         |> assign(:current_user, user_data)
         |> assign(:current_session, session_data)
+        |> put_session("user_token", access_token)
         |> maybe_refresh_session(opts)
 
       {:error, _reason} ->
@@ -162,6 +163,7 @@ defmodule McpWeb.Auth.SessionPlug do
             |> set_jwt_session(new_session_data)
             |> assign(:current_session, new_session_data)
             |> assign(:current_user, new_session_data.user)
+            |> put_session("user_token", new_session_data.access_token)
 
           {:error, _refresh_reason} ->
             handle_invalid_session(conn, :invalid_token, opts)

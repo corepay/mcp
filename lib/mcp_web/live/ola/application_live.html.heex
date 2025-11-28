@@ -178,12 +178,15 @@
               
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="form-control w-full">
-                  <label class="label"><span class="label-text">Business License</span></label>
-                  <input type="file" class="file-input file-input-bordered w-full" />
-                </div>
-                <div class="form-control w-full">
-                  <label class="label"><span class="label-text">Driver's License (Front)</span></label>
-                  <input type="file" class="file-input file-input-bordered w-full" />
+                  <label class="label"><span class="label-text">Upload Documents</span></label>
+                  <.live_file_input upload={@uploads.documents} class="file-input file-input-bordered w-full" />
+                  
+                  <%= for entry <- @uploads.documents.entries do %>
+                    <div class="text-sm text-gray-500 mt-1">
+                      <%= entry.client_name %> - <%= entry.progress %>%
+                      <button type="button" phx-click="cancel-upload" phx-value-ref={entry.ref} aria-label="cancel">&times;</button>
+                    </div>
+                  <% end %>
                 </div>
               </div>
               

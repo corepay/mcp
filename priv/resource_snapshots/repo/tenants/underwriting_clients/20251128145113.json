@@ -26,26 +26,26 @@
     },
     {
       "allow_nil?": true,
-      "default": "\"pending\"",
+      "default": "nil",
       "generated?": false,
       "precision": null,
       "primary_key?": false,
       "references": null,
       "scale": null,
       "size": null,
-      "source": "status",
+      "source": "email",
       "type": "text"
     },
     {
       "allow_nil?": true,
-      "default": "\"none\"",
+      "default": "nil",
       "generated?": false,
       "precision": null,
       "primary_key?": false,
       "references": null,
       "scale": null,
       "size": null,
-      "source": "outcome",
+      "source": "phone",
       "type": "text"
     },
     {
@@ -62,14 +62,26 @@
     },
     {
       "allow_nil?": true,
-      "default": "nil",
+      "default": "%{}",
       "generated?": false,
       "precision": null,
       "primary_key?": false,
       "references": null,
       "scale": null,
       "size": null,
-      "source": "raw_result",
+      "source": "person_details",
+      "type": "map"
+    },
+    {
+      "allow_nil?": true,
+      "default": "%{}",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "company_details",
       "type": "map"
     },
     {
@@ -115,47 +127,16 @@
           "global": false,
           "strategy": "context"
         },
-        "name": "underwriting_checks_client_id_fkey",
+        "name": "underwriting_clients_application_id_fkey",
         "on_delete": null,
         "on_update": null,
         "primary_key?": true,
         "schema": "public",
-        "table": "underwriting_clients"
+        "table": "underwriting_applications"
       },
       "scale": null,
       "size": null,
-      "source": "client_id",
-      "type": "uuid"
-    },
-    {
-      "allow_nil?": true,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": {
-        "deferrable": false,
-        "destination_attribute": "id",
-        "destination_attribute_default": null,
-        "destination_attribute_generated": null,
-        "index?": false,
-        "match_type": null,
-        "match_with": null,
-        "multitenancy": {
-          "attribute": null,
-          "global": false,
-          "strategy": "context"
-        },
-        "name": "underwriting_checks_document_id_fkey",
-        "on_delete": null,
-        "on_update": null,
-        "primary_key?": true,
-        "schema": "public",
-        "table": "underwriting_documents"
-      },
-      "scale": null,
-      "size": null,
-      "source": "document_id",
+      "source": "application_id",
       "type": "uuid"
     }
   ],
@@ -164,7 +145,7 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "0F7616126FA110D875AE19A8D633ED47E19B83E0F5B8EB353BE5ED24DB9C972A",
+  "hash": "4789FB702D7CAF5AD738742CBE0DF51061A9ADCC103DF901E7C72E0056315CC6",
   "identities": [],
   "multitenancy": {
     "attribute": null,
@@ -173,5 +154,5 @@
   },
   "repo": "Elixir.Mcp.Repo",
   "schema": null,
-  "table": "underwriting_checks"
+  "table": "underwriting_clients"
 }

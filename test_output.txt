@@ -1,86 +1,103 @@
-    warning: the following clause will never match:
-
-        {:error, reason}
-
-    because it attempts to match on the result of:
-
-        adapter.create_merchant(params, %{})
-
-    which has type:
-
-        dynamic({:ok, %{merchant_id: binary(), status: binary()}})
-
-    typing violation found at:
+    warning: no route path for McpWeb.Router matches "/admin/underwriting"
     │
- 53 │       {:error, reason} ->
-    │       ~~~~~~~~~~~~~~~~~~~
+ 37 │           <.link navigate={~p"/admin/underwriting"} class="text-sm hover:underline mb-2 block text-zinc-500">
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     │
-    └─ lib/mcp_web/controllers/payments_controller.ex:53: McpWeb.PaymentsController.board_merchant/2
+    └─ lib/mcp_web/live/admin/review_live.ex:37: McpWeb.Admin.ReviewLive.render/1
 
-    warning: the following clause will never match:
+     warning: no route path for McpWeb.Router matches "/admin/underwriting"
+     │
+ 173 │      |> push_navigate(to: ~p"/admin/underwriting")}
+     │                             ~
+     │
+     └─ lib/mcp_web/live/admin/review_live.ex:173: McpWeb.Admin.ReviewLive.handle_event/3
 
-        {:error, reason}
+     warning: no route path for McpWeb.Router matches "/admin/underwriting"
+     │
+ 183 │      |> push_navigate(to: ~p"/admin/underwriting")}
+     │                             ~
+     │
+     └─ lib/mcp_web/live/admin/review_live.ex:183: McpWeb.Admin.ReviewLive.handle_event/3
 
-    because it attempts to match on the result of:
+     warning: no route path for McpWeb.Router matches "/admin/underwriting"
+     │
+ 193 │      |> push_navigate(to: ~p"/admin/underwriting")}
+     │                             ~
+     │
+     └─ lib/mcp_web/live/admin/review_live.ex:193: McpWeb.Admin.ReviewLive.handle_event/3
 
-        adapter.create_form_session(params, %{})
-
-    which has type:
-
-        dynamic({:ok, %{session_id: binary(), url: binary()}})
-
-    typing violation found at:
+    warning: no route path for McpWeb.Router matches "/admin/underwriting/#{app.id}"
     │
- 66 │       {:error, reason} ->
-    │       ~~~~~~~~~~~~~~~~~~~
+ 94 │                   <.link navigate={~p"/admin/underwriting/#{app.id}"} class="btn btn-ghost btn-xs">
+    │                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     │
-    └─ lib/mcp_web/controllers/payments_controller.ex:66: McpWeb.PaymentsController.create_form_session/2
-
-     warning: clauses with the same name and arity (number of arguments) should be grouped together, "def get_audit_trail/2" was previously defined (lib/mcp_web/controllers/gdpr_controller.ex:409)
-     │
- 453 │   def get_audit_trail(conn, _params) do
-     │       ~
-     │
-     └─ lib/mcp_web/controllers/gdpr_controller.ex:453:7
-
-     warning: clauses with the same name and arity (number of arguments) should be grouped together, "defp validate_consent_params/1" was previously defined (lib/mcp_web/controllers/gdpr_controller.ex:678)
-     │
- 717 │   defp validate_consent_params(_), do: {:error, "Consent params must be a map"}
-     │        ~
-     │
-     └─ lib/mcp_web/controllers/gdpr_controller.ex:717:8
-
-     warning: variable "key" is unused (if the variable is not meant to be used, prefix it with an underscore)
-     │
- 315 │   defp validate_param_value(key, value) when is_binary(value) do
-     │                             ~~~
-     │
-     └─ lib/mcp_web/input_validation.ex:315:29: McpWeb.InputValidation.validate_param_value/2
-
-     warning: clauses with the same name and arity (number of arguments) should be grouped together, "defp validate_safety_of_params/2" was previously defined (lib/mcp_web/input_validation.ex:301)
-     │
- 321 │   defp validate_safety_of_params(_, _), do: {:error, :invalid_params}
-     │        ~
-     │
-     └─ lib/mcp_web/input_validation.ex:321:8
+    └─ lib/mcp_web/live/admin/underwriting_live.ex:94: McpWeb.Admin.UnderwritingLive.render/1
 
 Running ExUnit with seed: 0, max_cases: 20
 Excluding tags: [:slow, :integration, :external_api, :performance]
 
 
 
-  1) test tokenizes bank account and creates payment method (McpWeb.PaymentMethodsControllerAchTest)
-     test/mcp_web/controllers/payment_methods_controller_ach_test.exs:18
-     ** (RuntimeError) expected response with status 201, got: 422, with body:
-     "{\"message\":\"%Reactor.Error.Invalid{errors: [%Reactor.Error.Invalid.RunStepError{error: %Ash.Error.Invalid{bread_crumbs: [\\\"Error returned from: Mcp.Payments.PaymentMethod.create\\\"],  changeset: \\\"#Changeset<>\\\",  errors: [%Ash.Error.Invalid.NoSuchInput{calculation: nil, resource: Mcp.Payments.PaymentMethod, action: :create, input: :account_holder_name, inputs: MapSet.new([:type, :provider, :customer_id, :provider_token, :last4, :brand, :exp_month, :exp_year, \\\"brand\\\", \\\"customer_id\\\", \\\"exp_month\\\", \\\"exp_year\\\", \\\"last4\\\", \\\"provider\\\", \\\"provider_token\\\", \\\"type\\\"]), did_you_mean: [], splode: Ash.Error, bread_crumbs: [\\\"Error returned from: Mcp.Payments.PaymentMethod.create\\\"], vars: [], path: [], stacktrace: #Splode.Stacktrace<>, class: :invalid}, %Ash.Error.Invalid.NoSuchInput{calculation: nil, resource: Mcp.Payments.PaymentMethod, action: :create, input: :account_type, inputs: MapSet.new([:type, :provider, :customer_id, :provider_token, :last4, :brand, :exp_month, :exp_year, \\\"brand\\\", \\\"customer_id\\\", \\\"exp_month\\\", \\\"exp_year\\\", \\\"last4\\\", \\\"provider\\\", \\\"provider_token\\\", \\\"type\\\"]), did_you_mean: [], splode: Ash.Error, bread_crumbs: [\\\"Error returned from: Mcp.Payments.PaymentMethod.create\\\"], vars: [], path: [], stacktrace: #Splode.Stacktrace<>, class: :invalid}, %Ash.Error.Invalid.NoSuchInput{calculation: nil, resource: Mcp.Payments.PaymentMethod, action: :create, input: :bank_name, inputs: MapSet.new([:type, :provider, :customer_id, :provider_token, :last4, :brand, :exp_month, :exp_year, \\\"brand\\\", \\\"customer_id\\\", \\\"exp_month\\\", \\\"exp_year\\\", \\\"last4\\\", \\\"provider\\\", \\\"provider_token\\\", \\\"type\\\"]), did_you_mean: [], splode: Ash.Error, bread_crumbs: [\\\"Error returned from: Mcp.Payments.PaymentMethod.create\\\"], vars: [], path: [], stacktrace: #Splode.Stacktrace<>, class: :invalid}, %Ash.Error.Invalid.NoSuchInput{calculation: nil, resource: Mcp.Payments.PaymentMethod, action: :create, input: :last4_account, inputs: MapSet.new([:type, :provider, :customer_id, :provider_token, :last4, :brand, :exp_month, :exp_year, \\\"brand\\\", \\\"customer_id\\\", \\\"exp_month\\\", \\\"exp_year\\\", \\\"last4\\\", \\\"provider\\\", \\\"provider_token\\\", \\\"type\\\"]), did_you_mean: [], splode: Ash.Error, bread_crumbs: [\\\"Error returned from: Mcp.Payments.PaymentMethod.create\\\"], vars: [], path: [], stacktrace: #Splode.Stacktrace<>, class: :invalid}]}, step: %Reactor.Step{arguments: [%Reactor.Argument{description: nil, name: :token_data, source: %Reactor.Template.Result{name: :tokenize_card, sub_path: []}, transform: nil}, %Reactor.Argument{description: nil, name: :type, source: %Reactor.Template.Input{name: :type, sub_path: []}, transform: nil}, %Reactor.Argument{description: nil, name: :provider, source: %Reactor.Template.Input{name: :provider, sub_path: []}, transform: nil}, %Reactor.Argument{description: nil, name: :customer_id, source: %Reactor.Template.Input{name: :customer_id, sub_path: []}, transform: nil}], async?: true, context: %{}, description: nil, impl: {Reactor.Step.AnonFn, [run: &Mcp.Payments.PaymentMethodReactor.run_0_generated_A463591D72CA5E31CC0872BFA71B3E57/2, compensate: nil, undo: nil, backoff: nil]}, name: :create_resource, max_retries: :infinity, ref: :create_resource, transform: nil, guards: []}, splode: Reactor.Error, bread_crumbs: [], vars: [], path: [], stacktrace: #Splode.Stacktrace<>, class: :invalid}], splode: Reactor.Error, bread_crumbs: [], vars: [], path: [], stacktrace: #Splode.Stacktrace<>, class: :unknown}\",\"status\":\"error\"}"
-     code: assert %{"status" => "success", "data" => data} = json_response(conn, 201)
+  1) test Admin Underwriting lists applications on dashboard (McpWeb.Admin.UnderwritingLiveTest)
+     test/mcp_web/live/admin/underwriting_live_test.exs:81
+     ** (Ash.Error.Invalid) 
+     Bread Crumbs:
+       > Error returned from: Mcp.Platform.Merchant.create
+
+     Invalid Error
+
+     * No such input `email` for action Mcp.Platform.Merchant.create
+
+     No such attribute on Mcp.Platform.Merchant, or argument on Mcp.Platform.Merchant.create
+
+     Valid Inputs:
+
+     * slug
+     * address_line2
+     * dba_name
+     * risk_level
+     * ein
+     * plan
+     * description
+     * country
+     * support_email
+     * phone
+     * subdomain
+     * website_url
+     * business_type
+     * state
+     * address_line1
+     * status
+     * city
+     * business_name
+     * custom_domain
+     * reseller_id
+     * postal_code
+
+
+       (ash 3.9.0) lib/ash/error/invalid/no_such_input.ex:8: Ash.Error.Invalid.NoSuchInput."exception (overridable 2)"/1
+       (ash 3.9.0) lib/ash/changeset/changeset.ex:3045: anonymous fn/4 in Ash.Changeset.cast_params/4
+       (stdlib 7.0.2) maps.erl:894: :maps.fold_1/4
+       (ash 3.9.0) lib/ash/changeset/changeset.ex:2736: Ash.Changeset.handle_params/4
+       (ash 3.9.0) lib/ash/changeset/changeset.ex:2572: Ash.Changeset.do_for_action/4
+       test/mcp_web/live/admin/underwriting_live_test.exs:34: McpWeb.Admin.UnderwritingLiveTest.__ex_unit_setup_0_0/1
+       McpWeb.Admin.UnderwritingLiveTest.__ex_unit_describe_0/1
+       (ex_unit 1.18.4) lib/ex_unit/runner.ex:504: ExUnit.Runner.exec_test_setup/2
+       (ex_unit 1.18.4) lib/ex_unit/runner.ex:437: anonymous fn/2 in ExUnit.Runner.spawn_test_monitor/4
+       (stdlib 7.0.2) timer.erl:599: :timer.tc/2
+       (ex_unit 1.18.4) lib/ex_unit/runner.ex:433: anonymous fn/6 in ExUnit.Runner.spawn_test_monitor/4
      stacktrace:
-       (phoenix 1.8.1) lib/phoenix/test/conn_test.ex:373: Phoenix.ConnTest.response/2
-       (phoenix 1.8.1) lib/phoenix/test/conn_test.ex:419: Phoenix.ConnTest.json_response/2
-       test/mcp_web/controllers/payment_methods_controller_ach_test.exs:49: (test)
+       (ash 3.9.0) lib/ash/error/invalid.ex:7: Ash.Error.Invalid.exception/1
+       (ash 3.9.0) /Users/rp/Developer/Base/mcp/deps/splode/lib/splode.ex:264: Ash.Error.to_class/2
+       (ash 3.9.0) lib/ash/error/error.ex:112: Ash.Error.to_error_class/2
+       (ash 3.9.0) lib/ash/actions/create/create.ex:170: Ash.Actions.Create.do_run/4
+       (ash 3.9.0) lib/ash/actions/create/create.ex:54: Ash.Actions.Create.run/4
+       (ash 3.9.0) lib/ash.ex:3055: Ash.create!/3
+       test/mcp_web/live/admin/underwriting_live_test.exs:40: McpWeb.Admin.UnderwritingLiveTest.__ex_unit_setup_0_0/1
+       McpWeb.Admin.UnderwritingLiveTest.__ex_unit_describe_0/1
 
 --max-failures reached, aborting test suite
-Finished in 0.3 seconds (0.00s async, 0.3s sync)
+Finished in 0.6 seconds (0.00s async, 0.6s sync)
 1 test, 1 failure
-[os_mon] cpu supervisor port (cpu_sup): Erlang has closed
 [os_mon] memory supervisor port (memsup): Erlang has closed
+[os_mon] cpu supervisor port (cpu_sup): Erlang has closed

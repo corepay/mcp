@@ -21,32 +21,32 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "decision",
-      "type": "text"
-    },
-    {
-      "allow_nil?": true,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "notes",
-      "type": "text"
-    },
-    {
-      "allow_nil?": true,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "risk_score",
+      "source": "score",
       "type": "bigint"
+    },
+    {
+      "allow_nil?": true,
+      "default": "%{}",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "factors",
+      "type": "map"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "recommendation",
+      "type": "text"
     },
     {
       "allow_nil?": false,
@@ -88,10 +88,41 @@
         "match_with": null,
         "multitenancy": {
           "attribute": null,
-          "global": null,
-          "strategy": null
+          "global": false,
+          "strategy": "context"
         },
-        "name": "underwriting_reviews_application_id_fkey",
+        "name": "risk_assessments_merchant_id_fkey",
+        "on_delete": null,
+        "on_update": null,
+        "primary_key?": true,
+        "schema": "public",
+        "table": "merchants"
+      },
+      "scale": null,
+      "size": null,
+      "source": "merchant_id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": {
+        "deferrable": false,
+        "destination_attribute": "id",
+        "destination_attribute_default": null,
+        "destination_attribute_generated": null,
+        "index?": false,
+        "match_type": null,
+        "match_with": null,
+        "multitenancy": {
+          "attribute": null,
+          "global": false,
+          "strategy": "context"
+        },
+        "name": "risk_assessments_application_id_fkey",
         "on_delete": null,
         "on_update": null,
         "primary_key?": true,
@@ -109,14 +140,14 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "A5142F273F58B53F9CCCB8A8EE293F03A7E71E60CB60F75939FB0554424A42ED",
+  "hash": "2AFEAC64594502C2C578B281BCF39FBD0164AAC8B0564C74895EC8DEC5E7DD5C",
   "identities": [],
   "multitenancy": {
     "attribute": null,
-    "global": null,
-    "strategy": null
+    "global": false,
+    "strategy": "context"
   },
   "repo": "Elixir.Mcp.Repo",
   "schema": null,
-  "table": "underwriting_reviews"
+  "table": "risk_assessments"
 }

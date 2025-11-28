@@ -8,31 +8,34 @@ defmodule Mcp.Repo.Migrations.CreateUnderwritingAndFixFinance do
   use Ecto.Migration
 
   def up do
-    create_if_not_exists table(:underwriting_reviews, primary_key: false, prefix: "public") do
-      add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-      add :decision, :text, null: false
-      add :risk_score, :decimal
-      add :reviewer_notes, :text
-      add :model_version, :text
+    execute "SET search_path = public, platform"
+    execute "CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public"
 
-      add :reviewer_id,
-          references(:users,
-            column: :id,
-            name: "underwriting_reviews_reviewer_id_fkey",
-            type: :uuid,
-            prefix: "platform"
-          )
-
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :application_id, :uuid, null: false
-    end
+    # create_if_not_exists table(:underwriting_reviews, primary_key: false, prefix: "public") do
+    #   add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+    #   add :decision, :text, null: false
+    #   add :risk_score, :decimal
+    #   add :reviewer_notes, :text
+    #   add :model_version, :text
+    #
+    #   add :reviewer_id,
+    #       references(:users,
+    #         column: :id,
+    #         name: "underwriting_reviews_reviewer_id_fkey",
+    #         type: :uuid,
+    #         prefix: "platform"
+    #       )
+    #
+    #   add :inserted_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    #
+    #   add :updated_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    #
+    #   add :application_id, :uuid, null: false
+    # end
 
     execute("CREATE SCHEMA IF NOT EXISTS platform")
 
@@ -121,30 +124,50 @@ defmodule Mcp.Repo.Migrations.CreateUnderwritingAndFixFinance do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
-    alter table(:underwriting_reviews, prefix: "public") do
-      modify :application_id,
-             references(:underwriting_applications,
-               column: :id,
-               name: "underwriting_reviews_application_id_fkey",
-               type: :uuid,
-               prefix: "public"
-             )
-    end
+    # alter table(:underwriting_reviews, prefix: "public") do
+    #   modify :application_id,
+    #          references(:underwriting_applications,
+    #            column: :id,
+    #            name: "underwriting_reviews_application_id_fkey",
+    #            type: :uuid,
+    #            prefix: "public"
+    #          )
+    # end
 
     alter table(:underwriting_applications, prefix: "public") do
-      add :status, :text, null: false, default: "draft"
-      add :application_data, :map, default: %{}
-      add :risk_score, :bigint
-      add :merchant_id, :uuid
+      add :status, :text,
+        null: false,
+        default: "draft",
+        primary_key: false
+
+      add :application_data, :map, default: %{}, primary_key: false
+      add :risk_score, :bigint, default: 0, primary_key: false
 
       add :inserted_at, :utc_datetime_usec,
         null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
+        default: fragment("(now() AT TIME ZONE 'utc')"),
+        primary_key: false
 
       add :updated_at, :utc_datetime_usec,
         null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
+        default: fragment("(now() AT TIME ZONE 'utc')"),
+        primary_key: false
+
+      add :merchant_id,
+          references(:merchants,
+            column: :id,
+            name: "underwriting_applications_merchant_id_fkey",
+            type: :uuid,
+            prefix: "platform"
+          ),
+          primary_key: false,
+          allow_nil: false
     end
+
+    create constraint(:underwriting_applications, :underwriting_applications_status_check,
+             check:
+               "status IN ('draft', 'submitted', 'under_review', 'manual_review', 'approved', 'rejected', 'more_info_required')"
+           )
 
     drop_if_exists index(:users, [:email], prefix: "platform")
 
@@ -162,29 +185,17 @@ defmodule Mcp.Repo.Migrations.CreateUnderwritingAndFixFinance do
 
     # rename table(:tenants, prefix: "platform"), :company_name, to: :name
 
-    alter table(:tenant_settings) do
-      modify :tenant_id, :uuid
-    end
-
-    alter table(:tenant_branding) do
-      modify :tenant_id, :uuid
-    end
-
-    create_if_not_exists table(:underwriting_risk_assessments, primary_key: false, prefix: "public") do
+    create_if_not_exists table(:tenant_settings, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-      add :risk_score, :decimal
-      add :risk_level, :text
-      add :risk_factors, :map, default: %{}
-      add :recommended_actions, :map, default: %{}
-      add :merchant_id, :uuid
-
-      add :application_id,
-          references(:underwriting_applications,
-            column: :id,
-            name: "underwriting_risk_assessments_application_id_fkey",
-            type: :uuid,
-            prefix: "public"
-          )
+      add :tenant_id, :uuid, null: false
+      add :category, :text, null: false
+      add :key, :text, null: false
+      add :value, :map
+      add :value_type, :text, null: false, default: "string"
+      add :description, :text
+      add :last_updated_by, :text
+      add :encrypted, :boolean, default: false
+      add :validation_rules, :map, default: %{}
 
       add :inserted_at, :utc_datetime_usec,
         null: false,
@@ -195,11 +206,20 @@ defmodule Mcp.Repo.Migrations.CreateUnderwritingAndFixFinance do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create_if_not_exists table(:documents, primary_key: false, prefix: "public") do
+    create_if_not_exists table(:tenant_branding, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-      add :content, :text, null: false
-      add :metadata, :map, null: false, default: %{}
-      add :embedding, :vector
+      add :tenant_id, :uuid, null: false
+      add :name, :text, null: false
+      add :primary_color, :text
+      add :secondary_color, :text
+      add :accent_color, :text
+      add :background_color, :text
+      add :text_color, :text
+      add :theme, :text, default: "light"
+      add :font_family, :text
+      add :logo_url, :text
+      add :created_by, :text
+      add :is_active, :boolean, default: false
 
       add :inserted_at, :utc_datetime_usec,
         null: false,
@@ -210,14 +230,54 @@ defmodule Mcp.Repo.Migrations.CreateUnderwritingAndFixFinance do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    drop_if_exists index(:documents, ["embedding vector_cosine_ops"],
-                     name: "documents_embedding_index"
-                   )
+    # create_if_not_exists table(:underwriting_risk_assessments, primary_key: false, prefix: "public") do
+    #   add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+    #   add :risk_score, :decimal
+    #   add :risk_level, :text
+    #   add :risk_factors, :map, default: %{}
+    #   add :recommended_actions, :map, default: %{}
+    #   add :merchant_id, :uuid
+    #
+    #   add :application_id,
+    #       references(:underwriting_applications,
+    #         column: :id,
+    #         name: "underwriting_risk_assessments_application_id_fkey",
+    #         type: :uuid,
+    #         prefix: "public"
+    #       )
+    #
+    #   add :inserted_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    #
+    #   add :updated_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    # end
 
-    create index(:documents, ["embedding vector_cosine_ops"],
-             name: "documents_embedding_index",
-             using: "hnsw"
-           )
+    # create_if_not_exists table(:documents, primary_key: false, prefix: "public") do
+    #   add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+    #   add :content, :text, null: false
+    #   add :metadata, :map, null: false, default: %{}
+    #   add :embedding, :vector
+    #
+    #   add :inserted_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    #
+    #   add :updated_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    # end
+
+    # drop_if_exists index(:documents, ["embedding vector_cosine_ops"],
+    #                  name: "documents_embedding_index"
+    #                )
+    #
+    # create index(:documents, ["embedding vector_cosine_ops"],
+    #          name: "documents_embedding_index",
+    #          using: "hnsw"
+    #        )
   end
 
   def down do

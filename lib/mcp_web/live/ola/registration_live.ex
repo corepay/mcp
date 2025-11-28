@@ -1,7 +1,7 @@
 defmodule McpWeb.Ola.RegistrationLive do
   use McpWeb, :live_view
 
-  alias Mcp.Accounts
+
   alias Mcp.Accounts.User
 
   @impl true
@@ -29,7 +29,7 @@ defmodule McpWeb.Ola.RegistrationLive do
   @impl true
   def handle_event("save", %{"user" => params}, socket) do
     case User.register(params["email"], params["password"], params["password_confirmation"]) do
-      {:ok, user} ->
+      {:ok, _user} ->
         # We need to log the user in. 
         # Since we can't easily set session in LiveView, we'll redirect to a controller action
         # or use a token-based approach if available. 

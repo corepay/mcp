@@ -8,162 +8,162 @@ defmodule Mcp.Repo.Migrations.AddUnderwritingDomain do
   use Ecto.Migration
 
   def up do
-    create_if_not_exists table(:risk_assessments, primary_key: false, prefix: "public") do
-      add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-      add :score, :bigint, null: false
-      add :factors, :map, default: %{}
-      add :recommendation, :text
+    # create_if_not_exists table(:risk_assessments, primary_key: false, prefix: "public") do
+    #   add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+    #   add :score, :bigint, null: false
+    #   add :factors, :map, default: %{}
+    #   add :recommendation, :text
+    #
+    #   add :inserted_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    #
+    #   add :updated_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    #
+    #   add :merchant_id, :uuid
+    # end
 
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
+    # alter table(:underwriting_reviews, prefix: "public") do
+    #   remove :reviewer_id
+    #   remove :model_version
+    #   remove :reviewer_notes
+    #   modify :application_id, :uuid, null: true
+    #   modify :risk_score, :bigint
+    #   add :notes, :text
+    # end
 
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
+    # create_if_not_exists table(:underwriting_documents, primary_key: false, prefix: "public") do
+    #   add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+    #   add :type, :text, null: false
+    #   add :issuing_country, :text
+    #   add :external_id, :text
+    #   add :status, :text, default: "pending"
+    #
+    #   add :inserted_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    #
+    #   add :updated_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    #
+    #   add :client_id, :uuid
+    # end
 
-      add :merchant_id, :uuid
-    end
+    # create_if_not_exists table(:underwriting_checks, primary_key: false, prefix: "public") do
+    #   add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+    #   add :type, :text, null: false
+    #   add :status, :text, default: "pending"
+    #   add :outcome, :text, default: "none"
+    #   add :external_id, :text
+    #   add :raw_result, :map
+    #
+    #   add :inserted_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    #
+    #   add :updated_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    #
+    #   add :client_id, :uuid
+    #   add :document_id, :uuid
+    # end
 
-    alter table(:underwriting_reviews, prefix: "public") do
-      remove :reviewer_id
-      remove :model_version
-      remove :reviewer_notes
-      modify :application_id, :uuid, null: true
-      modify :risk_score, :bigint
-      add :notes, :text
-    end
+    # create_if_not_exists table(:underwriting_addresses, primary_key: false, prefix: "public") do
+    #   add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+    #   add :line1, :text
+    #   add :line2, :text
+    #   add :city, :text
+    #   add :state, :text
+    #   add :postal_code, :text
+    #   add :country, :text
+    #   add :type, :text
+    #
+    #   add :inserted_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    #
+    #   add :updated_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    #
+    #   add :client_id, :uuid
+    # end
 
-    create_if_not_exists table(:underwriting_documents, primary_key: false, prefix: "public") do
-      add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-      add :type, :text, null: false
-      add :issuing_country, :text
-      add :external_id, :text
-      add :status, :text, default: "pending"
+    # alter table(:underwriting_applications, prefix: "public") do
+    #   modify :risk_score, :bigint, default: 0
+    #   modify :status, :text, null: true
+    # end
 
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
+    # create_if_not_exists table(:underwriting_clients, primary_key: false, prefix: "public") do
+    #   add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+    # end
 
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
+    # alter table(:underwriting_documents, prefix: "public") do
+    #   modify :client_id,
+    #          references(:underwriting_clients,
+    #            column: :id,
+    #            name: "underwriting_documents_client_id_fkey",
+    #            type: :uuid,
+    #            prefix: "public"
+    #          )
+    # end
 
-      add :client_id, :uuid
-    end
+    # alter table(:underwriting_checks, prefix: "public") do
+    #   modify :client_id,
+    #          references(:underwriting_clients,
+    #            column: :id,
+    #            name: "underwriting_checks_client_id_fkey",
+    #            type: :uuid,
+    #            prefix: "public"
+    #          )
+    #
+    #   modify :document_id,
+    #          references(:underwriting_documents,
+    #            column: :id,
+    #            name: "underwriting_checks_document_id_fkey",
+    #            type: :uuid,
+    #            prefix: "public"
+    #          )
+    # end
 
-    create_if_not_exists table(:underwriting_checks, primary_key: false, prefix: "public") do
-      add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-      add :type, :text, null: false
-      add :status, :text, default: "pending"
-      add :outcome, :text, default: "none"
-      add :external_id, :text
-      add :raw_result, :map
+    # alter table(:underwriting_addresses, prefix: "public") do
+    #   modify :client_id,
+    #          references(:underwriting_clients,
+    #            column: :id,
+    #            name: "underwriting_addresses_client_id_fkey",
+    #            type: :uuid,
+    #            prefix: "public"
+    #          )
+    # end
 
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :client_id, :uuid
-      add :document_id, :uuid
-    end
-
-    create_if_not_exists table(:underwriting_addresses, primary_key: false, prefix: "public") do
-      add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-      add :line1, :text
-      add :line2, :text
-      add :city, :text
-      add :state, :text
-      add :postal_code, :text
-      add :country, :text
-      add :type, :text
-
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :client_id, :uuid
-    end
-
-    alter table(:underwriting_applications, prefix: "public") do
-      modify :risk_score, :bigint, default: 0
-      modify :status, :text, null: true
-    end
-
-    create_if_not_exists table(:underwriting_clients, primary_key: false, prefix: "public") do
-      add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-    end
-
-    alter table(:underwriting_documents, prefix: "public") do
-      modify :client_id,
-             references(:underwriting_clients,
-               column: :id,
-               name: "underwriting_documents_client_id_fkey",
-               type: :uuid,
-               prefix: "public"
-             )
-    end
-
-    alter table(:underwriting_checks, prefix: "public") do
-      modify :client_id,
-             references(:underwriting_clients,
-               column: :id,
-               name: "underwriting_checks_client_id_fkey",
-               type: :uuid,
-               prefix: "public"
-             )
-
-      modify :document_id,
-             references(:underwriting_documents,
-               column: :id,
-               name: "underwriting_checks_document_id_fkey",
-               type: :uuid,
-               prefix: "public"
-             )
-    end
-
-    alter table(:underwriting_addresses, prefix: "public") do
-      modify :client_id,
-             references(:underwriting_clients,
-               column: :id,
-               name: "underwriting_addresses_client_id_fkey",
-               type: :uuid,
-               prefix: "public"
-             )
-    end
-
-    alter table(:underwriting_clients, prefix: "public") do
-      add :type, :text, null: false
-      add :email, :text
-      add :phone, :text
-      add :external_id, :text
-      add :person_details, :map, default: %{}
-      add :company_details, :map, default: %{}
-
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :application_id,
-          references(:underwriting_applications,
-            column: :id,
-            name: "underwriting_clients_application_id_fkey",
-            type: :uuid,
-            prefix: "public"
-          )
-    end
+    # alter table(:underwriting_clients, prefix: "public") do
+    #   add :type, :text, null: false
+    #   add :email, :text
+    #   add :phone, :text
+    #   add :external_id, :text
+    #   add :person_details, :map, default: %{}
+    #   add :company_details, :map, default: %{}
+    #
+    #   add :inserted_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    #
+    #   add :updated_at, :utc_datetime_usec,
+    #     null: false,
+    #     default: fragment("(now() AT TIME ZONE 'utc')")
+    #
+    #   add :application_id,
+    #       references(:underwriting_applications,
+    #         column: :id,
+    #         name: "underwriting_clients_application_id_fkey",
+    #         type: :uuid,
+    #         prefix: "public"
+    #       )
+    # end
   end
 
   def down do

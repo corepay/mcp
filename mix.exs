@@ -140,6 +140,7 @@ defmodule Mcp.MixProject do
       {:excoveralls, "~> 0.18", only: :test},
       {:mox, "~> 1.2", only: :test},
       {:mock, "~> 0.3.0", only: :test},
+      {:bypass, "~> 2.1", only: :test},
 
       # OAuth and Authentication
       {:ueberauth, "~> 0.10"},

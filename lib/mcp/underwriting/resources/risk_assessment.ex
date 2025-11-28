@@ -19,7 +19,9 @@ defmodule Mcp.Underwriting.RiskAssessment do
       primary? true
       accept [:score, :factors, :recommendation]
       argument :merchant_id, :uuid, allow_nil?: false
+      argument :application_id, :uuid, allow_nil?: false
       change manage_relationship(:merchant_id, :merchant, type: :append_and_remove)
+      change manage_relationship(:application_id, :application, type: :append_and_remove)
     end
   end
 
@@ -45,6 +47,8 @@ defmodule Mcp.Underwriting.RiskAssessment do
     belongs_to :merchant, Mcp.Platform.Merchant do
       domain Mcp.Platform
     end
+
+    belongs_to :application, Mcp.Underwriting.Application
   end
 
   code_interface do

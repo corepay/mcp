@@ -1,13 +1,13 @@
 defmodule McpWeb.Reseller.ApplicationsLive do
   use McpWeb, :live_view
 
-  def mount(_params, _session, socket) do
-    # Mock data
-    applications = [
-      %{id: "1", business_name: "Joe's Coffee", status: :draft, last_activity: DateTime.utc_now() |> DateTime.add(-86400, :second)},
-      %{id: "3", business_name: "Burger King Franchise #22", status: :submitted, last_activity: DateTime.utc_now() |> DateTime.add(-3600, :second)},
-      %{id: "5", business_name: "Safe Shop", status: :approved, last_activity: DateTime.utc_now() |> DateTime.add(-10000, :second)}
-    ]
+  def mount(_params, session, socket) do
+    tenant_id = session["tenant_id"]
+    # In a real app, we might handle the case where tenant_id is nil (e.g. super admin or error)
+    # For now, we assume it's present as per the router pipeline
+    tenant = Mcp.Platform.Tenant.get_by_id!(tenant_id)
+    
+    applications = Mcp.Underwriting.Application.read!(tenant: tenant.company_schema)
 
     {:ok,
      socket
@@ -42,24 +42,29 @@ defmodule McpWeb.Reseller.ApplicationsLive do
             </tr>
           </thead>
           <tbody>
-            <%= for app <- @applications do %>
+              <%= for app <- @applications do %>
               <tr class="hover">
-                <td class="font-medium"><%= app.business_name %></td>
+                <td class="font-medium"><%= app.application_data["business_name"] || app.application_data["legal_name"] || "Unknown" %></td>
                 <td>
                   <div class={"badge #{status_badge_color(app.status)}"}>
                     <%= app.status |> to_string() |> String.capitalize() %>
                   </div>
                 </td>
                 <td class="text-base-content/60">
-                  <%= Calendar.strftime(app.last_activity, "%b %d, %I:%M %p") %>
+                  <%= Calendar.strftime(app.updated_at, "%b %d, %I:%M %p") %>
                 </td>
                 <td>
-                  <%= if app.status == :draft do %>
-                    <button class="btn btn-xs btn-ghost text-primary" phx-click="nudge" phx-value-id={app.id}>
-                      <.icon name="hero-bell-alert" class="w-4 h-4 mr-1" />
-                      Nudge
-                    </button>
-                  <% end %>
+                  <div class="flex gap-2">
+                    <%= if app.status == :draft do %>
+                      <button class="btn btn-xs btn-ghost text-primary" phx-click="nudge" phx-value-id={app.id}>
+                        <.icon name="hero-bell-alert" class="w-4 h-4 mr-1" />
+                        Nudge
+                      </button>
+                    <% end %>
+                    <.link navigate={~p"/partners/applications/#{app.id}"} class="btn btn-xs btn-ghost">
+                      View
+                    </.link>
+                  </div>
                 </td>
               </tr>
             <% end %>
@@ -72,7 +77,9 @@ defmodule McpWeb.Reseller.ApplicationsLive do
 
   defp status_badge_color(:draft), do: "badge-ghost"
   defp status_badge_color(:submitted), do: "badge-info"
-  defp status_badge_color(:underwriting), do: "badge-warning"
+  defp status_badge_color(:under_review), do: "badge-warning"
+  defp status_badge_color(:more_info_required), do: "badge-warning"
   defp status_badge_color(:approved), do: "badge-success"
   defp status_badge_color(:rejected), do: "badge-error"
+  defp status_badge_color(_), do: "badge-ghost"
 end

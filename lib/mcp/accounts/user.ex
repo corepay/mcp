@@ -207,6 +207,7 @@ defmodule Mcp.Accounts.User do
   # Compatibility wrappers for existing code
   def get(id), do: by_id(id)
   def get_by_email(email), do: by_email(email)
+  def get_by_id!(id), do: by_id!(id)
 
   def create(attrs),
     do: register(attrs["email"], attrs["password"], attrs["password_confirmation"])

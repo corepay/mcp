@@ -1,7 +1,7 @@
 defmodule McpWeb.Tenant.ApplicationsLive do
   use McpWeb, :live_view
 
-  alias Mcp.Underwriting.Application, as: UnderwritingApplication
+
 
   def mount(_params, session, socket) do
     case session["tenant_id"] do

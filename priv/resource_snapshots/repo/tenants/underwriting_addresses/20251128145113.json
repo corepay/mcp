@@ -13,7 +13,79 @@
       "type": "uuid"
     },
     {
-      "allow_nil?": false,
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "line1",
+      "type": "text"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "line2",
+      "type": "text"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "city",
+      "type": "text"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "state",
+      "type": "text"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "postal_code",
+      "type": "text"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "country",
+      "type": "text"
+    },
+    {
+      "allow_nil?": true,
       "default": "nil",
       "generated?": false,
       "precision": null,
@@ -23,54 +95,6 @@
       "size": null,
       "source": "type",
       "type": "text"
-    },
-    {
-      "allow_nil?": true,
-      "default": "\"pending\"",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "status",
-      "type": "text"
-    },
-    {
-      "allow_nil?": true,
-      "default": "\"none\"",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "outcome",
-      "type": "text"
-    },
-    {
-      "allow_nil?": true,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "external_id",
-      "type": "text"
-    },
-    {
-      "allow_nil?": true,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "raw_result",
-      "type": "map"
     },
     {
       "allow_nil?": false,
@@ -112,10 +136,10 @@
         "match_with": null,
         "multitenancy": {
           "attribute": null,
-          "global": null,
-          "strategy": null
+          "global": false,
+          "strategy": "context"
         },
-        "name": "underwriting_checks_client_id_fkey",
+        "name": "underwriting_addresses_client_id_fkey",
         "on_delete": null,
         "on_update": null,
         "primary_key?": true,
@@ -126,37 +150,6 @@
       "size": null,
       "source": "client_id",
       "type": "uuid"
-    },
-    {
-      "allow_nil?": true,
-      "default": "nil",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": {
-        "deferrable": false,
-        "destination_attribute": "id",
-        "destination_attribute_default": null,
-        "destination_attribute_generated": null,
-        "index?": false,
-        "match_type": null,
-        "match_with": null,
-        "multitenancy": {
-          "attribute": null,
-          "global": null,
-          "strategy": null
-        },
-        "name": "underwriting_checks_document_id_fkey",
-        "on_delete": null,
-        "on_update": null,
-        "primary_key?": true,
-        "schema": "public",
-        "table": "underwriting_documents"
-      },
-      "scale": null,
-      "size": null,
-      "source": "document_id",
-      "type": "uuid"
     }
   ],
   "base_filter": null,
@@ -164,14 +157,14 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "709C4818CD72AE62800C1FCA269B33D71A1CF29B1654F9748E231992318EE2AD",
+  "hash": "41A6EB2BB3FAB724A50D0C2D61879ADA1C392767955A9A347B79B989030A44FF",
   "identities": [],
   "multitenancy": {
     "attribute": null,
-    "global": null,
-    "strategy": null
+    "global": false,
+    "strategy": "context"
   },
   "repo": "Elixir.Mcp.Repo",
   "schema": null,
-  "table": "underwriting_checks"
+  "table": "underwriting_addresses"
 }

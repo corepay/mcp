@@ -21,7 +21,7 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "type",
+      "source": "decision",
       "type": "text"
     },
     {
@@ -33,7 +33,7 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "issuing_country",
+      "source": "notes",
       "type": "text"
     },
     {
@@ -45,20 +45,8 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "external_id",
-      "type": "text"
-    },
-    {
-      "allow_nil?": true,
-      "default": "\"pending\"",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "status",
-      "type": "text"
+      "source": "risk_score",
+      "type": "bigint"
     },
     {
       "allow_nil?": false,
@@ -100,19 +88,19 @@
         "match_with": null,
         "multitenancy": {
           "attribute": null,
-          "global": null,
-          "strategy": null
+          "global": false,
+          "strategy": "context"
         },
-        "name": "underwriting_documents_client_id_fkey",
+        "name": "underwriting_reviews_application_id_fkey",
         "on_delete": null,
         "on_update": null,
         "primary_key?": true,
         "schema": "public",
-        "table": "underwriting_clients"
+        "table": "underwriting_applications"
       },
       "scale": null,
       "size": null,
-      "source": "client_id",
+      "source": "application_id",
       "type": "uuid"
     }
   ],
@@ -121,14 +109,14 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "96245258DD414CC008E3CD1637C115561718804CE5E00E161B324D18BF00FC9F",
+  "hash": "2C93AC756145E993486CF28CA4FC31EDBFAF8FFD4F9814141879592D88BDB31B",
   "identities": [],
   "multitenancy": {
     "attribute": null,
-    "global": null,
-    "strategy": null
+    "global": false,
+    "strategy": "context"
   },
   "repo": "Elixir.Mcp.Repo",
   "schema": null,
-  "table": "underwriting_documents"
+  "table": "underwriting_reviews"
 }

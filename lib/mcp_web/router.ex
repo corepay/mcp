@@ -66,6 +66,12 @@ defmodule McpWeb.Router do
     live "/dashboard", Platform.DashboardLive
     live "/tenants", MockDashboardLive
     live "/settings", MockDashboardLive
+    
+    live_session :admin_underwriting,
+      on_mount: [{McpWeb.Auth.LiveAuth, :require_authenticated}, {McpWeb.Auth.LiveAuth, :require_admin}] do
+      live "/underwriting", Admin.UnderwritingLive
+      live "/underwriting/:id", Admin.ReviewLive
+    end
   end
 
   # Tenant Portal
@@ -166,6 +172,7 @@ defmodule McpWeb.Router do
 
     live "/dashboard", MockDashboardLive
     live "/applications", Reseller.ApplicationsLive
+    live "/applications/:id", Reseller.UnderwritingApplicationLive
     live "/merchants", MockDashboardLive
     live "/commissions", MockDashboardLive
   end
@@ -219,6 +226,8 @@ defmodule McpWeb.Router do
       live "/application", Ola.ApplicationLive, :index
       live "/login", AuthLive.Login, :index
     end
+
+
   end
 
   # Default/Public Routes

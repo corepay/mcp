@@ -24,28 +24,29 @@ defmodule McpWeb.Auth.LiveAuth do
   @doc """
   on_mount hook for requiring authenticated user.
   """
-  def on_mount(:require_authenticated, _params, _session, socket) do
-    # authenticate_from_session currently only returns {:error, :invalid_token or :no_token}
-    # case authenticate_from_session(session) do
-    #   {:ok, user, claims} ->
-    #     socket =
-    #       socket
-    #       |> assign(:current_user, user)
-    #       |> assign(:current_context, Auth.get_current_context(claims))
-    #       |> assign(:authorized_contexts, Auth.get_authorized_contexts(claims))
-    #       |> assign(:session_id, session["session_id"])
-    #
-    #     {:cont, socket}
-    #
-    #   {:error, _reason} ->
-    socket =
-      socket
-      |> put_flash(:error, "Authentication required")
-      |> redirect(to: "/users/log_in")
+  def on_mount(:require_authenticated, _params, session, socket) do
+    case authenticate_from_session(session) do
+      {:ok, user, claims} ->
+        socket =
+          socket
+          |> assign(:current_user, user)
+          |> assign(:current_context, Auth.get_current_context(claims))
+          |> assign(:authorized_contexts, Auth.get_authorized_contexts(claims))
+          |> assign(:session_id, session["session_id"])
 
-    {:halt, socket}
-    # end
+        {:cont, socket}
+
+      {:error, _reason} ->
+        socket =
+          socket
+          |> put_flash(:error, "Authentication required")
+          |> redirect(to: "/users/log_in")
+
+        {:halt, socket}
+    end
   end
+
+
 
   def on_mount(:optional_auth, _params, session, socket) do
     if session["user_token"] do
@@ -183,10 +184,34 @@ defmodule McpWeb.Auth.LiveAuth do
   Check if user has admin role.
   """
   def admin?(socket) do
-    current_role(socket) in ["admin", "super_admin"]
+    authorized_contexts = socket.assigns[:authorized_contexts] || []
+    "admin" in authorized_contexts or "super_admin" in authorized_contexts
+  end
+
+  def on_mount(:require_admin, _params, _session, socket) do
+    if admin?(socket) do
+      {:cont, socket}
+    else
+      socket =
+        socket
+        |> put_flash(:error, "Unauthorized access")
+        |> redirect(to: "/")
+
+      {:halt, socket}
+    end
   end
 
   # Private helper functions
+
+  defp authenticate_from_session(session) do
+    with token when is_binary(token) <- session["user_token"] || session["_mcp_access_token"],
+         {:ok, claims} <- Auth.verify_jwt_access_token(token),
+         {:ok, user} <- Mcp.Accounts.User.by_id(claims["sub"]) do
+      {:ok, user, claims}
+    else
+      _ -> {:error, :unauthorized}
+    end
+  end
 
   defp find_refresh_token_for_session(_session_id) do
     # This would typically involve a database lookup or token storage
