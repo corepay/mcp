@@ -26,9 +26,9 @@
   default: false;
   prefersdark: true;
   color-scheme: "dark";
-  --color-base-100: oklch(20% 0.02 260); /* Slate 900-ish */
-  --color-base-200: oklch(17% 0.02 260); /* Darker Slate */
-  --color-base-300: oklch(15% 0.02 260); /* Even Darker */
+  --color-base-100: oklch(20.8% 0.042 265.755); /* Content Background */
+  --color-base-200: oklch(12.9% 0.042 264.695); /* Left Sidebar */
+  --color-base-300: oklch(10% 0.042 265); /* Borders/Darker Elements */
   --color-base-content: oklch(98% 0.01 260);
   --color-primary: oklch(60% 0.1 255); /* Slate 500-ish (Blue-Grey) */
   --color-primary-content: oklch(98% 0.01 260);

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="custom-dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mcp Neural Console</title>
+    
+    <!-- Tailwind CSS & DaisyUI via CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        primary: "oklch(60% 0.1 255)", 
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom Theme Definition for DaisyUI CDN */
+        [data-theme="custom-dark"] {
+            /* Base Colors (User Calibrated) */
+            --b1: 20.8% 0.042 265.755; /* base-100 */
+            --b2: 12.9% 0.042 264.695; /* base-200 */
+            --b3: 10% 0.042 265;       /* base-300 */
+            --bc: 98% 0.01 260;        /* base-content */
+
+            /* Brand Colors */
+            --p: 60% 0.1 255;          /* primary */
+            --pc: 98% 0.01 260;        /* primary-content */
+            --s: 55% 0.1 255;          /* secondary */
+            --sc: 98% 0.01 260;        /* secondary-content */
+            --a: 70% 0.15 250;         /* accent */
+            --ac: 10% 0.05 260;        /* accent-content */
+            --n: 30% 0.04 260;         /* neutral */
+            --nc: 98% 0.01 260;        /* neutral-content */
+
+            /* State Colors */
+            --in: 70% 0.15 240;        /* info */
+            --inc: 10% 0.05 240;       /* info-content */
+            --su: 65% 0.18 150;        /* success */
+            --suc: 10% 0.05 150;       /* success-content */
+            --wa: 75% 0.18 85;         /* warning */
+            --wac: 10% 0.05 85;        /* warning-content */
+            --er: 65% 0.2 30;          /* error */
+            --erc: 98% 0.01 30;        /* error-content */
+
+            /* UI Variables */
+            --rounded-box: 0.5rem;
+            --rounded-btn: 0.25rem;
+            --rounded-badge: 1.9rem;
+            --animation-btn: 0.25s;
+            --animation-input: 0.2s;
+            --btn-focus-scale: 0.95;
+            --border-btn: 1px;
+            --tab-border: 1px;
+            --tab-radius: 0.5rem;
+        }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        
+        .sparkline {
+            fill: none;
+            stroke: #0070f3;
+            stroke-width: 1.5;
+        }
+    </style>
+</head>
+<body class="font-sans text-base-content h-screen flex overflow-hidden bg-base-100 selection:bg-primary selection:text-primary-content">
+
+    <!-- 1. Navigation (Left) - Enhanced -->
+    <aside class="w-[260px] flex flex-col border-r border-base-300 bg-base-200 flex-shrink-0 z-20 relative overflow-hidden">
+        <!-- Subtle Background Gradient -->
+        <div class="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"></div>
+
+        <!-- Brand -->
+        <div class="h-16 flex items-center px-6 border-b border-base-300 relative z-10">
+            <div class="flex items-center gap-3 group cursor-pointer">
+                <div class="w-8 h-8 bg-gradient-to-br from-base-100 to-base-300 rounded-xl flex items-center justify-center shadow-lg shadow-base-300 group-hover:shadow-base-content/5 transition-all text-base-content">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 22H22L12 2Z" fill="currentColor"/></svg>
+                </div>
+                <div>
+                    <div class="font-bold text-base-content text-sm tracking-tight leading-none">Mcp</div>
+                    <div class="text-[10px] text-base-content/60 font-medium tracking-wide">PLATFORM</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nav Links -->
+        <div class="flex-1 overflow-y-auto py-6 px-3 space-y-1 relative z-10">
+            
+            <div class="px-3 mb-2 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Project</div>
+            
+            <!-- Active Item -->
+            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content bg-base-100 border border-base-300 relative overflow-hidden">
+                <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-primary"></div>
+                <svg class="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                <span class="font-medium">Overview</span>
+                <div class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </a>
+
+            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/60 hover:text-base-content hover:bg-base-100 transition-all">
+                <svg class="w-4 h-4 text-base-content/40 group-hover:text-base-content/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                <span class="font-medium">Activity</span>
+            </a>
+            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/60 hover:text-base-content hover:bg-base-100 transition-all">
+                <svg class="w-4 h-4 text-base-content/40 group-hover:text-base-content/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                <span class="font-medium">Settings</span>
+            </a>
+
+            <div class="px-3 mb-2 mt-8 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Intelligence</div>
+            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/60 hover:text-base-content hover:bg-base-100 transition-all">
+                <svg class="w-4 h-4 text-base-content/40 group-hover:text-base-content/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                <span class="font-medium">Agents</span>
+            </a>
+            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/60 hover:text-base-content hover:bg-base-100 transition-all">
+                <svg class="w-4 h-4 text-base-content/40 group-hover:text-base-content/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                <span class="font-medium">Training</span>
+            </a>
+
+            <div class="px-3 mb-2 mt-8 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Infrastructure</div>
+            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/60 hover:text-base-content hover:bg-base-100 transition-all">
+                <svg class="w-4 h-4 text-base-content/40 group-hover:text-base-content/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
+                <span class="font-medium">Storage</span>
+            </a>
+            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/60 hover:text-base-content hover:bg-base-100 transition-all">
+                <svg class="w-4 h-4 text-base-content/40 group-hover:text-base-content/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                <span class="font-medium">Security</span>
+            </a>
+        </div>
+
+        <!-- User -->
+        <div class="p-4 border-t border-base-300 bg-base-100/50 backdrop-blur-sm">
+            <div class="flex items-center gap-3 hover:bg-base-100 p-2 rounded-xl cursor-pointer transition-all group">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-primary to-purple-600 p-[1px]">
+                    <div class="w-full h-full rounded-full bg-base-200 flex items-center justify-center">
+                        <span class="text-xs font-bold text-white">NR</span>
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-base-content truncate group-hover:text-primary transition-colors">Naya Rachel</div>
+                    <div class="text-[10px] text-base-content/60 truncate">Pro Plan · <span class="text-emerald-500">Active</span></div>
+                </div>
+                <svg class="w-4 h-4 text-base-content/40 group-hover:text-base-content transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 2. Main Stage (Center) -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-base-100 relative">
+        <!-- Top Bar -->
+        <header class="h-14 border-b border-base-300 flex items-center justify-between px-6 flex-shrink-0">
+            <div class="flex items-center gap-2 text-sm">
+                <span class="text-base-content/60">mcp-platform</span>
+                <span class="text-base-content/40">/</span>
+                <span class="text-base-content font-medium">overview</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <button class="text-xs text-base-content/60 hover:text-base-content transition-colors">Feedback</button>
+                <button class="text-xs text-base-content/60 hover:text-base-content transition-colors">Docs</button>
+            </div>
+        </header>
+
+        <!-- Content Scroll -->
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="max-w-5xl mx-auto">
+                
+                <!-- Hero Stats -->
+                <div class="grid grid-cols-3 gap-4 mb-8">
+                    <div class="border border-base-300 rounded-lg p-5 bg-base-200/50 hover:border-base-content/20 transition-colors">
+                        <div class="text-xs text-base-content/60 font-medium mb-1 uppercase tracking-wide">Total Requests</div>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl font-semibold text-base-content">2.4M</span>
+                            <span class="text-xs text-emerald-500 font-mono">↑ 12%</span>
+                        </div>
+                        <div class="h-8 mt-3">
+                            <svg class="w-full h-full" viewBox="0 0 100 20" preserveAspectRatio="none">
+                                <path d="M0 10 Q 25 18 50 10 T 100 5" fill="none" stroke="currentColor" class="text-base-content/20" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="border border-base-300 rounded-lg p-5 bg-base-200/50 hover:border-base-content/20 transition-colors">
+                        <div class="text-xs text-base-content/60 font-medium mb-1 uppercase tracking-wide">Avg Latency</div>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl font-semibold text-base-content">42ms</span>
+                            <span class="text-xs text-emerald-500 font-mono">- 3ms</span>
+                        </div>
+                        <div class="h-8 mt-3">
+                            <svg class="w-full h-full" viewBox="0 0 100 20" preserveAspectRatio="none">
+                                <path d="M0 15 Q 25 5 50 12 T 100 8" fill="none" stroke="currentColor" class="text-base-content/20" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="border border-base-300 rounded-lg p-5 bg-base-200/50 hover:border-base-content/20 transition-colors">
+                        <div class="text-xs text-base-content/60 font-medium mb-1 uppercase tracking-wide">Error Rate</div>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl font-semibold text-base-content">0.01%</span>
+                            <span class="text-xs text-base-content/60 font-mono">~ 0.0%</span>
+                        </div>
+                        <div class="h-8 mt-3">
+                            <svg class="w-full h-full" viewBox="0 0 100 20" preserveAspectRatio="none">
+                                <path d="M0 18 L 100 18" fill="none" stroke="currentColor" class="text-base-content/20" stroke-width="1.5" stroke-dasharray="4 2" vector-effect="non-scaling-stroke"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deployments Section -->
+                <div class="mb-10">
+                    <h3 class="text-lg font-medium text-base-content mb-4">Recent Deployments</h3>
+                    <div class="border border-base-300 rounded-lg overflow-hidden bg-base-100">
+                        <!-- Header -->
+                        <div class="grid grid-cols-12 gap-4 px-4 py-3 border-b border-base-300 bg-base-200/50 text-xs font-medium text-base-content/60 uppercase tracking-wide">
+                            <div class="col-span-6">Project / Branch</div>
+                            <div class="col-span-2">State</div>
+                            <div class="col-span-2">Time</div>
+                            <div class="col-span-2 text-right">User</div>
+                        </div>
+                        <!-- Row 1 -->
+                        <div class="grid grid-cols-12 gap-4 px-4 py-4 border-b border-base-300 items-center hover:bg-base-200/50 transition-colors group cursor-pointer">
+                            <div class="col-span-6">
+                                <div class="font-medium text-base-content text-sm mb-0.5">mcp-core-platform</div>
+                                <div class="text-xs text-base-content/60 font-mono flex items-center gap-2">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                    feat/ai-agents-v2
+                                </div>
+                            </div>
+                            <div class="col-span-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                                    <span class="text-xs text-blue-400">Building</span>
+                                </div>
+                            </div>
+                            <div class="col-span-2 text-xs text-base-content/60">24s ago</div>
+                            <div class="col-span-2 text-right">
+                                <div class="w-6 h-6 rounded-full bg-base-300 ml-auto flex items-center justify-center text-[10px] text-base-content">NR</div>
+                            </div>
+                        </div>
+                        <!-- Row 2 -->
+                        <div class="grid grid-cols-12 gap-4 px-4 py-4 border-b border-base-300 items-center hover:bg-base-200/50 transition-colors group cursor-pointer">
+                            <div class="col-span-6">
+                                <div class="font-medium text-base-content text-sm mb-0.5">mcp-billing-service</div>
+                                <div class="text-xs text-base-content/60 font-mono flex items-center gap-2">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                    fix/invoice-generation
+                                </div>
+                            </div>
+                            <div class="col-span-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                    <span class="text-xs text-base-content/80">Ready</span>
+                                </div>
+                            </div>
+                            <div class="col-span-2 text-xs text-base-content/60">2h ago</div>
+                            <div class="col-span-2 text-right">
+                                <div class="w-6 h-6 rounded-full bg-base-300 ml-auto flex items-center justify-center text-[10px] text-base-content">JD</div>
+                            </div>
+                        </div>
+                        <!-- Row 3 -->
+                        <div class="grid grid-cols-12 gap-4 px-4 py-4 items-center hover:bg-base-200/50 transition-colors group cursor-pointer">
+                            <div class="col-span-6">
+                                <div class="font-medium text-base-content text-sm mb-0.5">mcp-frontend</div>
+                                <div class="text-xs text-base-content/60 font-mono flex items-center gap-2">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                    chore/update-deps
+                                </div>
+                            </div>
+                            <div class="col-span-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                    <span class="text-xs text-base-content/80">Ready</span>
+                                </div>
+                            </div>
+                            <div class="col-span-2 text-xs text-base-content/60">5h ago</div>
+                            <div class="col-span-2 text-right">
+                                <div class="w-6 h-6 rounded-full bg-base-300 ml-auto flex items-center justify-center text-[10px] text-base-content">NR</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Infrastructure Grid -->
+                <div class="grid grid-cols-2 gap-8">
+                    <!-- Storage -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-base-content">Storage</h3>
+                            <button class="text-xs text-primary hover:text-primary/80">Manage</button>
+                        </div>
+                        <div class="border border-base-300 rounded-lg p-5 bg-base-200/50">
+                            <div class="flex justify-between text-sm mb-2">
+                                <span class="text-base-content/60">S3 Buckets</span>
+                                <span class="text-base-content">450 GB / 1 TB</span>
+                            </div>
+                            <div class="w-full bg-base-300 rounded-full h-1.5 mb-6">
+                                <div class="bg-base-content h-1.5 rounded-full" style="width: 45%"></div>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-base-content/60">mcp-assets-prod</span>
+                                    <span class="text-base-content/80 font-mono">120 GB</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-base-content/60">mcp-logs-archive</span>
+                                    <span class="text-base-content/80 font-mono">310 GB</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-base-content">Security</h3>
+                            <button class="text-xs text-primary hover:text-primary/80">Audit Log</button>
+                        </div>
+                        <div class="border border-base-300 rounded-lg p-5 bg-base-200/50">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                <span class="text-sm text-base-content">All systems operational</span>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-3 text-sm p-2 rounded hover:bg-base-200 transition-colors cursor-pointer">
+                                    <svg class="w-4 h-4 text-base-content/60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                                    <span class="text-base-content/60">SOC2 Compliance Check</span>
+                                    <span class="text-emerald-500 text-xs ml-auto">Passed</span>
+                                </div>
+                                <div class="flex items-center gap-3 text-sm p-2 rounded hover:bg-base-200 transition-colors cursor-pointer">
+                                    <svg class="w-4 h-4 text-base-content/60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                    <span class="text-base-content/60">GDPR Data Retention</span>
+                                    <span class="text-emerald-500 text-xs ml-auto">Active</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- 3. Neural Rail (Right) - The Copilot -->
+    <aside class="w-[320px] flex flex-col flex-shrink-0 z-30 border-l border-base-300 bg-base-200/50 backdrop-blur-md">
+        <!-- Header -->
+        <div class="h-14 flex items-center justify-between px-5 border-b border-base-300">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span class="text-sm font-medium text-base-content">Neural Stream</span>
+            </div>
+            <button class="text-base-content/40 hover:text-base-content transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+
+        <!-- Stream Content -->
+        <div class="flex-1 overflow-y-auto p-5 space-y-6">
+            
+            <!-- Insight Card -->
+            <div class="relative pl-4 border-l border-base-300">
+                <div class="absolute left-[-2.5px] top-2 w-1 h-1 rounded-full bg-info"></div>
+                <div class="text-[10px] text-base-content/40 mb-1 font-mono">JUST NOW</div>
+                <div class="text-sm text-base-content/80 mb-2">
+                    Traffic spike detected on <span class="text-base-content font-medium">mcp-api-gateway</span>. Auto-scaling triggered.
+                </div>
+                <div class="flex gap-2">
+                    <button class="px-2 py-1 rounded bg-info/10 text-info text-xs hover:bg-info/20 transition-colors">View Metrics</button>
+                </div>
+            </div>
+
+            <!-- Chat Message (User) -->
+            <div class="flex justify-end">
+                <div class="bg-base-300 text-base-content text-sm px-3 py-2 rounded-2xl rounded-tr-sm max-w-[85%]">
+                    Show me failed login attempts for the last hour.
+                </div>
+            </div>
+
+            <!-- Chat Message (AI) -->
+            <div class="flex gap-3">
+                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex-shrink-0 flex items-center justify-center text-[10px] text-white">AI</div>
+                <div class="space-y-2">
+                    <div class="text-sm text-base-content/80">
+                        I found <span class="text-base-content font-medium">3 failed attempts</span> from IP 192.168.1.45.
+                    </div>
+                    <!-- Mini Chart Widget -->
+                    <div class="bg-base-300/50 border border-base-300 rounded-lg p-3 w-full">
+                        <div class="flex justify-between text-[10px] text-base-content/40 mb-2">
+                            <span>Attempts</span>
+                            <span>1h</span>
+                        </div>
+                        <div class="flex items-end gap-1 h-8">
+                            <div class="w-1/5 bg-base-content/10 h-[20%] rounded-sm"></div>
+                            <div class="w-1/5 bg-base-content/10 h-[40%] rounded-sm"></div>
+                            <div class="w-1/5 bg-base-content/10 h-[10%] rounded-sm"></div>
+                            <div class="w-1/5 bg-error h-[80%] rounded-sm"></div>
+                            <div class="w-1/5 bg-base-content/10 h-[10%] rounded-sm"></div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="px-2 py-1 rounded border border-base-300 text-base-content/60 text-xs hover:text-base-content hover:border-base-content/20 transition-colors">Block IP</button>
+                        <button class="px-2 py-1 rounded border border-base-300 text-base-content/60 text-xs hover:text-base-content hover:border-base-content/20 transition-colors">Trace</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insight Card -->
+            <div class="relative pl-4 border-l border-base-300">
+                <div class="absolute left-[-2.5px] top-2 w-1 h-1 rounded-full bg-base-content/40"></div>
+                <div class="text-[10px] text-base-content/40 mb-1 font-mono">2H AGO</div>
+                <div class="text-sm text-base-content/80">
+                    Daily backup completed successfully. <span class="text-base-content/40">45GB archived.</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 border-t border-base-300 bg-base-200/50">
+            <div class="relative">
+                <input type="text" placeholder="Ask Copilot..." class="w-full bg-base-100 border border-base-300 rounded-lg pl-3 pr-10 py-2.5 text-sm text-base-content placeholder:text-base-content/40 focus:outline-none focus:border-base-content/20 focus:bg-base-100 transition-all">
+                <button class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-base-content/40 hover:text-base-content transition-colors">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+                </button>
+            </div>
+            <div class="text-[10px] text-center text-base-content/40 mt-2 font-mono">AI-generated content may be inaccurate.</div>
+        </div>
+    </aside>
+
+</body>
+</html>

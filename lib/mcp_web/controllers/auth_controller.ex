@@ -14,7 +14,7 @@ defmodule McpWeb.AuthController do
     create(conn, login_params)
   end
 
-  def create(conn, %{"email" => email, "password" => password} = params) do
+  def create(conn, %{"email" => email, "password" => password} = _params) do
     ip_address = get_client_ip(conn)
 
     # Determine the sign-in path to redirect back to on failure

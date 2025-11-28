@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="custom-dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mcp Neural Console</title>
+    
+    <!-- Tailwind CSS & DaisyUI via CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        primary: "oklch(60% 0.1 255)", 
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom Theme Definition for DaisyUI CDN */
+        [data-theme="custom-dark"] {
+            /* Base Colors (User Calibrated) */
+            --b1: 20.8% 0.042 265.755; /* base-100 */
+            --b2: 12.9% 0.042 264.695; /* base-200 */
+            --b3: 10% 0.042 265;       /* base-300 */
+            --bc: 98% 0.01 260;        /* base-content */
+
+            /* Brand Colors */
+            --p: 60% 0.1 255;          /* primary */
+            --pc: 98% 0.01 260;        /* primary-content */
+            --s: 55% 0.1 255;          /* secondary */
+            --sc: 98% 0.01 260;        /* secondary-content */
+            --a: 70% 0.15 250;         /* accent */
+            --ac: 10% 0.05 260;        /* accent-content */
+            --n: 30% 0.04 260;         /* neutral */
+            --nc: 98% 0.01 260;        /* neutral-content */
+
+            /* State Colors */
+            --in: 70% 0.15 240;        /* info */
+            --inc: 10% 0.05 240;       /* info-content */
+            --su: 65% 0.18 150;        /* success */
+            --suc: 10% 0.05 150;       /* success-content */
+            --wa: 75% 0.18 85;         /* warning */
+            --wac: 10% 0.05 85;        /* warning-content */
+            --er: 65% 0.2 30;          /* error */
+            --erc: 98% 0.01 30;        /* error-content */
+
+            /* UI Variables */
+            --rounded-box: 0.5rem;
+            --rounded-btn: 0.25rem;
+            --rounded-badge: 1.9rem;
+            --animation-btn: 0.25s;
+            --animation-input: 0.2s;
+            --btn-focus-scale: 0.95;
+            --border-btn: 1px;
+            --tab-border: 1px;
+            --tab-radius: 0.5rem;
+        }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        
+        .sparkline {
+            fill: none;
+            stroke: #0070f3;
+            stroke-width: 1.5;
+        }
+    </style>
+</head>
+<body class="font-sans text-base-content h-screen flex overflow-hidden bg-base-100 selection:bg-primary selection:text-primary-content">
+
+    <!-- 1. Navigation (Left) - Enhanced -->
+    <aside class="w-[260px] flex flex-col border-r border-base-300 bg-base-200 flex-shrink-0 z-20 relative overflow-hidden">
+        <!-- Subtle Background Gradient -->
+        <div class="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"></div>
+
+        <!-- Brand -->
+        <div class="h-16 flex items-center px-6 border-b border-base-300 relative z-10">
+            <div class="flex items-center gap-3 group cursor-pointer">
+                <div class="w-8 h-8 bg-gradient-to-br from-base-100 to-base-300 rounded-xl flex items-center justify-center shadow-lg shadow-base-300 group-hover:shadow-base-content/5 transition-all text-base-content">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 22H22L12 2Z" fill="currentColor"/></svg>
+                </div>
+                <div>
+                    <div class="font-bold text-base-content text-sm tracking-tight leading-none">Mcp</div>
+                    <div class="text-[10px] text-base-content/60 font-medium tracking-wide">PLATFORM</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nav Links -->
+        <div class="flex-1 overflow-y-auto py-6 px-3 space-y-1 relative z-10">
+            
+            <div class="px-3 mb-2 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Organization</div>
+            
+            <!-- Active Item -->
+            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content bg-base-100 border border-base-300 relative overflow-hidden">
+                <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-primary"></div>
+                <svg class="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                <span class="font-medium">Overview</span>
+                <div class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </a>
+
+            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/60 hover:text-base-content hover:bg-base-100 transition-all">
+                <svg class="w-4 h-4 text-base-content/40 group-hover:text-base-content/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                <span class="font-medium">Users & Roles</span>
+            </a>
+            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/60 hover:text-base-content hover:bg-base-100 transition-all">
+                <svg class="w-4 h-4 text-base-content/40 group-hover:text-base-content/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <span class="font-medium">Settings</span>
+            </a>
+
+            <div class="px-3 mb-2 mt-8 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Resources</div>
+            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/60 hover:text-base-content hover:bg-base-100 transition-all">
+                <svg class="w-4 h-4 text-base-content/40 group-hover:text-base-content/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                <span class="font-medium">Domains</span>
+            </a>
+            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/60 hover:text-base-content hover:bg-base-100 transition-all">
+                <svg class="w-4 h-4 text-base-content/40 group-hover:text-base-content/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                <span class="font-medium">Billing</span>
+            </a>
+            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/60 hover:text-base-content hover:bg-base-100 transition-all">
+                <svg class="w-4 h-4 text-base-content/40 group-hover:text-base-content/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                <span class="font-medium">Usage</span>
+            </a>
+
+            <div class="px-3 mb-2 mt-8 text-[10px] font-bold text-base-content/50 uppercase tracking-widest">Security</div>
+            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/60 hover:text-base-content hover:bg-base-100 transition-all">
+                <svg class="w-4 h-4 text-base-content/40 group-hover:text-base-content/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                <span class="font-medium">Audit Logs</span>
+            </a>
+            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-base-content/60 hover:text-base-content hover:bg-base-100 transition-all">
+                <svg class="w-4 h-4 text-base-content/40 group-hover:text-base-content/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                <span class="font-medium">Access Control</span>
+            </a>
+        </div>
+
+        <!-- User -->
+        <div class="p-4 border-t border-base-300 bg-base-100/50 backdrop-blur-sm">
+            <div class="flex items-center gap-3 hover:bg-base-100 p-2 rounded-xl cursor-pointer transition-all group">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-primary to-purple-600 p-[1px]">
+                    <div class="w-full h-full rounded-full bg-base-200 flex items-center justify-center">
+                        <span class="text-xs font-bold text-white">NR</span>
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-base-content truncate group-hover:text-primary transition-colors">Naya Rachel</div>
+                    <div class="text-[10px] text-base-content/60 truncate">Pro Plan · <span class="text-emerald-500">Active</span></div>
+                </div>
+                <svg class="w-4 h-4 text-base-content/40 group-hover:text-base-content transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 2. Main Stage (Center) -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-base-100 relative">
+        <!-- Top Bar -->
+        <header class="h-14 border-b border-base-300 flex items-center justify-between px-6 flex-shrink-0">
+            <div class="flex items-center gap-2 text-sm">
+                <span class="text-base-content/60">acme-corp</span>
+                <span class="text-base-content/40">/</span>
+                <span class="text-base-content font-medium">overview</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 text-xs font-medium border border-emerald-500/20">Professional Plan</div>
+                <button class="text-xs text-base-content/60 hover:text-base-content transition-colors">Support</button>
+            </div>
+        </header>
+
+        <!-- Content Scroll -->
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="max-w-5xl mx-auto">
+                
+                <!-- Hero Stats -->
+                <div class="grid grid-cols-3 gap-4 mb-8">
+                    <div class="border border-base-300 rounded-lg p-5 bg-base-200/50 hover:border-base-content/20 transition-colors">
+                        <div class="text-xs text-base-content/60 font-medium mb-1 uppercase tracking-wide">Active Users</div>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl font-semibold text-base-content">12</span>
+                            <span class="text-xs text-base-content/40 font-mono">/ 50 Seats</span>
+                        </div>
+                        <div class="w-full bg-base-300 rounded-full h-1.5 mt-3">
+                            <div class="bg-primary h-1.5 rounded-full" style="width: 24%"></div>
+                        </div>
+                    </div>
+                    <div class="border border-base-300 rounded-lg p-5 bg-base-200/50 hover:border-base-content/20 transition-colors">
+                        <div class="text-xs text-base-content/60 font-medium mb-1 uppercase tracking-wide">Storage Used</div>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl font-semibold text-base-content">45GB</span>
+                            <span class="text-xs text-base-content/40 font-mono">/ 100GB</span>
+                        </div>
+                        <div class="w-full bg-base-300 rounded-full h-1.5 mt-3">
+                            <div class="bg-emerald-500 h-1.5 rounded-full" style="width: 45%"></div>
+                        </div>
+                    </div>
+                    <div class="border border-base-300 rounded-lg p-5 bg-base-200/50 hover:border-base-content/20 transition-colors">
+                        <div class="text-xs text-base-content/60 font-medium mb-1 uppercase tracking-wide">API Calls (MTD)</div>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl font-semibold text-base-content">1.2M</span>
+                            <span class="text-xs text-base-content/40 font-mono">/ 5M Limit</span>
+                        </div>
+                        <div class="w-full bg-base-300 rounded-full h-1.5 mt-3">
+                            <div class="bg-blue-500 h-1.5 rounded-full" style="width: 24%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Section -->
+                <div class="mb-10">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-base-content">Recent Activity</h3>
+                        <button class="text-xs text-primary hover:text-primary/80">View Audit Log</button>
+                    </div>
+                    <div class="border border-base-300 rounded-lg overflow-hidden bg-base-100">
+                        <!-- Header -->
+                        <div class="grid grid-cols-12 gap-4 px-4 py-3 border-b border-base-300 bg-base-200/50 text-xs font-medium text-base-content/60 uppercase tracking-wide">
+                            <div class="col-span-6">Action</div>
+                            <div class="col-span-2">Status</div>
+                            <div class="col-span-2">Time</div>
+                            <div class="col-span-2 text-right">User</div>
+                        </div>
+                        <!-- Row 1 -->
+                        <div class="grid grid-cols-12 gap-4 px-4 py-4 border-b border-base-300 items-center hover:bg-base-200/50 transition-colors group cursor-pointer">
+                            <div class="col-span-6">
+                                <div class="font-medium text-base-content text-sm mb-0.5">Added new domain: api.acme.com</div>
+                                <div class="text-xs text-base-content/60 font-mono flex items-center gap-2">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                                    Resources / Domains
+                                </div>
+                            </div>
+                            <div class="col-span-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                    <span class="text-xs text-base-content/80">Verified</span>
+                                </div>
+                            </div>
+                            <div class="col-span-2 text-xs text-base-content/60">2h ago</div>
+                            <div class="col-span-2 text-right">
+                                <div class="w-6 h-6 rounded-full bg-base-300 ml-auto flex items-center justify-center text-[10px] text-base-content">JD</div>
+                            </div>
+                        </div>
+                        <!-- Row 2 -->
+                        <div class="grid grid-cols-12 gap-4 px-4 py-4 border-b border-base-300 items-center hover:bg-base-200/50 transition-colors group cursor-pointer">
+                            <div class="col-span-6">
+                                <div class="font-medium text-base-content text-sm mb-0.5">Invited user: sarah@acme.com</div>
+                                <div class="text-xs text-base-content/60 font-mono flex items-center gap-2">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+                                    Organization / Users
+                                </div>
+                            </div>
+                            <div class="col-span-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
+                                    <span class="text-xs text-base-content/80">Pending</span>
+                                </div>
+                            </div>
+                            <div class="col-span-2 text-xs text-base-content/60">5h ago</div>
+                            <div class="col-span-2 text-right">
+                                <div class="w-6 h-6 rounded-full bg-base-300 ml-auto flex items-center justify-center text-[10px] text-base-content">JD</div>
+                            </div>
+                        </div>
+                        <!-- Row 3 -->
+                        <div class="grid grid-cols-12 gap-4 px-4 py-4 items-center hover:bg-base-200/50 transition-colors group cursor-pointer">
+                            <div class="col-span-6">
+                                <div class="font-medium text-base-content text-sm mb-0.5">Updated billing method</div>
+                                <div class="text-xs text-base-content/60 font-mono flex items-center gap-2">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                                    Resources / Billing
+                                </div>
+                            </div>
+                            <div class="col-span-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                    <span class="text-xs text-base-content/80">Success</span>
+                                </div>
+                            </div>
+                            <div class="col-span-2 text-xs text-base-content/60">1d ago</div>
+                            <div class="col-span-2 text-right">
+                                <div class="w-6 h-6 rounded-full bg-base-300 ml-auto flex items-center justify-center text-[10px] text-base-content">JD</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Grid -->
+                <div class="grid grid-cols-2 gap-8">
+                    <!-- Billing Overview -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-base-content">Billing Overview</h3>
+                            <button class="text-xs text-primary hover:text-primary/80">Manage</button>
+                        </div>
+                        <div class="border border-base-300 rounded-lg p-5 bg-base-200/50">
+                            <div class="flex justify-between text-sm mb-2">
+                                <span class="text-base-content/60">Next Invoice</span>
+                                <span class="text-base-content font-medium">$299.00</span>
+                            </div>
+                            <div class="text-xs text-base-content/40 mb-6">Due on Dec 1, 2025</div>
+                            
+                            <div class="space-y-3">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-base-content/60">Professional Plan</span>
+                                    <span class="text-base-content/80 font-mono">$199.00</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-base-content/60">Extra Storage (50GB)</span>
+                                    <span class="text-base-content/80 font-mono">$50.00</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-base-content/60">Extra Seats (5)</span>
+                                    <span class="text-base-content/80 font-mono">$50.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security Status -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-base-content">Security Status</h3>
+                            <button class="text-xs text-primary hover:text-primary/80">Settings</button>
+                        </div>
+                        <div class="border border-base-300 rounded-lg p-5 bg-base-200/50">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                <span class="text-sm text-base-content">Security Score: 92/100</span>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-3 text-sm p-2 rounded hover:bg-base-200 transition-colors cursor-pointer">
+                                    <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <span class="text-base-content/60">2FA Enforced</span>
+                                    <span class="text-emerald-500 text-xs ml-auto">Active</span>
+                                </div>
+                                <div class="flex items-center gap-3 text-sm p-2 rounded hover:bg-base-200 transition-colors cursor-pointer">
+                                    <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                    <span class="text-base-content/60">SSL Certificates</span>
+                                    <span class="text-emerald-500 text-xs ml-auto">Valid</span>
+                                </div>
+                                <div class="flex items-center gap-3 text-sm p-2 rounded hover:bg-base-200 transition-colors cursor-pointer">
+                                    <svg class="w-4 h-4 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                    <span class="text-base-content/60">API Key Rotation</span>
+                                    <span class="text-yellow-500 text-xs ml-auto">Suggested</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- 3. Neural Rail (Right) - The Copilot -->
+    <aside class="w-[320px] flex flex-col flex-shrink-0 z-30 border-l border-base-300 bg-base-200/50 backdrop-blur-md">
+        <!-- Header -->
+        <div class="h-14 flex items-center justify-between px-5 border-b border-base-300">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span class="font-medium text-sm text-base-content">Tenant Copilot</span>
+            </div>
+            <button class="text-base-content/40 hover:text-base-content transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="flex-1 overflow-y-auto p-5 space-y-6">
+            
+            <!-- AI Message -->
+            <div class="flex gap-3">
+                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex-shrink-0 flex items-center justify-center text-[10px] text-white">AI</div>
+                <div class="space-y-2">
+                    <div class="text-sm text-base-content/80 leading-relaxed">
+                        Welcome back! I noticed your storage usage is at 45%. Would you like to review your retention policies or upgrade your plan?
+                    </div>
+                    <!-- Suggestion Chips -->
+                    <div class="flex flex-wrap gap-2 pt-1">
+                        <button class="px-3 py-1.5 rounded-lg bg-base-300/50 hover:bg-base-300 border border-base-300 text-xs text-base-content/70 transition-all">Review Retention</button>
+                        <button class="px-3 py-1.5 rounded-lg bg-base-300/50 hover:bg-base-300 border border-base-300 text-xs text-base-content/70 transition-all">Upgrade Plan</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Message -->
+            <div class="flex gap-3 flex-row-reverse">
+                <div class="w-6 h-6 rounded-full bg-base-300 flex-shrink-0 flex items-center justify-center text-[10px] text-base-content">JD</div>
+                <div class="bg-primary/10 border border-primary/20 rounded-2xl rounded-tr-sm px-4 py-2 text-sm text-base-content">
+                    How do I invite a new admin user?
+                </div>
+            </div>
+
+            <!-- AI Response with Action -->
+            <div class="flex gap-3">
+                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex-shrink-0 flex items-center justify-center text-[10px] text-white">AI</div>
+                <div class="space-y-3">
+                    <div class="text-sm text-base-content/80 leading-relaxed">
+                        You can invite new users from the <strong>Organization</strong> settings. I can draft an invitation for you right now.
+                    </div>
+                    
+                    <!-- Interactive Card -->
+                    <div class="border border-base-300 rounded-lg bg-base-100 p-3">
+                        <div class="text-xs font-medium text-base-content/60 mb-2 uppercase tracking-wide">Draft Invitation</div>
+                        <input type="email" placeholder="email@example.com" class="w-full bg-base-200 border border-base-300 rounded px-3 py-2 text-sm text-base-content mb-2 focus:outline-none focus:border-primary/50">
+                        <select class="w-full bg-base-200 border border-base-300 rounded px-3 py-2 text-sm text-base-content mb-3 focus:outline-none focus:border-primary/50">
+                            <option>Admin</option>
+                            <option>Member</option>
+                            <option>Viewer</option>
+                        </select>
+                        <button class="w-full py-1.5 rounded bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors">Send Invitation</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 border-t border-base-300 bg-base-200/50">
+            <div class="relative">
+                <input type="text" placeholder="Ask Copilot..." class="w-full bg-base-100 border border-base-300 rounded-lg pl-3 pr-10 py-2.5 text-sm text-base-content placeholder:text-base-content/40 focus:outline-none focus:border-base-content/20 focus:bg-base-100 transition-all">
+                <button class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-base-content/40 hover:text-base-content transition-colors">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+                </button>
+            </div>
+            <div class="text-[10px] text-center text-base-content/40 mt-2 font-mono">AI-generated content may be inaccurate.</div>
+        </div>
+    </aside>
+
+</body>
+</html>
