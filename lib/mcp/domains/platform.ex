@@ -24,5 +24,6 @@ defmodule Mcp.Platform do
     resource Mcp.Platform.Address
     resource Mcp.Platform.Email
     resource Mcp.Platform.Phone
+    resource Mcp.Platform.PayfacConfiguration
   end
 end

@@ -15,6 +15,16 @@ defmodule Mcp.Finance.Balance do
     transfer_resource(Mcp.Finance.Transfer)
   end
 
+  relationships do
+    belongs_to :account, Mcp.Finance.Account do
+      domain Mcp.Finance
+    end
+
+    belongs_to :transfer, Mcp.Finance.Transfer do
+      domain Mcp.Finance
+    end
+  end
+
   attributes do
     uuid_primary_key :id
     timestamps()

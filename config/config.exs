@@ -48,7 +48,8 @@ config :mcp,
     Mcp.Payments,
     Mcp.Finance,
     Mcp.Audit,
-    Mcp.Ai
+    Mcp.Ai,
+    Mcp.Underwriting
   ],
   base_domain: "localhost"
 

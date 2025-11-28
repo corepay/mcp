@@ -10,11 +10,12 @@ defmodule Mcp.Platform.Merchant do
       AshPostgres.DataLayer,
       AshJsonApi.Resource,
       AshJsonApi.Resource,
-      Mcp.Graph.Extension,
+      AshJsonApi.Resource,
+      # Mcp.Graph.Extension,
       AshArchival
     ]
 
-  use Mcp.Graph.Extension
+  # use Mcp.Graph.Extension
 
   # paper_trail do
   # end
@@ -215,6 +216,14 @@ defmodule Mcp.Platform.Merchant do
     end
 
     has_many :mids, Mcp.Platform.MID
+
+    has_many :underwriting_applications, Mcp.Underwriting.Application do
+      domain Mcp.Underwriting
+    end
+
+    has_many :risk_assessments, Mcp.Underwriting.RiskAssessment do
+      domain Mcp.Underwriting
+    end
   end
 
   code_interface do

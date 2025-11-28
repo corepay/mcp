@@ -1,0 +1,3017 @@
+{
+	"info": {
+		"_postman_id": "d3eff927-f7a0-4a16-943b-645f40ae5eda",
+		"name": "iDenfy API requests",
+		"description": "### **iDenfy API Collection**\n\nWelcome to the **iDenfy API Collection**, designed to streamline your **Know Your Customer (KYC)**, **Anti-Money Laundering (AML)**, and **Know Your Business (KYB)** processes efficiently.\n\n#### 🚀 **Key Features:**\n\n- **Token Generation:** Secure token-based authentication for API interactions.\n    \n- **Client Redirection:** Seamlessly redirect clients to iDenfy for verification.\n    \n- **Direct Processing:** Enable fully automated verification workflows without manual intervention.\n    \n- **Identification Reports:** Generate detailed PDF reports for compliance and audit trails.\n    \n- **Adverse Media & PEP Screening:** Integrated checks against sanctions, PEPs, and negative news databases.\n    \n\n---\n\n#### 🔑 **Authorization:**\n\nAll API requests require secure authentication via bearer tokens. Refer to the **\"Generating Token\"** section to get started.\n\n##### **Setting Up Environment Variables:**\n\nTo securely manage your API credentials in Postman:\n\n1. **Go to the \"Environments\" tab** on the left sidebar.\n    \n2. **Click \"Add\"** to create a new environment or select an existing one (e.g., Production).\n    \n3. Add the following variables:\n    \n    - **Variable Name:** `API_KEY`\n        \n        - **Initial Value:** _Your API Key_\n            \n    - **Variable Name:** `API_SECRET`\n        \n        - **Initial Value:** _Your API Secret_\n            \n4. **Save the environment** and ensure it's selected in the top-right corner of Postman.\n    \n\nPostman will automatically insert these values when sending API requests.\n\n---\n\n#### 📚 **Documentation:**\n\nFor detailed API endpoints, parameters, and response examples, visit our [Complete Documentation](https://null).\n\n---\n\n#### 💡 **Get Started:**\n\n1. Generate your API token using the **\"Generating Token\"** request.\n    \n2. Configure environment variables (`{{API_KEY}}` and `{{API_SECRET}}`) for secure and easy testing.\n    \n3. Start with the **KYC request flow** or directly integrate **AML** and **KYB** checks into your system.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "676824",
+		"_collection_link": "https://www.postman.com/idenfy-developers/idenfy-public-api/collection/gwjcqp9/idenfy-api-requests?action=share&source=collection_link&creator=676824"
+	},
+	"item": [
+		{
+			"name": "KYC",
+			"item": [
+				{
+					"name": "KYC Generating token",
+					"item": [
+						{
+							"name": "KYC Generating identification token",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{  \n   \"clientId\":\"100000\",\n   \"firstName\":\"John Tom\",\n   \"lastName\":\"Smith\",\n   \"successUrl\":\"https://www.my-company.com/idenfy/success\", //URL for succesful ID verification\n   \"errorUrl\":\"https://www.my-company.com/idenfy/fail\",  //URL for failed ID verification\n   \"locale\":\"en\",  //Starting language\n   \"showInstructions\":true,\n   \"expiryTime\":600, //Time before token expires\n   \"sessionLength\":600, //Time when session starts. It replaces expiry time.\n   \"country\":\"lt\", // Allowed countries\n   \"documents\":[\"PASSPORT\"], //Allowed documents\n   \"dateOfBirth\": \"1990-12-20\",//Cossmatching\n   \"dateOfExpiry\": \"1990-12-20\",//Cossmatching\n   \"dateOfIssue\": \"1990-12-20\",//Cossmatching\n   \"nationality\": \"lt\",//Cossmatching\n   \"personalNumber\": \"123456789\",//Cossmatching\n   \"documentNumber\": \"123456\",//Cossmatching\n   \"sex\": \"M\",//Cossmatching\n   \"address\": \"Address\",//Cossmatching\n   \"tokenType\": \"IDENTIFICATION\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/token?=",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"token"
+									],
+									"query": [
+										{
+											"key": "",
+											"value": ""
+										}
+									]
+								},
+								"description": "###### Generating a token\n\nSend an HTTP POST request to: [<b>https://ivs.idenfy.com/api/v2/token</b>](https://ivs.idenfy.com/api/v2/token)\n\n  \nThe request must contain basic auth headers, where the username is the API key and the password is the API secret.  \nAs for the body, only the client ID is required. Other information is optional and used for customization as needed.\n\n  \nRead more: [<b>https://documentation.idenfy.com/API/GeneratingIdentificationToken</b>](https://documentation.idenfy.com/API/GeneratingIdentificationToken)"
+							},
+							"response": []
+						}
+					],
+					"description": "# Generating a token\n\nSend a HTTP Post request to: `https://ivs.idenfy.com/api/v2/token`\n\n##### Important note:\n\nIf provided information is incorrect or difference than information in the document You would get verification DENIED with document status : DOC_INFO_MISMATCH  \nWe recommend:\n\nProvide only clientId value while generating a token. Do not provide client information. Often clients make mistakes and cannot pass identification successfully. Use client information (name, surname and etc.) from our system(Callback). This would prevent errors and improve user experience."
+				},
+				{
+					"name": "KYC Additional step upload/re-upload",
+					"item": [
+						{
+							"name": "KYC Additional step upload",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"scanRef\": \"3f2d0e6a-0a37-11ec-a45b-025ad99a18e7\",\n  \"image\": \"{{Base64 image}}\", // Only base64 Image\n  \"step\": \"UTILITY_BILL\", //Name of the Additional step, by default it should be UTILITY_BILL\n  \"additionalData\": { //Additional data is required for COMPARE\n    \"address\": \"1234, Drive/Street, City/State, postcode, etc.\"\n  }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/upload-additional-step",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"upload-additional-step"
+									]
+								},
+								"description": "Additional step upload requires:\n\nThe request must contain basic auth headers, where the username is the API key and the password is the API secret.\n\nBody should contain:\n\n- Scanref\n    \n- BASE64 image\n    \n- If COMPARE method is used Additional Data -> Address is required\n    \n\nImportant information\n\nThe photos need to be converted into _base64_ format."
+							},
+							"response": []
+						}
+					],
+					"description": "# Additional step upload/re-upload\n\nIf a user uploads an invalid additional step, for example, a utility bill that is older than 3 months, there is a possibility to reupload the file without the need to undergo the verification process again.\n\n(Requests sent to the `https://ivs.idenfy.com/api/v2/upload-additional-step` endpoint will only work if the custom additional step exists in your account settings.)"
+				},
+				{
+					"name": "KYC Direct processing",
+					"item": [
+						{
+							"name": "KYC Direct processing",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"authToken\": \"3FA5TFPA2ZE3LMPGGS1EGOJNJE\", //\n    \"country\": \"LT\",\n    \"documentType\": \"ID_CARD\",\n    \"images\": {\n        \"FRONT\":\"{{Base64}}\",\n        \"BACK\":\"{{Base64}}\",\n        \"FACE\":\"{{Base64}}\"\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/process",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"process"
+									]
+								},
+								"description": "Direct processing\n\nThis endpoint lets you upload customer photos yourself and start processing instantly. The identification token is deactivated after this request.  \nNotice\n\nUsing this implementation type you lose these features: 3D liveness detection and short video before taking photos. If 3D liveness detection and short video before taking photos is required for you, please use another integration type.  \nSending request\n\nSend a HTTP Post request to: [https://ivs.idenfy.com/api/v2/process](https://ivs.idenfy.com/api/v2/process)  \nThe request must contain basic auth headers where username is api key and password is api secret.\n\nRead more: [https://documentation.idenfy.com/API/DirectProcessing](https://documentation.idenfy.com/API/DirectProcessing)"
+							},
+							"response": []
+						}
+					],
+					"description": "##### Direct processing\n\nThis endpoint lets you upload customer photos yourself and start processing instantly.The endpoint does not generate a new verification and it needs to be generated before. Also the identification token is deactivated after this request.\n\n##### **!Please note!**\n\nUsing this implementation type you lose these features: 3D liveness detection and short video before taking photos. If 3D liveness detection and short video before taking photos is required for you, please use another integration type."
+				},
+				{
+					"name": "KYC PDF identification report",
+					"item": [
+						{
+							"name": "KYC Download identification report",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"scanRef\": \"{{scanRef}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/generate-pdf",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"generate-pdf"
+									]
+								},
+								"description": "Generate identification report\n\nThis endpoint lets you get report in pdf about identification.  \nSending request:\n\nSend a HTTP Post request to: [https://ivs.idenfy.com/api/v2/generate-pdf/](https://ivs.idenfy.com/api/v2/generate-pdf/)\n\nThe request must contain basic auth headers where username is API key and password is API secret and _scanRef_ in body of the request.\n\nRead more: [https://documentation.idenfy.com/API/IdentificationPDF](https://documentation.idenfy.com/API/IdentificationPDF)"
+							},
+							"response": []
+						}
+					],
+					"description": "Generate identification report\n\nThis endpoint lets you get the report about identification in a PDF file.  \nReport contains:\n\n- Verification\n    \n- Data Verification\n    \n- status Miscellaneous\n    \n- Data AML\n    \n- Data LID\n    \n- Data Face\n    \n- Photo Document\n    \n- Photos"
+				},
+				{
+					"name": "KYC Deleting IDV",
+					"item": [
+						{
+							"name": "KYC Deleting specific ID verification",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"scanRef\": \"{{scanRef}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/delete",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"delete"
+									]
+								},
+								"description": "This endpoint lets you delete ID verification  \nSending request:\n\nSend a HTTP Post request to: https://ivs.idenfy.com/api/v2/delete\n\nThe request must contain basic auth headers where username is API key and password is API secret and user you wish to delete _scanRef_ in body of the request.\n\nRead more: [https://documentation.idenfy.com/API/IdentificationDeletion](https://documentation.idenfy.com/API/IdentificationDeletion)"
+							},
+							"response": []
+						}
+					],
+					"description": "This API allows you to delete ID verification using scanRef. After sending the request and receiving response **200** means that the IDV was succefully deleted.\n\n### !!! Please note, that once the IDV is deleted, it cannot be restored !!!"
+				},
+				{
+					"name": "KYC Verification data",
+					"item": [
+						{
+							"name": "KYC Identification status",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"scanRef\":\"scan-ref\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/status",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"status"
+									]
+								},
+								"description": "The endpoint returns an overall status of the identification.\n\nRead more: [https://documentation.idenfy.com/API/IdentificationDataRetrieval#verification-status](https://documentation.idenfy.com/API/IdentificationDataRetrieval#verification-status)"
+							},
+							"response": []
+						},
+						{
+							"name": "KYC Identification data",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"scanRef\":\"scan-ref\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/data",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"data"
+									]
+								},
+								"description": "The endpoint returns data of the verification.\n\nRead more: [https://documentation.idenfy.com/API/IdentificationDataRetrieval#verification-data](https://documentation.idenfy.com/API/IdentificationDataRetrieval#verification-data)"
+							},
+							"response": []
+						},
+						{
+							"name": "KYC Identification file urls",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"scanRef\":\"scan-ref\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/files",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"files"
+									]
+								},
+								"description": "The endpoint returns urls for photos and photos sequence created during verification process\n\nRead more: [https://documentation.idenfy.com/API/IdentificationDataRetrieval#verification-file-urls](https://documentation.idenfy.com/API/IdentificationDataRetrieval#verification-file-urls)"
+							},
+							"response": []
+						}
+					],
+					"description": "# Identification data retrieval\n\nYou can additionally check a specific identification (photo urls, status, etc.) Every of the endpoints below accept only one JSON parameter **scanRef** and require a basic auth header (API key and API secret).\n\n- Identification status\n    \n    - The endpoint returns an overall status of the verification. Avoid using the `/api/v2/status` endpoint as part of your main integration. This endpoint is designed to supplement webhooks only in individual cases where the webhook is not working or missing some data.\n        \n- Verification data\n    \n    - The endpoint returns the data of the verification. Such as iformation about the user, documents, used features information (duplicate, additional step, proxy risk ) and other additional information.\n        \n- Verification file URLs[​](https://documentation.idenfy.com/API/IdentificationDataRetrieval#verification-file-urls)\n    \n    - The endpoint returns urls for photos and photos sequence created during verification process.\n        \n\nRead more: [https://documentation.idenfy.com/API/IdentificationDataRetrieval](https://documentation.idenfy.com/API/IdentificationDataRetrieval)"
+				},
+				{
+					"name": "KYC Redirect client to iDenfy",
+					"item": [
+						{
+							"name": "Client redirect to identification WEB platform",
+							"request": {
+								"method": "INFO",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/redirect?authToken={{token}}",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"redirect"
+									],
+									"query": [
+										{
+											"key": "authToken",
+											"value": "{{token}}"
+										}
+									]
+								},
+								"description": "###### Client redirect to WEB UI\n\nAfter successfully generating token you should have a valid authToken which looks similarly to this \"3FA5TFPA2ZE3LMPGGS1EGOJNJE\".  \nRedirect action\n\nYou may initiate a HTTP redirect action for your client to [https://ivs.idenfy.com/api/v2/redirect](https://ivs.idenfy.com/api/v2/redirect) by appending a generated token as a url query string parameter.\n\nRead more: [https://documentation.idenfy.com/integration/ClientRedirectToWebUi](https://documentation.idenfy.com/integration/ClientRedirectToWebUi)"
+							},
+							"response": []
+						}
+					],
+					"description": "##### Client redirect to WEB UI\n\nAfter successfully generating token you should have a valid authToken which looks similarly to this \"3FA5TFPA2ZE3LMPGGS1EGOJNJE\".  \nRedirect action\n\nYou may initiate a HTTP redirect action for your client to [https://ivs.idenfy.com/api/v2/redirect](https://ivs.idenfy.com/api/v2/redirect) by appending a generated token as a url query string parameter.\n\nThis only example that should be used as redirect and does not work in postman."
+				}
+			],
+			"description": "# Introduction\n\nThis collection contains all the endpoints needed for KYC integration into your application and system, along with a short description of the main parts of each endpoint's functionality in the overviews.\n\nAlso, for detailed information about each API function, we recommend visiting our technical documentation at [https://documentation.idenfy.com/](https://documentation.idenfy.com/).\n\n# First step\n\nBefore looking through our collection, we recommend first obtaining the API key and API secret by following the helpdesk documentation [#Managing API KEY](https://help.idenfy.com/space/DA/61800617/How+to+manage+API+keys). After retrieving the key, go to the Authorization tab above and insert each key into the specified field. After that, you can use each API without needing to change the API key manually. Also, please save after entering the key as it won't work otherwise.\n\n# Webhooks\n\nAs well we recommend setting up the webhook for testing the responses. You can do that by following our [#Managing Webhooks](https://help.idenfy.com/space/RC/415563783/Email%2FWebhook+Notifications) documentation. If you currently do not have a webhook destination, you can also test them using [https://webhook.site/](https://webhook.site/) web application. It will allow you to see how the responses will look like."
+		},
+		{
+			"name": "AML",
+			"item": [
+				{
+					"name": "AML Single Check",
+					"item": [
+						{
+							"name": "AML Single Check",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "username",
+											"value": "{{API_KEY}}",
+											"type": "string"
+										},
+										{
+											"key": "password",
+											"value": "{{API_SECRET}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"mode\": \"DATA\",\n  \"services\": [\"COMPANY\"],\n  \"data\": [\n    {\n      \"companyName\":\"Gazprom\"\n\n    }\n  ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/fraud/check",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"fraud",
+										"check"
+									]
+								},
+								"description": "**Description:**\n\nThis endpoint performs fraud checks against PEP (Politically Exposed Persons) and sanctions lists, as well as adverse media articles, to identify individuals or companies involved in fraudulent activities.\n\n**Key Features:**\n\n**Fraud Detection:** Checks against comprehensive PEP, sanctions, and adverse media databases.  \n**Single Entry Restriction:** Only one data entry (person or company) is allowed per request. Multiple entries will result in an error.\n\n**Limitations/Important Notes:**\n\nEach request can process only one individual or company. Sending multiple entries within the \\`data\\` field will result in an error.\n\n**Development Environment Testing:**\n\n- To trigger a \\`SUSPECTED\\` status for a **company**, use \"GoPayments\".\n    \n- To trigger a \\`SUSPECTED\\` status for a **person**, use \"Manfred Weber\".\n    \n- To trigger a \\`SUSPECTED\\` status for **Adverse Media**, use \"Cliff Hazard\".\n    \n\n### The request must contain JSON with parameters:\n\n| Key | Required | Type | Explanation |\n| --- | --- | --- | --- |\n| `mode` | Yes | `String` | Specifies how fraud check will be performed.  <br>If `IDENTIFICATION` is given, you will have to provide a scanRef in the data field.  <br>If `DATA` is given, you will have to provide all necessary data about client for required services. |\n| `services` | Yes | `List[String]` | Types of services to apply.  <br>`AML` - Anti money laundering service,  <br>`COMPANY` - Company check,  <br>`LID` - Lost and invalid documents registry(**Lithuanian** documents only). |\n| `data` | Yes | `List[Dict]` | Supplied data for fraud check services. The list should consist of one element only. |\n\n#### Specifying AML services\n\n| AML service name | Type | Default | Explanation |\n| --- | --- | --- | --- |\n| `nameCheck` | `Bool` | `true` | Peps & Sanctions name check. Optional, default true |\n| `negativeNews` | `Bool` | `false` | Adverse media articles check. Optional, default false |\n\n#### Filtering AML results\n\n| Key | Type | Constraints | Explanation |\n| --- | --- | --- | --- |\n| `probability` | `Int` | 1-100 | Optional, the higher the number, the more similar the found name has to be to the provided one. Default is 95. |\n| `dateOfBirth` | `String` | `YYYY-MM-DD` | Optional, if the result has a birth date and it clashes with the provided one, the result is not returned. |\n| `nationality` | `String` | length = 3 | Optional, if the result has a nationality and it clashed with the provided one, the result is not returned. |"
+							},
+							"response": []
+						},
+						{
+							"name": "AML Check Report",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "username",
+											"value": "{{API_KEY}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/aml-checks/{{check_service}}/{{checkId}}/pdf/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"aml-checks",
+										"{{check_service}}",
+										"{{checkId}}",
+										"pdf",
+										""
+									]
+								},
+								"description": "This endpoint generates and retrieves a PDF report for a single AML (Anti-Money Laundering) check.\n\n**Key Features:**\n\n- **Single AML Check Report:** Retrieves a PDF report for a specific check.\n    \n- **PDF Format:** Returns the report in Base64 encoded PDF format.\n    \n\n**Path Parameters:**\n\n| Path parameter | Type | Required | Sample/available values |\n| --- | --- | --- | --- |\n| `check_servive` | String | Yes | `PERSON_CHECK` or `COMPANY_CHECK` |\n| `checkId` | String | Yes | Unique single AML check identifier |\n\n**Limitations/Important Notes:**\n\n- Only one AML check report can be generated per request.\n    \n- This endpoint does not require a request body. The necessary information is provided in the path parameters.\n    \n- On success (HTTP 200 OK), the response body contains the PDF report encoded in Base64 format.\n    \n- In case of an error, standard HTTP error codes will be returned.\n    \n\n| Path parameter | Type | Required | Sample/available values |\n| --- | --- | --- | --- |\n| `check_servive` | String | Yes | `PERSON_CHECK` or `COMPANY_CHECK` |\n| `checkId` | String | Yes | Unique single AML check identifier |"
+							},
+							"response": []
+						}
+					],
+					"description": "Contains API requests related to AML single checks.\n\nFull documentation [https://documentation.idenfy.com/fraud/amlSingleCheck](https://documentation.idenfy.com/fraud/amlSingleCheck)\n\nMore information about monitoring: [https://www.idenfy.com/aml-screening/](https://www.idenfy.com/aml-screening/)"
+				},
+				{
+					"name": "AML Monitoring",
+					"item": [
+						{
+							"name": "AML Monitoring Add",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Andre\",\n  \"surname\": \"Farin\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/add-aml-user",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"add-aml-user"
+									]
+								},
+								"description": "**Key Features:**\n\n- **Periodic AML Monitoring:** Continuously monitors users and companies for AML compliance.\n    \n- **Automatic Extension:**\n    \n    - Extention subscription can be toggled when creating a monitoring\n        \n    - Extention can be toggled post creation via dashboard or API endpoint\n        \n    - Monitoring will be automatically extended past the expiration date if not manually stopped.\n        \n\n**Development Environment Testing:**\n\n- To trigger an \\`ALERT\\` status for a company, use \"GoPayments\".\n    \n- To trigger an \\`ALERT\\` status for a person, use \"Manfred Weber\".\n    \n- To trigger an \\`ALERT\\` status for Adverse Media, use \"Cliff Hazard\".\n    \n\n#### Parameters:\n\n| JSON key | Type | Explanation |\n| --- | --- | --- |\n| `scanRef` | `String` | A unique string identifying a client verification on iDenfy’s side. |\n| `type` | `String` | Values:  <br>\\-`COMPANY` Specifies the type as a company.  <br>\\-`PERSON` Specifies the type as a person. |\n| `name` | `String` | Name of the monitored user or company. |\n| `surname` | `String` | Surname of the monitored user. |\n| `nationality` | `String` | Nationality of the monitored user. |\n| `dateOfBirth` | `String` | Monitored user's date of birth. |\n| `country` | `String` | Mandatory parameter for the `COMPANY` checks in alpha2/alpha3 format. |\n| `autoExpirationExtension` | `Bool` | The subject's monitoring will be automatically extended after the expiration date if an account has funds. If not, after updating the funds, the previous expired monitoring subjects will be extended. Default value is `true` |"
+							},
+							"response": []
+						},
+						{
+							"name": "AML Monitoring Get",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"monitoringId\": \"65586754-f8f6-11ef-ba0f-72483d7c2a00\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/get-monitoring-callback",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"get-monitoring-callback"
+									]
+								},
+								"description": "**Key Features:**\n\n- Monitoring Data Retrieval: Fetches detailed information about a monitored user or company.\n    \n\n**Limitations/Important Notes:**\n\n- Only one monitoring entry's data can be retrieved per request.\n    \n\n**The request must contain JSON with parameters:**\n\n- `monitoringId`: (String, Required) The unique identifier of the monitoring entry."
+							},
+							"response": []
+						},
+						{
+							"name": "AML Retrieve Monitoring List",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/get-aml-users",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"get-aml-users"
+									]
+								},
+								"description": "**Key Features:**\n\n- **AML Monitoring List Retrieval:** Provides a list of users and companies being monitored.\n    \n\n**Limitations/Important Notes:**\n\n- This endpoint retrieves all monitored entries. For large datasets, consider implementing pagination if provided by the API."
+							},
+							"response": []
+						},
+						{
+							"name": "AML Monitoring Whitelist",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/add-whitelist",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"add-whitelist"
+									]
+								},
+								"description": "This endpoint adds entries to a whitelist, effectively excluding them from future AML (Anti-Money Laundering) checks.\n\n**Key Features:**\n\n- **AML Whitelisting:** Prevents specified entities from being flagged during AML checks.\n    \n\n**Limitations/Important Notes:**\n\n- You must provide **one** of the following identifiers in the request body:\n    \n- `monitoringId`: The unique identifier of an existing AML monitoring entry.\n    \n- `scanRef`: The reference ID of a previous AML scan.\n    \n- `firstName` and `lastName`: The first and last name of the individual to be whitelisted.\n    \n\n| Key | Type | Explanation |\n| --- | --- | --- |\n| `whitelist` | `List` | List of whitelisted sanction and suspicions.  <br>Possible values:  <br>\\- SANCTION  <br>\\- INTERPOL  <br>\\- PEPS  <br>\\- OTHER |\n| `type` | `String` | Values:  <br>\\-`COMPANY` Specifies the type as a company.  <br>\\-`PERSON` Specifies the type as a person. |\n| `monitoringId` | `String` | A unique string identifying a monitored user. |\n| `scanRef` | `String` | A unique string identifying a client verification on iDenfy’s side. |\n| `name` | `String` | Name of the monitored user. |\n| `surname` | `String` | Surname of the monitored user. |\n| `nationality` | `String` | Nationality of the monitored user. |\n| `dateOfBirth` | `String` | Monitored user's date of birth. |\n\n#### Example request with monitoringId:[​](https://documentation.idenfy.com/fraud/AmlSanctionMonitoring#example-request-with-monitoringid)\n\n``` json\n{  \"monitoringId\": \"OVXVXHLL43\",  \"whitelist\": { \"PEPS\": [\"ListNumber\"], \"gb_hmt_sanctions\": [\"entity_id\"] }}\n\n ```\n\n#### Example request with scanRef:[​](https://documentation.idenfy.com/fraud/AmlSanctionMonitoring#example-request-with-scanref)\n\n``` json\n{  \"scanRef\": \"OVXVXHLL43\",  \"whitelist\": { \"PEPS\": [\"ListNumber\"], \"gb_hmt_sanctions\": [\"entity_id\"] }}\n\n ```\n\n#### Example request with additional data:[​](https://documentation.idenfy.com/fraud/AmlSanctionMonitoring#example-request-with-additional-data)\n\n``` json\n{  \"name\": \"name\",  \"surname\": \"surname\",  \"nationality\": \"LT\",  \"dateOfBirth\": \"1999-12-31\",  \"whitelist\": { \"PEPS\": [\"ListNumber\"], \"gb_hmt_sanctions\": [\"entity_id\"] }}\n\n ```\n\n#### Example requests with a company:[​](https://documentation.idenfy.com/fraud/AmlSanctionMonitoring#example-requests-with-a-company)\n\n``` json\n{  \"name\": \"Company's name\",  \"whitelist\": { \"gb_hmt_sanctions\": [\"entity_id\"] }}\n\n ```\n\n``` json\n{  \"monitoringId\": \"monitoringId\",  \"whitelist\": { \"PEPS\": [\"ListNumber\"] }}\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "AML Clear Monitoring",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/clear-user-whitelist/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"clear-user-whitelist",
+										""
+									]
+								},
+								"description": "**Key Features:**\n\n- Whitelist Management: Removes entries from the AML exclusion list.\n    \n\n**Limitations/Important Notes:**\n\n- Only one entry can be removed per request.\n    \n\n**The request must contain JSON with parameters:**\n\n- `monitoringId`: (String, Required) The unique identifier of the monitoring entry to remove."
+							},
+							"response": []
+						},
+						{
+							"name": "AML Delete Monitoring",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"monitoringId\": \"5394159a-f838-11ef-9866-96e1e04691e8\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/delete-monitoring-user/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"delete-monitoring-user",
+										""
+									]
+								},
+								"description": "Deletes monitoring and <u>related records</u> of the monitoring.\n\n##### Example request:[​](https://documentation.idenfy.com/fraud/AmlSanctionMonitoring#example-request-1)\n\n``` json\n{  \"monitoringId\": \"12345678\"}\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "AML Monitoring generate PDF",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"monitoringId\": \"5394159a-f838-11ef-9866-96e1e04691e8\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/generate-pdf-aml",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"generate-pdf-aml"
+									]
+								},
+								"description": "**Key Features:**\n\n- AML Report Generation: Creates a detailed PDF report of a monitored subject.\n    \n\n**Limitations/Important Notes:**\n\n- Only one report can be generated per request.\n    \n- The report is returned in Base64 encoded PDF format.\n    \n\n**The request must contain JSON with parameters:**\n\n- `monitoringId`: (String, Required) The unique identifier of the AML monitoring entry."
+							},
+							"response": []
+						},
+						{
+							"name": "AML Monitoring subscription",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"monitoringId\": \"e1d2a8d5-eb39-11ed-b4c0-0187e22eae15\",\n  \"autoExpirationExtension\": true\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/monitoring-subscription",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"monitoring-subscription"
+									]
+								},
+								"description": "**Key Features:**\n\n- Monitoring Subscription: Controls automatic extension of monitoring periods.\n    \n\n**Limitations/Important Notes:**\n\n- Automatic extension continues until manually unsubscribed or credits are depleted.\n    \n\n**The request must contain JSON with parameters:**\n\n- `monitoringId`: (String, Required) The unique identifier of the monitoring entry.\n    \n- `autoExpirationExtension`: (Boolean, Required) `true` to enable, `false` to disable automatic extension."
+							},
+							"response": []
+						}
+					],
+					"description": "Contains API requests related to AML Monitoring creation and managing.\n\nFull documentation: [https://documentation.idenfy.com/fraud/AmlSanctionMonitoring](https://documentation.idenfy.com/fraud/AmlSanctionMonitoring)\n\nMore information about monitoring: [https://www.idenfy.com/aml-screening/](https://www.idenfy.com/aml-screening/)"
+				}
+			],
+			"description": "The folder holds API requests for money laundering single checks and monitoring",
+			"auth": {
+				"type": "basic",
+				"basic": [
+					{
+						"key": "username",
+						"value": "{{API_KEY}}",
+						"type": "string"
+					},
+					{
+						"key": "password",
+						"value": "{{API_SECRET}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "KYB",
+			"item": [
+				{
+					"name": "KYB Token endpoints",
+					"item": [
+						{
+							"name": "KYB Generate Form Token",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\"tokenType\": \"FORM\",\n\"clientId\": \"54321\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/tokens/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"tokens",
+										""
+									]
+								},
+								"description": "Generates a token used in KYB form link\n\nRequired parameters:\n\n``` json\n{\n\"tokenType\": \"FORM\",\n\"clientId\": \"string\",\n}\n\n ```\n\nResponse will hold `\"tokenString\": \"string\"` which is necessary for form creation, as well as will be used as an authentication method for certain endpoints - Collection variable **Auth_token.**\n\nFull documentation and list of parameters [https://documentation.idenfy.com/KYB/KYBIntegration#12-api](https://documentation.idenfy.com/KYB/KYBIntegration#12-api)"
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Retrieve Token Info",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{Auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/info/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"info",
+										""
+									]
+								},
+								"description": "Retrieves all fields used by the token.\n\nDocumentation - [https://documentation.idenfy.com/KYB/KYBIntegration#221-check-flow](https://documentation.idenfy.com/KYB/KYBIntegration#221-check-flow)"
+							},
+							"response": []
+						}
+					],
+					"description": "The folder holds KYB token-related requests\n\nIn some requests, the KYB form token can / **will need** to be used as an auth method."
+				},
+				{
+					"name": "KYB Form endpoints",
+					"item": [
+						{
+							"name": "KYB Create form",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{Auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\"company\":{\n    \"companyName\": \"iDenfy, UAB\",\n    \"registrationNumber\": \"304617621\",\n    \"country\": \"LT\"\n    }\n\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										""
+									]
+								},
+								"description": "Uses _KYB form token_ as authentication, creates a new company.\n\nRequired parameters:\n\n``` json\n{\n\"companyName\": \"string\",\n\"country\": \"AF\"\n}\n\n ```\n\nFull documentation and list of parameters [https://documentation.idenfy.com/KYB/KYBIntegration#12-api](https://documentation.idenfy.com/KYB/KYBIntegration#12-api)"
+							},
+							"response": []
+						},
+						{
+							"name": "KYB List forms",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{Auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										""
+									]
+								},
+								"description": "Retrieves detailed information about an active KYB session, including various aspects of the company's compliance and verification process"
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Retrieve form info",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "{{API_SECRET}}",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "{{API_KEY}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										""
+									],
+									"query": [
+										{
+											"key": "",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "",
+											"value": null,
+											"disabled": true
+										}
+									]
+								},
+								"description": "Retrieves specific company information.\n\nCompany ID - `\"id\": \"string\"` will be responded to after submitting the KYB form, or will be received as a webhook response if UI is used to fill the form."
+							},
+							"response": []
+						},
+						{
+							"name": "Update form info",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "{{API_SECRET}}",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "{{API_KEY}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										""
+									]
+								},
+								"description": "Updates company form.\n\nCompany ID - `\"id\": \"string\"` will be responded to after submitting the KYB form, or will be received as a webhook response if UI is used to fill the form."
+							},
+							"response": []
+						},
+						{
+							"name": "Change form information",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{Auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"id\": \"MEFWox6tsoyB3wS9rJGK8y\",\n    \"company\": {\n        \"companyName\": \"Best Company\",\n        \"registrationNumber\": \"12345\",\n        \"country\": \"LT\",\n        \"additionalInfo\": {\n            \"YOcWWdmezV\": {\n                \"title\": \"House Number\",\n                \"type\": \"TEXT\",\n                \"value\": \"54321\"\n            }\n        }\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										""
+									]
+								},
+								"description": "Updates **only** specific sections of the form.\n\nCompany ID - `\"id\": \"string\"` will be responded to after submitting the KYB form, or will be received as a webhook response if UI is used to fill the form."
+							},
+							"response": []
+						},
+						{
+							"name": "Submit form",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\"tokenType\": \"FORM\",\n\"clientId\": \"54321\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/submit/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"submit",
+										""
+									]
+								},
+								"description": "Submit a filled KYB form for review.\n\nThe form will be submitted and you will not be able to edit this KYB form any further unless additional information will be requested during a manual review.\n\nAfter submission, automatic blacklist and automation processes are executed. Then this KYB form will be reviewed by humans. After manual review, you may receive a webhook callback."
+							},
+							"response": []
+						}
+					],
+					"description": "Company creation and managing endpoints"
+				},
+				{
+					"name": "KYB Documents endpoints",
+					"item": [
+						{
+							"name": "KYB List documents",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/documents/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"documents",
+										""
+									]
+								},
+								"description": "Lists all related company documents."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Add New Document",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\"type\": \"INCORPORATION_CERT\",\n\"filename\": \"string\",\n\"file\": \"string\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/documents/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"documents",
+										""
+									]
+								},
+								"description": "Adds a new document to the company.\n\nFull list of **types** in documentation [https://documentation.idenfy.com/KYB/KYBIntegration#223-documents](https://documentation.idenfy.com/KYB/KYBIntegration#223-documents)"
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Retrieve Document",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/documents/{{document_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"documents",
+										"{{document_id}}",
+										""
+									]
+								},
+								"description": "Retrieve specific documents by their ID."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Update Document",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/documents/{{document_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"documents",
+										"{{document_id}}",
+										""
+									]
+								},
+								"description": "Update specific document."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Partially Update Document",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/documents/{{company_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"documents",
+										"{{company_id}}",
+										""
+									]
+								},
+								"description": "Partially update specific document."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Delete Document",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/documents/{{document_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"documents",
+										"{{document_id}}",
+										""
+									]
+								},
+								"description": "Delete specific document."
+							},
+							"response": []
+						}
+					],
+					"description": "The folder holds endpoints related to managing documents of specific companies.\n\nFull documentation, explanation, and variables - [https://documentation.idenfy.com/KYB/KYBIntegration#223-documents](https://documentation.idenfy.com/KYB/KYBIntegration#223-documents)"
+				},
+				{
+					"name": "KYB Beneficiaries endpoints",
+					"item": [
+						{
+							"name": "KYB List Beneficiaries",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/beneficiaries/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"beneficiaries",
+										""
+									]
+								},
+								"description": "List all beneficiaries of specific company."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Add New Beneficiary",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/beneficiaries/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"beneficiaries",
+										""
+									]
+								},
+								"description": "Add a new beneficiary to the specific company."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Retrieve Beneficiary",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/beneficiaries/{{beneficiary_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"beneficiaries",
+										"{{beneficiary_id}}",
+										""
+									]
+								},
+								"description": "Retrieve a specific beneficiary of a specific company."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Update Beneficiary",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/beneficiaries/{{beneficiary_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"beneficiaries",
+										"{{beneficiary_id}}",
+										""
+									]
+								},
+								"description": "Updates a specific beneficiary of a specific company."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Partially Update Beneficiary",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/beneficiaries/{{beneficiary_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"beneficiaries",
+										"{{beneficiary_id}}",
+										""
+									]
+								},
+								"description": "Updates parts of a specific beneficiary of a specific company."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Delete Beneficiary",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/beneficiaries/{{beneficiary_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"beneficiaries",
+										"{{beneficiary_id}}",
+										""
+									]
+								},
+								"description": "Deletes a specific beneficiary of a specific company."
+							},
+							"response": []
+						}
+					],
+					"description": "Managing beneficiaries of the specific company.\n\nFull information about parameters [https://documentation.idenfy.com/KYB/KYBIntegration/#224-beneficiaries](https://documentation.idenfy.com/KYB/KYBIntegration/#224-beneficiaries)"
+				},
+				{
+					"name": "KYB Beneficiary Documents enpoints",
+					"item": [
+						{
+							"name": "KYB List Beneficiary Documents",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/beneficiaries/{{beneficiary_id}}/documents/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"beneficiaries",
+										"{{beneficiary_id}}",
+										"documents",
+										""
+									]
+								},
+								"description": "Lists all documents of specific beneficiary."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Add New Beneficiary Document",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/beneficiaries/{{beneficiary_id}}/documents/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"beneficiaries",
+										"{{beneficiary_id}}",
+										"documents",
+										""
+									]
+								},
+								"description": "Lists all documents of specific beneficiary."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Retrieve Beneficiary Document",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/beneficiaries/{{beneficiary_id}}/documents/{{beneficiary_document_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"beneficiaries",
+										"{{beneficiary_id}}",
+										"documents",
+										"{{beneficiary_document_id}}",
+										""
+									]
+								},
+								"description": "Retrieve specific documents from the specific beneficiary."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Update Beneficiary Document",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/beneficiaries/{{beneficiary_id}}/documents/{{beneficiary_document_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"beneficiaries",
+										"{{beneficiary_id}}",
+										"documents",
+										"{{beneficiary_document_id}}",
+										""
+									]
+								},
+								"description": "Upadte specific documents from the specific beneficiary."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Partially Update Beneficiary Document",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/beneficiaries/{{beneficiary_id}}/documents/{{beneficiary_document_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"beneficiaries",
+										"{{beneficiary_id}}",
+										"documents",
+										"{{beneficiary_document_id}}",
+										""
+									]
+								},
+								"description": "Update part of specific documents from the specific beneficiary."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Delete Beneficiary Document",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/beneficiaries/{{beneficiary_id}}/documents/{{beneficiary_document_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"beneficiaries",
+										"{{beneficiary_id}}",
+										"documents",
+										"{{beneficiary_document_id}}",
+										""
+									]
+								},
+								"description": "Delete specific documents from the specific beneficiary."
+							},
+							"response": []
+						}
+					],
+					"description": "The folder holds API requests related to managing beneficiary documents.\n\nFull documentation, parameters, and variables [https://documentation.idenfy.com/KYB/KYBIntegration/#225-beneficiaries-documents](https://documentation.idenfy.com/KYB/KYBIntegration/#225-beneficiaries-documents)"
+				},
+				{
+					"name": "KYB Questionnaire endpoints",
+					"item": [
+						{
+							"name": "KYB List questionnaires",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/questionnaires/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"questionnaires",
+										""
+									]
+								},
+								"description": "List all questionnaires associated with the company."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Retrieve Questionnaire",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/questionnaires/{{questionnaire_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"questionnaires",
+										"{{questionnaire_id}}",
+										""
+									]
+								},
+								"description": "Retrieves specific questionnaires from the company."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Update Questionnaire Answers",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/questionnaires/{{questionnaire_id}}}/answers/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"questionnaires",
+										"{{questionnaire_id}}}",
+										"answers",
+										""
+									]
+								},
+								"description": "Updates specific questionnaire answeres."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Retrieve Answers",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/questionnaires/{{questionnaire_id}}}/answers/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"questionnaires",
+										"{{questionnaire_id}}}",
+										"answers",
+										""
+									]
+								},
+								"description": "Retrieves answers to a specific questionnaire associated with the company."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Retrieve All Questionnaires' Answers",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/questionnaires/answers/detail/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"questionnaires",
+										"answers",
+										"detail",
+										""
+									]
+								},
+								"description": "Retrieves all questions from all questionnaires associated with the company."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Delete Questionnaire Answers",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/forms/{{company_id}}/questionnaires/{{questionnaire_id}}}/answers/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"forms",
+										"{{company_id}}",
+										"questionnaires",
+										"{{questionnaire_id}}}",
+										"answers",
+										""
+									]
+								},
+								"description": "Deletes answers provided in a specific questionnaire."
+							},
+							"response": []
+						}
+					],
+					"description": "The folder holds API requests related to managing KYB company questionnaires.\n\nFull documentation, parameters, and explanation - [https://documentation.idenfy.com/KYB/KYBIntegration#226-questionnaires](https://documentation.idenfy.com/KYB/KYBIntegration#226-questionnaires)"
+				},
+				{
+					"name": "KYB Company endpoints",
+					"item": [
+						{
+							"name": "KYB Change Company Status",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "{{API_SECRET}}",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "{{API_KEY}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\"status\": \"NEED_TO_PROCESS\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/companies/{{company_id}}/change-status/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"companies",
+										"{{company_id}}",
+										"change-status",
+										""
+									]
+								},
+								"description": "Full information and statuses [https://documentation.idenfy.com/KYB/KYBIntegration#3-company-review](https://documentation.idenfy.com/KYB/KYBIntegration#3-company-review)"
+							},
+							"response": []
+						},
+						{
+							"name": "KYB List Companies",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/companies/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"companies",
+										""
+									]
+								},
+								"description": "Retrieve a list of all companies.\n\nDocumentation [https://documentation.idenfy.com/KYB/KYBIntegration#53-checkretrieve-companies](https://documentation.idenfy.com/KYB/KYBIntegration#53-checkretrieve-companies)"
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Delete Company",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/companies/{{company_id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"companies",
+										"{{company_id}}",
+										""
+									]
+								},
+								"description": "Deletes company.\n\n<u><b>Deletion</b></u> is permanent, with no retention period."
+							},
+							"response": []
+						},
+						{
+							"name": "KYB Generate Company PDF",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/kyb/companies/{{company_id}}/pdf/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"kyb",
+										"companies",
+										"{{company_id}}",
+										"pdf",
+										""
+									]
+								},
+								"description": "Generates a PDF report of a specific company.\n\n[https://documentation.idenfy.com/KYB/KYBIntegration#55-generating-kyb-report](https://documentation.idenfy.com/KYB/KYBIntegration#55-generating-kyb-report)"
+							},
+							"response": []
+						}
+					],
+					"description": "The folder contains requests, that manages companies."
+				},
+				{
+					"name": "Reports endpoints",
+					"item": [
+						{
+							"name": "Credit Bureau",
+							"item": [
+								{
+									"name": "Credit Bureau Lite",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://ivs.idenfy.com/api/v2/credit-bureau-documents/search/?companyName={{company_name}}&registryNumber={{registrationNumber}}&countries={{countryCode}}",
+											"protocol": "https",
+											"host": [
+												"ivs",
+												"idenfy",
+												"com"
+											],
+											"path": [
+												"api",
+												"v2",
+												"credit-bureau-documents",
+												"search",
+												""
+											],
+											"query": [
+												{
+													"key": "companyName",
+													"value": "{{company_name}}"
+												},
+												{
+													"key": "registryNumber",
+													"value": "{{registrationNumber}}"
+												},
+												{
+													"key": "countries",
+													"value": "{{countryCode}}"
+												}
+											]
+										},
+										"description": "| Parameter(query) | Type | Required | Sample/available values |\n| --- | --- | --- | --- |\n| `companyName` | String | Yes | \"My company\" |\n| `countries` | String | Yes | 2-digit ISO country code, e.g. \"DE\" |\n| `registryNumber` | String | Yes | \"12511182\" |\n\nFull documentation [https://documentation.idenfy.com/KYB/ReportAPI#search](https://documentation.idenfy.com/KYB/ReportAPI#search)"
+									},
+									"response": []
+								},
+								{
+									"name": "Credit Bureau Report",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n\n\"companyName\": \"Idenfy, UAB\",\n\"countries\": [\"LT\"],\n\"registryNumber\": \"304617621\"\n\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://ivs.idenfy.com/api/v2/credit-bureau-documents/report/",
+											"protocol": "https",
+											"host": [
+												"ivs",
+												"idenfy",
+												"com"
+											],
+											"path": [
+												"api",
+												"v2",
+												"credit-bureau-documents",
+												"report",
+												""
+											]
+										},
+										"description": "| Parameter | Type | Required | Sample/available values |\n| --- | --- | --- | --- |\n| `countries` | Array\\[String\\] | Yes | 2-digit ISO country code, e.g. \"DE\" |\n| `companyName` | String | Yes | \"Company Name\" |\n| `registryNumber` | String | Yes | \"12511182\" |\n\nFull documentation [https://documentation.idenfy.com/KYB/ReportAPI#order-credit-bureau-company-report](https://documentation.idenfy.com/KYB/ReportAPI#order-credit-bureau-company-report)"
+									},
+									"response": []
+								},
+								{
+									"name": "Credit Bureau Retrieve Specific Document",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://ivs.idenfy.com/api/v2/credit-bureau-documents/{{creit_bureau_report_id}}/",
+											"protocol": "https",
+											"host": [
+												"ivs",
+												"idenfy",
+												"com"
+											],
+											"path": [
+												"api",
+												"v2",
+												"credit-bureau-documents",
+												"{{creit_bureau_report_id}}",
+												""
+											]
+										},
+										"description": "Retrieves specific document by ID.\n\nFull documentation [https://documentation.idenfy.com/KYB/ReportAPI#retrieve-specific-credit-bureau-document](https://documentation.idenfy.com/KYB/ReportAPI#retrieve-specific-credit-bureau-document)"
+									},
+									"response": []
+								},
+								{
+									"name": "Credit Bureau Retrieve All Documents",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://ivs.idenfy.com/api/v2/credit-bureau-documents/",
+											"protocol": "https",
+											"host": [
+												"ivs",
+												"idenfy",
+												"com"
+											],
+											"path": [
+												"api",
+												"v2",
+												"credit-bureau-documents",
+												""
+											]
+										},
+										"description": "Retrieves all generated documents.\n\nFull documentation [https://documentation.idenfy.com/KYB/ReportAPI#retrieve-all-credit-bureau-documents](https://documentation.idenfy.com/KYB/ReportAPI#retrieve-all-credit-bureau-documents)"
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "GOV Registry",
+							"item": [
+								{
+									"name": "GOV Registry Lite",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://ivs.idenfy.com/api/v2/gov-registers-documents/search/?companyName={{company_name}}&registryNumber={{registrationNumber}}&countryCode={{countryCode}}",
+											"protocol": "https",
+											"host": [
+												"ivs",
+												"idenfy",
+												"com"
+											],
+											"path": [
+												"api",
+												"v2",
+												"gov-registers-documents",
+												"search",
+												""
+											],
+											"query": [
+												{
+													"key": "companyName",
+													"value": "{{company_name}}"
+												},
+												{
+													"key": "registryNumber",
+													"value": "{{registrationNumber}}"
+												},
+												{
+													"key": "countryCode",
+													"value": "{{countryCode}}"
+												}
+											]
+										},
+										"description": "| Parameter(query) | Type | Required | Sample/available values |\n| --- | --- | --- | --- |\n| `company_name` | String | Yes | \"Mycompany\", check note above |\n| `country_code` | String | Yes | 2-digit ISO country code, check the note above |\n| `registry_number` | String | Yes | \"12511182\" |\n| `region` | String | for US & Canada | 2-digit ISO state code |\n\nFull documentation [https://documentation.idenfy.com/KYB/ReportAPI#gov-registry](https://documentation.idenfy.com/KYB/ReportAPI#gov-registry)"
+									},
+									"response": []
+								},
+								{
+									"name": "GOV Registry Report",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n\n\"companyName\": \"Idenfy, UAB\",\n\"countryCode\": \"LT\",\n\"registryNumber\": \"304617621\"\n\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://ivs.idenfy.com/api/v2/gov-registers-documents/report/",
+											"protocol": "https",
+											"host": [
+												"ivs",
+												"idenfy",
+												"com"
+											],
+											"path": [
+												"api",
+												"v2",
+												"gov-registers-documents",
+												"report",
+												""
+											]
+										},
+										"description": "Orders GOV registry report for a company."
+									},
+									"response": []
+								},
+								{
+									"name": "GOV Registry Retrieve Specific Document",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://ivs.idenfy.com/api/v2/gov-registers-documents/{{GOV_registry_report_id}}",
+											"protocol": "https",
+											"host": [
+												"ivs",
+												"idenfy",
+												"com"
+											],
+											"path": [
+												"api",
+												"v2",
+												"gov-registers-documents",
+												"{{GOV_registry_report_id}}"
+											]
+										},
+										"description": "Retrieves specific GOV registry documents from all the ordered documents."
+									},
+									"response": []
+								},
+								{
+									"name": "GOV Registry Retrieve All Documents",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"auth": {
+											"type": "basic",
+											"basic": [
+												{
+													"key": "password",
+													"value": "{{API_SECRET}}",
+													"type": "string"
+												},
+												{
+													"key": "username",
+													"value": "{{API_KEY}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://ivs.idenfy.com/api/v2/gov-registers-documents/",
+											"protocol": "https",
+											"host": [
+												"ivs",
+												"idenfy",
+												"com"
+											],
+											"path": [
+												"api",
+												"v2",
+												"gov-registers-documents",
+												""
+											]
+										},
+										"description": "Retrieves all ordered GOV registry documents."
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Registry Reports",
+							"item": [
+								{
+									"name": "Registry Reports Available Documents",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://ivs.idenfy.com/api/v2/gov-ordered-documents/available-documents/?countryCode={{countryCode}}&registrationNumber={{registrationNumber}}",
+											"protocol": "https",
+											"host": [
+												"ivs",
+												"idenfy",
+												"com"
+											],
+											"path": [
+												"api",
+												"v2",
+												"gov-ordered-documents",
+												"available-documents",
+												""
+											],
+											"query": [
+												{
+													"key": "countryCode",
+													"value": "{{countryCode}}"
+												},
+												{
+													"key": "registrationNumber",
+													"value": "{{registrationNumber}}"
+												}
+											]
+										},
+										"description": "Retrieves full list of all available Registry Reports.\n\n| Parameter(query) | Type | Required | Sample/available values |\n| --- | --- | --- | --- |\n| `countryCode` | String | Yes | 2-digit ISO country code, check the note above |\n| `registrationNumber` | String | Yes | \"12511182\" |\n\nFull documentation [https://documentation.idenfy.com/KYB/ReportAPI#available-registry-report-documents](https://documentation.idenfy.com/KYB/ReportAPI#available-registry-report-documents)"
+									},
+									"response": []
+								},
+								{
+									"name": "Registry Report Order Document",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"countryCode\": \"LT\",\n  \"registrationNumber\": \"304617621\",\n  \"companyName\": \"IDENFY\",\n  \"productKey\":\"EBRON_RUJSX0NvbXBhbnlQcm9maWxlXzE=_MzA0NjE3NjIx___RUJSX0NQ\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://ivs.idenfy.com/api/v2/gov-ordered-documents/document-order/",
+											"protocol": "https",
+											"host": [
+												"ivs",
+												"idenfy",
+												"com"
+											],
+											"path": [
+												"api",
+												"v2",
+												"gov-ordered-documents",
+												"document-order",
+												""
+											]
+										},
+										"description": "From all available reports, order specific documents.\n\nFull documentation [https://documentation.idenfy.com/KYB/ReportAPI#order-registry-report-document](https://documentation.idenfy.com/KYB/ReportAPI#order-registry-report-document)"
+									},
+									"response": []
+								},
+								{
+									"name": "Registry Report List Ordered Documents",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "https://ivs.idenfy.com/api/v2/gov-ordered-documents/",
+											"protocol": "https",
+											"host": [
+												"ivs",
+												"idenfy",
+												"com"
+											],
+											"path": [
+												"api",
+												"v2",
+												"gov-ordered-documents",
+												""
+											]
+										},
+										"description": "List all ordered Registry Report documents."
+									},
+									"response": []
+								},
+								{
+									"name": "Registry Report Retrieve Specific Document",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "https://ivs.idenfy.com/api/v2/gov-ordered-documents/{{registry_Report_id}}/",
+											"protocol": "https",
+											"host": [
+												"ivs",
+												"idenfy",
+												"com"
+											],
+											"path": [
+												"api",
+												"v2",
+												"gov-ordered-documents",
+												"{{registry_Report_id}}",
+												""
+											]
+										},
+										"description": "Retrieve specific Registry Report document."
+									},
+									"response": []
+								}
+							]
+						}
+					],
+					"description": "Reports done VIA API <u>are not</u> stored on the company, but separately. If you want a report that is stored with the company, you will need to search and order reports via the **dashboard**.\n\nFull API documentation: [https://documentation.idenfy.com/KYB/ReportAPI](https://documentation.idenfy.com/KYB/ReportAPI)"
+				},
+				{
+					"name": "Additional checks",
+					"item": [
+						{
+							"name": "Address Audit",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"address\": \"Gričiupio g. 7, Kaunas, 51372 Kauno m. sav., Lithuania\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/audits/address-audit/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"audits",
+										"address-audit",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Website Audit",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"url\":\"https://www.idenfy.com/\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/audits/website-audit/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"audits",
+										"website-audit",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Social Audit",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"address\": \"Kauno m. sav. Kauno m., Gričiupio g. 7-212, Lithuania\",\n    \"companyName\":\"iDenfy, UAB\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/api/v2/audits/company-name-audit/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"api",
+										"v2",
+										"audits",
+										"company-name-audit",
+										""
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"description": "Audits and provides insight into the company by certain publicly available information.\n\nFull API documentation: [https://documentation.idenfy.com/KYB/AddressWebsiteAuditSocialProfile](https://documentation.idenfy.com/KYB/AddressWebsiteAuditSocialProfile)"
+				}
+			],
+			"description": "In this folder you will find and will be able to test all endpoints related to KYB:\n\n- Form creation and management\n    \n- Form document, beneficiary, questionnaire management\n    \n- Perform relevant company audit:\n    \n    - Credit safe reports\n        \n    - GOV registry reports\n        \n    - Registry reports\n        \n    - Publicly available information audit\n        \n\nFull documentation on KYB API: [https://documentation.idenfy.com/KYB/KYBIntegration](https://documentation.idenfy.com/KYB/KYBIntegration)\n\nMore information about Know Your Business: [https://www.idenfy.com/blog/know-your-business-kyb/](https://www.idenfy.com/blog/know-your-business-kyb/)"
+		},
+		{
+			"name": "Bank verification",
+			"item": [
+				{
+					"name": "Bank verificaiton token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"lifetime\": 3600,\n    \"country\": \"LT\",\n    \"bank\": \"Swedbank\",\n    \"access\": {\n    \"accounts\": true,\n    \"balances\": true,\n    \"transactions\": true\n}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://ivs.idenfy.com/bank/tokens/",
+							"protocol": "https",
+							"host": [
+								"ivs",
+								"idenfy",
+								"com"
+							],
+							"path": [
+								"bank",
+								"tokens",
+								""
+							]
+						},
+						"description": "There are **no required** parameters. While end-users will be prompted to select **country** and **bank**, access **will not** be changeable once the token is generated.\n\n| Parameter | Sub-parameter | Description | Default |\n| --- | --- | --- | --- |\n| `lifetime` |  | The duration in seconds of the token's validity. | `3600` |\n| `country` |  | The user's bank country (_ISO alpha-2 code_). | `null` |\n| `bank` |  | The user's bank name. | `null` |\n| `access` |  | Defines the data to be retrieved from the bank. | `object` |\n|  | `accounts` | Retrieve all accounts held by the user. | `false` |\n|  | `balances` | Retrieve account balances. | `false` |\n|  | `transactions` | Retrieve a list of transactions for each account. | `false` |\n\nOnce the token is generated and the user finishes verification, a [webhook](https://help.idenfy.com/space/RC/415563783/Email%2FWebhook+Notifications) response will be sent."
+					},
+					"response": []
+				},
+				{
+					"name": "Bank Verification List Transactions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": ""
+						},
+						"description": "This API endpoint allows to retrieve of detailed information about a verified bank account.\n\n### Workflow:\n\n1. After a user completes bank verification, a webhook is triggered.\n    \n2. The webhook provides:\n    \n    - `verificationId`: A unique identifier for the verification session.\n        \n    - `accountId`: A unique identifier for each verified bank account.\n        \n3. Using these parameters, this endpoint can be called to fetch account details.\n    \n\n### Required Parameters:\n\n- **`verificationId`** – Identifies the verification session.\n    \n- **`accountId`** – Identifies the specific bank account within the session."
+					},
+					"response": []
+				}
+			],
+			"description": "API request covers [bank verification service.](https://www.idenfy.com/bank-verification-service/)\n\nFull API documentation can be found [https://documentation.idenfy.com/bank-verification/bankVerification](https://documentation.idenfy.com/bank-verification/bankVerification)"
+		},
+		{
+			"name": "Fraud services (FS)",
+			"item": [
+				{
+					"name": "FS Phone number verificaiton",
+					"item": [
+						{
+							"name": "FS Phone number verification - send",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"phone_number\": \"+12025550163\",\n    \"sender_name\": \"John Sample\" //Name of the user\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/fraud/send-sms",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"fraud",
+										"send-sms"
+									]
+								},
+								"description": "Call endpoint which will send an SMS message containing verification code to the user.\n\nRequires only the `phone_number`, `sender_name` is optional."
+							},
+							"response": []
+						},
+						{
+							"name": "FS Phone number verification - verify",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"request_id\": \"3d50e1584e0946e789e0185c009aaadf\", //ID of the sent message\n    \"received_code\": \"1234\" //The code the user receives\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/fraud/verify-sms",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"fraud",
+										"verify-sms"
+									]
+								},
+								"description": "The verification code the user receives must be entered in the **`received_code`** key. After sending the payload, the code will be confirmed if it matches or not."
+							},
+							"response": []
+						}
+					],
+					"description": "### About phone number verificaiton\n\nPhone number verification is a two-step process consisting of sending verification code via SMS message to the user and verifying that the code which user entered is valid.\n\nIf the code is not confirmed in 2min., expect to receive a call with the same code, which is valid for 3 more minutes. After that expect another call with a new code which is valid for 5min. By confirming the second code in 5min. period it is successfully confirmed.\n\nFor more information please visit our documentation: [Phone verifiacation](https://documentation.idenfy.com/other-fraud/PhoneVerification)"
+				},
+				{
+					"name": "FS Risk assesment",
+					"item": [
+						{
+							"name": "RA retrieve profiles",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/risk/assessment-profiles/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"risk",
+										"assessment-profiles",
+										""
+									]
+								},
+								"description": "This API request retrieves all the profiles from your environment."
+							},
+							"response": []
+						},
+						{
+							"name": "RA view profile",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/risk/assessment-profiles/:ID",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"risk",
+										"assessment-profiles",
+										":ID"
+									],
+									"variable": [
+										{
+											"key": "ID",
+											"value": ""
+										}
+									]
+								},
+								"description": "API for retrieving specific RA profile settings.\n\nRequirments:\n\n- ID of the profile in the URL"
+							},
+							"response": []
+						},
+						{
+							"name": "RA check",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \":sections\": { // Section keys from a questionnaire.\n        \"bXUsmLJeMI\": {\n            \"lib-YHlTleSKmo\": {\n                \"value\": [\"XOCgRfvUlu\"]\n            },\n            \"lib-AEgWHKDkwF\": {\n                \"value\": [\"HU\"]\n            }\n        }\n    },\n    \"name\": \"Matthew Collins\" // Full name of the person that should be checked\t\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/risk/assessment-profiles/:{ID}/check/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"risk",
+										"assessment-profiles",
+										":{ID}",
+										"check",
+										""
+									],
+									"variable": [
+										{
+											"key": "{ID}",
+											"value": "dsadsad"
+										}
+									]
+								},
+								"description": "##### API for performing API RA check\n\nRequired fields:\n\n- ID in path - RA ID\n    \n- `\":sections\"` - Section keys from a questionnaire.\n    \n- `\"name\"` - Full name of the person that should be checked\n    \n\n`{id}` in the request should be a legit RA profile ID that could be retrieved on previous steps. Request body must contain `sections` object that should be filled according to previously set profiles, that could be retrieved from [RA profiles](https://documentation.idenfy.com/other-fraud/RiskAssessment#1-ra-profiles)."
+							},
+							"response": []
+						},
+						{
+							"name": "RA re-check",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"sections\": {\n        \"bXUsmLJeMI\": {\n            \"lib-YHlTleSKmo\": {\n                \"value\": [\"QQALQApLKI\"]\n            },\n            \"lib-AEgWHKDkwF\": {\n                \"value\": [\"EE\"]\n            }\n        }\n    },\n    \"name\": \"Matthew Collins\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://ivs.idenfy.com/risk/assessments/{assessment-id}",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"risk",
+										"assessments",
+										"{assessment-id}"
+									]
+								},
+								"description": "Required fields:\n\n- `assessment-id` in path - ID of previous performed RA\n- `\":sections\"` - Section keys from a questionnaire.\n- `\"name\"` - Full name of the person that should be checked\n    \n\nThe `assessment-id` in the request should be a legit RA check ID that could be received by [retrieving all RA checks](https://www.postman.com/idenfy-developers/workspace/idenfy-public-api/request/43382362-374b0cca-a17c-43d9-a9f6-8bc2bdde3449). If answers were changed, body should be contructed according to [RA check request](https://www.postman.com/idenfy-developers/workspace/idenfy-public-api/request/43382362-e0b1f46e-7a63-412d-bef8-6c0bce161a9a)."
+							},
+							"response": []
+						},
+						{
+							"name": "RA Retrieve check list",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/risk/assessments/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"risk",
+										"assessments",
+										""
+									]
+								},
+								"description": "### API for retrieving performed RA checks as a list"
+							},
+							"response": []
+						},
+						{
+							"name": "RA Retrieve check entry",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://ivs.idenfy.com/risk/assessments/{{id}}/",
+									"protocol": "https",
+									"host": [
+										"ivs",
+										"idenfy",
+										"com"
+									],
+									"path": [
+										"risk",
+										"assessments",
+										"{{id}}",
+										""
+									]
+								},
+								"description": "#### API request for retirving specific check information\n\nRequires assesment ID from previuosly performed RA check or from [RA Retrieve check list](https://www.postman.com/idenfy-developers/workspace/idenfy-public-api/request/43382362-374b0cca-a17c-43d9-a9f6-8bc2bdde3449)"
+							},
+							"response": []
+						}
+					],
+					"description": "## Introduction\n\nThis process is key to preventing fraud, ensuring compliance with regulations, and managing financial exposure. It typically involves assessing various aspects of a client's profile to understand and mitigate potential risks.\n\n## First step\n\nProper risk assessment setup is key to staying compliant and, most importantly, to following your internal company risk assessment rules.  \nPlease follow the step-by-step guide below to configure your risk assessment profile in our helpdesk documentation:  \n[<b>https://help.idenfy.com/space/RC/677740546/How+to+Setup+and+Configure+Risk+Assessment</b>](https://help.idenfy.com/space/RC/677740546/How+to+Setup+and+Configure+Risk+Assessment)\n\n#### Short description of what this API folder contains:\n\n- [Retrieve risk profiles](https://www.postman.com/idenfy-developers/workspace/idenfy-public-api/request/43382362-379c4316-e839-4378-8e04-985bfc6e4a40) (Shows all created risk profiles)\n    \n- [View risk profile](https://www.postman.com/idenfy-developers/workspace/idenfy-public-api/request/43382362-89079857-7af3-47f4-8826-965819ac88bc) (Shows the profile settings)\n- [Risk assessment check](https://www.postman.com/idenfy-developers/workspace/idenfy-public-api/request/43382362-e0b1f46e-7a63-412d-bef8-6c0bce161a9a)\n- [Risk assessment re-check](https://www.postman.com/idenfy-developers/workspace/idenfy-public-api/request/43382362-7c44510a-7378-44a3-b819-d513bd67029e)\n- [Retrieve risk assessment checklist](https://www.postman.com/idenfy-developers/workspace/idenfy-public-api/request/43382362-379c4316-e839-4378-8e04-985bfc6e4a40)\n- [Retrieve risk assessment check entry](https://www.postman.com/idenfy-developers/workspace/idenfy-public-api/request/43382362-047efee9-1de5-4c7a-bc4b-76cd77216b4e)"
+				},
+				{
+					"name": "FS IP address proxy check",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ip_address\":{{Enter_IP_HERE}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://ivs.idenfy.com/fraud/proxy-check",
+							"protocol": "https",
+							"host": [
+								"ivs",
+								"idenfy",
+								"com"
+							],
+							"path": [
+								"fraud",
+								"proxy-check"
+							]
+						},
+						"description": "This service checks the `IP address` and returns its risk level of the IP by to determinning if a user is accessing a network or website through a proxy server or Virtual Private Network (VPN) connection.\n\nFor more information please visit our documentation: [Proxy check](https://documentation.idenfy.com/other-fraud/ProxyCheck)"
+					},
+					"response": []
+				},
+				{
+					"name": "FS Fraud probability estimation",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_agent\": \"Mozilla/5.0 (Android 7.0; Mobile; rv:54.0) Gecko/54.0 Firefox/54.0\", //The HTTP User-Agent header of the browser\n    \"accept_language\": \"en-US,en;q=0.8\", //The HTTP Accept-Language header of the device\n    \"ip_address\": \"64.236.213.12\", \n    \"first_name\": \"John\",\n    \"last_name\": \"Smith\",\n    \"email_address\": \"john@gmail.com\",\n    \"email_domain\": \"gmail.com\", //The domain of the email_address\n    \"street_address\": \"123 Address Rd.\", // The first line of the user's living address\n    \"city\": \"Boston\",\n    \"country\": \"US\",\n    \"postal_code\": \"34455\",\n    \"phone_number\": \"3439007998\",// User's phone number without country code (e.g. without +370, only 640...)\n    \"phone_country_code\": \"1\",  //User's phone country code (e.g. +370)\n    \"credit_card_number_6\": \"410608\", //The first 6 digits of the user's payment card\n    \"credit_card_last_4_digits\": \"9930\" //The last 4 digits of the user's payment card\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://ivs.idenfy.com/fraud/estimate-fraud-probability",
+							"protocol": "https",
+							"host": [
+								"ivs",
+								"idenfy",
+								"com"
+							],
+							"path": [
+								"fraud",
+								"estimate-fraud-probability"
+							]
+						},
+						"description": "This endpoint checks the fraud probability from passed information by looking into multiple sources and estimating the risk.\n\nPossible risk levels are:  \n\\-`VERY_LOW`  \n\\-`LOW`  \n\\-`MEDIUM`  \n\\-`HIGH`  \n\\-`VERY_HIGH`  \n\\-`NOT_CHECKED` - No information found for validation.\n\nFor more information please visit: [Fraud probability](https://documentation.idenfy.com/other-fraud/FraudProbability)"
+					},
+					"response": []
+				},
+				{
+					"name": "FS Phone number validation",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phone_number\": \"+37064179806\", //Phone number with country code to check\n    \"current_location\": \"LT\" // Current IP address location\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://ivs.idenfy.com/fraud/validate-phone",
+							"protocol": "https",
+							"host": [
+								"ivs",
+								"idenfy",
+								"com"
+							],
+							"path": [
+								"fraud",
+								"validate-phone"
+							]
+						},
+						"description": "### About\n\nThis service endpoint calculates phone number's risk score and returns additional information about that phone number.\n\nFor more detailed information please visit our documentation: [<b>Phone number validation</b>](https://documentation.idenfy.com/other-fraud/PhoneValidation)\n\n###### NOTE!\n\nIf the provided phone number in the request is not in [E.164](https://en.wikipedia.org/wiki/E.164) format or it isn't a _mobile_ phone number, our servers may return an empty string."
+					},
+					"response": []
+				},
+				{
+					"name": "FS Address Verification",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "https://ivs.idenfy.com/api/v2/address-verification",
+							"protocol": "https",
+							"host": [
+								"ivs",
+								"idenfy",
+								"com"
+							],
+							"path": [
+								"api",
+								"v2",
+								"address-verification"
+							]
+						},
+						"description": "This endpoint verifies whether the provided address exists and evaluates the quality of the address location.\n\nPossible return values:\n\n- **status**: VERIFIED, PARTIALLY_VERIFIED, UNVERIFIED\n    \n- **quality**: EXCELLENT, GOOD, AVERAGE, POOR, BAD\n    \n- **accuracy**: 0-100 /// A lower value will be returned if, for example, the postcode used in the request differs from the actual postcode associated with the provided address.\n    \n\nAdditional information:  \nTo perform address verification, this functionality must be enabled for the environment you are using.  \nFor more information, please visit our documentation: [<b>Address verification</b>](https://documentation.idenfy.com/other-fraud/AddressVerification)"
+					},
+					"response": []
+				},
+				{
+					"name": "FS AI Proof of Address Verification",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"file\": \"{{Base64_Image}}\",\n  \"providedName\": \"John Smith\",//Name of the provider that should be visible on PoA\n  \"providedAddress\": \"4344 Poco Mas Drive, Dallas, FL, 33009\" //Checks if the address on the page\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://ivs.idenfy.com/api/v2/poa-checks/",
+							"protocol": "https",
+							"host": [
+								"ivs",
+								"idenfy",
+								"com"
+							],
+							"path": [
+								"api",
+								"v2",
+								"poa-checks",
+								""
+							]
+						},
+						"description": "Compares whether the provided information is present on the document.\n\nIn the response, you can see detailed information about the PoA, such as:\n\n- **`idStringPoA`** – Check ID.\n    \n- **`createdString`** – Timestamp when the PoA check was created.\n    \n- **`updatedString`** – Timestamp when the PoA check was updated.\n    \n- **`issueDateString`** – Issue date retrieved from the PoA document.\n    \n- **`documentTypeString`** – Document type retrieved from the PoA document.\n    \n- **`hasLogoBoolean`** – Boolean indicating whether the document has a logo.\n    \n- **`nameMatchBoolean`** – Boolean indicating whether the provided name/surname matches the name/surname on the document.\n    \n- **`addressMatchBoolean`** – Boolean indicating whether the provided address matches the address on the document.\n    \n- **`dateValidBoolean`** – Boolean indicating whether the provided document is not older than 3 months.\n    \n- **`overallStatusString`** – Possible values: MATCH, NO_MATCH, NOT_COMPARED.\n    \n- **`nameString`** – Full name retrieved from the PoA document.\n    \n- **`addressString`** – Address retrieved from the PoA document.\n    \n- **`partnerObject`** – Partner environment-related information.\n    \n- **`fileTypeString`** – Type of the file that was provided for the check.\n    \n- **`providedNameString`** – Provided name value when the check was initiated.\n    \n- **`providedAddressString`** – Provided address value when the check was initiated.\n    \n- **`fileString`** – URL to download the file.'\n    \n\nFor more information please visit our documentation: [AI PoA verification](https://documentation.idenfy.com/other-fraud/AIPoAVerifications)"
+					},
+					"response": []
+				}
+			],
+			"description": "# Introduction\n\nUsing fraud prevention services will ensure you that user is valid and does not provide false information and aswell provide with"
+		}
+	],
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "password",
+				"value": "{{API_SECRET}}",
+				"type": "string"
+			},
+			{
+				"key": "username",
+				"value": "{{API_KEY}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "company_id",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "Auth_token",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "document_id",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "check_service",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "checkId",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "verificationId",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "accountId",
+			"value": "",
+			"type": "default"
+		}
+	]
+}

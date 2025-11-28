@@ -16,14 +16,9 @@ defmodule Mcp.Finance.Transfer do
   end
 
   attributes do
-    attribute :id, :uuid do
-      primary_key? true
-      allow_nil? false
-      default &Ash.UUID.generate/0
-    end
+    uuid_primary_key :id
 
     attribute :inserted_at, :utc_datetime_usec do
-      primary_key? true
       allow_nil? false
       default &DateTime.utc_now/0
     end
