@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Atlas Underwriting</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+        .sidebar-item:hover {
+            background: rgba(147, 51, 234, 0.1);
+            padding-left: 1.5rem;
+        }
+        .settings-section {
+            display: none;
+        }
+        .settings-section.active {
+            display: block;
+        }
+        .tab-button {
+            transition: all 0.2s ease;
+        }
+        .tab-button:hover {
+            background: rgba(147, 51, 234, 0.05);
+        }
+        .tab-button.active {
+            background: rgba(147, 51, 234, 0.1);
+            border-bottom: 2px solid #9333ea;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white">
+            <div class="p-6">
+                <div class="flex items-center space-x-3 mb-8">
+                    <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-robot text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold">Atlas</h1>
+                        <p class="text-xs text-gray-400">Admin Portal</p>
+                    </div>
+                </div>
+
+                <nav class="space-y-2">
+                    <a href="10-admin-portal.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Analytics</span>
+                    </a>
+                    <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-list"></i>
+                        <span>Application Queue</span>
+                    </a>
+                    <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-users"></i>
+                        <span>Merchants</span>
+                    </a>
+                    <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg bg-purple-600">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Top Bar -->
+            <header class="bg-white shadow-sm px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Settings</h2>
+                        <p class="text-gray-600">Configure Atlas and system preferences</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                            <i class="fas fa-save mr-2"></i>Save Changes
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Settings Navigation -->
+            <div class="bg-white border-b">
+                <div class="flex space-x-1 px-6">
+                    <button class="tab-button active px-4 py-3 text-sm font-medium text-gray-700" onclick="switchSection('general')">
+                        General
+                    </button>
+                    <button class="tab-button px-4 py-3 text-sm font-medium text-gray-700" onclick="switchSection('atlas')">
+                        Atlas AI
+                    </button>
+                    <button class="tab-button px-4 py-3 text-sm font-medium text-gray-700" onclick="switchSection('risk')">
+                        Risk Settings
+                    </button>
+                    <button class="tab-button px-4 py-3 text-sm font-medium text-gray-700" onclick="switchSection('notifications')">
+                        Notifications
+                    </button>
+                    <button class="tab-button px-4 py-3 text-sm font-medium text-gray-700" onclick="switchSection('integrations')">
+                        Integrations
+                    </button>
+                    <button class="tab-button px-4 py-3 text-sm font-medium text-gray-700" onclick="switchSection('team')">
+                        Team Management
+                    </button>
+                </div>
+            </div>
+
+            <!-- Settings Content -->
+            <div class="p-6">
+                <!-- General Settings -->
+                <div id="general-section" class="settings-section active">
+                    <div class="bg-white rounded-xl shadow p-6 mb-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Organization Information</h3>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Organization Name</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg" value="MCP Processing">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Contact Email</label>
+                                <input type="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg" value="admin@atlas.com">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Support Phone</label>
+                                <input type="tel" class="w-full px-4 py-2 border border-gray-300 rounded-lg" value="(800) 555-0123">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Time Zone</label>
+                                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    <option>Pacific Time (PT)</option>
+                                    <option>Eastern Time (ET)</option>
+                                    <option>Central Time (CT)</option>
+                                    <option>Mountain Time (MT)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Application Settings</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-medium text-gray-700">Enable auto-approval</p>
+                                    <p class="text-sm text-gray-500">Automatically approve low-risk applications</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-medium text-gray-700">Require manual review for high risk</p>
+                                    <p class="text-sm text-gray-500">Flag high-risk applications for manual review</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-medium text-gray-700">Send automated updates</p>
+                                    <p class="text-sm text-gray-500">Notify merchants of application status</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Atlas AI Settings -->
+                <div id="atlas-section" class="settings-section">
+                    <div class="bg-white rounded-xl shadow p-6 mb-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Atlas Configuration</h3>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">AI Model Provider</label>
+                                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    <option>Claude 3.5 Sonnet (Recommended)</option>
+                                    <option>GPT-4</option>
+                                    <option>Gemini Pro</option>
+                                    <option>Local Ollama</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Risk Score Threshold</label>
+                                <input type="range" min="0" max="100" value="70" class="w-full">
+                                <div class="flex justify-between text-sm text-gray-500">
+                                    <span>Low Risk (0-70)</span>
+                                    <span>High Risk (71-100)</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Document Processing</label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2" checked>
+                                        <span class="text-sm">Enable OCR for documents</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2" checked>
+                                        <span class="text-sm">Real-time validation</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2" checked>
+                                        <span class="text-sm">Auto-extract data from documents</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Co-Pilot Features</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-medium text-gray-700">Smart suggestions</p>
+                                    <p class="text-sm text-gray-500">Show Atlas recommendations during review</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-medium text-gray-700">Auto-generate decision memos</p>
+                                    <p class="text-sm text-gray-500">Create summaries for manual reviews</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk Settings -->
+                <div id="risk-section" class="settings-section">
+                    <div class="bg-white rounded-xl shadow p-6 mb-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Risk Factors Configuration</h3>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Credit Score Weight</label>
+                                <input type="range" min="0" max="100" value="20" class="w-full">
+                                <span class="text-sm text-gray-500">Current: 20%</span>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Business Age Weight</label>
+                                <input type="range" min="0" max="100" value="15" class="w-full">
+                                <span class="text-sm text-gray-500">Current: 15%</span>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Industry Risk Weight</label>
+                                <input type="range" min="0" max="100" value="25" class="w-full">
+                                <span class="text-sm text-gray-500">Current: 25%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">High-Risk Industries</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" class="mr-2" checked>
+                                <span class="text-sm">Adult Entertainment</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" class="mr-2" checked>
+                                <span class="text-sm">Cryptocurrency</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" class="mr-2">
+                                <span class="text-sm">Gambling</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" class="mr-2" checked>
+                                <span class="text-sm">Travel Agencies</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications Settings -->
+                <div id="notifications-section" class="settings-section">
+                    <div class="bg-white rounded-xl shadow p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Notification Preferences</h3>
+                        <div class="space-y-6">
+                            <div>
+                                <h4 class="font-medium text-gray-700 mb-3">Email Notifications</h4>
+                                <div class="space-y-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2" checked>
+                                        <span class="text-sm">New applications received</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2" checked>
+                                        <span class="text-sm">High-risk applications</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2">
+                                        <span class="text-sm">Daily summary report</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2" checked>
+                                        <span class="text-sm">System alerts</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-700 mb-3">In-App Notifications</h4>
+                                <div class="space-y-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2" checked>
+                                        <span class="text-sm">Queue updates</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2" checked>
+                                        <span class="text-sm">Atlas insights</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2">
+                                        <span class="text-sm">Team activity</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Integrations Settings -->
+                <div id="integrations-section" class="settings-section">
+                    <div class="bg-white rounded-xl shadow p-6 mb-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Third-Party Integrations</h3>
+                        <div class="space-y-4">
+                            <div class="border rounded-lg p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-medium text-gray-800">ComplyCube</h4>
+                                        <p class="text-sm text-gray-500">KYC/KYB verification service</p>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Connected</span>
+                                        <button class="text-red-500 hover:text-red-700 text-sm">Disconnect</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="border rounded-lg p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-medium text-gray-800">Experian</h4>
+                                        <p class="text-sm text-gray-500">Credit check service</p>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Connected</span>
+                                        <button class="text-red-500 hover:text-red-700 text-sm">Disconnect</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="border rounded-lg p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-medium text-gray-800">Plaid</h4>
+                                        <p class="text-sm text-gray-500">Bank verification</p>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Connected</span>
+                                        <button class="text-red-500 hover:text-red-700 text-sm">Disconnect</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-gray-500 hover:border-gray-400 hover:text-gray-600 transition">
+                                <i class="fas fa-plus mr-2"></i>Add Integration
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team Management -->
+                <div id="team-section" class="settings-section">
+                    <div class="bg-white rounded-xl shadow p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Team Members</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 border rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23933A5A'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='14' font-weight='bold'%3EJD%3C/text%3E%3C/svg%3E" alt="" class="w-10 h-10 rounded-full">
+                                    <div>
+                                        <p class="font-medium text-gray-800">John Doe</p>
+                                        <p class="text-sm text-gray-500">john@atlas.com • Admin</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">Admin</span>
+                                    <button class="text-gray-400 hover:text-gray-600">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between p-4 border rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23E11D48'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='14' font-weight='bold'%3ESM%3C/text%3E%3C/svg%3E" alt="" class="w-10 h-10 rounded-full">
+                                    <div>
+                                        <p class="font-medium text-gray-800">Sarah Miller</p>
+                                        <p class="text-sm text-gray-500">sarah@atlas.com • Senior Underwriter</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Underwriter</span>
+                                    <button class="text-gray-400 hover:text-gray-600">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium">
+                                <i class="fas fa-user-plus mr-2"></i>Invite Team Member
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.settings-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+
+            // Show selected section
+            document.getElementById(sectionName + '-section').classList.add('active');
+
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

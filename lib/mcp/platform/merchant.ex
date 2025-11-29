@@ -219,10 +219,14 @@ defmodule Mcp.Platform.Merchant do
 
     has_many :underwriting_applications, Mcp.Underwriting.Application do
       domain Mcp.Underwriting
+      destination_attribute :subject_id
+      filter expr(subject_type == :merchant)
     end
 
     has_many :risk_assessments, Mcp.Underwriting.RiskAssessment do
       domain Mcp.Underwriting
+      destination_attribute :subject_id
+      filter expr(subject_type == :merchant)
     end
   end
 

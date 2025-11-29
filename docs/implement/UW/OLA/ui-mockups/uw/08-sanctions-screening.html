@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sanctions Screening - Atlas Underwriting</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+        .sidebar-item:hover {
+            background: rgba(147, 51, 234, 0.1);
+            padding-left: 1.5rem;
+        }
+        .match-highlight {
+            background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.2), transparent);
+            padding: 0 2px;
+        }
+        .watchlist-item {
+            transition: all 0.2s ease;
+        }
+        .watchlist-item:hover {
+            transform: translateX(4px);
+            background: #f9fafb;
+        }
+        .severity-critical { border-left: 4px solid #dc2626; }
+        .severity-high { border-left: 4px solid #ea580c; }
+        .severity-medium { border-left: 4px solid #ca8a04; }
+        .severity-low { border-left: 4px solid #16a34a; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white flex flex-col h-screen overflow-hidden">
+            <div class="p-6 flex-1 overflow-y-auto">
+                <div class="flex items-center space-x-3 mb-8">
+                    <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-robot text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold">Atlas</h1>
+                        <p class="text-xs text-gray-400">Admin Portal</p>
+                    </div>
+                </div>
+
+                <nav class="space-y-2">
+                    <a href="10-admin-portal.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="01-application-detail.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-list"></i>
+                        <span>Application Queue</span>
+                    </a>
+                    <a href="02-analytics-dashboard.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Analytics</span>
+                    </a>
+                    <a href="03-merchant-management.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-users"></i>
+                        <span>Merchants</span>
+                    </a>
+                    <a href="06-kyc-aml-dashboard.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg bg-purple-600">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>KYC/AML</span>
+                    </a>
+                    <a href="05-statement-analyzer.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Statement Analyzer</span>
+                    </a>
+                    <a href="04-settings.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="p-6 border-t border-gray-800 bg-gray-900">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23933A5A'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='14' font-weight='bold'%3EJD%3C/text%3E%3C/svg%3E" alt="User" class="w-10 h-10 rounded-full">
+                        <div>
+                            <p class="font-semibold">John Doe</p>
+                            <p class="text-xs text-gray-400">Compliance Officer</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-400 hover:text-white">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Top Bar -->
+            <header class="bg-white shadow-sm px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <a href="06-kyc-aml-dashboard.html" class="text-gray-600 hover:text-gray-800">
+                            <i class="fas fa-arrow-left mr-2"></i>Back to KYC/AML
+                        </a>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-800">Sanctions Screening Results</h1>
+                            <p class="text-sm text-gray-600">Global watchlist and sanctions check</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                            <i class="fas fa-sync mr-2"></i>Re-run Screening
+                        </button>
+                        <button class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
+                            <i class="fas fa-download mr-2"></i>Export Report
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <div class="p-6">
+                <!-- Screening Summary -->
+                <div class="grid md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <i class="fas fa-globe text-3xl text-blue-500"></i>
+                            <span class="text-2xl font-bold text-blue-600">27</span>
+                        </div>
+                        <p class="text-sm text-gray-600">Watchlists Searched</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <i class="fas fa-search text-3xl text-green-500"></i>
+                            <span class="text-2xl font-bold text-green-600">1.2M</span>
+                        </div>
+                        <p class="text-sm text-gray-600">Records Checked</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <i class="fas fa-exclamation-triangle text-3xl text-yellow-500"></i>
+                            <span class="text-2xl font-bold text-yellow-600">3</span>
+                        </div>
+                        <p class="text-sm text-gray-600">Potential Matches</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <i class="fas fa-clock text-3xl text-purple-500"></i>
+                            <span class="text-2xl font-bold text-purple-600">2.3s</span>
+                        </div>
+                        <p class="text-sm text-gray-600">Processing Time</p>
+                    </div>
+                </div>
+
+                <!-- Screening Status -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Screening Watchlists</h3>
+                    <div class="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                <span class="text-sm font-medium">OFAC SDN</span>
+                            </div>
+                            <span class="text-xs text-green-600">Clear</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                <span class="text-sm font-medium">EU Sanctions</span>
+                            </div>
+                            <span class="text-xs text-green-600">Clear</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                <span class="text-sm font-medium">UN SC</span>
+                            </div>
+                            <span class="text-xs text-green-600">Clear</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                <span class="text-sm font-medium">HMT UK</span>
+                            </div>
+                            <span class="text-xs text-green-600">Clear</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                <span class="text-sm font-medium">OSFI</span>
+                            </div>
+                            <span class="text-xs text-green-600">Clear</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-exclamation-circle text-yellow-500"></i>
+                                <span class="text-sm font-medium">World-Check</span>
+                            </div>
+                            <span class="text-xs text-yellow-600">1 Hit</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-exclamation-circle text-yellow-500"></i>
+                                <span class="text-sm font-medium">Politically Exposed</span>
+                            </div>
+                            <span class="text-xs text-yellow-600">2 Hits</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                <span class="text-sm font-medium">Adverse Media</span>
+                            </div>
+                            <span class="text-xs text-green-600">Clear</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Match Results -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                    <h3 class="text-lg font-bold text-gray-800 mb-6">Potential Matches - Review Required</h3>
+
+                    <!-- Match 1 -->
+                    <div class="watchlist-item severity-medium bg-yellow-50 rounded-lg p-6 mb-4">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded font-semibold">
+                                    70% Match Score
+                                </span>
+                                <h4 class="text-lg font-semibold text-gray-800 mt-2">
+                                    World-Check Reference: WC-2023-456789
+                                </h4>
+                            </div>
+                            <span class="text-sm text-gray-500">Source: World-Check</span>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <h5 class="font-semibold text-gray-700 mb-2">Watchlist Entry</h5>
+                                <div class="space-y-2 text-sm">
+                                    <div>
+                                        <span class="text-gray-600">Name:</span>
+                                        <span class="match-highlight font-medium">John Michael Anderson</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">DOB:</span>
+                                        <span class="font-medium">15-Jan-1985</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Nationality:</span>
+                                        <span class="font-medium">US</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">List Type:</span>
+                                        <span class="font-medium text-yellow-600">Financial Crime - Investigation</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h5 class="font-semibold text-gray-700 mb-2">Applicant Data</h5>
+                                <div class="space-y-2 text-sm">
+                                    <div>
+                                        <span class="text-gray-600">Name:</span>
+                                        <span class="font-medium">Jon Anderson</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">DOB:</span>
+                                        <span class="font-medium">20-Jan-1985</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Nationality:</span>
+                                        <span class="font-medium">US</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-3 bg-white rounded border">
+                            <p class="text-sm text-gray-700">
+                                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                                <strong>Analysis:</strong> Partial name match with close DOB (5 days difference).
+                                Further verification recommended before proceeding.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Match 2 -->
+                    <div class="watchlist-item severity-low bg-green-50 rounded-lg p-6 mb-4">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded font-semibold">
+                                    85% Match Score
+                                </span>
+                                <h4 class="text-lg font-semibold text-gray-800 mt-2">
+                                    PEP Reference: US-SENATOR-2022-001
+                                </h4>
+                            </div>
+                            <span class="text-sm text-gray-500">Source: Government PEP List</span>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <h5 class="font-semibold text-gray-700 mb-2">PEP Entry</h5>
+                                <div class="space-y-2 text-sm">
+                                    <div>
+                                        <span class="text-gray-600">Name:</span>
+                                        <span class="match-highlight font-medium">Michael Douglas Johnson</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Position:</span>
+                                        <span class="font-medium">State Senator</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Country:</span>
+                                        <span class="font-medium">United States</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Term:</span>
+                                        <span class="font-medium">2019-2023 (Former)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h5 class="font-semibold text-gray-700 mb-2">Applicant Data</h5>
+                                <div class="space-y-2 text-sm">
+                                    <div>
+                                        <span class="text-gray-600">Name:</span>
+                                        <span class="font-medium">Mike D. Johnson</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Relation:</span>
+                                        <span class="font-medium">Beneficial Owner (25%)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-3 bg-white rounded border">
+                            <p class="text-sm text-gray-700">
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <strong>Determination:</strong> No current PEP status. Former position ended in 2023.
+                                Standard monitoring recommended.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Match 3 -->
+                    <div class="watchlist-item severity-low bg-green-50 rounded-lg p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded font-semibold">
+                                    92% Match Score
+                                </span>
+                                <h4 class="text-lg font-semibold text-gray-800 mt-2">
+                                    PEP Reference: MAYOR-2021-003
+                                </h4>
+                            </div>
+                            <span class="text-sm text-gray-500">Source: Municipal PEP Database</span>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <h5 class="font-semibold text-gray-700 mb-2">PEP Entry</h5>
+                                <div class="space-y-2 text-sm">
+                                    <div>
+                                        <span class="text-gray-600">Name:</span>
+                                        <span class="match-highlight font-medium">Sarah Elizabeth Smith</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Position:</span>
+                                        <span class="font-medium">Mayor (Small City)</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Country:</span>
+                                        <span class="font-medium">United States</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Term:</span>
+                                        <span class="font-medium">2017-2021 (Former)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h5 class="font-semibold text-gray-700 mb-2">Applicant Data</h5>
+                                <div class="space-y-2 text-sm">
+                                    <div>
+                                        <span class="text-gray-600">Name:</span>
+                                        <span class="font-medium">Sarah E. Smith</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Relation:</span>
+                                        <span class="font-medium">Applicant (100% Owner)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-3 bg-white rounded border">
+                            <p class="text-sm text-gray-700">
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <strong>Determination:</strong> Former local government official (4+ years ago).
+                                Low-risk PEP. Standard monitoring acceptable.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Review Actions -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Screening Decision</h3>
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-1">
+                            <p class="text-gray-700 mb-4">
+                                Based on the screening results, 2 potential matches were found with former PEPs
+                                and 1 partial match requiring further investigation. All are considered low to medium risk.
+                            </p>
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <p class="text-sm font-semibold text-blue-800 mb-2">
+                                    <i class="fas fa-info-circle mr-2"></i>Atlas AI Recommendation
+                                </p>
+                                <p class="text-sm text-blue-700">
+                                    Proceed with application approval. Implement standard PEP monitoring for
+                                    12 months. The partial name match (John Anderson) requires additional documentation
+                                    to verify identity if processing volume exceeds $50,000/month.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition">
+                                <i class="fas fa-check mr-2"></i>Approve with Monitoring
+                            </button>
+                            <button class="bg-yellow-600 text-white px-6 py-3 rounded-lg hover:bg-yellow-700 transition">
+                                <i class="fas fa-user-check mr-2"></i>Request Additional Docs
+                            </button>
+                            <button class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition">
+                                <i class="fas fa-clock mr-2"></i>Deferred Decision
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

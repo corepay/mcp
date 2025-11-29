@@ -1,0 +1,3801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlas AI Merchant Application</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap');
+
+        :root {
+            --primary-color: #475569;
+            --primary-dark: #334155;
+            --secondary-color: #64748b;
+            --success-color: #64748b;
+            --warning-color: #64748b;
+            --error-color: #dc2626;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--slate-50);
+        }
+
+        /* Professional Form Styling */
+        .form-input {
+            @apply w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-colors;
+            background-color: white;
+        }
+
+        .form-input:invalid {
+            @apply border-red-500;
+        }
+
+        .form-label {
+            @apply block text-sm font-medium text-slate-700 mb-2;
+        }
+
+        .required {
+            @apply text-red-500;
+        }
+
+        /* Section Styling */
+        .interview-section {
+            display: none;
+            opacity: 0;
+            transform: translateX(20px);
+            transition: all 0.3s ease;
+        }
+
+        .interview-section.active {
+            display: block;
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Atlas AI Styling */
+        .atlas-intervention {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 420px;
+            max-width: calc(100vw - 40px);
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            z-index: 1000;
+            display: none;
+            overflow: hidden;
+        }
+
+        .atlas-intervention.show {
+            display: block;
+            animation: slideInUp 0.4s ease;
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .atlas-concierge {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 999;
+        }
+
+        .atlas-fab {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .atlas-fab:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 30px rgba(30, 64, 175, 0.4);
+        }
+
+        .atlas-fab.pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(30, 64, 175, 0.4); }
+            70% { box-shadow: 0 0 0 20px rgba(30, 64, 175, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(30, 64, 175, 0); }
+        }
+
+        /* Progress Navigation */
+        .progress-nav {
+            background: white;
+            border-bottom: 1px solid var(--gray-200);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .progress-step {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .progress-step:hover {
+            background-color: var(--gray-100);
+        }
+
+        .progress-step.active {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+        }
+
+        .progress-step.completed {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        /* Smart Suggestions */
+        .smart-suggestion {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+        /* Field Validation States */
+        .field-valid {
+            border-color: var(--success-color) !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23059669'%3E%3Cpath fill-rule='evenodd' d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' clip-rule='evenodd'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+            padding-right: 40px;
+        }
+
+        /* Document Upload Area */
+        .upload-zone {
+            border: 2px dashed var(--gray-300);
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            transition: all 0.3s ease;
+            background-color: var(--gray-50);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary-color);
+            background-color: #eff6ff;
+        }
+
+        .upload-zone.drag-over {
+            border-color: var(--primary-color);
+            background-color: #dbeafe;
+        }
+
+        /* QR Code Modal */
+        .qr-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .qr-modal.show {
+            display: flex;
+        }
+
+        /* Success Animation */
+        .success-checkmark {
+            width: 80px;
+            height: 80px;
+            background: var(--success-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            animation: scaleIn 0.3s ease;
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+
+        /* Loading States */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Professional Color Scheme */
+        .professional-bg {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        }
+
+        .text-professional {
+            color: var(--gray-800);
+        }
+
+        .border-professional {
+            border-color: var(--gray-300);
+        }
+
+        /* Enhanced Form Layout */
+        .form-container {
+            max-width: 900px;
+        }
+
+        .form-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #f3f4f6;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .form-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .form-section.active::before {
+            opacity: 1;
+        }
+
+        .form-section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Mobile: Remove card styling for more space */
+        @media (max-width: 767px) {
+            .form-section {
+                background: transparent !important;
+                border-radius: 0 !important;
+                padding: 24px 16px !important;
+                margin-bottom: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                border-bottom: 1px solid var(--slate-200) !important;
+            }
+
+            .form-section:last-child {
+                border-bottom: none !important;
+            }
+
+            /* Reduce Atlas tip padding on mobile */
+            .atlas-section-tip {
+                padding: 16px !important;
+                margin-bottom: 16px !important;
+                border-radius: 12px !important;
+            }
+
+            /* Compact field groups on mobile */
+            .field-group {
+                margin-bottom: 20px !important;
+            }
+
+            .field-group-title {
+                margin-bottom: 12px !important;
+                font-size: 14px !important;
+            }
+
+            /* Reduce form grid gaps on mobile */
+            .form-grid {
+                gap: 20px !important;
+                margin-bottom: 20px !important;
+            }
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 32px;
+            position: relative;
+        }
+
+        /* Enhanced Form Elements */
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 400;
+            transition: all 0.3s ease;
+            background-color: #ffffff;
+        }
+
+        .form-input:hover {
+            border-color: #d1d5db;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background-color: #f8faff;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 10px;
+            letter-spacing: -0.025em;
+        }
+
+        .form-label .required {
+            color: #ef4444;
+            margin-left: 2px;
+        }
+
+        /* Section Headers */
+        .section-header {
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .section-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 12px;
+            letter-spacing: -0.025em;
+        }
+
+        .section-subtitle {
+            font-size: 17px;
+            color: #6b7280;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        /* Smart Suggestions */
+        .smart-tip {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 1px solid #bfdbfe;
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .smart-tip::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+
+        .smart-tip i {
+            color: #2563eb;
+            font-size: 20px;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .smart-tip strong {
+            color: #1e40af;
+            font-weight: 600;
+        }
+
+        /* Field Groups */
+        .field-group {
+            background: #f9fafb;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #f3f4f6;
+        }
+
+        .field-group-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Select Styling */
+        select.form-input {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+            background-position: right 16px center;
+            background-repeat: no-repeat;
+            background-size: 20px;
+            padding-right: 48px;
+            appearance: none;
+        }
+
+        /* Textarea Styling */
+        textarea.form-input {
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+            line-height: 1.6;
+        }
+
+        /* Checkbox & Radio */
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .checkbox-wrapper input[type="checkbox"],
+        .checkbox-wrapper input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+
+        .checkbox-wrapper label {
+            flex: 1;
+            font-size: 15px;
+            color: #374151;
+            cursor: pointer;
+            line-height: 1.5;
+        }
+
+        /* Button Groups */
+        .button-group {
+            display: flex;
+            gap: 16px;
+            margin-top: 40px;
+            padding-top: 32px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .btn-secondary {
+            color: #6b7280;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            color: #374151;
+        }
+
+        /* Visual Improvements */
+        .form-section {
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Better spacing and flow */
+        .smart-tip {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .smart-tip i {
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        /* Form improvements */
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .form-grid > div:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Button improvements */
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Document upload improvements */
+        .upload-zone {
+            background: #fafafa;
+            border: 2px dashed #d1d5db;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+        }
+
+        /* Responsive Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Desktop: 2-Column Layout */
+        @media (min-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr 2fr;
+            }
+        }
+
+        .atlas-sidebar {
+            position: sticky;
+            top: 140px; /* Account for header (80px) + nav (60px) */
+            height: fit-content;
+            max-height: calc(100vh - 160px); /* Ensure it fits in viewport */
+        }
+
+        /* Mobile Progress Steps */
+        .mobile-step {
+            @apply flex flex-col items-center justify-center p-3 bg-slate-100 rounded-lg text-xs text-slate-600 hover:bg-slate-200 transition-colors border-2 border-transparent;
+        }
+
+        .mobile-step.active {
+            @apply bg-slate-600 text-white border-slate-600;
+        }
+
+        /* Mobile Atlas Overlay */
+        .atlas-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+            align-items: flex-end;
+        }
+
+        .atlas-overlay.show {
+            display: flex;
+        }
+
+        .atlas-mobile-panel {
+            background: white;
+            width: 100%;
+            max-height: 80vh;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .atlas-mobile-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            padding: 20px;
+            color: white;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .atlas-mobile-header .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        /* Mobile FAB */
+        .atlas-mobile-fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+            z-index: 999;
+            cursor: pointer;
+        }
+
+        .atlas-mobile-fab:active {
+            transform: scale(0.95);
+        }
+
+        /* Responsive Layout */
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .atlas-sidebar {
+                display: none;
+            }
+        }
+
+        /* Mobile-specific optimizations */
+        @media (max-width: 767px) {
+            /* Remove form section backgrounds for more space */
+            .form-section {
+                background: transparent !important;
+                border-radius: 0 !important;
+                padding: 20px 0 !important;
+                margin-bottom: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                border-bottom: 1px solid var(--slate-200) !important;
+            }
+
+            .form-section:last-child {
+                border-bottom: none !important;
+            }
+
+            /* Optimize Atlas tips for mobile */
+            .atlas-section-tip {
+                padding: 16px !important;
+                margin: 16px 0 !important;
+                border-radius: 12px !important;
+            }
+
+            /* Compact form elements */
+            .field-group {
+                margin-bottom: 16px !important;
+                padding: 0 !important;
+            }
+
+            .field-group-title {
+                margin-bottom: 8px !important;
+                font-size: 14px !important;
+                padding: 0 !important;
+            }
+
+            /* Reduce spacing */
+            .form-grid {
+                gap: 16px !important;
+                margin-bottom: 16px !important;
+                padding: 0 !important;
+            }
+
+            /* Make inputs full width with no padding waste */
+            .form-group {
+                padding: 0 !important;
+            }
+
+            .form-input {
+                width: 100% !important;
+            }
+        }
+
+        @media (min-width: 1025px) {
+            .atlas-mobile-fab,
+            .atlas-overlay {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .atlas-intervention {
+                width: calc(100vw - 20px);
+                right: 10px;
+                bottom: 80px;
+            }
+
+            .progress-nav {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .form-container {
+                padding: 0 16px;
+            }
+
+            .form-section {
+                padding: 24px 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            main {
+                padding-bottom: 100px !important;
+            }
+        }
+
+        /* Atlas Section Tips - Enhanced */
+        .atlas-section-tip {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0f9ff 100%);
+            border: 1px solid #0ea5e9;
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 32px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(14, 165, 233, 0.1);
+        }
+
+        .atlas-section-tip::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #0ea5e9, #3b82f6, #8b5cf6);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        .atlas-tip-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .atlas-tip-header .tip-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0c4a6e;
+            letter-spacing: -0.025em;
+        }
+
+        .tip-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #0f766e;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .tip-action {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tip-action:hover {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+
+        /* Enhanced Document Upload Cards */
+        .document-upload-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .document-upload-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .document-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .document-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+
+        .document-info .document-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .document-info .document-status {
+            font-size: 13px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .upload-content {
+            text-align: center;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 12px;
+            border: 2px dashed #d1d5db;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-content:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+        }
+
+        .upload-icon {
+            font-size: 32px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .upload-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+
+        .upload-subtitle {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .upload-preview {
+            background: #ecfdf5;
+            border: 1px solid #10b981;
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+
+        .preview-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Enhanced Mobile Upload Tip */
+        .atlas-mobile-upload-tip {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 1px solid #3b82f6;
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-top: 24px;
+        }
+
+        .atlas-mobile-upload-tip .tip-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* Enhanced Review Summary */
+        .review-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px 24px;
+        }
+
+        .review-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border: 1px solid #f3f4f6;
+        }
+
+        .review-label {
+            font-size: 13px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .review-value {
+            font-size: 14px;
+            color: #111827;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        /* Document Status Items */
+        .document-status-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .document-status-item:hover {
+            border-color: #d1d5db;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Primary Color Variable */
+        .text-primary {
+            color: #3b82f6;
+        }
+
+        /* QR Upload Button */
+        .qr-upload-btn {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            margin-left: auto;
+        }
+
+        .qr-upload-btn:hover {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+            transform: translateY(-1px);
+        }
+
+        .qr-upload-btn i {
+            font-size: 16px;
+        }
+
+        /* Hidden File Input */
+        .hidden-file-input {
+            display: none;
+        }
+
+        /* Enhanced Upload Zones */
+        .upload-zone {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="professional-bg text-white shadow-lg w-full">
+        <div class="px-4 py-3 md:py-4">
+            <!-- Mobile-First Header -->
+            <div class="flex justify-between items-center">
+                <!-- Left: Logo and Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 md:w-10 md:h-10 bg-white/10 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-robot text-lg md:text-xl"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <h1 class="text-lg md:text-xl font-bold truncate">Atlas Application</h1>
+                        <p class="text-xs md:text-sm opacity-90 hidden sm:block">Auto-saves • ~10 min</p>
+                    </div>
+                </div>
+
+                <!-- Right: Actions -->
+                <div class="flex items-center space-x-2">
+                    <!-- Mobile Menu Button -->
+                    <button onclick="toggleMobileMenu()" class="md:hidden text-white/80 hover:text-white p-2">
+                        <i class="fas fa-bars text-lg"></i>
+                    </button>
+
+                    <!-- Desktop Security Badges -->
+                    <div class="hidden md:flex items-center space-x-2">
+                        <span class="text-xs bg-white/10 px-2 py-1 rounded-full whitespace-nowrap">
+                            <i class="fas fa-lock mr-1"></i>Bank-level Security
+                        </span>
+                        <button onclick="saveProgress()" class="text-white/80 hover:text-white p-1" title="Save Progress">
+                            <i class="fas fa-save"></i>
+                        </button>
+                    </div>
+
+                    <!-- Mobile Save Button -->
+                    <button onclick="saveProgress()" class="md:hidden text-white/80 hover:text-white p-2">
+                        <i class="fas fa-save text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Menu (Hidden by default) -->
+            <div id="mobileMenu" class="hidden md:hidden mt-3 pt-3 border-t border-white/20">
+                <div class="flex flex-wrap gap-2">
+                    <span class="bg-white/10 px-2 py-1 rounded-full text-xs">
+                        <i class="fas fa-lock mr-1"></i>256-bit Encryption
+                    </span>
+                    <span class="bg-white/10 px-2 py-1 rounded-full text-xs">
+                        <i class="fas fa-user-shield mr-1"></i>Your Data is Safe
+                    </span>
+                    <span class="bg-white/10 px-2 py-1 rounded-full text-xs">
+                        <i class="fas fa-clock mr-1"></i>Auto-saves
+                    </span>
+                    <span class="bg-white/10 px-2 py-1 rounded-full text-xs">
+                        <i class="fas fa-shield-alt mr-1"></i>Bank-level Security
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Progress Navigation -->
+    <nav class="progress-nav bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div class="px-4 py-3">
+            <!-- Mobile Progress Indicator -->
+            <div class="md:hidden">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between text-xs text-slate-600 mb-2">
+                            <span>Step <span id="currentStepMobile">1</span> of 6</span>
+                            <span><span id="progressPercent">0%</span></span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-2">
+                            <div id="progressBarMobile" class="bg-slate-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <button onclick="toggleProgressSteps()" class="ml-4 text-slate-600 p-2">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                </div>
+
+                <!-- Mobile Step Selector (Hidden by default) -->
+                <div id="mobileProgressSteps" class="hidden mt-3 grid grid-cols-3 gap-2">
+                    <button onclick="goToSection(1)" class="mobile-step active" data-section="1">
+                        <i class="fas fa-building text-xs"></i>
+                        <span class="text-xs">Business</span>
+                    </button>
+                    <button onclick="goToSection(2)" class="mobile-step" data-section="2">
+                        <i class="fas fa-users text-xs"></i>
+                        <span class="text-xs">Ownership</span>
+                    </button>
+                    <button onclick="goToSection(3)" class="mobile-step" data-section="3">
+                        <i class="fas fa-chart-line text-xs"></i>
+                        <span class="text-xs">Financial</span>
+                    </button>
+                    <button onclick="goToSection(4)" class="mobile-step" data-section="4">
+                        <i class="fas fa-university text-xs"></i>
+                        <span class="text-xs">Banking</span>
+                    </button>
+                    <button onclick="goToSection(5)" class="mobile-step" data-section="5">
+                        <i class="fas fa-file-alt text-xs"></i>
+                        <span class="text-xs">Documents</span>
+                    </button>
+                    <button onclick="goToSection(6)" class="mobile-step" data-section="6">
+                        <i class="fas fa-check-circle text-xs"></i>
+                        <span class="text-xs">Review</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Desktop Progress Navigation -->
+            <div class="hidden md:flex items-center justify-between">
+                <div class="flex space-x-1 overflow-x-auto flex-1">
+                    <button class="progress-step active" onclick="goToSection(1)" data-section="1">
+                        <i class="fas fa-building mr-2"></i>
+                        <span class="hidden lg:inline">Business</span>
+                    </button>
+                    <button class="progress-step" onclick="goToSection(2)" data-section="2">
+                        <i class="fas fa-users mr-2"></i>
+                        <span class="hidden lg:inline">Ownership</span>
+                    </button>
+                    <button class="progress-step" onclick="goToSection(3)" data-section="3">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        <span class="hidden lg:inline">Financial</span>
+                    </button>
+                    <button class="progress-step" onclick="goToSection(4)" data-section="4">
+                        <i class="fas fa-university mr-2"></i>
+                        <span class="hidden lg:inline">Banking</span>
+                    </button>
+                    <button class="progress-step" onclick="goToSection(5)" data-section="5">
+                        <i class="fas fa-file-alt mr-2"></i>
+                        <span class="hidden lg:inline">Documents</span>
+                    </button>
+                    <button class="progress-step" onclick="goToSection(6)" data-section="6">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        <span class="hidden lg:inline">Review</span>
+                    </button>
+                </div>
+                <div class="ml-4 text-sm text-slate-600 whitespace-nowrap">
+                    <span id="progressPercent">0%</span> Complete
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="w-full">
+        <div class="px-4 py-4 md:py-8">
+            <div class="main-grid md:max-w-7xl md:mx-auto">
+            <!-- Atlas Sidebar Column (1/3) -->
+            <div class="atlas-sidebar">
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <!-- Atlas Header -->
+                    <div class="bg-gradient-to-r from-slate-700 to-slate-900 p-6 text-white">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-robot text-2xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold">Atlas AI</h2>
+                                <p class="text-sm opacity-90">Your Application Guide</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages -->
+                    <div class="p-4 space-y-4 h-96 overflow-y-auto" id="atlasChatMessages">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-robot text-blue-600 text-sm"></i>
+                            </div>
+                            <div class="bg-slate-100 rounded-lg p-3 max-w-[85%]">
+                                <p class="text-sm text-slate-800">Hi! I'm Atlas, your AI guide. I'll help you complete this application quickly and correctly. Ask me anything!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="p-4 border-t">
+                        <h3 class="text-sm font-semibold text-slate-700 mb-3">Quick Help</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="atlasQuickHelp('explain')" class="text-xs bg-slate-100 hover:bg-slate-200 p-2 rounded-lg text-left">
+                                <i class="fas fa-question-circle mr-1"></i>
+                                Explain Section
+                            </button>
+                            <button onclick="atlasQuickHelp('tips')" class="text-xs bg-slate-100 hover:bg-slate-200 p-2 rounded-lg text-left">
+                                <i class="fas fa-lightbulb mr-1"></i>
+                                Get Tips
+                            </button>
+                            <button onclick="atlasQuickHelp('status')" class="text-xs bg-slate-100 hover:bg-slate-200 p-2 rounded-lg text-left">
+                                <i class="fas fa-chart-line mr-1"></i>
+                                Approval Odds
+                            </button>
+                            <button onclick="atlasQuickHelp('docs')" class="text-xs bg-slate-100 hover:bg-slate-200 p-2 rounded-lg text-left">
+                                <i class="fas fa-file-alt mr-1"></i>
+                                Document Help
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="p-4 border-t">
+                        <div class="flex items-center space-x-2">
+                            <input type="text"
+                                   id="atlasSidebarInput"
+                                   placeholder="Ask Atlas anything..."
+                                   class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                   onkeypress="if(event.key === 'Enter') sendAtlasMessage()">
+                            <button onclick="sendAtlasMessage()" class="bg-slate-600 text-white p-2 rounded-lg hover:bg-slate-700">
+                                <i class="fas fa-paper-plane text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Content Column (2/3) -->
+            <div class="pb-32">
+            <div class="form-container">
+            <!-- Section 1: Business Profile -->
+            <section id="section1" class="interview-section active">
+                <div class="form-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Business Profile</h2>
+                        <p class="section-subtitle">Tell me about your business. I'll help you get approved quickly.</p>
+                    </div>
+
+                    <form id="businessForm">
+                        <div class="smart-tip">
+                            <i class="fas fa-lightbulb"></i>
+                            <div>
+                                <strong>Atlas Tip:</strong> Start typing your business name and I'll look up your details automatically!
+                            </div>
+                        </div>
+
+                        <div class="field-group">
+                            <div class="field-group-title">
+                                <i class="fas fa-building"></i>
+                                Business Identity
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        Legal Business Name <span class="required">*</span>
+                                    </label>
+                                    <input type="text" id="legalName" class="form-input" placeholder="e.g., TerraFusion Restaurant Group LLC" value="Pacific Breeze Restaurant Group LLC" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        DBA / Trade Name <span class="text-slate-400">(Optional)</span>
+                                    </label>
+                                    <input type="text" id="dbaName" class="form-input" placeholder="e.g., The Green Plate" value="Oceanview Bistro">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Business Structure <span class="required">*</span>
+                                </label>
+                                <select id="businessStructure" class="form-input" required onchange="updateBusinessStructure()">
+                                    <option value="">Select structure</option>
+                                    <option value="llc" selected>Limited Liability Company (LLC)</option>
+                                    <option value="corporation">Corporation</option>
+                                    <option value="scorporation">S-Corporation</option>
+                                    <option value="partnership">Partnership</option>
+                                    <option value="soleproprietor">Sole Proprietorship</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Tax ID (EIN) <span class="required">*</span>
+                                </label>
+                                <input type="text" id="ein" class="form-input" placeholder="XX-XXXXXXX" maxlength="10" value="82-1949073" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                Business Address <span class="required">*</span>
+                            </label>
+                            <input type="text" id="businessAddress" class="form-input" placeholder="Start typing your address..." value="1234 Ocean Avenue, Santa Monica, CA 90401" required>
+                            <div id="addressSuggestions" class="hidden mt-2 bg-white border rounded-lg shadow-lg"></div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div>
+                                <label class="form-label">
+                                    Business Phone <span class="required">*</span>
+                                </label>
+                                <input type="tel" id="businessPhone" class="form-input" placeholder="(555) 123-4567" value="(310) 555-0123" required>
+                            </div>
+                            <div>
+                                <label class="form-label">
+                                    Business Email <span class="required">*</span>
+                                </label>
+                                <input type="email" id="businessEmail" class="form-input" placeholder="contact@business.com" value="info@oceanviewbistro.com" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div>
+                                <label class="form-label">
+                                    Website <span class="text-slate-400">(Optional)</span>
+                                </label>
+                                <input type="url" id="website" class="form-input" placeholder="https://yourbusiness.com" value="https://www.oceanviewbistro.com">
+                            </div>
+                            <div>
+                                <label class="form-label">
+                                    Date Established <span class="required">*</span>
+                                </label>
+                                <input type="date" id="dateEstablished" class="form-input" value="2019-03-15" required>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label">
+                                Business Description <span class="required">*</span>
+                            </label>
+                            <textarea id="businessDescription" class="form-input" rows="4" placeholder="e.g., Full-service restaurant specializing in farm-to-table cuisine" required>Coastal California cuisine restaurant featuring locally-sourced seafood and organic produce. 85-seat fine dining establishment with full bar, outdoor patio seating, and private dining room. Open for dinner service Tuesday through Sunday, lunch service Friday through Sunday. Led by executive chef James Mitchell with 15+ years of experience in Michelin-starred establishments.</textarea>
+                            <div class="text-xs text-slate-500 mt-1">
+                                Be specific - this helps us match you with the best rates.
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-6 border-t">
+                            <div class="text-sm text-slate-500">
+                                <i class="fas fa-shield-alt text-green-500 mr-2"></i>
+                                Your data is encrypted and secure
+                            </div>
+                            <button type="button" onclick="nextSection()" class="bg-slate-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-slate-700 transition-colors">
+                                Continue to Ownership
+                                <i class="fas fa-arrow-right ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Section 2: Ownership Information -->
+            <section id="section2" class="interview-section">
+                <div class="form-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Ownership Information</h2>
+                        <p class="section-subtitle">We need information about all owners with 25% or more ownership. Atlas will help ensure compliance.</p>
+                    </div>
+
+                    <div class="smart-tip">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Atlas Compliance Guide:</strong> Federal regulations require identity verification for all beneficial owners. I'll help you gather everything correctly.
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-group-title">
+                            <i class="fas fa-users"></i>
+                            Beneficial Owners (25%+ Ownership)
+                        </div>
+                        <p class="text-sm text-slate-600 mb-4">
+                            <i class="fas fa-shield-check text-green-500 mr-2"></i>
+                            Atlas will verify each owner's information to ensure compliance
+                        </p>
+                        <div id="ownersList" class="space-y-6">
+                            <!-- Owner 1 (Required) -->
+                            <div class="bg-white border border-slate-200 rounded-xl p-6 hover:border-blue-300 transition-colors">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="font-semibold text-lg text-slate-900">Primary Owner</h3>
+                                    <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">
+                                        60% Owner
+                                    </span>
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="form-label">Full Legal Name <span class="required">*</span></label>
+                                        <input type="text" class="form-input" placeholder="John Doe" value="Sarah Elizabeth Mitchell" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Ownership Percentage <span class="required">*</span></label>
+                                        <input type="number" class="form-input" min="0" max="100" placeholder="25" value="60" required>
+                                    </div>
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="form-label">Home Address <span class="required">*</span></label>
+                                        <input type="text" class="form-input" placeholder="123 Main St, City, State ZIP" value="456 Pacific Coast Highway, Malibu, CA 90265" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Date of Birth <span class="required">*</span></label>
+                                        <input type="date" class="form-input" value="1982-06-15" required>
+                                    </div>
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="form-label">SSN (Last 4 for Privacy) <span class="required">*</span></label>
+                                        <input type="text" class="form-input" maxlength="4" placeholder="1234" value="6789" required>
+                                        <div class="text-xs text-slate-500 mt-1">
+                                            <i class="fas fa-lock text-green-500 mr-1"></i>
+                                            Atlas will securely validate this information
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Title <span class="required">*</span></label>
+                                        <input type="text" class="form-input" placeholder="CEO, President, etc" value="Chief Executive Officer" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button" onclick="addOwner()" class="w-full py-3 border-2 border-dashed border-slate-300 rounded-lg text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center group">
+                            <i class="fas fa-plus mr-2"></i>
+                            Add Additional Owner
+                            <span class="text-xs text-slate-500 group-hover:text-blue-600">(If applicable)</span>
+                        </button>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-6 border-t mt-6">
+                        <button type="button" onclick="previousSection()" class="text-slate-600 hover:text-slate-800">
+                            <i class="fas fa-arrow-left mr-2"></i>Back
+                        </button>
+                        <button type="button" onclick="nextSection()" class="bg-slate-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-slate-700 transition-colors">
+                            Continue to Financial
+                            <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 3: Financial Profile -->
+            <section id="section3" class="interview-section">
+                <div class="form-section">
+                    <!-- Atlas Tip -->
+                    <div class="atlas-section-tip">
+                        <div class="atlas-tip-header">
+                            <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                            </svg>
+                            <span class="tip-title">Atlas Rate Optimizer</span>
+                        </div>
+                        <p class="tip-text">
+                            I've analyzed your business profile and found you may qualify for preferential processing rates.
+                            Based on your restaurant industry profile and estimated volume, I'm targeting rates of 2.3% + $0.10
+                            for card processing - better than the industry standard of 2.9% + $0.30. Complete these details so
+                            I can negotiate the best terms for your business.
+                        </p>
+                        <button class="tip-action" onclick="atlasOptimizeRates()">
+                            Optimize My Rates
+                        </button>
+                    </div>
+
+                    <div class="section-header">
+                        <h2 class="section-title">Financial Profile</h2>
+                        <p class="section-subtitle">Atlas will analyze these details to match you with optimal rates and processing limits.</p>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-group-title">
+                            <i class="fas fa-chart-line"></i>
+                            Processing Volume & Revenue Details
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Estimated Annual Volume <span class="required">*</span>
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-3 text-slate-500">$</span>
+                                    <input type="text" id="annualVolume" class="form-input pl-8" placeholder="250,000" value="1,250,000" required>
+                                </div>
+                                <div class="text-xs text-slate-500 mt-1">Total credit card sales per year</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Average Ticket Size <span class="required">*</span>
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-3 text-slate-500">$</span>
+                                    <input type="text" id="avgTicket" class="form-input pl-8" placeholder="75" value="125" required>
+                                </div>
+                                <div class="text-xs text-slate-500 mt-1">Typical transaction amount</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Maximum Ticket Size <span class="required">*</span>
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-3 text-slate-500">$</span>
+                                    <input type="text" id="maxTicket" class="form-input pl-8" placeholder="500" value="850" required>
+                                </div>
+                                <div class="text-xs text-slate-500 mt-1">Largest expected transaction</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Delivery Timeframe <span class="required">*</span>
+                                </label>
+                                <select id="deliveryTimeframe" class="form-input" required>
+                                    <option value="">Select timeframe</option>
+                                    <option value="0" selected>Immediate (0 days)</option>
+                                    <option value="2">2 days</option>
+                                    <option value="7">7 days</option>
+                                    <option value="14">14 days</option>
+                                    <option value="30">30 days</option>
+                                </select>
+                                <div class="text-xs text-slate-500 mt-1">Time from sale to delivery</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-group-title">
+                            <i class="fas fa-tags"></i>
+                            Business Classification
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                Merchant Category Code (MCC) <span class="required">*</span>
+                            </label>
+                            <select id="mcc" class="form-input" required onchange="updateMCCInfo()">
+                                <option value="">Select category</option>
+                                <optgroup label="Retail & Restaurants">
+                                    <option value="5812" selected>5812 - Eating Places, Restaurants</option>
+                                    <option value="5814">5814 - Fast Food Restaurants</option>
+                                    <option value="5411">5411 - Grocery Stores, Supermarkets</option>
+                                    <option value="5541">5541 - Service Stations</option>
+                                    <option value="5651">5651 - Family Clothing Stores</option>
+                                </optgroup>
+                                <optgroup label="Services">
+                                    <option value="7011">7011 - Hotels, Motels</option>
+                                    <option value="7999">7999 - Recreation Services</option>
+                                    <option value="8011">8011 - Doctors/Dentists</option>
+                                    <option value="8398">8398 - Educational Services</option>
+                                </optgroup>
+                                <optgroup label="E-commerce">
+                                    <option value="5968">5968 - Subscription Services</option>
+                                    <option value="5944">5944 - Watch/Jewelry Repair</option>
+                                    <option value="7311">7311 - Advertising Services</option>
+                                </optgroup>
+                            </select>
+                            <div id="mccInfo" class="hidden mt-2 p-3 bg-blue-50 rounded-lg text-sm"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                Highest Monthly Volume <span class="text-slate-400">(Optional)</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-slate-500">$</span>
+                                <input type="text" id="highestMonthly" class="form-input pl-8" placeholder="30,000" value="150,000">
+                            </div>
+                            <div class="text-xs text-slate-500 mt-1">Helps us set appropriate limits</div>
+                        </div>
+                    </div>
+
+                        <div class="flex justify-between items-center pt-6 border-t">
+                            <button type="button" onclick="previousSection()" class="text-slate-600 hover:text-slate-800">
+                                <i class="fas fa-arrow-left mr-2"></i>Back
+                            </button>
+                            <button type="button" onclick="nextSection()" class="bg-slate-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-slate-700 transition-colors">
+                                Continue to Banking
+                                <i class="fas fa-arrow-right ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Section 4: Banking Information -->
+            <section id="section4" class="interview-section">
+                <div class="form-section">
+                    <!-- Atlas Tip -->
+                    <div class="atlas-section-tip">
+                        <div class="atlas-tip-header">
+                            <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                            <span class="tip-title">Atlas Secure Verification</span>
+                        </div>
+                        <p class="tip-text">
+                            Your banking information is protected with bank-level encryption and security. Atlas will verify
+                            your account details instantly and securely. We use Plaid's trusted banking connections to ensure
+                            your data is safe and verification is completed in real-time.
+                        </p>
+                        <button class="tip-action" onclick="atlasShowBankingSecurity()">
+                            Learn About Security
+                        </button>
+                    </div>
+
+                    <div class="section-header">
+                        <h2 class="section-title">Banking Information</h2>
+                        <p class="section-subtitle">Where should we deposit your funds?</p>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-group-title">
+                            <i class="fas fa-link"></i>
+                            Quick Bank Connection (Recommended)
+                        </div>
+                        <div class="text-center py-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                            <div class="mb-4">
+                                <i class="fas fa-university text-4xl text-blue-600 mb-3"></i>
+                                <p class="font-semibold text-slate-800">Securely connect your bank in seconds</p>
+                                <p class="text-sm text-slate-600 mt-2">Atlas will verify your account instantly with Plaid's bank-level security</p>
+                            </div>
+                            <button type="button" onclick="connectPlaid()" class="bg-slate-600 text-white px-8 py-4 rounded-lg font-medium hover:bg-slate-700 transition-colors flex items-center justify-center mx-auto">
+                                <i class="fas fa-plaid mr-3"></i>
+                                Connect Bank with Plaid
+                            </button>
+                            <div class="text-sm text-slate-500 mt-4">Or enter manually below</div>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-group-title">
+                            <i class="fas fa-keyboard"></i>
+                            Manual Bank Entry
+                        </div>
+                        <form id="bankingForm">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Bank Name <span class="required">*</span></label>
+                                    <input type="text" id="bankName" class="form-input" placeholder="e.g., Bank of America" value="Wells Fargo Bank" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Account Holder Name <span class="required">*</span></label>
+                                    <input type="text" id="accountHolder" class="form-input" placeholder="Business Name" value="Pacific Breeze Restaurant Group LLC" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Routing Number <span class="required">*</span></label>
+                                    <input type="text" id="routingNumber" class="form-input" maxlength="9" placeholder="9-digit number" value="121042882" required>
+                                    <div id="routingValidation" class="hidden mt-1 text-sm"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Account Number <span class="required">*</span></label>
+                                    <input type="text" id="accountNumber" class="form-input" placeholder="Your account number" value="9876543210" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Account Type <span class="required">*</span></label>
+                                <div class="flex space-x-6">
+                                    <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50">
+                                        <input type="radio" name="accountType" value="checking" class="mr-3" checked required>
+                                        <div>
+                                            <div class="font-medium">Checking Account</div>
+                                            <div class="text-xs text-slate-500">Best for daily transactions</div>
+                                        </div>
+                                    </label>
+                                    <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50">
+                                        <input type="radio" name="accountType" value="savings" class="mr-3" required>
+                                        <div>
+                                            <div class="font-medium">Savings Account</div>
+                                            <div class="text-xs text-slate-500">For funds accumulation</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between items-center pt-6 border-t">
+                                <button type="button" onclick="previousSection()" class="text-slate-600 hover:text-slate-800">
+                                    <i class="fas fa-arrow-left mr-2"></i>Back
+                                </button>
+                                <button type="button" onclick="nextSection()" class="bg-slate-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-slate-700 transition-colors">
+                                    Continue to Documents
+                                    <i class="fas fa-arrow-right ml-2"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 5: Documents -->
+            <section id="section5" class="interview-section">
+                <div class="form-section">
+                    <!-- Atlas Tip -->
+                    <div class="atlas-section-tip">
+                        <div class="atlas-tip-header">
+                            <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span class="tip-title">Atlas Smart Scan</span>
+                        </div>
+                        <p class="tip-text">
+                            Atlas can automatically scan, categorize, and verify your documents in real-time. Our AI technology
+                            reads and validates business licenses, IDs, and financial documents, reducing approval time from
+                            days to minutes. Just upload clear photos, and I'll handle the rest.
+                        </p>
+                        <button class="tip-action" onclick="atlasShowSmartScanDemo()">
+                            See Smart Scan Demo
+                        </button>
+                    </div>
+
+                    <div class="section-header">
+                        <h2 class="section-title">Required Documents</h2>
+                        <p class="section-subtitle">Upload the required documents to complete your application.</p>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-group-title">
+                            <i class="fas fa-file-upload"></i>
+                            Required Business Documents
+                        </div>
+                        <p class="text-sm text-slate-600 mb-4">
+                            <i class="fas fa-sparkles text-yellow-500 mr-2"></i>
+                            Atlas will automatically scan and verify all documents for instant processing
+                        </p>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <!-- Business License -->
+                            <div class="document-upload-card">
+                                <div class="document-header">
+                                    <div class="document-icon">
+                                        <i class="fas fa-file-invoice"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <h3 class="document-title">Business License</h3>
+                                        <p class="document-status">Required</p>
+                                    </div>
+                                    <button onclick="showMobileUpload('business-license')" class="qr-upload-btn" title="Upload from mobile">
+                                        <i class="fas fa-qrcode"></i>
+                                    </button>
+                                </div>
+                                <div class="upload-zone" onclick="triggerFileUpload('business-license')">
+                                    <input type="file" id="business-license-file" class="hidden-file-input" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileUpload(event, 'business-license')">
+                                    <div class="upload-content">
+                                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                        <p class="upload-text">Click to upload or drag and drop</p>
+                                        <p class="upload-subtitle">PDF, JPG, PNG up to 10MB</p>
+                                    </div>
+                                </div>
+                                <div id="business-license-preview" class="upload-preview hidden">
+                                    <div class="preview-content">
+                                        <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                                        <span class="text-sm font-medium">Document uploaded successfully</span>
+                                        <span class="ml-auto text-xs text-slate-500">business_license.pdf</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Voided Check -->
+                            <div class="document-upload-card">
+                                <div class="document-header">
+                                    <div class="document-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                                        <i class="fas fa-money-check"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <h3 class="document-title">Voided Check</h3>
+                                        <p class="document-status">Required</p>
+                                    </div>
+                                    <button onclick="showMobileUpload('voided-check')" class="qr-upload-btn" title="Upload from mobile">
+                                        <i class="fas fa-qrcode"></i>
+                                    </button>
+                                </div>
+                                <div class="upload-zone" onclick="triggerFileUpload('voided-check')">
+                                    <input type="file" id="voided-check-file" class="hidden-file-input" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileUpload(event, 'voided-check')">
+                                    <div class="upload-content">
+                                        <i class="fas fa-camera upload-icon"></i>
+                                        <p class="upload-text">Upload voided check</p>
+                                        <p class="upload-subtitle">Or bank verification letter</p>
+                                    </div>
+                                </div>
+                                <div id="voided-check-preview" class="upload-preview hidden">
+                                    <div class="preview-content">
+                                        <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                                        <span class="text-sm font-medium">Document uploaded successfully</span>
+                                        <span class="ml-auto text-xs text-slate-500">voided_check.jpg</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-group-title">
+                            <i class="fas fa-user-check"></i>
+                            Identity Verification
+                        </div>
+                        <div class="document-upload-card">
+                            <div class="document-header">
+                                <div class="document-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                                    <i class="fas fa-id-card"></i>
+                                </div>
+                                <div class="document-info">
+                                    <h3 class="document-title">Photo ID</h3>
+                                    <p class="document-status">Required for all owners</p>
+                                </div>
+                                <button onclick="showMobileUpload('photo-id-front')" class="qr-upload-btn" title="Upload from mobile">
+                                    <i class="fas fa-qrcode"></i>
+                                </button>
+                            </div>
+                            <p class="text-sm text-slate-600 mb-4">Driver's license, passport, or state ID for each owner with 25%+ ownership</p>
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div class="upload-zone" onclick="triggerFileUpload('photo-id-front')">
+                                    <input type="file" id="photo-id-front-file" class="hidden-file-input" accept=".jpg,.jpeg,.png,.pdf" onchange="handleFileUpload(event, 'photo-id-front')">
+                                    <div class="upload-content">
+                                        <i class="fas fa-id-badge upload-icon"></i>
+                                        <p class="upload-text">Front of ID</p>
+                                    </div>
+                                </div>
+                                <div class="upload-zone" onclick="triggerFileUpload('photo-id-back')">
+                                    <input type="file" id="photo-id-back-file" class="hidden-file-input" accept=".jpg,.jpeg,.png,.pdf" onchange="handleFileUpload(event, 'photo-id-back')">
+                                    <div class="upload-content">
+                                        <i class="fas fa-id-badge upload-icon"></i>
+                                        <p class="upload-text">Back of ID</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-group-title">
+                            <i class="fas fa-chart-line"></i>
+                            Financial Documents (Optional)
+                        </div>
+                        <p class="text-sm text-slate-600 mb-4">
+                            <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                            Providing these documents helps us secure higher processing limits and better rates
+                        </p>
+                        <div class="document-upload-card">
+                            <div class="document-header">
+                                <div class="document-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                </div>
+                                <div class="document-info">
+                                    <h3 class="document-title">Bank Statements</h3>
+                                    <p class="document-status">Optional - Recommended</p>
+                                </div>
+                                <button onclick="showMobileUpload('bank-statements')" class="qr-upload-btn" title="Upload from mobile">
+                                    <i class="fas fa-qrcode"></i>
+                                </button>
+                            </div>
+                            <p class="text-sm text-slate-600 mb-4">Last 3 months of business bank statements</p>
+                            <div class="upload-zone" onclick="triggerFileUpload('bank-statements')">
+                                <input type="file" id="bank-statements-file" class="hidden-file-input" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="handleFileUpload(event, 'bank-statements')">
+                                <div class="upload-content">
+                                    <i class="fas fa-file-alt upload-icon"></i>
+                                    <p class="upload-text">Upload bank statements</p>
+                                    <p class="upload-subtitle">PDF format preferred</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="atlas-mobile-upload-tip">
+                        <div class="tip-content">
+                            <i class="fas fa-qrcode text-2xl text-blue-600 mr-4"></i>
+                            <div>
+                                <h4 class="font-semibold text-blue-900">Atlas Mobile Upload Available</h4>
+                                <p class="text-sm text-blue-800">On desktop? Scan the QR code to upload photos directly from your phone. Atlas will optimize them instantly!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-6 border-t">
+                        <button type="button" onclick="previousSection()" class="text-slate-600 hover:text-slate-800">
+                            <i class="fas fa-arrow-left mr-2"></i>Back
+                        </button>
+                        <button type="button" onclick="nextSection()" class="bg-slate-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-slate-700 transition-colors">
+                            Continue to Review
+                            <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 6: Review & Submit -->
+            <section id="section6" class="interview-section">
+                <div class="form-section">
+                    <!-- Atlas Tip -->
+                    <div class="atlas-section-tip">
+                        <div class="atlas-tip-header">
+                            <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="tip-title">Atlas Final Review</span>
+                        </div>
+                        <p class="tip-text">
+                            I've completed my comprehensive review of your application. Everything looks excellent! Your business
+                            qualifies for our preferred restaurant processing program with competitive rates and fast approval.
+                            I've identified a few opportunities to optimize your application for instant approval.
+                        </p>
+                        <button class="tip-action" onclick="atlasShowOptimizationSuggestions()">
+                            View Optimization Suggestions
+                        </button>
+                    </div>
+
+                    <div class="section-header">
+                        <h2 class="section-title">Application Review</h2>
+                        <p class="section-subtitle">Please review your information before submitting.</p>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-group-title">
+                            <i class="fas fa-building"></i>
+                            Business Information Summary
+                        </div>
+                        <div class="review-summary-grid">
+                            <div class="review-item">
+                                <span class="review-label">Legal Name:</span>
+                                <span id="reviewBusinessName" class="review-value">Pacific Breeze Restaurant Group LLC</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Structure:</span>
+                                <span id="reviewStructure" class="review-value">Limited Liability Company</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">EIN:</span>
+                                <span id="reviewEIN" class="review-value">87-6543210</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Phone:</span>
+                                <span id="reviewPhone" class="review-value">(310) 555-0123</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Address:</span>
+                                <span class="review-value">1234 Ocean Avenue, Santa Monica, CA 90401</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Website:</span>
+                                <span class="review-value">www.pacificbreezerestaurant.com</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-group-title">
+                            <i class="fas fa-chart-line"></i>
+                            Financial Profile Summary
+                        </div>
+                        <div class="review-summary-grid">
+                            <div class="review-item">
+                                <span class="review-label">Annual Volume:</span>
+                                <span id="reviewVolume" class="review-value font-semibold text-green-600">$1,250,000</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Average Ticket:</span>
+                                <span id="reviewAvgTicket" class="review-value">$125</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Maximum Ticket:</span>
+                                <span id="reviewMaxTicket" class="review-value">$850</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">MCC:</span>
+                                <span id="reviewMCC" class="review-value">5812 - Eating Places, Restaurants</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                            <div class="flex items-center">
+                                <i class="fas fa-award text-green-600 mr-2"></i>
+                                <span class="text-sm font-medium text-slate-800">Qualifies for preferred restaurant processing rates</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-group-title">
+                            <i class="fas fa-users"></i>
+                            Ownership & Banking Summary
+                        </div>
+                        <div class="review-summary-grid">
+                            <div class="review-item">
+                                <span class="review-label">Primary Owner:</span>
+                                <span class="review-value">Sarah Elizabeth Mitchell (60%)</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Bank:</span>
+                                <span class="review-value">Wells Fargo Bank</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="review-label">Account Type:</span>
+                                <span class="review-value">Business Checking</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-group-title">
+                            <i class="fas fa-file-check"></i>
+                            Document Status
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div class="document-status-item">
+                                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-check-circle text-green-600 mr-3"></i>
+                                        <span class="text-sm font-medium">Business License</span>
+                                    </div>
+                                    <span class="text-xs text-green-600">Verified</span>
+                                </div>
+                            </div>
+                            <div class="document-status-item">
+                                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-check-circle text-green-600 mr-3"></i>
+                                        <span class="text-sm font-medium">Voided Check</span>
+                                    </div>
+                                    <span class="text-xs text-green-600">Verified</span>
+                                </div>
+                            </div>
+                            <div class="document-status-item">
+                                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-check-circle text-green-600 mr-3"></i>
+                                        <span class="text-sm font-medium">Photo ID</span>
+                                    </div>
+                                    <span class="text-xs text-green-600">Verified</span>
+                                </div>
+                            </div>
+                            <div class="document-status-item">
+                                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-info-circle text-blue-600 mr-3"></i>
+                                        <span class="text-sm font-medium">Bank Statements</span>
+                                    </div>
+                                    <span class="text-xs text-blue-600">Optional</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-group-title">
+                            <i class="fas fa-shield-check"></i>
+                            Terms & Conditions
+                        </div>
+                        <div class="space-y-3 bg-blue-50 p-4 rounded-lg">
+                            <label class="flex items-start">
+                                <input type="checkbox" class="mt-1 mr-3" checked required>
+                                <span class="text-sm text-slate-700">I agree to the Terms of Service and Processing Agreement</span>
+                            </label>
+                            <label class="flex items-start">
+                                <input type="checkbox" class="mt-1 mr-3" checked required>
+                                <span class="text-sm text-slate-700">I authorize credit check and underwriting review</span>
+                            </label>
+                            <label class="flex items-start">
+                                <input type="checkbox" class="mt-1 mr-3" checked required>
+                                <span class="text-sm text-slate-700">All information provided is true and accurate</span>
+                            </label>
+                            <label class="flex items-start">
+                                <input type="checkbox" class="mt-1 mr-3" checked>
+                                <span class="text-sm text-slate-700">Send me updates about my application status</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-6 border-t">
+                        <button type="button" onclick="previousSection()" class="text-slate-600 hover:text-slate-800">
+                            <i class="fas fa-arrow-left mr-2"></i>Back
+                        </button>
+                        <button type="button" onclick="submitApplication()" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all transform hover:scale-105 flex items-center shadow-lg">
+                            <i class="fas fa-rocket mr-3"></i>
+                            Submit Application for Instant Approval
+                            <i class="fas fa-check-circle ml-3"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobile Atlas FAB -->
+    <div class="atlas-mobile-fab" onclick="openAtlasMobile()">
+        <i class="fas fa-robot text-white text-2xl"></i>
+    </div>
+
+    <!-- Mobile Atlas Overlay -->
+    <div id="atlasOverlay" class="atlas-overlay">
+        <div class="atlas-mobile-panel">
+            <div class="atlas-mobile-header">
+                <button class="close-btn" onclick="closeAtlasMobile()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                        <i class="fas fa-robot text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold">Atlas AI</h2>
+                        <p class="text-sm opacity-90">Your Application Guide</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Chat Messages -->
+            <div class="p-4 space-y-3 overflow-y-auto" id="atlasMobileMessages">
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-robot text-blue-600 text-sm"></i>
+                    </div>
+                    <div class="bg-slate-100 rounded-lg p-3 max-w-[85%]">
+                        <p class="text-sm text-slate-800">Hi! I'm Atlas, your AI guide. I'm here to help you complete your application quickly and correctly. What can I help you with?</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Quick Actions -->
+            <div class="p-4 border-t">
+                <h3 class="text-sm font-semibold text-slate-700 mb-3">Quick Help</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="atlasQuickHelp('explain')" class="text-xs bg-slate-100 hover:bg-slate-200 p-3 rounded-lg text-left">
+                        <i class="fas fa-question-circle mr-1"></i>
+                        Explain Section
+                    </button>
+                    <button onclick="atlasQuickHelp('tips')" class="text-xs bg-slate-100 hover:bg-slate-200 p-3 rounded-lg text-left">
+                        <i class="fas fa-lightbulb mr-1"></i>
+                        Get Tips
+                    </button>
+                    <button onclick="atlasQuickHelp('status')" class="text-xs bg-slate-100 hover:bg-slate-200 p-3 rounded-lg text-left">
+                        <i class="fas fa-chart-line mr-1"></i>
+                        Approval Odds
+                    </button>
+                    <button onclick="atlasQuickHelp('docs')" class="text-xs bg-slate-100 hover:bg-slate-200 p-3 rounded-lg text-left">
+                        <i class="fas fa-file-alt mr-1"></i>
+                        Document Help
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Chat Input -->
+            <div class="p-4 border-t">
+                <div class="flex items-center space-x-2">
+                    <input type="text"
+                           id="atlasMobileInput"
+                           placeholder="Ask Atlas anything..."
+                           class="flex-1 px-3 py-3 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+                           onkeypress="if(event.key === 'Enter') sendAtlasMobileMessage()">
+                    <button onclick="sendAtlasMobileMessage()" class="bg-slate-600 text-white px-4 py-3 rounded-lg hover:bg-slate-700">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Atlas Intervention Modal -->
+    <div id="atlasIntervention" class="atlas-intervention">
+        <div class="bg-gradient-to-r from-slate-700 to-slate-900 text-white p-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold">Atlas AI</h3>
+                        <p class="text-xs opacity-90">Your Application Guide</p>
+                    </div>
+                </div>
+                <button onclick="closeAtlasIntervention()" class="text-white/80 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="p-4">
+            <p id="atlasMessage" class="text-slate-800 mb-4"></p>
+            <div id="atlasActions" class="flex space-x-3">
+                <!-- Dynamic action buttons -->
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Modal for Mobile Upload -->
+    <div id="qrModal" class="qr-modal">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div class="text-center">
+                <h3 class="text-xl font-semibold mb-4">Upload from Phone</h3>
+                <div class="w-48 h-48 mx-auto bg-slate-200 rounded-lg flex items-center justify-center mb-4">
+                    <i class="fas fa-qrcode text-6xl text-slate-400"></i>
+                </div>
+                <p class="text-slate-600 mb-4">Scan this code with your phone to upload documents</p>
+                <button onclick="closeQRModal()" class="text-slate-500 hover:text-slate-700">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="qr-modal">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
+            <div class="success-checkmark">
+                <i class="fas fa-check text-white text-3xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">Application Submitted!</h2>
+            <p class="text-slate-600 mb-6">We'll review your application and send updates within 24 hours.</p>
+            <button onclick="closeSuccessModal()" class="bg-slate-600 text-white px-6 py-3 rounded-lg hover:bg-slate-700 transition-colors">
+                Got it, thanks!
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let currentSection = 1;
+        let idleTimer = null;
+        let formData = {
+            business: {},
+            owners: [],
+            financial: {},
+            banking: {},
+            documents: []
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateProgress();
+            setupIdleDetection();
+            loadSavedProgress();
+
+            // Start Atlas interactive journey
+            startAtlasBusinessJourney();
+        });
+
+        // Navigation
+        function goToSection(section) {
+            if (section < 1 || section > 6) return;
+
+            // Hide current section
+            document.getElementById(`section${currentSection}`).classList.remove('active');
+
+            // Show new section
+            currentSection = section;
+            document.getElementById(`section${section}`).classList.add('active');
+
+            // Update progress
+            updateProgress();
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Update nav buttons
+            document.querySelectorAll('.progress-step').forEach(btn => {
+                btn.classList.remove('active');
+                const btnSection = parseInt(btn.dataset.section);
+                if (btnSection < section) {
+                    btn.classList.add('completed');
+                } else {
+                    btn.classList.remove('completed');
+                }
+            });
+            document.querySelector(`[data-section="${section}"]`).classList.add('active');
+
+            // Clear Atlas conversation and start section-specific introduction
+            clearAtlasConversation();
+            startAtlasSectionIntroduction(section);
+
+            saveProgress();
+        }
+
+        function nextSection() {
+            if (validateCurrentSection()) {
+                goToSection(currentSection + 1);
+            }
+        }
+
+        function previousSection() {
+            goToSection(currentSection - 1);
+        }
+
+        // Progress Tracking
+        function updateProgress() {
+            const progress = ((currentSection - 1) / 5) * 100;
+            document.getElementById('progressPercent').textContent = `${Math.round(progress)}%`;
+
+            // Update mobile progress
+            updateMobileProgress(currentSection);
+
+            // Update mobile step active state
+            const mobileSteps = document.querySelectorAll('.mobile-step');
+            mobileSteps.forEach((step, index) => {
+                step.classList.toggle('active', index + 1 === currentSection);
+            });
+        }
+
+        // Form Validation
+        function validateCurrentSection() {
+            const currentForm = document.querySelector(`#section${currentSection} form`);
+            if (!currentForm) return true;
+
+            const requiredFields = currentForm.querySelectorAll('[required]');
+            let isValid = true;
+
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.classList.add('border-red-500');
+                    field.focus();
+
+                    // Atlas intervention
+                    showAtlasIntervention(
+                        `Looks like you missed the ${field.previousElementSibling.textContent.replace('*', '').trim()}. Need help with this?`,
+                        [{ text: "Fill it for me", action: "help", field: field.id }]
+                    );
+                } else {
+                    field.classList.remove('border-red-500');
+                }
+            });
+
+            return isValid;
+        }
+
+        // Atlas AI Sidebar Functions
+        function sendAtlasMessage() {
+            const input = document.getElementById('atlasSidebarInput');
+            const message = input.value.trim();
+
+            if (message) {
+                // Add user message to chat
+                addAtlasSidebarMessage(message, 'user');
+                input.value = '';
+
+                // Simulate Atlas response
+                setTimeout(() => {
+                    const response = getAtlasSidebarResponse(message);
+                    addAtlasSidebarMessage(response, 'atlas');
+                }, 800);
+            }
+        }
+
+        function addAtlasSidebarMessage(message, sender) {
+            const chatContainer = document.getElementById('atlasChatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex items-start space-x-3';
+
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="flex-1"></div>
+                    <div class="bg-slate-600 text-white rounded-lg p-3 max-w-[85%]">
+                        <p class="text-sm">${message}</p>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-robot text-blue-600 text-sm"></i>
+                    </div>
+                    <div class="bg-slate-100 rounded-lg p-3 max-w-[85%]">
+                        <p class="text-sm text-slate-800">${message}</p>
+                    </div>
+                `;
+            }
+
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function getAtlasSidebarResponse(message) {
+            const lowerMessage = message.toLowerCase();
+
+            if (lowerMessage.includes('ein') || lowerMessage.includes('tax id')) {
+                return "Your EIN is like a Social Security Number for your business. You can find it on your IRS confirmation letter or previous tax returns. Sole proprietors can use their SSN instead.";
+            }
+            if (lowerMessage.includes('document') || lowerMessage.includes('upload')) {
+                return "Make sure your documents are clear and all corners are visible. For IDs, I need both front and back. Blurry photos will delay approval! Use your phone for best quality.";
+            }
+            if (lowerMessage.includes('approval') || lowerMessage.includes('chance')) {
+                return "Based on your progress, you're looking good! Complete all required documents and accurate financial info for the best approval odds and rates.";
+            }
+            if (lowerMessage.includes('help')) {
+                return "I can help you with: explaining fields, document requirements, approval tips, or answering questions about the process. What would you like to know?";
+            }
+            if (lowerMessage.includes('volume') || lowerMessage.includes('ticket')) {
+                return "Be realistic with your estimates. Accurate volumes and ticket sizes help me match you with the best processing rates and limits.";
+            }
+
+            return "That's a great question! I'm here to help you complete your application successfully. Can you tell me more about what you need?";
+        }
+
+        function clearAtlasConversation() {
+            // Clear desktop chat
+            const desktopChat = document.getElementById('atlasChatMessages');
+            if (desktopChat) {
+                desktopChat.innerHTML = `
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-blue-600 text-sm"></i>
+                        </div>
+                        <div class="bg-slate-100 rounded-lg p-3 max-w-[85%]">
+                            <p class="text-sm text-slate-800">Hi! I'm Atlas, your AI guide. I'm here to help you complete your application quickly and correctly. What can I help you with?</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Clear mobile chat
+            const mobileChat = document.getElementById('atlasMobileMessages');
+            if (mobileChat) {
+                mobileChat.innerHTML = `
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-blue-600 text-sm"></i>
+                        </div>
+                        <div class="bg-slate-100 rounded-lg p-3 max-w-[85%]">
+                            <p class="text-sm text-slate-800">Hi! I'm Atlas, your AI guide. I'm here to help you complete your application quickly and correctly. What can I help you with?</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function startAtlasSectionIntroduction(section) {
+            const introductions = {
+                1: {
+                    message: "Welcome to the Business Profile section! This is where we'll establish your business identity. Accurate information here helps me match you with the best processing rates and faster approval.",
+                    simulation: [
+                        { delay: 1500, user: "What's the most important field here?", atlas: "Great question! Your **Legal Business Name** is critical - it must match your business registration documents exactly. Including 'LLC', 'Corp', 'Inc', etc. Mismatches can delay approval!" },
+                        { delay: 3000, user: "What if I'm a sole proprietor?", atlas: "Perfect! For sole proprietors, use your full legal name. You can use your SSN instead of an EIN. I'll help you navigate this - just let me know your business structure!" }
+                    ]
+                },
+                2: {
+                    message: "Now we need to capture ownership information. Federal regulations require me to verify identity for anyone with 25% or more ownership. This protects against fraud and ensures compliance.",
+                    simulation: [
+                        { delay: 2000, user: "Why do you need so much personal information?", atlas: "Excellent question! This is actually required by federal law (USA PATRIOT Act) for financial services. I use bank-level encryption to protect your data and only share what's necessary for underwriting." },
+                        { delay: 4000, user: "Is my information safe here?", atlas: "Absolutely! Your data is protected with 256-bit encryption - the same security banks use. I only access your information to help complete the application and verify compliance. Your privacy is my top priority!" }
+                    ]
+                },
+                3: {
+                    message: "Let's talk about your financial profile! This information helps me determine the best processing rates and appropriate limits for your business. Honest, realistic estimates here lead to better terms.",
+                    simulation: [
+                        { delay: 1800, user: "Should I estimate high or low on volume?", atlas: "Be as accurate as possible! Overestimating can lead to unnecessary fees, while underestimating might limit your processing capacity. I use this data to negotiate competitive rates based on your actual business profile." },
+                        { delay: 3500, user: "What's a good average ticket size for a restaurant?", atlas: "For restaurants, average tickets typically range from $25-150. Fine dining might be $80-200, while quick service could be $15-40. Consider your menu prices and customer patterns - I'll optimize rates based on your specific business model!" }
+                    ]
+                },
+                4: {
+                    message: "Banking information! This is where funds will be deposited. Business bank accounts typically receive higher limits and better terms. Let's get you set up securely.",
+                    simulation: [
+                        { delay: 1600, user: "Is Plaid safe to use?", atlas: "Yes! Plaid is used by major financial institutions like Venmo, PayPal, and Chase. It uses bank-level security and you never share your password with us. It's actually safer than providing account numbers manually!" },
+                        { delay: 3200, user: "Can I use a personal account?", atlas: "You can, but business accounts get higher limits and look more professional to underwriters. If you're just starting, many entrepreneurs begin with personal accounts and upgrade later. I'll work with whatever you have!" }
+                    ]
+                },
+                5: {
+                    message: "Document upload time! My Smart Scan technology will automatically verify your documents. Clear photos help me process everything instantly instead of waiting days for manual review.",
+                    simulation: [
+                        { delay: 2000, user: "What if my documents are blurry?", atlas: "Take new photos in good lighting! My Smart Scan needs clear images to read and verify documents instantly. Blurry photos = manual review = delays. Use your phone's camera rather than scanning if possible!" },
+                        { delay: 3800, user: "How long does verification take?", atlas: "With clear documents and my Smart Scan, usually 1-5 minutes! Traditional processing takes 1-3 days. This instant verification is one of the ways I accelerate your application journey!" }
+                    ]
+                },
+                6: {
+                    message: "Final review! I've analyzed your complete application and you're looking great for approval. Let me walk you through everything and catch any opportunities for optimization.",
+                    simulation: [
+                        { delay: 1700, user: "What are my approval chances?", atlas: "Looking excellent! Your restaurant profile, $1.25M estimated volume, and complete documentation put you in a strong position. I'm targeting 2.3% + $0.10 processing rates - better than the industry standard!" },
+                        { delay: 3400, user: "When will I hear back?", atlas: "With Atlas Smart Scan verification, most applications are approved within hours, not days! You'll receive an email as soon as there's an update. I'll also text you if you opted in for updates!" }
+                    ]
+                }
+            };
+
+            const intro = introductions[section];
+            if (!intro) return;
+
+            // Add section introduction
+            setTimeout(() => {
+                addAtlasSidebarMessage(intro.message, 'atlas');
+                addAtlasMobileMessage(intro.message, 'atlas');
+            }, 500);
+
+            // Run simulation
+            intro.simulation.forEach(interaction => {
+                setTimeout(() => {
+                    addAtlasSidebarMessage(interaction.user, 'user');
+                    addAtlasMobileMessage(interaction.user, 'user');
+
+                    setTimeout(() => {
+                        addAtlasSidebarMessage(interaction.atlas, 'atlas');
+                        addAtlasMobileMessage(interaction.atlas, 'atlas');
+                    }, 800);
+                }, interaction.delay);
+            });
+        }
+
+        function atlasQuickHelp(type) {
+            const tips = {
+                'explain': getCurrentSectionExplanation(),
+                'tips': '💡 Tip: Fill in all required fields marked with *. Upload clear documents with all corners visible. Be specific in your business description.',
+                'status': calculateApprovalOdds(),
+                'docs': 'Documents needed: Business License, Voided Check (or bank letter), Photo ID for each owner, and optionally 3 months bank statements for higher limits.'
+            };
+
+            const message = tips[type] || "How can I help you?";
+
+            // Send to appropriate container based on screen size
+            if (window.innerWidth > 1024) {
+                addAtlasSidebarMessage(message, 'atlas');
+            } else {
+                addAtlasMobileMessage(message, 'atlas');
+            }
+        }
+
+        // Atlas Interactive Journey Functions
+        function atlasShowOptimizationSuggestions() {
+            // Create modal with optimization suggestions
+            const modal = document.createElement('div');
+            modal.id = 'atlasOptimizationModal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+                    <!-- Modal Header -->
+                    <div class="bg-gradient-to-r from-slate-700 to-slate-900 p-6 text-white rounded-t-2xl">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-lightbulb text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-2xl font-bold">Atlas Optimization Suggestions</h2>
+                                    <p class="text-sm opacity-90">Personalized recommendations to improve your application</p>
+                                </div>
+                            </div>
+                            <button onclick="closeAtlasOptimizationModal()" class="text-white/80 hover:text-white text-2xl">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Modal Content -->
+                    <div class="p-6 flex-1 overflow-y-auto">
+                        <!-- Overall Score -->
+                        <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 mb-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-green-900 mb-2">🎯 Application Strength Score</h3>
+                                    <p class="text-green-700">Your application is in the top 15% of restaurant applicants</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-4xl font-bold text-green-600">92%</div>
+                                    <div class="text-sm text-green-600">Optimized</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Optimization Categories -->
+                        <div class="space-y-6">
+                            <!-- Rate Optimization -->
+                            <div class="border-l-4 border-blue-500 pl-6">
+                                <div class="flex items-start space-x-4">
+                                    <div class="bg-blue-100 p-3 rounded-lg">
+                                        <i class="fas fa-percentage text-blue-600 text-xl"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-slate-900 mb-2">💰 Rate Optimization - HIGH IMPACT</h4>
+                                        <div class="bg-blue-50 rounded-lg p-4 mb-3">
+                                            <p class="text-sm text-blue-900 font-medium mb-2">Current Target: 2.3% + $0.10</p>
+                                            <p class="text-sm text-blue-800">Industry Average: 2.9% + $0.30</p>
+                                        </div>
+                                        <h5 class="font-medium text-slate-700 mb-2">Actionable Suggestions:</h5>
+                                        <ul class="space-y-2 text-sm text-slate-600">
+                                            <li class="flex items-start">
+                                                <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5"></i>
+                                                <span><strong>Upload bank statements</strong> - This could reduce your rate by 0.2-0.4%</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5"></i>
+                                                <span><strong>Increase average ticket accuracy</strong> - Current $125 seems high for restaurants</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <i class="fas fa-info-circle text-blue-500 mr-2 mt-0.5"></i>
+                                                <span><strong>Consider seasonal volume</strong> - Your $1.25M estimate might qualify for volume discounts</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Approval Speed -->
+                            <div class="border-l-4 border-green-500 pl-6">
+                                <div class="flex items-start space-x-4">
+                                    <div class="bg-slate-100 p-3 rounded-lg">
+                                        <i class="fas fa-rocket text-green-600 text-xl"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-slate-900 mb-2">⚡ Approval Speed - OPTIMIZED</h4>
+                                        <div class="bg-green-50 rounded-lg p-4 mb-3">
+                                            <p class="text-sm text-green-900 font-medium mb-2">Estimated Approval: < 2 hours</p>
+                                            <p class="text-sm text-slate-800">vs Industry Average: 2-3 days</p>
+                                        </div>
+                                        <h5 class="font-medium text-slate-700 mb-2">What's helping you:</h5>
+                                        <ul class="space-y-2 text-sm text-slate-600">
+                                            <li class="flex items-start">
+                                                <i class="fas fa-star text-yellow-500 mr-2 mt-0.5"></i>
+                                                <span><strong>Complete documentation</strong> - All required docs uploaded</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <i class="fas fa-star text-yellow-500 mr-2 mt-0.5"></i>
+                                                <span><strong>LLC structure</strong> - Professional business setup</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <i class="fas fa-star text-yellow-500 mr-2 mt-0.5"></i>
+                                                <span><strong>Business bank account</strong> - Higher approval probability</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Processing Limits -->
+                            <div class="border-l-4 border-purple-500 pl-6">
+                                <div class="flex items-start space-x-4">
+                                    <div class="bg-purple-100 p-3 rounded-lg">
+                                        <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-slate-900 mb-2">📈 Processing Limits - MEDIUM IMPACT</h4>
+                                        <div class="bg-purple-50 rounded-lg p-4 mb-3">
+                                            <p class="text-sm text-purple-900 font-medium mb-2">Starting Limit: $25,000/month</p>
+                                            <p class="text-sm text-purple-800">Potential: $100,000+ with optimization</span>
+                                        </div>
+                                        <h5 class="font-medium text-slate-700 mb-2">To increase limits:</h5>
+                                        <ul class="space-y-2 text-sm text-slate-600">
+                                            <li class="flex items-start">
+                                                <i class="fas fa-arrow-up text-green-500 mr-2 mt-0.5"></i>
+                                                <span><strong>Add bank statements</strong> - Could double your starting limit</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <i class="fas fa-arrow-up text-green-500 mr-2 mt-0.5"></i>
+                                                <span><strong>Processing history</strong> - 3 months of good processing = higher limits</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Missing Opportunities -->
+                            <div class="border-l-4 border-amber-500 pl-6">
+                                <div class="flex items-start space-x-4">
+                                    <div class="bg-amber-100 p-3 rounded-lg">
+                                        <i class="fas fa-exclamation-triangle text-amber-600 text-xl"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-slate-900 mb-2">⚠️ Missing Opportunities</h4>
+                                        <ul class="space-y-3 text-sm text-slate-600">
+                                            <li class="flex items-start">
+                                                <span class="bg-amber-100 text-amber-800 px-2 py-1 rounded text-xs font-medium mr-2">MEDIUM</span>
+                                                <span><strong>No website provided</strong> - Having a website increases approval rates by 15%</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <span class="bg-amber-100 text-amber-800 px-2 py-1 rounded text-xs font-medium mr-2">LOW</span>
+                                                <span><strong>No social media presence</strong> - Could improve business verification</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <span class="bg-slate-100 text-slate-800 px-2 py-1 rounded text-xs font-medium mr-2">FIXED</span>
+                                                <span><strong>Optional documents not uploaded</strong> - Add bank statements for better rates</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Call to Action (Fixed Footer) -->
+                    <div class="border-t border-slate-200 p-6 bg-slate-50 rounded-b-2xl">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-semibold text-slate-900">Ready to submit?</h4>
+                                <p class="text-sm text-slate-600 mt-1">Your application is optimized for the best possible terms</p>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button onclick="closeAtlasOptimizationModal()" class="px-6 py-3 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
+                                    Review More
+                                </button>
+                                <button onclick="applyOptimizationsAndSubmit()" class="px-6 py-3 bg-gradient-to-r from-slate-700 to-slate-900 text-white rounded-lg font-medium hover:from-slate-800 hover:to-slate-900 transition-all">
+                                    Apply & Submit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Add to page
+            document.body.appendChild(modal);
+
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
+
+            // Close on background click
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeAtlasOptimizationModal();
+                }
+            });
+        }
+
+        function closeAtlasOptimizationModal() {
+            const modal = document.getElementById('atlasOptimizationModal');
+            if (modal) {
+                modal.remove();
+                document.body.style.overflow = '';
+            }
+        }
+
+        function applyOptimizationsAndSubmit() {
+            closeAtlasOptimizationModal();
+
+            // Show Atlas confirmation
+            showAtlasIntervention(
+                "🚀 Excellent! I'm applying all optimizations and submitting your application for the best possible rates and instant approval.",
+                [{ text: "Let's do it!", action: "close" }]
+            );
+
+            // Auto-submit after 2 seconds
+            setTimeout(() => {
+                submitApplication();
+            }, 2000);
+        }
+
+        function startAtlasBusinessJourney() {
+            // Initial welcome after page load
+            setTimeout(() => {
+                addAtlasMessage(
+                    "Hi! I'm Atlas, your AI application guide. I'm excited to help you complete your merchant application quickly and easily!",
+                    'atlas'
+                );
+            }, 1000);
+
+            // Explain the journey
+            setTimeout(() => {
+                addAtlasMessage(
+                    "Here's how we'll work together: I'll guide you through 6 sections, help fill in information, validate your details, and ensure you have everything needed for quick approval. Most applicants finish in about 8 minutes!",
+                    'atlas'
+                );
+            }, 3000);
+
+            // Explain Atlas's role
+            setTimeout(() => {
+                addAtlasMessage(
+                    "My special powers include:\n✨ Auto-filling business info from your website\n✨ Smart validation to prevent errors\n✨ Proactive tips to improve approval odds\n✨ 24/7 assistance with any questions",
+                    'atlas'
+                );
+            }, 5500);
+
+            // Start the demonstration
+            setTimeout(() => {
+                showAtlasWebsitePrompt();
+            }, 7500);
+        }
+
+        function showAtlasWebsitePrompt() {
+            addAtlasMessage(
+                "Let me demonstrate! If you have a business website, I can look it up and automatically fill in your business details. This saves time and ensures accuracy.",
+                'atlas'
+            );
+
+            // Add the website prompt in the form
+            const websitePrompt = document.createElement('div');
+            websitePrompt.id = 'atlasWebsitePrompt';
+            websitePrompt.className = 'mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg';
+            websitePrompt.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-globe text-blue-600 text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm text-slate-800 font-medium mb-2">🔍 Atlas Website Lookup</p>
+                        <p class="text-sm text-slate-600 mb-3">Enter your website URL and I'll try to find your business information:</p>
+                        <div class="flex space-x-2">
+                            <input type="url" id="atlasWebsiteInput" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="https://yourwebsite.com">
+                            <button onclick="atlasLookupWebsite()" class="px-4 py-2 bg-slate-600 text-white text-sm rounded-lg hover:bg-slate-700 transition-colors">
+                                Look Up
+                            </button>
+                            <button onclick="skipWebsiteLookup()" class="px-4 py-2 bg-slate-200 text-slate-700 text-sm rounded-lg hover:bg-slate-300 transition-colors">
+                                Skip
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Insert after the smart tip
+            const smartTip = document.querySelector('.smart-tip');
+            smartTip.parentNode.insertBefore(websitePrompt, smartTip.nextSibling);
+
+            // Focus the input
+            setTimeout(() => {
+                document.getElementById('atlasWebsiteInput').focus();
+            }, 500);
+        }
+
+        function atlasLookupWebsite() {
+            const website = document.getElementById('atlasWebsiteInput').value;
+            if (!website) {
+                addAtlasMessage("Please enter a website URL, or click Skip to continue manually.", 'atlas');
+                return;
+            }
+
+            addAtlasMessage(`Looking up ${website}... This usually takes just a moment.`, 'atlas');
+
+            // Simulate API call with typing indicator
+            const typingMsg = addAtlasTyping();
+
+            setTimeout(() => {
+                // Remove typing message
+                if (typingMsg) typingMsg.remove();
+
+                // Found business info
+                addAtlasMessage(
+                    "Great! I found your business information. Let me show you what I discovered:",
+                    'atlas'
+                );
+
+                // Show the found information with confirmation
+                showAtlasBusinessConfirmation();
+            }, 3000);
+        }
+
+        function addAtlasTypingMessage() {
+            const chatContainer = document.getElementById('atlasChatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'flex items-start space-x-2';
+            typingDiv.innerHTML = `
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-robot text-blue-600 text-sm"></i>
+                </div>
+                <div class="bg-slate-100 rounded-lg p-3">
+                    <div class="typing-indicator flex space-x-1">
+                        <span class="w-2 h-2 bg-slate-500 rounded-full"></span>
+                        <span class="w-2 h-2 bg-slate-500 rounded-full"></span>
+                        <span class="w-2 h-2 bg-slate-500 rounded-full"></span>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(typingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return typingDiv;
+        }
+
+        function showAtlasBusinessConfirmation() {
+            // Remove the website prompt
+            const prompt = document.getElementById('atlasWebsitePrompt');
+            if (prompt) prompt.remove();
+
+            // Create confirmation modal
+            const confirmation = document.createElement('div');
+            confirmation.id = 'atlasConfirmation';
+            confirmation.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            confirmation.innerHTML = `
+                <div class="bg-white rounded-xl p-6 max-w-md w-full">
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-slate-900 mb-2">✨ Atlas Found Your Business!</h3>
+                        <p class="text-sm text-slate-600">I found these details. Is this correct?</p>
+                    </div>
+                    <div class="bg-slate-50 rounded-lg p-4 space-y-3 mb-6">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-slate-600">Business Name:</span>
+                            <span class="text-sm font-medium">Oceanview Bistro</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-slate-600">Address:</span>
+                            <span class="text-sm font-medium">1234 Ocean Ave, Santa Monica</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-slate-600">Phone:</span>
+                            <span class="text-sm font-medium">(310) 555-0123</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-slate-600">Category:</span>
+                            <span class="text-sm font-medium">Restaurant</span>
+                        </div>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button onclick="atlasConfirmBusiness()" class="flex-1 bg-slate-600 text-white py-2 px-4 rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium">
+                            ✓ Yes, Fill Form
+                        </button>
+                        <button onclick="atlasRejectBusiness()" class="flex-1 bg-slate-200 text-slate-700 py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors text-sm font-medium">
+                            ✗ No, Manual Entry
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(confirmation);
+        }
+
+        function atlasConfirmBusiness() {
+            // Remove confirmation modal
+            const confirmation = document.getElementById('atlasConfirmation');
+            if (confirmation) confirmation.remove();
+
+            // Fill the form with correct values (overwriting the mock data)
+            document.getElementById('legalName').value = 'Oceanview Bistro LLC';
+            document.getElementById('dbaName').value = 'Oceanview Bistro';
+            document.getElementById('businessAddress').value = '1234 Ocean Avenue, Santa Monica, CA 90401';
+            document.getElementById('businessPhone').value = '(310) 555-0123';
+            document.getElementById('businessEmail').value = 'contact@oceanviewbistro.com';
+            document.getElementById('website').value = 'https://www.oceanviewbistro.com';
+            document.getElementById('dateEstablished').value = '2019-03-15';
+
+            // Show success message
+            addAtlasMessage(
+                "Perfect! I've filled in your business details. I noticed you're a restaurant in Santa Monica - excellent location! This helps me match you with the best processing rates.",
+                'atlas'
+            );
+
+            // Add helpful tip about next steps
+            setTimeout(() => {
+                addAtlasMessage(
+                    "Now, if you're an LLC like most restaurants, you'll need your EIN. Don't worry if you're a sole proprietor - we can use your SSN instead.",
+                    'atlas'
+                );
+            }, 2000);
+
+            // Highlight the EIN field
+            setTimeout(() => {
+                const einField = document.getElementById('ein');
+                einField.classList.add('field-highlight');
+                einField.focus();
+                setTimeout(() => {
+                    einField.classList.remove('field-highlight');
+                }, 3000);
+            }, 3000);
+        }
+
+        function atlasRejectBusiness() {
+            // Remove confirmation modal
+            const confirmation = document.getElementById('atlasConfirmation');
+            if (confirmation) confirmation.remove();
+
+            // Remove website prompt
+            const prompt = document.getElementById('atlasWebsitePrompt');
+            if (prompt) prompt.remove();
+
+            addAtlasMessage(
+                "No problem! Let's fill this in manually. I'm still here to help with any questions you might have.",
+                'atlas'
+            );
+
+            // Offer to help with specific fields
+            setTimeout(() => {
+                addAtlasMessage(
+                    "Quick tip: Make sure your legal business name matches your registration documents exactly. This includes LLC, Corp, Inc, etc.",
+                    'atlas'
+                );
+            }, 2000);
+        }
+
+        function skipWebsiteLookup() {
+            // Remove the website prompt
+            const prompt = document.getElementById('atlasWebsitePrompt');
+            if (prompt) prompt.remove();
+
+            addAtlasMessage(
+                "No worries! We can fill everything in manually. I'm still here to help with any questions.",
+                'atlas'
+            );
+
+            setTimeout(() => {
+                addAtlasMessage(
+                    "Remember to have your business registration documents handy - we'll need information that matches exactly.",
+                    'atlas'
+                );
+            }, 2000);
+        }
+
+        // Mobile overlay functions
+        function openAtlasMobile() {
+            document.getElementById('atlasOverlay').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAtlasMobile() {
+            document.getElementById('atlasOverlay').classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        function sendAtlasMobileMessage() {
+            const input = document.getElementById('atlasMobileInput');
+            const message = input.value.trim();
+
+            if (message) {
+                addAtlasMobileMessage(message, 'user');
+                input.value = '';
+
+                setTimeout(() => {
+                    const response = getAtlasSidebarResponse(message);
+                    addAtlasMobileMessage(response, 'atlas');
+                }, 800);
+            }
+        }
+
+        function addAtlasMobileMessage(message, sender) {
+            const chatContainer = document.getElementById('atlasMobileMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex items-start space-x-3';
+
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="flex-1"></div>
+                    <div class="bg-slate-600 text-white rounded-lg p-3 max-w-[85%]">
+                        <p class="text-sm">${message}</p>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-robot text-blue-600 text-sm"></i>
+                    </div>
+                    <div class="bg-slate-100 rounded-lg p-3 max-w-[85%]">
+                        <p class="text-sm text-slate-800">${message}</p>
+                    </div>
+                `;
+            }
+
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Enhanced functions to work with both desktop and mobile
+        function addAtlasMessage(message, sender) {
+            if (window.innerWidth > 1024) {
+                addAtlasSidebarMessage(message, sender);
+            } else {
+                addAtlasMobileMessage(message, sender);
+            }
+        }
+
+        function addAtlasTyping() {
+            if (window.innerWidth > 1024) {
+                return addAtlasTypingMessage();
+            } else {
+                const chatContainer = document.getElementById('atlasMobileMessages');
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'flex items-start space-x-2';
+                typingDiv.innerHTML = `
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-robot text-blue-600 text-sm"></i>
+                    </div>
+                    <div class="bg-slate-100 rounded-lg p-3">
+                        <div class="typing-indicator flex space-x-1">
+                            <span class="w-2 h-2 bg-slate-500 rounded-full"></span>
+                            <span class="w-2 h-2 bg-slate-500 rounded-full"></span>
+                            <span class="w-2 h-2 bg-slate-500 rounded-full"></span>
+                        </div>
+                    </div>
+                `;
+                chatContainer.appendChild(typingDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                return typingDiv;
+            }
+        }
+
+        // Click outside to close mobile overlay
+        document.getElementById('atlasOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAtlasMobile();
+            }
+        });
+
+        function showAtlasIntervention(message, actions = []) {
+            const intervention = document.getElementById('atlasIntervention');
+            const messageEl = document.getElementById('atlasMessage');
+            const actionsEl = document.getElementById('atlasActions');
+
+            messageEl.textContent = message;
+
+            // Build action buttons
+            actionsEl.innerHTML = '';
+            actions.forEach(action => {
+                const button = document.createElement('button');
+                button.className = 'px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm';
+                button.textContent = action.text;
+                button.onclick = () => handleAtlasAction(action);
+                actionsEl.appendChild(button);
+            });
+
+            intervention.classList.add('show');
+        }
+
+        function closeAtlasIntervention() {
+            document.getElementById('atlasIntervention').classList.remove('show');
+        }
+
+        function handleAtlasAction(action) {
+            switch(action.action) {
+                case 'close':
+                    closeAtlasIntervention();
+                    break;
+                case 'help':
+                    // Help with specific field
+                    if (action.field === 'ein') {
+                        showAtlasIntervention(
+                            "Your EIN is on your IRS confirmation letter. If you're a sole proprietor, we can use your SSN instead.",
+                            [{ text: "Use SSN", action: "use-ssn" }, { text: "I'll find it", action: "close" }]
+                        );
+                    }
+                    break;
+                case 'explain':
+                    showAtlasIntervention(
+                        getCurrentSectionExplanation(),
+                        [{ text: "Got it!", action: "close" }]
+                    );
+                    break;
+                case 'documents':
+                    showAtlasIntervention(
+                        "Make sure documents are clear and all corners are visible. For IDs, both front and back are needed. blurry photos will delay approval!",
+                        [{ text: "Show me examples", action: "examples" }, { text: "Thanks", action: "close" }]
+                    );
+                    break;
+                case 'approval':
+                    showAtlasIntervention(
+                        calculateApprovalOdds(),
+                        [{ text: "Improve my chances", action: "improve" }, { text: "Continue", action: "close" }]
+                    );
+                    break;
+            }
+        }
+
+        function getCurrentSectionExplanation() {
+            const explanations = {
+                1: "This section establishes your business identity. Make sure the legal name matches your business documents exactly.",
+                2: "We need information about anyone owning 25% or more of the business - this is a federal requirement for fraud prevention.",
+                3: "Accurate financial estimates help us set appropriate limits and determine the best rates for your business type.",
+                4: "This is where we'll deposit your funds. Business accounts get higher limits than personal accounts.",
+                5: "Documents verify your business identity and financial stability. Clear photos speed up approval!",
+                6: "Review everything carefully before submitting. Inaccurate information can delay your approval."
+            };
+            return explanations[currentSection] || "Let me help you with this section.";
+        }
+
+        function calculateApprovalOdds() {
+            const hasBusinessLicense = document.getElementById('business-license-preview')?.classList.contains('hidden') === false;
+            const hasVoidedCheck = document.getElementById('voided-check-preview')?.classList.contains('hidden') === false;
+
+            if (hasBusinessLicense && hasVoidedCheck) {
+                return "Looking good! With your documents ready, you have an excellent chance of quick approval. Most applications are reviewed within 2 hours.";
+            } else {
+                return "Upload your remaining documents to improve your approval chances. Complete applications get priority processing!";
+            }
+        }
+
+        // Idle Detection
+        function setupIdleDetection() {
+            resetIdleTimer();
+
+            document.addEventListener('mousemove', resetIdleTimer);
+            document.addEventListener('keypress', resetIdleTimer);
+            document.addEventListener('scroll', resetIdleTimer);
+        }
+
+        function resetIdleTimer() {
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                if (document.querySelector('input:focus, textarea:focus')) {
+                    showAtlasIntervention(
+                        "Stuck on something? I can help clarify any field or guide you through the process.",
+                        [{ text: "Yes, help me", action: "help" }, { text: "I'm thinking", action: "close" }]
+                    );
+                }
+            }, 30000); // 30 seconds
+        }
+
+        // Business Structure Updates
+        function updateBusinessStructure() {
+            const structure = document.getElementById('businessStructure').value;
+            if (structure === 'soleproprietor') {
+                showAtlasIntervention(
+                    "For sole proprietors, we can use your SSN instead of an EIN. This can actually speed up approval!",
+                    [{ text: "Use my SSN", action: "use-ssn" }, { text: "I have an EIN", action: "close" }]
+                );
+            }
+        }
+
+        // MCC Information
+        function updateMCCInfo() {
+            const mcc = document.getElementById('mcc').value;
+            const infoEl = document.getElementById('mccInfo');
+
+            if (mcc) {
+                const mccInfo = {
+                    '5812': 'Restaurants typically qualify for standard processing rates. Tip reporting may be required.',
+                    '5411': 'Grocery stores often qualify for lower rates due to low chargeback risk.',
+                    '7311': 'Advertising services may require additional review due to higher chargeback risk.'
+                };
+
+                if (mccInfo[mcc]) {
+                    infoEl.textContent = mccInfo[mcc];
+                    infoEl.classList.remove('hidden');
+                }
+            }
+        }
+
+        // Document Upload
+        function showMobileUpload(docType) {
+            // Check if on mobile
+            if (window.innerWidth < 768) {
+                // Open camera/file picker
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*,.pdf';
+                input.onchange = (e) => handleDocumentUpload(e.target.files[0], docType);
+                input.click();
+            } else {
+                // Show QR code for mobile upload
+                document.getElementById('qrModal').classList.add('show');
+            }
+        }
+
+        function handleDocumentUpload(file, docType) {
+            if (file) {
+                // Show preview
+                const preview = document.getElementById(`${docType}-preview`);
+                if (preview) {
+                    preview.classList.remove('hidden');
+                }
+
+                // Atlas confirmation
+                showAtlasIntervention(
+                    `Great! I received your ${docType.replace('-', ' ')}. Analyzing for quality...`,
+                    [{ text: "Upload another", action: "upload" }, { text: "Continue", action: "close" }]
+                );
+            }
+        }
+
+        function closeQRModal() {
+            document.getElementById('qrModal').classList.remove('show');
+        }
+
+        // Plaid Integration (Mock)
+        function connectPlaid() {
+            showAtlasIntervention(
+                "Connecting to your bank securely... This only shares bank details, not transaction data.",
+                [{ text: "Cancel", action: "close" }]
+            );
+
+            // Simulate Plaid flow
+            setTimeout(() => {
+                document.getElementById('bankName').value = 'Demo Bank';
+                document.getElementById('routingNumber').value = '021000021';
+                document.getElementById('accountNumber').value = '********1234';
+
+                showAtlasIntervention(
+                    "Bank connected successfully! ✓",
+                    [{ text: "Great!", action: "close" }]
+                );
+            }, 3000);
+        }
+
+        // Owner Management
+        function addOwner() {
+            const ownersCount = document.querySelectorAll('[class*="border rounded-lg p-6"]').length;
+            if (ownersCount >= 4) {
+                showAtlasIntervention(
+                    "Maximum 4 owners can be added. For more complex ownership structures, please contact support.",
+                    [{ text: "Got it", action: "close" }]
+                );
+                return;
+            }
+
+            // Add new owner section
+            const ownersList = document.getElementById('ownersList');
+            const newOwner = document.createElement('div');
+            newOwner.className = 'border rounded-lg p-6 bg-slate-50';
+            newOwner.innerHTML = `
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-semibold text-lg">Owner ${ownersCount + 1}</h3>
+                    <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-red-500 hover:text-red-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label class="form-label">Full Legal Name</label>
+                        <input type="text" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Ownership Percentage</label>
+                        <input type="number" class="form-input" min="0" max="100" placeholder="25">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label class="form-label">Home Address</label>
+                        <input type="text" class="form-input" placeholder="123 Main St, City, State ZIP">
+                    </div>
+                    <div>
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" class="form-input">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label class="form-label">SSN (Last 4)</label>
+                        <input type="text" class="form-input" maxlength="4" placeholder="1234">
+                    </div>
+                    <div>
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-input" placeholder="CEO, President, etc">
+                    </div>
+                </div>
+            `;
+            ownersList.appendChild(newOwner);
+        }
+
+        // Application Submission
+        function submitApplication() {
+            // Validate final checkboxes
+            const checkboxes = document.querySelectorAll('#section6 input[type="checkbox"][required]');
+            let allChecked = true;
+
+            checkboxes.forEach(checkbox => {
+                if (!checkbox.checked) {
+                    allChecked = false;
+                }
+            });
+
+            if (!allChecked) {
+                showAtlasIntervention(
+                    "Please accept all required terms and conditions to submit your application.",
+                    [{ text: "I'll check", action: "close" }]
+                );
+                return;
+            }
+
+            // Show success
+            document.getElementById('successModal').classList.add('show');
+
+            // Atlas celebration
+            setTimeout(() => {
+                showAtlasIntervention(
+                    "🎉 Congratulations! Your application has been submitted successfully. With your complete documents, I'm estimating a decision within 2 hours. I'll email you updates!",
+                    [{ text: "Awesome!", action: "close" }]
+                );
+            }, 1000);
+
+            // Clear saved data
+            localStorage.removeItem('merchantApplication');
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('successModal').classList.remove('show');
+            // Redirect or show next steps
+            window.location.href = '/application-status';
+        }
+
+        // Save/Load Progress
+        function saveProgress() {
+            const data = {
+                section: currentSection,
+                business: {
+                    legalName: document.getElementById('legalName')?.value,
+                    dbaName: document.getElementById('dbaName')?.value,
+                    structure: document.getElementById('businessStructure')?.value,
+                    ein: document.getElementById('ein')?.value,
+                    address: document.getElementById('businessAddress')?.value,
+                    phone: document.getElementById('businessPhone')?.value,
+                    email: document.getElementById('businessEmail')?.value
+                },
+                financial: {
+                    volume: document.getElementById('annualVolume')?.value,
+                    avgTicket: document.getElementById('avgTicket')?.value,
+                    maxTicket: document.getElementById('maxTicket')?.value,
+                    mcc: document.getElementById('mcc')?.value
+                }
+            };
+
+            localStorage.setItem('merchantApplication', JSON.stringify(data));
+
+            // Show save indicator
+            showSaveIndicator();
+        }
+
+        function showSaveIndicator() {
+            // Animate save button
+            const saveButton = document.querySelector('button[onclick="saveProgress()"] i');
+            if (saveButton) {
+                saveButton.className = 'fas fa-check text-green-400 text-lg';
+                saveButton.style.animation = 'pulse 0.5s ease-in-out';
+            }
+
+            // Show brief popup
+            const indicator = document.createElement('div');
+            indicator.id = 'saveIndicator';
+            indicator.className = 'fixed top-20 right-4 bg-slate-600 text-white px-4 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2';
+            indicator.style.animation = 'slideInRight 0.3s ease-out';
+            indicator.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <span class="font-medium">Progress Saved!</span>
+            `;
+
+            document.body.appendChild(indicator);
+
+            // Remove indicator after 2 seconds
+            setTimeout(() => {
+                indicator.style.animation = 'slideOutRight 0.3s ease-in';
+                setTimeout(() => {
+                    if (indicator.parentNode) {
+                        indicator.parentNode.removeChild(indicator);
+                    }
+                }, 300);
+            }, 2000);
+
+            // Reset save button icon
+            setTimeout(() => {
+                if (saveButton) {
+                    saveButton.className = 'fas fa-save text-lg';
+                    saveButton.style.animation = '';
+                }
+            }, 1000);
+        }
+
+        // Add animations for save indicator
+        const saveAnimations = document.createElement('style');
+        saveAnimations.textContent = `
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+
+            @keyframes slideOutRight {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.2); }
+                100% { transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(saveAnimations);
+
+        function loadSavedProgress() {
+            const saved = localStorage.getItem('merchantApplication');
+            if (saved) {
+                const data = JSON.parse(saved);
+
+                // Restore form data
+                if (data.business) {
+                    Object.keys(data.business).forEach(key => {
+                        const field = document.getElementById(key);
+                        if (field && data.business[key]) {
+                            field.value = data.business[key];
+                        }
+                    });
+                }
+
+                if (data.financial) {
+                    Object.keys(data.financial).forEach(key => {
+                        const field = document.getElementById(key);
+                        if (field && data.financial[key]) {
+                            field.value = data.financial[key];
+                        }
+                    });
+                }
+
+                // Restore section
+                if (data.section) {
+                    goToSection(data.section);
+                }
+            }
+        }
+
+        // Address Autocomplete (Mock)
+        document.getElementById('businessAddress')?.addEventListener('input', function(e) {
+            const value = e.target.value;
+            if (value.length > 5) {
+                // Simulate address suggestions
+                const suggestions = document.getElementById('addressSuggestions');
+                suggestions.innerHTML = `
+                    <div class="p-3 hover:bg-slate-100 cursor-pointer" onclick="selectAddress('123 Main St, Anytown, ST 12345')">
+                        123 Main St, Anytown, ST 12345
+                    </div>
+                `;
+                suggestions.classList.remove('hidden');
+            }
+        });
+
+        function selectAddress(address) {
+            document.getElementById('businessAddress').value = address;
+            document.getElementById('addressSuggestions').classList.add('hidden');
+
+            showAtlasIntervention(
+                "Perfect! I found the address. Is this correct?",
+                [{ text: "Yes, it's correct", action: "close" }, { text: "No, let me type", action: "close" }]
+            );
+        }
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 's':
+                        e.preventDefault();
+                        saveProgress();
+                        showAtlasIntervention("Progress saved!", [{ text: "Thanks", action: "close" }]);
+                        break;
+                }
+            }
+        });
+
+        // Friction-Reducing Functions
+        function showSaveStatus() {
+            showAtlasIntervention(
+                "🔒 Your application is automatically saved every few seconds. You can close this window and come back anytime - your progress will be waiting!",
+                [
+                    { text: "Good to know!", action: "close" },
+                    { text: "How long is it saved?", action: () => {
+                        showAtlasIntervention(
+                            "Your progress is saved for 30 days. After that, incomplete applications are automatically deleted for your privacy.",
+                            [{ text: "Got it", action: "close" }]
+                        );
+                    }}
+                ]
+            );
+        }
+
+        function showFieldHelp(fieldName) {
+            const helpText = {
+                'ein': "Your Employer Identification Number. Sole proprietors can use their SSN. Find it on IRS documents or prior tax returns.",
+                'mcc': "Merchant Category Code - classifies your business type. Most restaurants use 5812. I'll help you find the right one!",
+                'annualVolume': "Total credit card sales per year. Be realistic - this affects your rates and processing limits.",
+                'avgTicket': "Typical customer transaction amount. Look at your POS reports for accurate data.",
+                'routingNumber': "9-digit number that identifies your bank. Find it on checks or your bank's website.",
+                'voidedCheck': "A check with 'VOID' written on it. Verifies your account for deposits. Alternative: bank verification letter."
+            };
+
+            const text = helpText[fieldName];
+            if (text) {
+                showAtlasIntervention(
+                    `💡 ${text}`,
+                    [{ text: "Thanks!", action: "close" }]
+                );
+            }
+        }
+
+        function addFieldHelpIcons() {
+            const helpFields = ['ein', 'mcc', 'annualVolume', 'avgTicket', 'routingNumber'];
+            helpFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field && !field.parentElement.querySelector('.field-help')) {
+                    const helpIcon = document.createElement('button');
+                    helpIcon.className = 'field-help';
+                    helpIcon.innerHTML = '<i class="fas fa-question-circle"></i>';
+                    helpIcon.onclick = () => showFieldHelp(fieldId);
+                    helpIcon.title = 'Get help with this field';
+                    field.parentElement.style.position = 'relative';
+                    field.parentElement.appendChild(helpIcon);
+                }
+            });
+        }
+
+        function addFieldHelpStyles() {
+            const style = document.createElement('style');
+            style.textContent = `
+                .field-help {
+                    position: absolute;
+                    right: 10px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    background: none;
+                    border: none;
+                    color: #6b7280;
+                    cursor: help;
+                    padding: 4px;
+                    border-radius: 4px;
+                    transition: all 0.2s;
+                    z-index: 10;
+                }
+                .field-help:hover {
+                    color: #3b82f6;
+                    background: #f0f9ff;
+                }
+                .has-help {
+                    padding-right: 35px !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Initialize friction-reducing features
+        setTimeout(() => {
+            addFieldHelpStyles();
+            addFieldHelpIcons();
+        }, 1500);
+
+        // File Upload Functions
+        function triggerFileUpload(documentType) {
+            const fileInput = document.getElementById(`${documentType}-file`);
+            if (fileInput) {
+                fileInput.click();
+            }
+        }
+
+        function handleFileUpload(event, documentType) {
+            const files = event.target.files;
+            if (files.length === 0) return;
+
+            const file = files[0];
+            const fileName = file.name;
+            const fileSize = (file.size / 1024 / 1024).toFixed(2);
+
+            // Validate file size (10MB max)
+            if (file.size > 10 * 1024 * 1024) {
+                showAtlasIntervention(
+                    "⚠️ File size exceeds 10MB limit. Please choose a smaller file or compress the image.",
+                    [{ text: "Got it", action: "close" }]
+                );
+                return;
+            }
+
+            // Show Atlas processing message
+            addAtlasSidebarMessage(`📄 Uploading ${fileName}...`, 'atlas');
+            addAtlasMobileMessage(`📄 Uploading ${fileName}...`, 'atlas');
+
+            // Simulate file processing
+            setTimeout(() => {
+                // Show preview
+                const preview = document.getElementById(`${documentType}-preview`);
+                if (preview) {
+                    preview.classList.remove('hidden');
+                    preview.querySelector('.text-xs.text-slate-500').textContent = fileName;
+                }
+
+                // Success message from Atlas
+                addAtlasSidebarMessage(
+                    `✅ Perfect! I've scanned ${fileName}. The document looks clear and ready for instant verification.`,
+                    'atlas'
+                );
+                addAtlasMobileMessage(
+                    `✅ Perfect! I've scanned ${fileName}. The document looks clear and ready for instant verification.`,
+                    'atlas'
+                );
+
+                // Add to document list
+                if (!formData.documents.includes(documentType)) {
+                    formData.documents.push(documentType);
+                }
+
+                // Update progress
+                updateDocumentProgress();
+            }, 2000);
+        }
+
+        function updateDocumentProgress() {
+            const totalDocuments = 4; // Business License, Voided Check, Photo ID, Bank Statements
+            const uploadedCount = formData.documents.length;
+            const progressPercent = Math.round((uploadedCount / totalDocuments) * 100);
+
+            // Update any progress indicators if they exist
+            const progressElements = document.querySelectorAll('.document-progress');
+            progressElements.forEach(el => {
+                el.textContent = `${uploadedCount}/${totalDocuments} documents uploaded`;
+            });
+        }
+
+        // Drag and Drop functionality
+        function setupDragAndDrop() {
+            const uploadZones = document.querySelectorAll('.upload-zone');
+
+            uploadZones.forEach(zone => {
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('drag-over');
+                });
+
+                zone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                });
+
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        // Find the file input within this zone and trigger the change event
+                        const fileInput = zone.querySelector('input[type="file"]');
+                        if (fileInput) {
+                            fileInput.files = files;
+                            const event = new Event('change', { bubbles: true });
+                            fileInput.dispatchEvent(event);
+                        }
+                    }
+                });
+            });
+        }
+
+        // Initialize drag and drop when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(setupDragAndDrop, 1000);
+        });
+
+        // Mobile Functions
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function toggleProgressSteps() {
+            const steps = document.getElementById('mobileProgressSteps');
+            steps.classList.toggle('hidden');
+        }
+
+        // Update mobile progress bar when section changes
+        function updateMobileProgress(section) {
+            const progressBar = document.getElementById('progressBarMobile');
+            const currentStepMobile = document.getElementById('currentStepMobile');
+            const progressPercent = document.getElementById('progressPercent');
+
+            if (progressBar) {
+                const percent = Math.round((section / 6) * 100);
+                progressBar.style.width = percent + '%';
+                progressPercent.textContent = percent + '%';
+                currentStepMobile.textContent = section;
+            }
+        }
+    </script>
+</body>
+</html>

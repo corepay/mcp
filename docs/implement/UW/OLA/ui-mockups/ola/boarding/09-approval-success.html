@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approved! Welcome Atlas - Atlas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: linear-gradient(45deg, #10b981, #ec4899, #9333ea, #f59e0b);
+            animation: confetti-fall 3s ease-in-out infinite;
+        }
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+        .checkmark-circle {
+            animation: scaleIn 0.5s ease;
+        }
+        @keyframes scaleIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .fade-in {
+            animation: fadeIn 0.8s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .slide-up {
+            animation: slideUp 0.6s ease;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pulse-button {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 20px rgba(16, 185, 129, 0);
+            }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white relative overflow-hidden">
+    <!-- Confetti Background -->
+    <div class="confetti" style="left: 10%; animation-delay: 0s;"></div>
+    <div class="confetti" style="left: 20%; animation-delay: 0.5s;"></div>
+    <div class="confetti" style="left: 30%; animation-delay: 1s;"></div>
+    <div class="confetti" style="left: 40%; animation-delay: 1.5s;"></div>
+    <div class="confetti" style="left: 50%; animation-delay: 2s;"></div>
+    <div class="confetti" style="left: 60%; animation-delay: 0.3s;"></div>
+    <div class="confetti" style="left: 70%; animation-delay: 0.8s;"></div>
+    <div class="confetti" style="left: 80%; animation-delay: 1.3s;"></div>
+    <div class="confetti" style="left: 90%; animation-delay: 1.8s;"></div>
+
+    <!-- Main Container -->
+    <div class="container mx-auto px-6 py-8 min-h-screen flex items-center justify-center">
+        <div class="max-w-4xl w-full">
+            <!-- Success Header -->
+            <div class="text-center mb-12 fade-in">
+                <div class="checkmark-circle w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-check text-green-600 text-5xl"></i>
+                </div>
+                <h1 class="text-5xl font-bold mb-4">
+                    Congratulations! 🎉
+                </h1>
+                <p class="text-2xl text-green-100 mb-2">
+                    You're Approved!
+                </p>
+                <p class="text-xl text-green-200 opacity-90">
+                    Reference: <span class="font-mono">AT-2024-0847</span>
+                </p>
+            </div>
+
+            <!-- Approval Details Card -->
+            <div class="bg-white bg-opacity-10 backdrop-blur rounded-3xl p-8 mb-8 slide-up">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold mb-4">Your Account Details</h2>
+                    <div class="inline-flex items-center bg-green-400 bg-opacity-20 rounded-full px-4 py-2">
+                        <span class="bg-green-400 w-2 h-2 rounded-full mr-2 animate-pulse"></span>
+                        <span class="font-medium">Active Now</span>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white bg-opacity-10 rounded-xl p-4 text-center">
+                        <i class="fas fa-percentage text-3xl mb-2"></i>
+                        <div class="text-2xl font-bold">2.1%</div>
+                        <div class="text-sm text-green-100">Processing Rate</div>
+                    </div>
+                    <div class="bg-white bg-opacity-10 rounded-xl p-4 text-center">
+                        <i class="fas fa-dollar-sign text-3xl mb-2"></i>
+                        <div class="text-2xl font-bold">$100K</div>
+                        <div class="text-sm text-green-100">Monthly Limit</div>
+                    </div>
+                    <div class="bg-white bg-opacity-10 rounded-xl p-4 text-center">
+                        <i class="fas fa-clock text-3xl mb-2"></i>
+                        <div class="text-2xl font-bold">Next Day</div>
+                        <div class="text-sm text-green-100">Funding Speed</div>
+                    </div>
+                </div>
+
+                <div class="text-center mb-6">
+                    <p class="text-lg mb-2">
+                        <i class="fas fa-gift mr-2 text-yellow-300"></i>
+                        <strong>Special Offer:</strong> First 30 days with NO processing fees!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Next Steps Checklist -->
+            <div class="bg-white bg-opacity-10 backdrop-blur rounded-3xl p-8 mb-8 slide-up" style="animation-delay: 0.2s;">
+                <h3 class="text-2xl font-bold mb-6 text-center">Get Started in 3 Easy Steps</h3>
+                <div class="space-y-4">
+                    <div class="flex items-start space-x-4">
+                        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="font-bold">1</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-lg mb-1">Connect Your Bank Account</h4>
+                            <p class="text-green-100">Securely link your business bank account for payouts</p>
+                            <button class="mt-2 bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg text-sm transition">
+                                <i class="fas fa-link mr-2"></i>Connect Bank Account
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-4">
+                        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="font-bold">2</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-lg mb-1">Order Your Equipment</h4>
+                            <p class="text-green-100">Free terminal with 2-year agreement (or use your own)</p>
+                            <button class="mt-2 bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg text-sm transition">
+                                <i class="fas fa-credit-card mr-2"></i>Order Terminal
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-4">
+                        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="font-bold">3</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-lg mb-1">Process Your First Payment</h4>
+                            <p class="text-green-100">Run a test transaction to ensure everything works perfectly</p>
+                            <button class="mt-2 bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg text-sm transition">
+                                <i class="fas fa-play mr-2"></i>Test Transaction
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="text-center space-y-4 slide-up" style="animation-delay: 0.4s;">
+                <button class="pulse-button bg-white text-green-600 px-12 py-4 rounded-xl hover:bg-green-50 transition font-bold text-lg shadow-2xl">
+                    <i class="fas fa-rocket mr-3"></i>
+                    Go to Merchant Dashboard
+                </button>
+                <div class="flex justify-center space-x-6">
+                    <a href="#" class="text-green-100 hover:text-white transition">
+                        <i class="fas fa-download mr-2"></i>Download Agreement
+                    </a>
+                    <a href="#" class="text-green-100 hover:text-white transition">
+                        <i class="fas fa-headset mr-2"></i>Contact Support
+                    </a>
+                </div>
+            </div>
+
+            <!-- Welcome Message from Atlas -->
+            <div class="mt-12 text-center slide-up" style="animation-delay: 0.6s;">
+                <div class="inline-flex items-center bg-white bg-opacity-10 backdrop-blur rounded-2xl px-6 py-4">
+                    <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
+                        <i class="fas fa-robot text-xl"></i>
+                    </div>
+                    <div class="text-left">
+                        <p class="font-semibold mb-1">Atlas Says:</p>
+                        <p class="text-sm text-green-100">
+                            "Welcome aboard! I'll be here to help you manage your account and optimize your processing.
+                            Check your dashboard for personalized tips!"
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Widget -->
+    <div class="fixed bottom-8 right-8">
+        <button class="bg-white bg-opacity-20 backdrop-blur text-white w-14 h-14 rounded-full shadow-lg hover:bg-opacity-30 transition flex items-center justify-center">
+            <i class="fas fa-comments text-xl"></i>
+        </button>
+    </div>
+
+    <script>
+        // Add celebration effects
+        function createConfetti() {
+            const colors = ['#10b981', '#ec4899', '#9333ea', '#f59e0b', '#3b82f6'];
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'absolute w-2 h-2 rounded-full';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.top = '-10px';
+                    confetti.style.animation = `fall ${2 + Math.random() * 2}s linear`;
+                    document.body.appendChild(confetti);
+
+                    setTimeout(() => confetti.remove(), 4000);
+                }, Math.random() * 2000);
+            }
+        }
+
+        // CSS for falling animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fall {
+                to {
+                    transform: translateY(100vh) rotate(360deg);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Start celebration after page load
+        setTimeout(createConfetti, 500);
+
+        // Auto-redirect after 10 seconds
+        setTimeout(() => {
+            console.log('In a real app, this would redirect to the merchant dashboard');
+        }, 10000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swickard Marketing Experience - Interactive Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --primary-color: #1e293b;
+            --accent-color: #7c3aed;
+            --success-color: #059669;
+            --warning-color: #d97706;
+        }
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: #f8fafc;
+        }
+
+        /* Tutorial Overlay */
+        .tutorial-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tutorial-box {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        /* Floating Guide */
+        .guide {
+            position: fixed;
+            background: var(--accent-color);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            z-index: 1000;
+            max-width: 300px;
+            animation: pulse 2s infinite;
+        }
+
+        .guide-top {
+            top: 100px;
+            right: 20px;
+        }
+
+        .guide-bottom {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Highlight Effect */
+        .highlight {
+            position: relative;
+            z-index: 100;
+        }
+
+        .highlight::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            background: rgba(124, 58, 237, 0.2);
+            border: 2px solid var(--accent-color);
+            border-radius: 12px;
+            animation: pulse-border 2s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Progress Bar */
+        .progress-step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.active {
+            opacity: 1;
+        }
+
+        .progress-step.completed {
+            color: var(--success-color);
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--gray-300);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.active .step-number {
+            background: var(--accent-color);
+            color: white;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+        }
+
+        .progress-step.completed .step-number {
+            background: var(--success-color);
+            color: white;
+        }
+
+        /* Success Animation */
+        .success-checkmark {
+            animation: checkmark 0.5s ease-in-out;
+        }
+
+        @keyframes checkmark {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* Card Styles */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .vehicle-age {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--warning-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Button Styles */
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .btn-primary:hover {
+            background: #6d28d9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        /* Platform Icons */
+        .platform-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 0.5rem;
+        }
+
+        /* Loading State */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Form Elements */
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+
+        /* Live Updates */
+        .update-item {
+            background: rgba(5, 150, 105, 0.05);
+            border-left: 4px solid var(--success-color);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Tutorial Overlay -->
+    <div id="tutorialOverlay" class="tutorial-overlay">
+        <div class="tutorial-box">
+            <h1 class="text-2xl font-bold mb-4">👋 Welcome to Swickard Marketing!</h1>
+            <p class="text-gray-600 mb-6">
+                You're Jessica Chen, Digital Marketing Manager. Let's experience how Instant Approval transforms your workflow!
+            </p>
+            <div class="mb-4">
+                <p class="text-sm text-gray-500 mb-2">Your mission today:</p>
+                <p class="font-semibold">Create a campaign for your aged inventory and watch the approvals roll in!</p>
+            </div>
+            <button onclick="startExperience()" class="btn-primary w-full">
+                <i class="fas fa-play mr-2"></i>
+                Start Experience
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content (Initially Hidden) -->
+    <div id="mainContent" class="hidden p-6 max-w-6xl mx-auto">
+        <!-- Progress Tracker -->
+        <div class="bg-white rounded-xl p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">Campaign Creation Progress</h2>
+            <div id="progressTracker">
+                <div class="progress-step" id="step1">
+                    <div class="step-number">1</div>
+                    <div>
+                        <p class="font-semibold">Identify Aged Inventory</p>
+                        <p class="text-sm text-gray-600">Find vehicles needing attention</p>
+                    </div>
+                </div>
+                <div class="progress-step" id="step2">
+                    <div class="step-number">2</div>
+                    <div>
+                        <p class="font-semibold">Create Campaign</p>
+                        <p class="text-sm text-gray-600">Set up instant approval offer</p>
+                    </div>
+                </div>
+                <div class="progress-step" id="step3">
+                    <div class="step-number">3</div>
+                    <div>
+                        <p class="font-semibold">Launch to Platforms</p>
+                        <p class="text-sm text-gray-600">Distribute to social media</p>
+                    </div>
+                </div>
+                <div class="progress-step" id="step4">
+                    <div class="step-number">4</div>
+                    <div>
+                        <p class="font-semibold">Watch Results</p>
+                        <p class="text-sm text-gray-600">See approvals in real-time</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-3 gap-6">
+            <!-- Left Column - Inventory -->
+            <div class="col-span-2">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold mb-4">
+                        <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i>
+                        Aged Inventory Alert
+                    </h2>
+                    <p class="text-gray-600">47 vehicles over 60 days. Let's get them sold!</p>
+                </div>
+
+                <div id="vehicleList" class="space-y-4">
+                    <!-- Vehicles will be populated here -->
+                </div>
+            </div>
+
+            <!-- Right Column - Live Feed -->
+            <div>
+                <div class="bg-white rounded-xl p-6 mb-6">
+                    <h2 class="text-lg font-bold mb-4">
+                        <i class="fas fa-bolt text-yellow-500 mr-2"></i>
+                        Live Approvals
+                    </h2>
+                    <div id="liveFeed" class="space-y-3">
+                        <p class="text-gray-500 text-center py-8">
+                            Campaigns will appear here once launched!
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-6">
+                    <h3 class="font-bold mb-3">
+                        <i class="fas fa-chart-line text-blue-500 mr-2"></i>
+                        Today's Metrics
+                    </h3>
+                    <div id="metrics" class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Leads Generated</span>
+                            <span class="font-bold" id="leadCount">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Approvals</span>
+                            <span class="font-bold text-green-600" id="approvalCount">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Conversion Rate</span>
+                            <span class="font-bold" id="conversionRate">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Guide -->
+    <div id="floatingGuide" class="guide guide-top hidden">
+        <h4 class="font-bold mb-2">
+            <i class="fas fa-hand-point-down mr-2"></i>
+            Try This
+        </h4>
+        <p id="guideText">Click on a vehicle to start a campaign!</p>
+    </div>
+
+    <!-- Campaign Modal -->
+    <div id="campaignModal" class="modal">
+        <div class="modal-content">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold">Create Campaign</h2>
+                    <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <div id="selectedVehicle" class="bg-gray-50 rounded-lg p-4 mb-4">
+                    <!-- Selected vehicle info -->
+                </div>
+
+                <form id="campaignForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Campaign Name</label>
+                        <input type="text" id="campaignName" class="form-input">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Offer Type</label>
+                        <select id="offerType" class="form-input">
+                            <option>Instant Approval Available</option>
+                            <option>Pre-Approval Special</option>
+                            <option>0% Financing Offer</option>
+                            <option>Cash Back Bonus</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Duration</label>
+                        <select id="duration" class="form-input">
+                            <option>24 Hour Flash Sale</option>
+                            <option>Weekend Special</option>
+                            <option>Week Long Promotion</option>
+                            <option>Until Sold</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Platforms</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="platform-facebook" checked class="mr-2">
+                                <div class="platform-icon" style="background: #1877f2;">
+                                    <i class="fab fa-facebook-f"></i>
+                                </div>
+                                <span>Facebook</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="platform-instagram" checked class="mr-2">
+                                <div class="platform-icon" style="background: linear-gradient(45deg, #f58529, #dd2a7b);">
+                                    <i class="fab fa-instagram"></i>
+                                </div>
+                                <span>Instagram</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="platform-twitter" class="mr-2">
+                                <div class="platform-icon" style="background: #1da1f2;">
+                                    <i class="fab fa-twitter"></i>
+                                </div>
+                                <span>X (Twitter)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-center justify-center">
+                            <div class="w-32 h-32 bg-white border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-qrcode text-4xl text-gray-400"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold">QR Code Generated</p>
+                                <p class="text-sm text-gray-600">Customers scan for instant approval</p>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button onclick="closeModal()" class="px-4 py-2 border border-gray-300 rounded-lg">
+                        Cancel
+                    </button>
+                    <button onclick="launchCampaign()" id="launchBtn" class="btn-primary">
+                        <i class="fas fa-rocket mr-2"></i>
+                        Launch Campaign
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Vehicle Data
+        const vehicles = [
+            { id: 1, make: 'Ford', model: 'F-150 XLT', price: 52995, stock: 'T12345', days: 95, image: 'truck' },
+            { id: 2, make: 'Toyota', model: 'Camry SE', price: 28495, stock: 'C23456', days: 87, image: 'car' },
+            { id: 3, make: 'Honda', model: 'Accord EX', price: 26995, stock: 'A45678', days: 76, image: 'car' },
+            { id: 4, make: 'Chevrolet', model: 'Silverado LT', price: 45995, stock: 'S78901', days: 73, image: 'truck' },
+            { id: 5, make: 'Nissan', model: 'Altima SV', price: 24995, stock: 'N01234', days: 68, image: 'car' },
+            { id: 6, make: 'Ford', model: 'Explorer XLT', price: 44995, stock: 'E56789', days: 65, image: 'suv' }
+        ];
+
+        let currentStep = 1;
+        let selectedVehicle = null;
+        let launchedCampaigns = [];
+        let leads = 0;
+        let approvals = 0;
+
+        // Names for simulation
+        const firstNames = ['Michael', 'Sarah', 'James', 'Jennifer', 'Robert', 'Lisa', 'David', 'Maria'];
+        const lastNames = ['Johnson', 'Smith', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis'];
+
+        function startExperience() {
+            document.getElementById('tutorialOverlay').style.display = 'none';
+            document.getElementById('mainContent').classList.remove('hidden');
+
+            // Populate vehicles
+            populateVehicles();
+
+            // Start progress tracker
+            updateProgress(1);
+
+            // Show first guide
+            showGuide('Select a vehicle to start your campaign! Click on any card below.');
+        }
+
+        function populateVehicles() {
+            const container = document.getElementById('vehicleList');
+
+            vehicles.forEach((vehicle, index) => {
+                setTimeout(() => {
+                    const vehicleCard = document.createElement('div');
+                    vehicleCard.className = 'card';
+                    vehicleCard.innerHTML = `
+                        <div class="relative">
+                            <span class="vehicle-age">${vehicle.days} days</span>
+                        </div>
+                        <div class="flex">
+                            <div class="w-32 h-24 bg-gray-100 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-${vehicle.image} text-3xl text-gray-400"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-bold">${vehicle.make} ${vehicle.model}</h3>
+                                <p class="text-sm text-gray-600">Stock: ${vehicle.stock}</p>
+                                <p class="text-lg font-bold text-primary-color">$${vehicle.price.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    `;
+
+                    vehicleCard.onclick = () => selectVehicle(vehicle);
+                    container.appendChild(vehicleCard);
+
+                    // Animate in
+                    setTimeout(() => {
+                        vehicleCard.style.opacity = '1';
+                        vehicleCard.style.transform = 'translateY(0)';
+                    }, 50);
+                }, index * 100);
+            });
+        }
+
+        function selectVehicle(vehicle) {
+            selectedVehicle = vehicle;
+
+            // Update selected vehicle display
+            document.getElementById('selectedVehicle').innerHTML = `
+                <div class="flex items-center">
+                    <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-${vehicle.image} text-3xl text-gray-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">${vehicle.make} ${vehicle.model}</h3>
+                        <p class="text-gray-600">Stock: ${vehicle.stock} • ${vehicle.days} days old</p>
+                        <p class="text-2xl font-bold text-primary-color">$${vehicle.price.toLocaleString()}</p>
+                    </div>
+                </div>
+            `;
+
+            // Pre-fill campaign name
+            const campaignName = `${vehicle.make} ${vehicle.model} - Instant Approval (${vehicle.days} Day Sale)`;
+            document.getElementById('campaignName').value = campaignName;
+
+            // Show modal
+            document.getElementById('campaignModal').classList.add('active');
+
+            // Update progress
+            updateProgress(2);
+
+            // Update guide
+            showGuide('Customize your campaign! Choose offer type, duration, and platforms.');
+        }
+
+        function closeModal() {
+            document.getElementById('campaignModal').classList.remove('active');
+        }
+
+        function launchCampaign() {
+            // Add loading state
+            const btn = document.getElementById('launchBtn');
+            btn.innerHTML = '<span class="loading mr-2"></span>Launching...';
+            btn.disabled = true;
+
+            // Simulate launch
+            setTimeout(() => {
+                // Add campaign to launched
+                launchedCampaigns.push({
+                    vehicle: selectedVehicle,
+                    name: document.getElementById('campaignName').value,
+                    platforms: getSelectedPlatforms()
+                });
+
+                // Mark vehicle as launched
+                const vehicleCards = document.querySelectorAll('#vehicleList .card');
+                vehicleCards.forEach(card => {
+                    if (card.innerHTML.includes(selectedVehicle.stock)) {
+                        card.style.opacity = '0.5';
+                        card.style.pointerEvents = 'none';
+                        card.innerHTML += `
+                            <div class="mt-4 text-center text-sm text-green-600 font-semibold">
+                                <i class="fas fa-check-circle mr-1"></i>
+                                Campaign Active
+                            </div>
+                        `;
+                    }
+                });
+
+                // Close modal
+                closeModal();
+
+                // Reset button
+                btn.innerHTML = '<i class="fas fa-rocket mr-2"></i>Launch Campaign';
+                btn.disabled = false;
+
+                // Update progress
+                updateProgress(3);
+
+                // Show guide
+                showGuide('Great! Your campaign is now live. Watch the approvals roll in!');
+
+                // Start showing approvals
+                setTimeout(startApprovals, 2000);
+            }, 1500);
+        }
+
+        function getSelectedPlatforms() {
+            const platforms = [];
+            if (document.getElementById('platform-facebook').checked) platforms.push('Facebook');
+            if (document.getElementById('platform-instagram').checked) platforms.push('Instagram');
+            if (document.getElementById('platform-twitter').checked) platforms.push('Twitter');
+            return platforms;
+        }
+
+        function startApprovals() {
+            updateProgress(4);
+
+            // Generate leads and approvals
+            const interval = setInterval(() => {
+                if (Math.random() > 0.3) { // 70% chance of approval
+                    generateApproval();
+                } else {
+                    generateLead();
+                }
+            }, 3000);
+
+            // Stop after 30 seconds
+            setTimeout(() => {
+                clearInterval(interval);
+
+                // Show completion message
+                showGuide('🎉 Excellent! You generated 15+ approvals in just 30 seconds!');
+                updateProgress(4, true);
+
+                // Add completion checkmark
+                setTimeout(() => {
+                    document.querySelector('#progress-step:last-child .step-number').innerHTML = '<i class="fas fa-check success-checkmark"></i>';
+                }, 500);
+            }, 30000);
+        }
+
+        function generateApproval() {
+            approvals++;
+            leads++;
+            updateMetrics();
+
+            const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+            const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+            const score = Math.floor(Math.random() * 100) + 650;
+            const amount = Math.floor(Math.random() * 50000) + 20000;
+
+            const update = document.createElement('div');
+            update.className = 'update-item';
+            update.innerHTML = `
+                <div class="text-sm text-gray-500">Just now</div>
+                <div class="font-semibold">${firstName} ${lastName} APPROVED for $${amount.toLocaleString()}</div>
+                <div class="text-sm text-gray-600">Credit Score: ${score} | Ready to buy!</div>
+            `;
+
+            const feed = document.getElementById('liveFeed');
+            if (feed.children[0].textContent.includes('Campaigns will appear')) {
+                feed.innerHTML = '';
+            }
+
+            feed.insertBefore(update, feed.firstChild);
+
+            // Remove old updates
+            while (feed.children.length > 5) {
+                feed.removeChild(feed.lastChild);
+            }
+
+            // Update metrics
+            updateMetrics();
+        }
+
+        function generateLead() {
+            leads++;
+            updateMetrics();
+        }
+
+        function updateMetrics() {
+            document.getElementById('leadCount').textContent = leads;
+            document.getElementById('approvalCount').textContent = approvals;
+            const rate = leads > 0 ? Math.round((approvals / leads) * 100) : 0;
+            document.getElementById('conversionRate').textContent = rate + '%';
+        }
+
+        function updateProgress(step, completed = false) {
+            document.querySelectorAll('.progress-step').forEach((el, index) => {
+                el.classList.remove('active', 'completed');
+                if (index < step - 1) {
+                    el.classList.add('completed');
+                } else if (index === step - 1) {
+                    el.classList.add('active');
+                    if (completed) {
+                        el.classList.add('completed');
+                    }
+                }
+            });
+        }
+
+        function showGuide(text) {
+            const guide = document.getElementById('floatingGuide');
+            guide.classList.remove('hidden');
+            document.getElementById('guideText').textContent = text;
+
+            // Hide after 5 seconds
+            setTimeout(() => {
+                guide.classList.add('hidden');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

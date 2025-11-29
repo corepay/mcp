@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Bureau Authorization - OLA Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .chat-bubble {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            border-radius: 20px 20px 4px 20px;
+        }
+        .atlas-thinking {
+            animation: thinking 2s ease-in-out infinite;
+        }
+        @keyframes thinking {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        .progress-step {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .progress-step:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Main Container -->
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <!-- Logo -->
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-900">SecureSubmit</h1>
+                            <p class="text-xs text-gray-500">AI-Powered Merchant Accounts</p>
+                        </div>
+                    </div>
+                    <!-- User Menu -->
+                    <div class="flex items-center space-x-4">
+                        <button class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Progress Bar -->
+        <div class="bg-white border-b border-gray-200">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2 md:space-x-4">
+                        <div class="progress-step flex items-center" onclick="window.location.href='02-conversational-application.html'">
+                            <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
+                            <span class="ml-2 text-sm font-medium text-green-600 hidden md:inline">Business Info</span>
+                        </div>
+                        <div class="w-8 md:w-12 h-0.5 bg-green-500"></div>
+                        <div class="progress-step flex items-center" onclick="window.location.href='02a-business-details.html'">
+                            <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
+                            <span class="ml-2 text-sm font-medium text-green-600 hidden md:inline">Documents</span>
+                        </div>
+                        <div class="w-8 md:w-12 h-0.5 bg-green-500"></div>
+                        <div class="progress-step flex items-center" onclick="window.location.href='02b-documents-upload.html'">
+                            <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
+                            <span class="ml-2 text-sm font-medium text-green-600 hidden md:inline">Uploads</span>
+                        </div>
+                        <div class="w-8 md:w-12 h-0.5 bg-indigo-500"></div>
+                        <div class="progress-step flex items-center">
+                            <div class="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-medium">4</div>
+                            <span class="ml-2 text-sm font-medium text-indigo-600 hidden md:inline">Credit Check</span>
+                        </div>
+                        <div class="w-8 md:w-12 h-0.5 bg-gray-300"></div>
+                        <div class="progress-step flex items-center">
+                            <div class="w-8 h-8 bg-gray-300 text-gray-500 rounded-full flex items-center justify-center text-sm font-medium">5</div>
+                            <span class="ml-2 text-sm font-medium text-gray-400 hidden md:inline">Trade Refs</span>
+                        </div>
+                        <div class="w-8 md:w-12 h-0.5 bg-gray-300"></div>
+                        <div class="progress-step flex items-center">
+                            <div class="w-8 h-8 bg-gray-300 text-gray-500 rounded-full flex items-center justify-center text-sm font-medium">6</div>
+                            <span class="ml-2 text-sm font-medium text-gray-400 hidden md:inline">Review</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 gradient-bg p-4">
+            <div class="max-w-6xl mx-auto">
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- Left Sidebar - Atlas AI Assistant -->
+                    <div class="md:col-span-1">
+                        <div class="glass-effect rounded-2xl p-6 sticky top-4">
+                            <div class="flex items-center space-x-3 mb-6">
+                                <div class="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-500 rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-gray-900">Atlas AI</h3>
+                                    <p class="text-xs text-gray-500">Your Application Guide</p>
+                                </div>
+                            </div>
+
+                            <!-- Chat Messages -->
+                            <div class="space-y-4 mb-6">
+                                <div class="chat-bubble text-white p-4">
+                                    <p class="text-sm">Now I need to check your business credit history to complete your application profile. This helps us understand your financial standing and offer you the best rates.</p>
+                                </div>
+                                <div class="chat-bubble text-white p-4">
+                                    <p class="text-sm">I'll be checking with major credit bureaus to get a comprehensive view of your business creditworthiness. This is a soft inquiry and won't affect your credit score.</p>
+                                </div>
+                                <div class="atlas-thinking text-gray-600 p-4 bg-gray-50 rounded-lg">
+                                    <p class="text-sm italic">Ready to process your credit authorization...</p>
+                                </div>
+                            </div>
+
+                            <!-- Help Section -->
+                            <div class="border-t pt-4">
+                                <button class="flex items-center space-x-2 text-purple-600 hover:text-purple-700 text-sm font-medium">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span>Why we need this</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Content -->
+                    <div class="md:col-span-2">
+                        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                            <h2 class="text-2xl font-bold text-gray-900 mb-6">Business Credit Check</h2>
+
+                            <!-- Authorization Notice -->
+                            <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
+                                <div class="flex items-start space-x-3">
+                                    <div class="flex-shrink-0">
+                                        <svg class="w-6 h-6 text-blue-600 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h3 class="text-lg font-semibold text-blue-900 mb-2">Credit Bureau Authorization</h3>
+                                        <p class="text-blue-700 text-sm mb-4">I authorize SecureSubmit to obtain my business credit information from the following bureaus:</p>
+                                        <ul class="space-y-2 text-sm text-blue-700">
+                                            <li class="flex items-center space-x-2">
+                                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                <span>Experian Business Information Services</span>
+                                            </li>
+                                            <li class="flex items-center space-x-2">
+                                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                <span>Equifax Small Business Solutions</span>
+                                            </li>
+                                            <li class="flex items-center space-x-2">
+                                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                <span>Dun & Bradstreet (D&B)</span>
+                                            </li>
+                                        </ul>
+                                        <p class="text-xs text-blue-600 mt-4">This is a soft inquiry and will not impact your credit score. You understand this authorization may be retained as part of your application record.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Business Information Form -->
+                            <form id="creditCheckForm" class="space-y-6">
+                                <div class="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Legal Business Name *</label>
+                                        <input type="text" id="legalName" value="TerraFusion Restaurant Group" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" readonly>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">DBA (Doing Business As) *</label>
+                                        <input type="text" id="dbaName" value="The Green Plate" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" readonly>
+                                    </div>
+                                </div>
+
+                                <div class="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Business Tax ID (EIN) *</label>
+                                        <input type="text" id="taxId" value="81-1234567" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" readonly>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">DUNS Number (if available)</label>
+                                        <input type="text" id="dunsNumber" placeholder="Enter DUNS number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    </div>
+                                </div>
+
+                                <div class="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Business Structure *</label>
+                                        <select id="businessStructure" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" disabled>
+                                            <option value="llc" selected>LLC</option>
+                                            <option value="corporation">Corporation</option>
+                                            <option value="partnership">Partnership</option>
+                                            <option value="sole_proprietorship">Sole Proprietorship</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Years in Business *</label>
+                                        <input type="number" id="yearsInBusiness" value="3" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" readonly>
+                                    </div>
+                                </div>
+
+                                <div class="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Annual Revenue *</label>
+                                        <select id="annualRevenue" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" disabled>
+                                            <option value="500k-1m" selected>$500K - $1M</option>
+                                            <option value="1m-5m">$1M - $5M</option>
+                                            <option value="5m-10m">$5M - $10M</option>
+                                            <option value="10m+">$10M+</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Business Phone *</label>
+                                        <input type="tel" id="businessPhone" value="(415) 555-0123" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" readonly>
+                                    </div>
+                                </div>
+
+                                <!-- Authorization Section -->
+                                <div class="bg-gray-50 rounded-xl p-6">
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Authorization & Consent</h3>
+                                    <div class="space-y-4">
+                                        <label class="flex items-start space-x-3">
+                                            <input type="checkbox" id="authorizationConsent" class="mt-1 w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500" required>
+                                            <span class="text-sm text-gray-700">I authorize SecureSubmit to obtain my business credit reports from the selected credit bureaus for the purpose of evaluating my merchant account application.</span>
+                                        </label>
+                                        <label class="flex items-start space-x-3">
+                                            <input type="checkbox" id="softInquiryConsent" class="mt-1 w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500" required>
+                                            <span class="text-sm text-gray-700">I understand that this is a soft inquiry and will not affect my business credit score.</span>
+                                        </label>
+                                        <label class="flex items-start space-x-3">
+                                            <input type="checkbox" id="termsConsent" class="mt-1 w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500" required>
+                                            <span class="text-sm text-gray-700">I agree to the Terms of Service and Privacy Policy regarding the use of my credit information.</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="flex justify-between pt-6">
+                                    <button type="button" onclick="window.location.href='02b-documents-upload.html'" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">
+                                        Back
+                                    </button>
+                                    <button type="submit" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 font-medium">
+                                        Submit Credit Check
+                                    </button>
+                                </div>
+                            </form>
+
+                            <!-- Processing Indicator (Initially Hidden) -->
+                            <div id="processingIndicator" class="hidden">
+                                <div class="text-center py-8">
+                                    <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                                        <svg class="w-8 h-8 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Processing Your Authorization...</h3>
+                                    <p class="text-gray-600">Recording your consent. Please don't close this window.</p>
+                                    <div class="flex justify-center space-x-2 mt-4">
+                                        <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+                                        <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                                        <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Consent Confirmation Section (Initially Hidden) -->
+                            <div id="consentConfirmation" class="hidden">
+                                <div class="bg-green-50 border border-green-200 rounded-xl p-6 mb-6">
+                                    <div class="flex items-center space-x-3 mb-4">
+                                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <h3 class="text-lg font-semibold text-green-900">Credit Authorization Received</h3>
+                                    </div>
+                                    <p class="text-green-700 text-sm">Thank you! Your authorization for credit bureau checks has been recorded. This consent will be used during the underwriting process to evaluate your application.</p>
+                                </div>
+
+                                <!-- What Happens Next -->
+                                <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+                                    <h4 class="font-semibold text-blue-900 mb-3">What Happens Next?</h4>
+                                    <ul class="space-y-2 text-sm text-blue-700">
+                                        <li class="flex items-center space-x-2">
+                                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 8V2H7v6H2l8 8 8-8h-5z"/>
+                                            </svg>
+                                            <span>Your application will be reviewed by our underwriting team</span>
+                                        </li>
+                                        <li class="flex items-center space-x-2">
+                                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                            </svg>
+                                            <span>Soft inquiry credit checks will be performed during review</span>
+                                        </li>
+                                        <li class="flex items-center space-x-2">
+                                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <span>This won't affect your business credit scores</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <!-- Atlas AI Analysis -->
+                                <div class="bg-purple-50 border border-purple-200 rounded-xl p-6 mb-6">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="flex-shrink-0">
+                                            <svg class="w-6 h-6 text-purple-600 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-purple-900 mb-2">Atlas AI</h4>
+                                            <p class="text-purple-700 text-sm">Perfect! Your credit authorization is now on file. This is an important step in the application process. Next, let's gather some trade references to complete your business profile. These references help validate your business relationships and payment history.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Continue Button -->
+                                <div class="flex justify-end">
+                                    <button onclick="window.location.href='02e-trade-references.html'" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 font-medium">
+                                        Continue to Trade References →
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Form submission for credit authorization
+        document.getElementById('creditCheckForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Check if all consent checkboxes are checked
+            const authConsent = document.getElementById('authorizationConsent').checked;
+            const softConsent = document.getElementById('softInquiryConsent').checked;
+            const termsConsent = document.getElementById('termsConsent').checked;
+
+            if (!authConsent || !softConsent || !termsConsent) {
+                alert('Please provide all required authorizations to proceed with the credit check.');
+                return;
+            }
+
+            // Hide form and show processing
+            this.style.display = 'none';
+            document.getElementById('processingIndicator').classList.remove('hidden');
+
+            // Simulate form processing
+            setTimeout(() => {
+                document.getElementById('processingIndicator').classList.add('hidden');
+                document.getElementById('consentConfirmation').classList.remove('hidden');
+
+                // Update Atlas AI message
+                const thinkingBubble = document.querySelector('.atlas-thinking');
+                if (thinkingBubble) {
+                    thinkingBubble.classList.remove('atlas-thinking');
+                    thinkingBubble.classList.add('chat-bubble', 'text-white', 'p-4');
+                    thinkingBubble.innerHTML = '<p class="text-sm">Perfect! Your credit authorization has been recorded. The actual credit check will be performed during underwriting as a soft inquiry that won\'t affect your scores. Now let\'s gather some trade references.</p>';
+                }
+            }, 2000); // 2 second simulation
+        });
+    </script>
+</body>
+</html>

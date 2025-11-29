@@ -144,7 +144,8 @@ defmodule McpWeb.Ola.ApplicationLive do
     
     if merchant do
       case UnderwritingApplication.create(%{
-        merchant_id: merchant.id,
+        subject_id: merchant.id,
+        subject_type: :merchant,
         status: :submitted,
         application_data: final_params
       }, tenant: tenant.company_schema) do
@@ -339,8 +340,8 @@ defmodule McpWeb.Ola.ApplicationLive do
     end
   end
 
-  defp process_chat_input(_form, _input) do
+  defp process_chat_input(form, _input) do
     # Fallback for when we are already done or in an invalid state
-    {"I have already collected your information. Please review the form.", "done", _form}
+    {"I have already collected your information. Please review the form.", "done", form}
   end
 end

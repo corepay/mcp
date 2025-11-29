@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Underwriting Admin Portal - Atlas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+        .sidebar-item:hover {
+            background: rgba(147, 51, 234, 0.1);
+            padding-left: 1.5rem;
+        }
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        .queue-item {
+            transition: all 0.2s ease;
+        }
+        .queue-item:hover {
+            background: #f9fafb;
+            transform: translateX(5px);
+        }
+        .co-pilot-bubble {
+            animation: slideIn 0.5s ease;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .priority-high {
+            border-left: 4px solid #ef4444;
+        }
+        .priority-medium {
+            border-left: 4px solid #f59e0b;
+        }
+        .priority-low {
+            border-left: 4px solid #10b981;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white flex flex-col h-screen overflow-hidden">
+            <div class="p-6 flex-1 overflow-y-auto">
+                <div class="flex items-center space-x-3 mb-8">
+                    <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-robot text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold">Atlas</h1>
+                        <p class="text-xs text-gray-400">Admin Portal</p>
+                    </div>
+                </div>
+
+                <nav class="space-y-2">
+                    <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg bg-purple-600">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="01-application-detail.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-list"></i>
+                        <span>Application Queue</span>
+                        <span class="ml-auto bg-red-500 text-xs px-2 py-1 rounded-full">23</span>
+                    </a>
+                    <a href="02-analytics-dashboard.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Analytics</span>
+                    </a>
+                    <a href="03-merchant-management.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-users"></i>
+                        <span>Merchants</span>
+                    </a>
+                    <a href="05-statement-analyzer.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Statement Analyzer</span>
+                    </a>
+                    <a href="04-settings.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="p-6 border-t border-gray-800 bg-gray-900">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23933A5A'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='14' font-weight='bold'%3EJD%3C/text%3E%3C/svg%3E" alt="User" class="w-10 h-10 rounded-full">
+                        <div>
+                            <p class="font-semibold">John Doe</p>
+                            <p class="text-xs text-gray-400">Senior Underwriter</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-400 hover:text-white">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Top Bar -->
+            <header class="bg-white shadow-sm px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Underwriting Dashboard</h2>
+                        <p class="text-gray-600">Real-time application processing with Atlas AI</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right">
+                            <p class="text-sm text-gray-600">Today, Nov 29</p>
+                            <p class="text-lg font-semibold text-gray-800">47 applications</p>
+                        </div>
+                        <button class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                            <i class="fas fa-plus mr-2"></i>New Application
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div class="p-6">
+                <!-- Stats Grid -->
+                <div class="grid md:grid-cols-4 gap-6 mb-8">
+                    <div class="stat-card bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-list text-blue-600 text-xl"></i>
+                            </div>
+                            <span class="text-xs text-gray-500">+12% from yesterday</span>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-800">23</div>
+                        <div class="text-gray-600">Pending Review</div>
+                    </div>
+
+                    <div class="stat-card bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-check text-green-600 text-xl"></i>
+                            </div>
+                            <span class="text-xs text-green-600">89% approval rate</span>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-800">89</div>
+                        <div class="text-gray-600">Approved Today</div>
+                    </div>
+
+                    <div class="stat-card bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                            </div>
+                            <span class="text-xs text-gray-500">-45% improvement</span>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-800">4.2m</div>
+                        <div class="text-gray-600">Avg. Review Time</div>
+                    </div>
+
+                    <div class="stat-card bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-robot text-purple-600 text-xl"></i>
+                            </div>
+                            <span class="text-xs text-purple-600">AI Active</span>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-800">87%</div>
+                        <div class="text-gray-600">Atlas Automation</div>
+                    </div>
+                </div>
+
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <!-- Application Queue -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-xl font-bold text-gray-800">Application Queue</h3>
+                                <div class="flex space-x-2">
+                                    <button class="text-sm text-gray-600 hover:text-gray-800">Filter</button>
+                                    <button class="text-sm text-gray-600 hover:text-gray-800">Sort</button>
+                                </div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <!-- High Priority -->
+                                <div class="queue-item bg-white border rounded-lg p-4 priority-high cursor-pointer" onclick="openApplication('AT-2024-0847')">
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex-1">
+                                            <div class="flex items-center space-x-2 mb-1">
+                                                <span class="font-semibold">Seattle Coffee Roasters LLC</span>
+                                                <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">High Risk</span>
+                                            </div>
+                                            <p class="text-sm text-gray-600">Coffee Shop • $50K/mo • Application #AT-2024-0847</p>
+                                            <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                                                <span><i class="fas fa-clock mr-1"></i>2h ago</span>
+                                                <span><i class="fas fa-user mr-1"></i>John Doe</span>
+                                                <span class="text-purple-600 font-medium"><i class="fas fa-robot mr-1"></i>Atlas: Review</span>
+                                            </div>
+                                        </div>
+                                        <button class="text-gray-400 hover:text-gray-600">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Medium Priority -->
+                                <div class="queue-item bg-white border rounded-lg p-4 priority-medium cursor-pointer">
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex-1">
+                                            <div class="flex items-center space-x-2 mb-1">
+                                                <span class="font-semibold">Tech Solutions Inc.</span>
+                                                <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Missing Docs</span>
+                                            </div>
+                                            <p class="text-sm text-gray-600">SaaS • $120K/mo • Application #AT-2024-0848</p>
+                                            <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                                                <span><i class="fas fa-clock mr-1"></i>3h ago</span>
+                                                <span><i class="fas fa-user mr-1"></i>Sarah Smith</span>
+                                                <span class="text-gray-500"><i class="fas fa-exclamation-triangle mr-1"></i>Needs ID</span>
+                                            </div>
+                                        </div>
+                                        <button class="text-gray-400 hover:text-gray-600">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Low Priority -->
+                                <div class="queue-item bg-white border rounded-lg p-4 priority-low cursor-pointer">
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex-1">
+                                            <div class="flex items-center space-x-2 mb-1">
+                                                <span class="font-semibold">Main Street Bakery</span>
+                                                <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Ready</span>
+                                            </div>
+                                            <p class="text-sm text-gray-600">Restaurant • $25K/mo • Application #AT-2024-0849</p>
+                                            <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                                                <span><i class="fas fa-clock mr-1"></i>1h ago</span>
+                                                <span><i class="fas fa-user mr-1"></i>Mike Johnson</span>
+                                                <span class="text-green-600 font-medium"><i class="fas fa-check mr-1"></i>Complete</span>
+                                            </div>
+                                        </div>
+                                        <button class="text-gray-400 hover:text-gray-600">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button class="w-full mt-4 text-center text-purple-600 hover:text-purple-700 font-medium">
+                                View All 23 Applications →
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Atlas Co-Pilot & Insights -->
+                    <div class="space-y-6">
+                        <!-- Atlas Co-Pilot -->
+                        <div class="bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl shadow-lg p-6 text-white">
+                            <h3 class="text-xl font-bold mb-4">
+                                <i class="fas fa-robot mr-2"></i>Atlas Co-Pilot
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="co-pilot-bubble bg-white bg-opacity-20 rounded-lg p-3">
+                                    <p class="text-sm mb-2">📊 Today's Insights:</p>
+                                    <ul class="text-xs space-y-1">
+                                        <li>• 87% of applications auto-approved</li>
+                                        <li>• Average review time: 4.2 minutes</li>
+                                        <li>• 3 applications need manual review</li>
+                                    </ul>
+                                </div>
+                                <div class="co-pilot-bubble bg-white bg-opacity-20 rounded-lg p-3">
+                                    <p class="text-sm mb-2">⚠️ Attention Required:</p>
+                                    <p class="text-xs">AT-2024-0847 has high-risk indicators. Review bank statements for unusual activity patterns.</p>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <input type="text" placeholder="Ask Atlas anything..." class="w-full bg-white bg-opacity-20 placeholder-purple-200 text-sm rounded-lg px-3 py-2 outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4">Quick Actions</h3>
+                            <div class="space-y-3">
+                                <button class="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+                                    <span class="text-sm font-medium">Bulk Review</span>
+                                    <i class="fas fa-layer-group text-gray-400"></i>
+                                </button>
+                                <button class="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+                                    <span class="text-sm font-medium">Export Reports</span>
+                                    <i class="fas fa-file-export text-gray-400"></i>
+                                </button>
+                                <button class="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+                                    <span class="text-sm font-medium">Audit Queue</span>
+                                    <i class="fas fa-history text-gray-400"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Team Performance -->
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4">Team Performance</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center space-x-2">
+                                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23933A5A'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='12' font-weight='bold'%3EJD%3C/text%3E%3C/svg%3E" alt="" class="w-8 h-8 rounded-full">
+                                        <div>
+                                            <p class="text-sm font-medium">John Doe</p>
+                                            <p class="text-xs text-gray-500">You</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-bold">18</p>
+                                        <p class="text-xs text-gray-500">Reviewed</p>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center space-x-2">
+                                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23E11D48'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='12' font-weight='bold'%3ESM%3C/text%3E%3C/svg%3E" alt="" class="w-8 h-8 rounded-full">
+                                        <div>
+                                            <p class="text-sm font-medium">Sarah M.</p>
+                                            <p class="text-xs text-gray-500">Sr. UW</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-bold">24</p>
+                                        <p class="text-xs text-gray-500">Reviewed</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openApplication(id) {
+            // In a real app, this would navigate to the application detail
+            console.log(`Opening application ${id}`);
+            // For demo, we can open the underwriting review page
+            if (id === 'AT-2024-0847') {
+                window.open('08-underwriting-review.html', '_blank');
+            }
+        }
+    </script>
+</body>
+</html>

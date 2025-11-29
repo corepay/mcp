@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statement Analyzer - Atlas Underwriting Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+        .sidebar-item:hover {
+            background: rgba(147, 51, 234, 0.1);
+            padding-left: 1.5rem;
+        }
+        .upload-zone {
+            transition: all 0.3s ease;
+            border: 2px dashed #d1d5db;
+        }
+        .upload-zone:hover {
+            border-color: #9333ea;
+            background: #faf5ff;
+        }
+        .upload-zone.dragover {
+            border-color: #9333ea;
+            background: #faf5ff;
+            transform: scale(1.02);
+        }
+        .document-item {
+            transition: all 0.2s ease;
+        }
+        .document-item:hover {
+            background: #f9fafb;
+            transform: translateX(4px);
+        }
+        .result-card {
+            animation: slideIn 0.5s ease;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .risk-high {
+            border-left: 4px solid #ef4444;
+        }
+        .risk-medium {
+            border-left: 4px solid #f59e0b;
+        }
+        .risk-low {
+            border-left: 4px solid #10b981;
+        }
+
+        /* Remove any unwanted borders or lines */
+        hr {
+            display: none !important;
+        }
+
+        /* Ensure no transparent footer elements */
+        footer {
+            display: none !important;
+        }
+
+        /* Remove any element that might be a footer */
+        div[role="contentinfo"],
+        .footer,
+        .page-footer,
+        .site-footer,
+        .bottom-nav,
+        .navigation-widget {
+            display: none !important;
+        }
+
+        /* Remove borders from bottom of containers */
+        .container:not(.upload-zone):not(.border)::after {
+            display: none;
+        }
+
+        /* Target any element at the bottom with fixed position */
+        body > div:last-child:not(.flex):not([class*="h-screen"]) {
+            display: none !important;
+        }
+
+        /* Remove any fixed bottom elements */
+        .fixed.bottom-0:not(.bg-white):not(.bg-gray-900):not(.shadow-lg) {
+            display: none !important;
+        }
+
+        /* Target the specific navigation widget */
+        .fixed.bottom-8.left-8.bg-white.rounded-full.shadow-lg.px-6.py-3.z-50 {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white flex flex-col h-screen overflow-hidden">
+            <div class="p-6 flex-1 overflow-y-auto">
+                <div class="flex items-center space-x-3 mb-8">
+                    <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-robot text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold">Atlas</h1>
+                        <p class="text-xs text-gray-400">Admin Portal</p>
+                    </div>
+                </div>
+
+                <nav class="space-y-2">
+                    <a href="10-admin-portal.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="01-application-detail.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-list"></i>
+                        <span>Application Queue</span>
+                        <span class="ml-auto bg-red-500 text-xs px-2 py-1 rounded-full">23</span>
+                    </a>
+                    <a href="02-analytics-dashboard.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Analytics</span>
+                    </a>
+                    <a href="03-merchant-management.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-users"></i>
+                        <span>Merchants</span>
+                    </a>
+                    <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg bg-purple-600">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Statement Analyzer</span>
+                    </a>
+                    <a href="04-settings.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="p-6 border-t border-gray-800 bg-gray-900">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23933A5A'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='14' font-weight='bold'%3EJD%3C/text%3E%3C/svg%3E" alt="User" class="w-10 h-10 rounded-full">
+                        <div>
+                            <p class="font-semibold">John Doe</p>
+                            <p class="text-xs text-gray-400">Senior Underwriter</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-400 hover:text-white">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex">
+            <!-- Main Content Area -->
+            <div class="flex-1 overflow-auto">
+                <!-- Top Bar -->
+                <header class="bg-white shadow-sm px-6 py-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">Merchant Statement Analyzer</h2>
+                            <p class="text-gray-600">Third Eye OCR - Financial statement analysis and risk assessment</p>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <button onclick="toggleStandaloneMode()" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
+                                <i class="fas fa-toggle-on mr-2"></i>
+                                <span id="modeText">Application Mode</span>
+                            </button>
+                            <button onclick="resetAnalysis()" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
+                                <i class="fas fa-redo mr-2"></i>Reset
+                            </button>
+                            <button onclick="demoAnalysis()" class="bg-purple-100 text-purple-700 px-4 py-2 rounded-lg hover:bg-purple-200 transition">
+                                <i class="fas fa-play mr-2"></i>Demo Analysis
+                            </button>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Content -->
+                <div class="p-6">
+                    <!-- Applicant Selection -->
+                    <div id="applicantSection" class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-user-search text-purple-500 mr-2"></i>
+                            Select Applicant (Optional)
+                        </h3>
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Search Applicant</label>
+                                <div class="relative">
+                                    <input type="text" id="applicantSearch" placeholder="Name, ID, or Business..."
+                                           class="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Recent Applicants</label>
+                                <select id="applicantSelect" onchange="loadApplicantDocuments()" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <option value="">-- Select Recent Applicant --</option>
+                                    <option value="app1">TechSolutions Inc. - AT-2024-0847</option>
+                                    <option value="app2">Global Retail LLC - AT-2024-0846</option>
+                                    <option value="app3">ServicePro Corp - AT-2024-0845</option>
+                                    <option value="app4">Bloom Floral Shop - AT-2024-0844</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Quick Actions</label>
+                                <button onclick="showAllApplications()" class="w-full bg-purple-100 text-purple-700 px-4 py-2 rounded-lg hover:bg-purple-200 transition">
+                                    <i class="fas fa-list mr-2"></i>View All Applications
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Document Selection & Upload -->
+                    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-file-upload text-blue-500 mr-2"></i>
+                            Select or Upload Statements
+                        </h3>
+
+                        <!-- Existing Documents -->
+                        <div id="existingDocuments" class="mb-6 hidden">
+                            <h4 class="text-sm font-medium text-gray-700 mb-3">Available Documents</h4>
+                            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3" id="documentsGrid">
+                                <!-- Documents will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Upload New Statements -->
+                        <div class="border-t pt-6">
+                            <h4 class="text-sm font-medium text-gray-700 mb-3">Upload New Statements (up to 6 months)</h4>
+                            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4" id="uploadGrid">
+                                <!-- Month 1 -->
+                                <div class="upload-zone rounded-lg p-6 text-center cursor-pointer" onclick="triggerUpload(1)">
+                                    <i class="fas fa-cloud-upload-alt text-purple-400 text-3xl mb-2"></i>
+                                    <p class="text-sm text-gray-600">Month 1 (Most Recent)</p>
+                                    <p class="text-xs text-gray-500">PDF, JPG, PNG up to 10MB</p>
+                                    <input type="file" id="upload1" class="hidden" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileUpload(this, 1)">
+                                </div>
+                                <!-- Month 2 -->
+                                <div class="upload-zone rounded-lg p-6 text-center cursor-pointer" onclick="triggerUpload(2)">
+                                    <i class="fas fa-cloud-upload-alt text-purple-400 text-3xl mb-2"></i>
+                                    <p class="text-sm text-gray-600">Month 2</p>
+                                    <p class="text-xs text-gray-500">PDF, JPG, PNG up to 10MB</p>
+                                    <input type="file" id="upload2" class="hidden" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileUpload(this, 2)">
+                                </div>
+                                <!-- Month 3 -->
+                                <div class="upload-zone rounded-lg p-6 text-center cursor-pointer" onclick="triggerUpload(3)">
+                                    <i class="fas fa-cloud-upload-alt text-purple-400 text-3xl mb-2"></i>
+                                    <p class="text-sm text-gray-600">Month 3</p>
+                                    <p class="text-xs text-gray-500">PDF, JPG, PNG up to 10MB</p>
+                                    <input type="file" id="upload3" class="hidden" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileUpload(this, 3)">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Analysis Controls -->
+                        <div class="mt-6 flex justify-between items-center">
+                            <div class="flex items-center space-x-4">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="advancedAnalysis" class="mr-2 rounded text-purple-600" checked>
+                                    <span class="text-sm text-gray-700">Advanced Analysis</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="compareIndustry" class="mr-2 rounded text-purple-600" checked>
+                                    <span class="text-sm text-gray-700">Industry Benchmark</span>
+                                </label>
+                            </div>
+                            <button onclick="startAnalysis()" id="analyzeBtn" disabled class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fas fa-search mr-2"></i>Analyze Statements
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Processing Status -->
+                    <div id="processingStatus" class="hidden bg-white rounded-xl shadow-lg p-8">
+                        <div class="text-center">
+                            <div class="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-4">
+                                <i class="fas fa-brain text-purple-600 text-2xl animate-pulse"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">Atlas AI Analyzing Statements</h3>
+                            <p class="text-gray-600 mb-6">Third Eye OCR extracting and analyzing financial data...</p>
+
+                            <div class="max-w-md mx-auto space-y-3">
+                                <div class="flex items-center justify-between text-sm">
+                                    <span>OCR Processing</span>
+                                    <span id="ocrProgress">0%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="ocrBar" class="bg-purple-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+
+                                <div class="flex items-center justify-between text-sm">
+                                    <span>Data Extraction</span>
+                                    <span id="extractProgress">0%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="extractBar" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+
+                                <div class="flex items-center justify-between text-sm">
+                                    <span>Risk Analysis</span>
+                                    <span id="riskProgress">0%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="riskBar" class="bg-green-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar - Results -->
+            <div id="resultsSidebar" class="w-96 bg-white shadow-lg p-6 overflow-y-auto hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800">Analysis Results</h3>
+                    <button onclick="toggleResults()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <!-- Quick Summary -->
+                <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 mb-6">
+                    <h4 class="font-semibold text-gray-800 mb-3">Quick Summary</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Risk Score</span>
+                            <span class="font-semibold text-green-600">72/100</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Monthly Volume</span>
+                            <span class="font-semibold">$52,263</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Growth Trend</span>
+                            <span class="font-semibold text-green-600">+15.3%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Atlas Recommendation -->
+                <div class="bg-purple-600 text-white rounded-xl p-4 mb-6">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-brain mr-2"></i>
+                        <h4 class="font-semibold">Atlas Recommendation</h4>
+                    </div>
+                    <p class="text-sm mb-3">Approve with $75,000/month limit</p>
+                    <div class="flex space-x-2">
+                        <button class="bg-white text-purple-600 px-3 py-1 rounded text-sm font-semibold hover:bg-gray-100">Approve</button>
+                        <button class="bg-purple-700 text-white px-3 py-1 rounded text-sm hover:bg-purple-800">Modify</button>
+                        <button class="bg-purple-700 text-white px-3 py-1 rounded text-sm hover:bg-purple-800">Decline</button>
+                    </div>
+                </div>
+
+                <!-- Key Metrics -->
+                <div class="bg-white border rounded-xl p-4 mb-6">
+                    <h4 class="font-semibold text-gray-800 mb-3">Key Metrics</h4>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm">Avg Daily Balance</span>
+                                <span class="text-sm font-semibold">$14,523</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="bg-green-500 h-1.5 rounded-full" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm">Transaction Count</span>
+                                <span class="text-sm font-semibold">764/mo</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="bg-blue-500 h-1.5 rounded-full" style="width: 72%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm">NSF Incidents</span>
+                                <span class="text-sm font-semibold text-green-600">0</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="bg-green-500 h-1.5 rounded-full" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Red Flags -->
+                <div class="bg-white border rounded-xl p-4 mb-6">
+                    <h4 class="font-semibold text-gray-800 mb-3">
+                        <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i>
+                        Flags & Alerts
+                    </h4>
+                    <div class="space-y-2">
+                        <div class="flex items-start space-x-2 text-sm">
+                            <i class="fas fa-circle text-yellow-500 text-xs mt-1.5"></i>
+                            <span class="text-gray-700">Chargeback ratio at 0.4%</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-sm">
+                            <i class="fas fa-circle text-blue-500 text-xs mt-1.5"></i>
+                            <span class="text-gray-700">Unverified cash deposits</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-sm">
+                            <i class="fas fa-circle text-orange-500 text-xs mt-1.5"></i>
+                            <span class="text-gray-700">High concentration risk</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="space-y-2">
+                    <button onclick="generateReport()" class="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition text-sm">
+                        <i class="fas fa-file-download mr-2"></i>Generate Report
+                    </button>
+                    <button onclick="saveAnalysis()" class="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition text-sm">
+                        <i class="fas fa-save mr-2"></i>Save Analysis
+                    </button>
+                    <button onclick="exportData()" class="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition text-sm">
+                        <i class="fas fa-export mr-2"></i>Export Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let uploadedFiles = [];
+        let selectedApplicant = null;
+        let standaloneMode = false;
+
+        // Upload handlers
+        function triggerUpload(month) {
+            document.getElementById(`upload${month}`).click();
+        }
+
+        function handleFileUpload(input, month) {
+            const file = input.files[0];
+            if (file) {
+                // Check file size
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('File size must be less than 10MB');
+                    return;
+                }
+
+                uploadedFiles[month] = file;
+
+                // Update UI
+                const uploadZone = input.parentElement;
+                uploadZone.innerHTML = `
+                    <i class="fas fa-file-check text-green-500 text-3xl mb-2"></i>
+                    <p class="text-sm font-medium text-gray-800">${file.name}</p>
+                    <p class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <button onclick="removeFile(${month})" class="mt-2 text-red-500 hover:text-red-700 text-xs">
+                        <i class="fas fa-trash mr-1"></i>Remove
+                    </button>
+                `;
+
+                checkAnalyzeButton();
+            }
+        }
+
+        function removeFile(month) {
+            uploadedFiles[month] = null;
+            const uploadZone = document.getElementById(`upload${month}`).parentElement;
+            uploadZone.innerHTML = `
+                <i class="fas fa-cloud-upload-alt text-purple-400 text-3xl mb-2"></i>
+                <p class="text-sm text-gray-600">Month ${month}</p>
+                <p class="text-xs text-gray-500">PDF, JPG, PNG up to 10MB</p>
+                <input type="file" id="upload${month}" class="hidden" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileUpload(this, ${month})">
+            `;
+            checkAnalyzeButton();
+        }
+
+        function checkAnalyzeButton() {
+            const hasFile = uploadedFiles.some(f => f !== undefined && f !== null);
+            document.getElementById('analyzeBtn').disabled = !hasFile;
+        }
+
+        // Applicant handlers
+        function loadApplicantDocuments() {
+            const select = document.getElementById('applicantSelect');
+            const existingDocs = document.getElementById('existingDocuments');
+
+            if (select.value) {
+                existingDocs.classList.remove('hidden');
+                selectedApplicant = select.value;
+
+                // Simulate loading documents
+                const documentsGrid = document.getElementById('documentsGrid');
+                documentsGrid.innerHTML = `
+                    <div class="document-item border rounded-lg p-3 cursor-pointer hover:bg-gray-50" onclick="selectDocument(this, 'stmt_sept.pdf')">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-file-pdf text-red-500"></i>
+                            <div>
+                                <p class="text-sm font-medium">Sept 2024 Statement</p>
+                                <p class="text-xs text-gray-500">Uploaded 10/15/2024</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="document-item border rounded-lg p-3 cursor-pointer hover:bg-gray-50" onclick="selectDocument(this, 'stmt_aug.pdf')">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-file-pdf text-red-500"></i>
+                            <div>
+                                <p class="text-sm font-medium">Aug 2024 Statement</p>
+                                <p class="text-xs text-gray-500">Uploaded 9/15/2024</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="document-item border rounded-lg p-3 cursor-pointer hover:bg-gray-50" onclick="selectDocument(this, 'stmt_jul.pdf')">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-file-pdf text-red-500"></i>
+                            <div>
+                                <p class="text-sm font-medium">Jul 2024 Statement</p>
+                                <p class="text-xs text-gray-500">Uploaded 8/15/2024</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                existingDocs.classList.add('hidden');
+                selectedApplicant = null;
+            }
+        }
+
+        function selectDocument(element, filename) {
+            // Toggle selection
+            element.classList.toggle('bg-purple-50');
+            element.classList.toggle('border-purple-500');
+            checkAnalyzeButton();
+        }
+
+        // Mode toggle
+        function toggleStandaloneMode() {
+            standaloneMode = !standaloneMode;
+            const modeText = document.getElementById('modeText');
+            const applicantSection = document.getElementById('applicantSection');
+
+            if (standaloneMode) {
+                modeText.textContent = 'Standalone Mode';
+                applicantSection.classList.add('hidden');
+            } else {
+                modeText.textContent = 'Application Mode';
+                applicantSection.classList.remove('hidden');
+            }
+        }
+
+        // Demo function to show results immediately
+        function demoAnalysis() {
+            // Simulate that we have files uploaded
+            uploadedFiles[1] = { name: 'demo_statement.pdf' };
+
+            // Show results immediately without processing
+            showResults();
+        }
+
+        // Analysis
+        function startAnalysis() {
+            // Hide main content, show processing
+            document.getElementById('processingStatus').classList.remove('hidden');
+
+            // Simulate processing
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+
+                // Update progress bars
+                document.getElementById('ocrProgress').textContent = Math.min(progress, 100) + '%';
+                document.getElementById('ocrBar').style.width = Math.min(progress, 100) + '%';
+
+                if (progress > 33) {
+                    document.getElementById('extractProgress').textContent = Math.min(progress - 33, 100) + '%';
+                    document.getElementById('extractBar').style.width = Math.min(progress - 33, 100) + '%';
+                }
+
+                if (progress > 66) {
+                    document.getElementById('riskProgress').textContent = Math.min(progress - 66, 100) + '%';
+                    document.getElementById('riskBar').style.width = Math.min(progress - 66, 100) + '%';
+                }
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        showResults();
+                    }, 1000);
+                }
+            }, 100);
+        }
+
+        function showResults() {
+            // Hide processing
+            document.getElementById('processingStatus').classList.add('hidden');
+
+            // Show results sidebar
+            document.getElementById('resultsSidebar').classList.remove('hidden');
+
+            // Find the main content area specifically (not the sidebar)
+            const mainContentContainer = document.querySelector('.flex-1.overflow-auto > .p-6');
+
+            // Check if results already exist
+            if (!document.getElementById('analysisResults')) {
+                // Create results container
+                const resultsDiv = document.createElement('div');
+                resultsDiv.id = 'analysisResults';
+                resultsDiv.className = 'result-card bg-white rounded-xl shadow-lg p-6 mt-6';
+                resultsDiv.innerHTML = `
+                    <h3 class="text-xl font-bold text-gray-800 mb-6">Detailed Analysis Results</h3>
+
+                    <!-- Cash Flow Chart -->
+                    <div class="mb-8">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Cash Flow Analysis</h4>
+                        <div class="h-64" style="position: relative;">
+                            <canvas id="cashFlowChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Financial Metrics -->
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div class="border rounded-lg p-4">
+                            <h5 class="font-semibold text-gray-700 mb-3">Monthly Summary</h5>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Total Deposits</span>
+                                    <span class="font-semibold">$156,789</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Avg Daily Balance</span>
+                                    <span class="font-semibold">$14,523</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">NSF Incidents</span>
+                                    <span class="font-semibold text-green-600">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border rounded-lg p-4">
+                            <h5 class="font-semibold text-gray-700 mb-3">Transaction Analysis</h5>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Transactions/Day</span>
+                                    <span class="font-semibold">25.4</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Avg Ticket Size</span>
+                                    <span class="font-semibold">$245</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Peak Day</span>
+                                    <span class="font-semibold">Friday</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border rounded-lg p-4">
+                            <h5 class="font-semibold text-gray-700 mb-3">Risk Assessment</h5>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Risk Score</span>
+                                    <span class="font-semibold text-green-600">72/100</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Chargebacks</span>
+                                    <span class="font-semibold text-yellow-600">0.4%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Returns</span>
+                                    <span class="font-semibold text-green-600">2.1%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Append to main content area
+                mainContentContainer.appendChild(resultsDiv);
+            }
+
+            // Initialize chart with a delay to ensure canvas is rendered
+            setTimeout(() => {
+                const canvas = document.getElementById('cashFlowChart');
+                if (canvas) {
+                    // Make sure we're getting the canvas in the main content, not sidebar
+                    if (canvas.closest('#analysisResults')) {
+                        const ctx = canvas.getContext('2d');
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: ['Sep 1', 'Sep 7', 'Sep 14', 'Sep 21', 'Sep 30', 'Oct 15', 'Oct 31', 'Nov 15', 'Nov 30'],
+                                datasets: [{
+                                    label: 'Daily Balance',
+                                    data: [8500, 12000, 11500, 13500, 11000, 14000, 16000, 15500, 18500],
+                                    borderColor: 'rgb(147, 51, 234)',
+                                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                                    tension: 0.4,
+                                    fill: true
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: false,
+                                        ticks: {
+                                            callback: function(value) {
+                                                return '$' + value.toLocaleString();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            }, 100);
+        }
+
+        // Utility functions
+        function toggleResults() {
+            document.getElementById('resultsSidebar').classList.toggle('hidden');
+        }
+
+        function resetAnalysis() {
+            location.reload();
+        }
+
+        function generateReport() {
+            alert('Generating comprehensive report...');
+        }
+
+        function saveAnalysis() {
+            alert('Analysis saved to applicant profile');
+        }
+
+        function exportData() {
+            alert('Exporting data to CSV...');
+        }
+
+        function showAllApplications() {
+            alert('Navigating to application queue...');
+        }
+
+        // Search functionality
+        document.getElementById('applicantSearch').addEventListener('input', function(e) {
+            // Implement search functionality
+            console.log('Searching for:', e.target.value);
+        });
+
+        // Drag and drop
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadZones = document.querySelectorAll('.upload-zone');
+
+            uploadZones.forEach(zone => {
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('dragover');
+                });
+
+                zone.addEventListener('dragleave', () => {
+                    zone.classList.remove('dragover');
+                });
+
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('dragover');
+
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        const month = zone.getAttribute('onclick').match(/\d+/)[0];
+                        const input = document.getElementById(`upload${month}`);
+                        input.files = files;
+                        handleFileUpload(input, parseInt(month));
+                    }
+                });
+            });
+
+            // Remove any unwanted navigation widgets or footers
+            function removeUnwantedElements() {
+                // Common selectors for navigation widgets
+                const unwantedSelectors = [
+                    '.fixed.bottom-8.left-8',
+                    '.navigation-widget',
+                    '.floating-nav',
+                    '.page-nav',
+                    '[class*="navigation"]',
+                    'div[style*="position: fixed"][style*="bottom"]'
+                ];
+
+                unwantedSelectors.forEach(selector => {
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach(el => {
+                        // Check if it's not part of our main layout
+                        if (!el.closest('.flex.h-screen')) {
+                            el.remove();
+                        }
+                    });
+                });
+
+                // Remove any script tags that might add navigation
+                const scripts = document.querySelectorAll('script');
+                scripts.forEach(script => {
+                    if (script.src && script.src.includes('navigation')) {
+                        script.remove();
+                    }
+                });
+            }
+
+            // Remove unwanted elements immediately
+            removeUnwantedElements();
+
+            // Also check periodically in case elements are added dynamically
+            setInterval(removeUnwantedElements, 1000);
+        });
+    </script>
+</body>
+</html>

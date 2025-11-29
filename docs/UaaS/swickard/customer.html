@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swickard Instant Approval - Drive Home Tomorrow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --primary-color: #1e293b; /* Professional Slate */
+            --primary-dark: #0f172a;
+            --primary-light: #334155;
+            --secondary-color: #0891b2; /* Cyan for accents */
+            --accent-color: #7c3aed; /* Purple for CTAs */
+            --success-color: #059669; /* Green for success */
+            --warning-color: #d97706;
+            --error-color: #dc2626;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+        }
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--gray-50);
+            min-height: 100vh;
+        }
+
+        /* Animated Background - More subtle */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 280px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            z-index: -1;
+            opacity: 0.95;
+        }
+
+        /* Card Styles */
+        .glass-card {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease;
+        }
+
+        .glass-card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .approval-card {
+            background: linear-gradient(135deg, var(--success-color) 0%, #047857 100%);
+            color: white;
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.25);
+        }
+
+        .approval-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.3; }
+        }
+
+        /* Form Styles */
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--gray-200);
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 400;
+            background-color: white;
+            transition: all 0.2s ease;
+            color: var(--gray-800);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+
+        .form-label {
+            display: block;
+            text-sm font-semibold text-gray-700 mb-2;
+        }
+
+        /* Button Styles */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-color) 0%, #6d28d9 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.3);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
+            background: linear-gradient(135deg, #6d28d9 0%, var(--accent-color) 100%);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--accent-color);
+            border: 2px solid var(--accent-color);
+            padding: 10px 22px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+
+        .btn-secondary:hover {
+            background: var(--accent-color);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.2);
+        }
+
+        /* Success button style */
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color) 0%, #047857 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 10px 15px -3px rgba(5, 150, 105, 0.3);
+            background: linear-gradient(135deg, #047857 0%, var(--success-color) 100%);
+        }
+
+        /* Section Styles */
+        .section-card {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
+        }
+
+        .section-card.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            height: 8px;
+            background: var(--gray-200);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 32px;
+            box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-color), var(--secondary-color));
+            transition: width 0.5s ease;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px 0 rgba(124, 58, 237, 0.2);
+        }
+
+        /* Icon Animation */
+        .icon-success {
+            animation: scaleIn 0.5s ease;
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+
+        /* Vehicle Card */
+        .vehicle-image {
+            background: var(--gray-100);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray-400);
+            border: 1px solid var(--gray-200);
+            overflow: hidden;
+        }
+
+        .vehicle-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Deal Details */
+        .deal-detail {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--gray-100);
+            transition: background-color 0.2s ease;
+        }
+
+        .deal-detail:hover {
+            background-color: var(--gray-50);
+            margin: 0 -8px;
+            padding: 16px 8px;
+            border-radius: 8px;
+        }
+
+        .deal-detail:last-child {
+            border-bottom: none;
+            font-weight: 700;
+            font-size: 1.25em;
+            color: var(--accent-color);
+            padding-top: 20px;
+            margin-top: 4px;
+            border-top: 2px solid var(--gray-200);
+        }
+
+        .deal-detail:last-child:hover {
+            background-color: transparent;
+        }
+
+        /* Floating Animation */
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* Header */
+        header {
+            position: relative;
+            z-index: 10;
+        }
+
+        header h1 {
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        header p {
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Date Selection */
+        .date-btn {
+            background: white;
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .date-btn:hover:not(.bg-red-500) {
+            border-color: var(--accent-color);
+            background: var(--gray-50);
+            transform: translateY(-1px);
+        }
+
+        /* Time Slot Buttons */
+        .time-slot-btn {
+            background: white;
+            border: 2px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .time-slot-btn:hover:not(.border-red-500) {
+            border-color: var(--accent-color);
+            background: var(--gray-50);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Custom Styles for Selected States */
+        .date-selected {
+            background: var(--accent-color) !important;
+            color: white !important;
+            border-color: var(--accent-color) !important;
+        }
+
+        .time-selected {
+            border-color: var(--accent-color) !important;
+            background: rgba(124, 58, 237, 0.05) !important;
+        }
+
+        /* Input Range Slider */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-track {
+            background: var(--gray-200);
+            height: 6px;
+            border-radius: 3px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--accent-color);
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            margin-top: -7px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 8px rgba(124, 58, 237, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg"></div>
+
+    <!-- Header -->
+    <header class="pt-8 pb-6 px-4">
+        <div class="max-w-2xl mx-auto text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-4 floating">
+                <i class="fas fa-car text-3xl" style="color: var(--primary-color);"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-white mb-2">Swickard Instant Approval</h1>
+            <p class="text-white/90 text-lg">Your dream car is just 90 seconds away</p>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="max-w-2xl mx-auto px-4 pb-12">
+        <!-- Progress Bar -->
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar" style="width: 25%;"></div>
+        </div>
+
+        <!-- Step 1: Vehicle Selection -->
+        <div id="step1" class="section-card active">
+            <div class="glass-card rounded-2xl p-8">
+                <h2 class="text-2xl font-bold mb-6" style="color: var(--gray-800);">
+                    <i class="fas fa-car-side mr-3" style="color: var(--primary-color);"></i>
+                    Your Selected Vehicle
+                </h2>
+
+                <div class="grid md:grid-cols-2 gap-6 mb-6">
+                    <div class="vehicle-image h-48">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200'%3E%3Crect fill='%23e5e7eb' width='400' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%236b7280' font-family='sans-serif' font-size='20'%3E2024 Ford F-150 XLT%3C/text%3E%3C/svg%3E" alt="Vehicle" class="w-full h-full object-cover rounded-xl">
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-sm text-gray-500">Year/Model</span>
+                            <p class="font-semibold text-lg">2024 Ford F-150 XLT</p>
+                        </div>
+                        <div>
+                            <span class="text-sm text-gray-500">Stock Number</span>
+                            <p class="font-semibold">#T12345</p>
+                        </div>
+                        <div>
+                            <span class="text-sm text-gray-500">MSRP</span>
+                            <p class="font-bold text-2xl" style="color: var(--primary-color);">$52,995</p>
+                        </div>
+                        <div>
+                            <span class="text-sm text-gray-500">Special Offer</span>
+                            <p class="font-semibold text-green-600">Instant approval available</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="nextStep()" class="btn-primary w-full text-lg">
+                    Continue to Approval <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Quick Pre-Approval -->
+        <div id="step2" class="section-card">
+            <div class="glass-card rounded-2xl p-8">
+                <h2 class="text-2xl font-bold mb-6" style="color: var(--gray-800);">
+                    <i class="fas fa-user-check mr-3" style="color: var(--primary-color);"></i>
+                    Quick Identity Check
+                </h2>
+
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-full mb-4 icon-success">
+                        <i class="fas fa-camera text-4xl text-white"></i>
+                    </div>
+                    <p class="text-lg text-gray-700 mb-2">Scan your driver's license</p>
+                    <p class="text-sm text-gray-500">This takes less than 30 seconds and won't affect your credit</p>
+                </div>
+
+                <!-- Simulated DL Scanner -->
+                <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center mb-6 hover:border-red-500 transition-colors cursor-pointer">
+                    <i class="fas fa-id-card text-4xl text-gray-400 mb-3"></i>
+                    <p class="text-gray-600">Click to scan or take a photo</p>
+                </div>
+
+                <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+                    <p class="text-sm text-green-800">
+                        <i class="fas fa-shield-alt mr-2"></i>
+                        Your information is encrypted and secure. We perform a soft credit check that doesn't impact your score.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="previousStep()" class="btn-secondary">
+                        <i class="fas fa-arrow-left mr-2"></i> Back
+                    </button>
+                    <button onclick="processApproval()" class="btn-primary">
+                        Continue <i class="fas fa-lock mr-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Approval Decision -->
+        <div id="step3" class="section-card">
+            <div class="approval-card rounded-2xl p-8 mb-6">
+                <div class="text-center">
+                    <div class="inline-flex items-center justify-center w-24 h-24 bg-white rounded-full mb-4 icon-success">
+                        <i class="fas fa-check-circle text-5xl text-green-500"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold mb-2">Congratulations!</h2>
+                    <p class="text-xl mb-1">You're Pre-Approved</p>
+                    <p class="text-2xl font-bold">for up to <span class="text-3xl">$55,000</span></p>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-8">
+                <h3 class="text-xl font-bold mb-6" style="color: var(--gray-800);">
+                    <i class="fas fa-chart-line mr-2"></i>
+                    Your Approval Details
+                </h3>
+
+                <div class="grid md:grid-cols-2 gap-6 mb-6">
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <p class="text-sm text-gray-500 mb-1">Credit Score</p>
+                            <p class="text-2xl font-bold text-green-600">742</p>
+                            <p class="text-sm text-green-600">Excellent</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <p class="text-sm text-gray-500 mb-1">Monthly Income</p>
+                            <p class="text-2xl font-bold">$8,500</p>
+                            <p class="text-sm text-gray-600">Verified</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <p class="text-sm text-gray-500 mb-1">Interest Rate</p>
+                            <p class="text-2xl font-bold text-blue-600">4.2%</p>
+                            <p class="text-sm text-gray-600">72 months available</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <p class="text-sm text-gray-500 mb-1">Down Payment</p>
+                            <p class="text-2xl font-bold text-green-600">$0</p>
+                            <p class="text-sm text-green-600">No money down!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="showDealDetails()" class="btn-primary w-full text-lg">
+                    View Your Custom Deal <i class="fas fa-calculator ml-2"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 4: Deal Details & Customization -->
+        <div id="step4" class="section-card">
+            <div class="glass-card rounded-2xl p-8 mb-6">
+                <h2 class="text-2xl font-bold mb-6" style="color: var(--gray-800);">
+                    <i class="fas fa-file-contract mr-3" style="color: var(--primary-color);"></i>
+                    Your Custom Deal Structure
+                </h2>
+
+                <!-- Deal Summary -->
+                <div class="bg-gradient-to-r from-red-50 to-red-100 rounded-xl p-6 mb-6">
+                    <div class="deal-detail">
+                        <span>Vehicle Price</span>
+                        <span>$52,995</span>
+                    </div>
+                    <div class="deal-detail">
+                        <span>Trade-in Value</span>
+                        <span class="text-green-600">-$12,000</span>
+                    </div>
+                    <div class="deal-detail">
+                        <span>Down Payment</span>
+                        <span id="downPaymentDisplay">$0</span>
+                    </div>
+                    <div class="deal-detail">
+                        <span>Amount Financed</span>
+                        <span id="amountFinanced">$40,995</span>
+                    </div>
+                    <div class="deal-detail">
+                        <span>Monthly Payment</span>
+                        <span class="text-2xl" style="color: var(--secondary-color);" id="monthlyPayment">$645</span>
+                    </div>
+                    <div class="deal-detail" id="protectionSummary" style="display: none;">
+                        <span>Protection Products</span>
+                        <span id="protectionAmount" style="color: var(--secondary-color);">$0</span>
+                    </div>
+                    <div class="deal-detail">
+                        <span>Estimated Monthly Payment</span>
+                        <span class="text-2xl" style="color: var(--primary-color);" id="totalMonthlyPayment">$645</span>
+                    </div>
+                </div>
+
+                <!-- Customization Options -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="form-label">
+                            <i class="fas fa-car mr-2"></i>
+                            Do you have a trade-in?
+                        </label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="toggleTradeIn(true)" id="tradeInYes" class="btn-secondary">
+                                Yes
+                            </button>
+                            <button onclick="toggleTradeIn(false)" id="tradeInNo" class="btn-secondary">
+                                No
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="tradeInDetails" class="hidden">
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                            <p class="text-sm text-blue-800 mb-4">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Tell us about your trade-in for an instant estimate
+                            </p>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <input type="text" id="tradeYear" placeholder="Year" class="form-input">
+                                <input type="text" id="tradeMake" placeholder="Make" class="form-input">
+                                <input type="text" id="tradeModel" placeholder="Model" class="form-input">
+                                <input type="number" id="tradeMileage" placeholder="Mileage" class="form-input">
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label">Condition</label>
+                                <select id="tradeCondition" class="form-input">
+                                    <option value="">Select condition...</option>
+                                    <option value="poor">Poor - Mechanical issues, major cosmetic damage</option>
+                                    <option value="fair">Fair - Runs well, visible wear and tear</option>
+                                    <option value="good">Good - Minor scratches, well-maintained</option>
+                                    <option value="great">Great - Excellent condition, low mileage</option>
+                                </select>
+                            </div>
+                            <button onclick="estimateTradeInValue()" class="btn-primary w-full" id="estimateBtn">
+                                <i class="fas fa-robot mr-2"></i>
+                                Estimate Value with AI
+                            </button>
+
+                            <!-- AI Estimate Result (Hidden initially) -->
+                            <div id="aiEstimateResult" class="hidden mt-4 bg-green-50 border border-green-200 rounded-xl p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm text-gray-600">AI Estimate:</span>
+                                    <span class="text-2xl font-bold text-green-600" id="estimatedValue">$0</span>
+                                </div>
+                                <p class="text-xs text-gray-500 italic">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    Subject to inspection and final appraisal
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label">
+                            <i class="fas fa-dollar-sign mr-2"></i>
+                            Down Payment (Optional)
+                        </label>
+                        <div class="flex items-center space-x-4">
+                            <input type="range" id="downPaymentSlider" min="0" max="10000" value="0" step="500"
+                                   class="flex-1" oninput="updateDownPayment(this.value)">
+                            <span id="downPaymentValue" class="font-bold text-lg w-24 text-right">$0</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label">
+                            <i class="fas fa-calendar mr-2"></i>
+                            Loan Term
+                        </label>
+                        <div class="grid grid-cols-4 gap-3">
+                            <button onclick="selectTerm(48)" class="term-btn btn-secondary text-sm">48 mo</button>
+                            <button onclick="selectTerm(60)" class="term-btn btn-secondary text-sm">60 mo</button>
+                            <button onclick="selectTerm(72)" class="term-btn btn-secondary text-sm">72 mo</button>
+                            <button onclick="selectTerm(84)" class="term-btn btn-secondary text-sm">84 mo</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Protection Products -->
+            <div class="glass-card rounded-2xl p-8">
+                <h3 class="text-xl font-bold mb-4" style="color: var(--gray-800);">
+                    <i class="fas fa-shield-alt mr-2"></i>
+                    Protect Your Investment
+                </h3>
+                <p class="text-gray-600 mb-4">Add these to your monthly payment for complete peace of mind</p>
+
+                <div class="space-y-3">
+                    <label class="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100">
+                        <div>
+                            <p class="font-semibold">Extended Warranty</p>
+                            <p class="text-sm text-gray-600">Coverage up to 100,000 miles</p>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-lg font-bold mr-3">$79/mo</span>
+                            <input type="checkbox" id="extendedWarranty" class="w-5 h-5" onchange="updateProtectionProducts()">
+                        </div>
+                    </label>
+
+                    <label class="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100">
+                        <div>
+                            <p class="font-semibold">Gap Insurance</p>
+                            <p class="text-sm text-gray-600">Covers the difference if totaled</p>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-lg font-bold mr-3">$29/mo</span>
+                            <input type="checkbox" id="gapInsurance" class="w-5 h-5" onchange="updateProtectionProducts()">
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="mt-6 text-center">
+                <button onclick="scheduleVisit()" class="btn-primary text-lg px-12">
+                    Schedule Your Test Drive <i class="fas fa-calendar-check ml-2"></i>
+                </button>
+                <p class="text-sm text-gray-600 mt-3">Your approval is locked in for 30 days</p>
+            </div>
+        </div>
+
+        <!-- Step 5: Schedule Your Test Drive -->
+        <div id="step5" class="section-card">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-32 h-32 bg-gradient-to-br from-red-400 to-red-600 rounded-full mb-6 floating">
+                    <i class="fas fa-calendar-check text-5xl text-white"></i>
+                </div>
+                <h2 class="text-3xl font-bold mb-4" style="color: var(--gray-800);">Schedule Your Test Drive</h2>
+                <p class="text-xl text-gray-600 mb-2">Choose when you'd like to visit</p>
+                <p class="text-sm text-gray-500">Your approval is locked in for 30 days</p>
+            </div>
+
+            <!-- Calendar -->
+            <div class="glass-card rounded-2xl p-8 mb-6">
+                <h3 class="text-xl font-bold mb-6" style="color: var(--gray-800);">
+                    <i class="fas fa-calendar-alt mr-2"></i>
+                    Select a Date
+                </h3>
+
+                <!-- Date Selection -->
+                <div class="grid grid-cols-7 gap-2 mb-6">
+                    <div class="text-center text-xs font-semibold text-gray-500 py-2">SUN</div>
+                    <div class="text-center text-xs font-semibold text-gray-500 py-2">MON</div>
+                    <div class="text-center text-xs font-semibold text-gray-500 py-2">TUE</div>
+                    <div class="text-center text-xs font-semibold text-gray-500 py-2">WED</div>
+                    <div class="text-center text-xs font-semibold text-gray-500 py-2">THU</div>
+                    <div class="text-center text-xs font-semibold text-gray-500 py-2">FRI</div>
+                    <div class="text-center text-xs font-semibold text-gray-500 py-2">SAT</div>
+
+                    <!-- Calendar Days (sample week) -->
+                    <div></div>
+                    <div></div>
+                    <button onclick="selectDate(this, '2024-12-11')" class="date-btn py-3 rounded-lg hover:bg-gray-100 text-gray-600">11</button>
+                    <button onclick="selectDate(this, '2024-12-12')" class="date-btn py-3 rounded-lg hover:bg-gray-100 text-gray-600">12</button>
+                    <button onclick="selectDate(this, '2024-12-13')" class="date-btn py-3 rounded-lg date-selected">13</button>
+                    <button onclick="selectDate(this, '2024-12-14')" class="date-btn py-3 rounded-lg hover:bg-gray-100 text-gray-600">14</button>
+                    <button onclick="selectDate(this, '2024-12-15')" class="date-btn py-3 rounded-lg hover:bg-gray-100 text-gray-600">15</button>
+                </div>
+
+                <div class="text-sm text-gray-600 mb-4" id="selectedDateDisplay">
+                    Selected: Friday, December 13, 2024
+                </div>
+            </div>
+
+            <!-- Time Slots -->
+            <div class="glass-card rounded-2xl p-8 mb-6">
+                <h3 class="text-xl font-bold mb-6" style="color: var(--gray-800);">
+                    <i class="fas fa-clock mr-2"></i>
+                    Available Time Slots
+                </h3>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <button onclick="selectTime(this, '9:00 AM')" class="time-slot-btn p-4 border-2 border-gray-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all">
+                        <i class="fas fa-sun text-yellow-500 mb-2"></i>
+                        <p class="font-semibold">9:00 AM</p>
+                        <p class="text-xs text-gray-500">Early Bird</p>
+                    </button>
+                    <button onclick="selectTime(this, '10:00 AM')" class="time-slot-btn p-4 border-2 border-gray-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all">
+                        <i class="fas fa-coffee text-brown-600 mb-2"></i>
+                        <p class="font-semibold">10:00 AM</p>
+                        <p class="text-xs text-gray-500">Morning</p>
+                    </button>
+                    <button onclick="selectTime(this, '11:00 AM')" class="time-slot-btn p-4 border-2 border-gray-200 rounded-xl time-selected">
+                        <i class="fas fa-sun text-orange-500 mb-2"></i>
+                        <p class="font-semibold">11:00 AM</p>
+                        <p class="text-xs text-purple-600">Popular</p>
+                    </button>
+                    <button onclick="selectTime(this, '2:00 PM')" class="time-slot-btn p-4 border-2 border-gray-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all">
+                        <i class="fas fa-cloud-sun text-blue-500 mb-2"></i>
+                        <p class="font-semibold">2:00 PM</p>
+                        <p class="text-xs text-gray-500">Afternoon</p>
+                    </button>
+                    <button onclick="selectTime(this, '4:00 PM')" class="time-slot-btn p-4 border-2 border-gray-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all">
+                        <i class="fas fa-sun text-orange-600 mb-2"></i>
+                        <p class="font-semibold">4:00 PM</p>
+                        <p class="text-xs text-gray-500">Late Afternoon</p>
+                    </button>
+                    <button onclick="selectTime(this, '6:00 PM')" class="time-slot-btn p-4 border-2 border-gray-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all">
+                        <i class="fas fa-moon text-indigo-600 mb-2"></i>
+                        <p class="font-semibold">6:00 PM</p>
+                        <p class="text-xs text-gray-500">After Work</p>
+                    </button>
+                </div>
+
+                <div class="mt-4 text-sm text-gray-600" id="selectedTimeDisplay">
+                    Selected time: 11:00 AM
+                </div>
+            </div>
+
+            <!-- Contact Preference -->
+            <div class="glass-card rounded-2xl p-8 mb-6">
+                <h3 class="text-xl font-bold mb-4" style="color: var(--gray-800);">
+                    <i class="fas fa-phone-alt mr-2"></i>
+                    How should we confirm?
+                </h3>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-red-500">
+                        <input type="radio" name="contact" value="text" checked class="mr-3">
+                        <div>
+                            <p class="font-semibold">Text Message</p>
+                            <p class="text-sm text-gray-600">Quick confirmation</p>
+                        </div>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-red-500">
+                        <input type="radio" name="contact" value="call" class="mr-3">
+                        <div>
+                            <p class="font-semibold">Phone Call</p>
+                            <p class="text-sm text-gray-600">Personal touch</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <button onclick="confirmSchedule()" class="btn-primary w-full text-lg mb-4">
+                Confirm Test Drive <i class="fas fa-check-circle ml-2"></i>
+            </button>
+
+            <div class="glass-card rounded-2xl p-8 mb-6">
+                <h3 class="text-xl font-bold mb-6" style="color: var(--gray-800);">
+                    <i class="fas fa-map-marker-alt mr-2"></i>
+                    Visit Details
+                </h3>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Dealership</p>
+                            <p class="font-semibold text-lg">Swickard Toyota</p>
+                            <p class="text-gray-600">1234 Auto Mall Drive</p>
+                            <p class="text-gray-600">Columbus, OH 43220</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Your Advisor</p>
+                            <p class="font-semibold">Sarah Johnson</p>
+                            <p class="text-gray-600">Sales Specialist</p>
+                            <p class="text-gray-600">(614) 555-0123</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-sm text-gray-500">What to Bring</p>
+                            <ul class="mt-2 space-y-2">
+                                <li class="flex items-center text-gray-700">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    Valid Driver's License
+                                </li>
+                                <li class="flex items-center text-gray-700">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    Proof of Insurance
+                                </li>
+                                <li class="flex items-center text-gray-700">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    Two Recent Pay Stubs
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl p-8 text-center">
+                <h3 class="text-xl font-bold mb-3" style="color: var(--accent-color);">
+                    <i class="fas fa-clock mr-2"></i>
+                    Quick Checkout Process
+                </h3>
+                <p class="text-gray-700 mb-4">
+                    With your pre-approval, you'll drive home in approximately <strong>30 minutes</strong>
+                </p>
+                <div class="flex justify-center space-x-8">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-2">
+                            <span class="font-bold text-blue-600">1</span>
+                        </div>
+                        <p class="text-sm">Test Drive</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-2">
+                            <span class="font-bold text-blue-600">2</span>
+                        </div>
+                        <p class="text-sm">Finalize Deal</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-2">
+                            <span class="font-bold text-blue-600">3</span>
+                        </div>
+                        <p class="text-sm">Drive Home!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center">
+                <button onclick="window.print()" class="btn-secondary mr-4">
+                    <i class="fas fa-print mr-2"></i> Print Details
+                </button>
+                <button onclick="textDirections()" class="btn-primary">
+                    <i class="fas fa-sms mr-2"></i> Text Directions
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 6: Scheduled & Ready -->
+        <div id="step6" class="section-card">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-32 h-32 bg-gradient-to-br from-green-400 to-green-600 rounded-full mb-6 floating">
+                    <i class="fas fa-check-circle text-5xl text-white"></i>
+                </div>
+                <h2 class="text-3xl font-bold mb-4" style="color: var(--gray-800);">You're All Set!</h2>
+                <p class="text-xl text-gray-600 mb-2">Your 2024 Ford F-150 XLT awaits</p>
+                <p class="text-lg text-green-600 font-semibold" id="finalScheduleDisplay">Test drive scheduled for Friday, December 13, 2024 at 11:00 AM</p>
+                <p class="text-sm text-gray-500 mt-2">Confirmation has been sent via text message</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Atlas AI Assistant (Hidden by default) -->
+    <div id="atlasAssistant" class="hidden fixed bottom-8 right-8 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl p-4 max-w-sm">
+            <div class="flex items-center mb-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center mr-3">
+                    <i class="fas fa-robot text-white"></i>
+                </div>
+                <div>
+                    <p class="font-semibold">Atlas AI</p>
+                    <p class="text-sm text-gray-600">Your F&I Assistant</p>
+                </div>
+            </div>
+            <div class="text-sm text-gray-700">
+                <p id="atlasMessage">I'm reviewing your application...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let loanTerm = 72;
+        let downPayment = 0;
+        let hasTradeIn = false;
+        let tradeInValue = 12000; // Default trade-in value
+        let vehiclePrice = 52995;
+        let interestRate = 0.042; // 4.2% annual rate
+        let selectedDate = 'Friday, December 13, 2024';
+        let selectedTime = '11:00 AM';
+        let extendedWarrantyCost = 79;
+        let gapInsuranceCost = 29;
+
+        function updateProgress(step) {
+            const progress = (step / 6) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        function showSection(stepNum) {
+            // Hide all sections
+            document.querySelectorAll('.section-card').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Show current section
+            setTimeout(() => {
+                document.getElementById('step' + stepNum).classList.add('active');
+                updateProgress(stepNum);
+            }, 300);
+        }
+
+        function nextStep() {
+            if (currentStep < 6) {
+                currentStep++;
+                showSection(currentStep);
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                showSection(currentStep);
+            }
+        }
+
+        function processApproval() {
+            // Show Atlas AI
+            const atlas = document.getElementById('atlasAssistant');
+            atlas.classList.remove('hidden');
+
+            // Simulate processing
+            setTimeout(() => {
+                document.getElementById('atlasMessage').textContent = "Great! I have your information. Running credit check...";
+            }, 1000);
+
+            setTimeout(() => {
+                document.getElementById('atlasMessage').textContent = "Excellent credit score! Calculating your approval amount...";
+            }, 2500);
+
+            setTimeout(() => {
+                atlas.classList.add('hidden');
+                nextStep();
+            }, 4000);
+        }
+
+        function showDealDetails() {
+            nextStep();
+        }
+
+        function toggleTradeIn(value) {
+            hasTradeIn = value;
+            const details = document.getElementById('tradeInDetails');
+            const yesBtn = document.getElementById('tradeInYes');
+            const noBtn = document.getElementById('tradeInNo');
+
+            if (value) {
+                details.classList.remove('hidden');
+                yesBtn.classList.add('btn-primary');
+                yesBtn.classList.remove('btn-secondary');
+                noBtn.classList.remove('btn-primary');
+                // Reset trade-in value to 0 until AI estimates
+                tradeInValue = 0;
+                // Hide previous estimate
+                document.getElementById('aiEstimateResult').classList.add('hidden');
+                updatePaymentCalculation();
+            } else {
+                details.classList.add('hidden');
+                noBtn.classList.add('btn-primary');
+                yesBtn.classList.remove('btn-primary');
+                tradeInValue = 0;
+                // Hide previous estimate
+                document.getElementById('aiEstimateResult').classList.add('hidden');
+                // Clear form fields
+                document.getElementById('tradeYear').value = '';
+                document.getElementById('tradeMake').value = '';
+                document.getElementById('tradeModel').value = '';
+                document.getElementById('tradeMileage').value = '';
+                document.getElementById('tradeCondition').value = '';
+                updatePaymentCalculation();
+            }
+        }
+
+        function estimateTradeInValue() {
+            // Get trade-in details
+            const year = document.getElementById('tradeYear').value;
+            const make = document.getElementById('tradeMake').value;
+            const model = document.getElementById('tradeModel').value;
+            const mileage = parseInt(document.getElementById('tradeMileage').value) || 0;
+            const condition = document.getElementById('tradeCondition').value;
+
+            // Validate all fields are filled
+            if (!year || !make || !model || !condition) {
+                alert('Please fill in all trade-in details before estimating');
+                return;
+            }
+
+            // Show loading state on button
+            const estimateBtn = document.getElementById('estimateBtn');
+            estimateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>AI is analyzing...';
+            estimateBtn.disabled = true;
+
+            // Simulate AI processing
+            setTimeout(() => {
+                // Calculate estimated value based on inputs
+                let baseValue = 15000; // Base value
+
+                // Adjust for year (assuming current year is 2024)
+                const carAge = 2024 - parseInt(year);
+                baseValue = baseValue * Math.pow(0.85, carAge); // 15% depreciation per year
+
+                // Adjust for mileage (assume 12,000 miles per year average)
+                const expectedMileage = carAge * 12000;
+                if (mileage > expectedMileage) {
+                    baseValue = baseValue * 0.9; // 10% reduction for high mileage
+                }
+
+                // Adjust for condition
+                const conditionMultipliers = {
+                    'poor': 0.6,
+                    'fair': 0.75,
+                    'good': 0.9,
+                    'great': 1.1
+                };
+                baseValue = baseValue * (conditionMultipliers[condition] || 0.75);
+
+                // Add some randomness for realism
+                baseValue = baseValue + (Math.random() - 0.5) * 2000;
+
+                // Ensure minimum value
+                baseValue = Math.max(500, Math.round(baseValue));
+
+                // Update trade-in value
+                tradeInValue = baseValue;
+
+                // Show result
+                document.getElementById('estimatedValue').textContent = '$' + baseValue.toLocaleString();
+                document.getElementById('aiEstimateResult').classList.remove('hidden');
+
+                // Update payment calculation
+                updatePaymentCalculation();
+
+                // Reset button
+                estimateBtn.innerHTML = '<i class="fas fa-robot mr-2"></i>Estimate Value with AI';
+                estimateBtn.disabled = false;
+            }, 2000); // 2 second delay to simulate AI processing
+        }
+
+        function updateDownPayment(value) {
+            downPayment = parseInt(value);
+            document.getElementById('downPaymentValue').textContent = '$' + downPayment.toLocaleString();
+            updatePaymentCalculation();
+        }
+
+        function selectTerm(months) {
+            loanTerm = months;
+            document.querySelectorAll('.term-btn').forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-secondary');
+            });
+            event.target.classList.remove('btn-secondary');
+            event.target.classList.add('btn-primary');
+            updatePaymentCalculation();
+        }
+
+        function updatePaymentCalculation() {
+            // Calculate amount financed
+            const totalReductions = tradeInValue + downPayment;
+            const amountFinancedValue = vehiclePrice - totalReductions;
+
+            // Calculate monthly payment using loan formula
+            const monthlyRate = interestRate / 12;
+            const numPayments = loanTerm;
+
+            // Loan payment formula: P * (r(1+r)^n) / ((1+r)^n - 1)
+            const monthlyPaymentValue = amountFinancedValue *
+                (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
+                (Math.pow(1 + monthlyRate, numPayments) - 1);
+
+            // Calculate protection products total
+            const protectionTotal = updateProtectionProducts();
+
+            // Update the display
+            document.getElementById('downPaymentDisplay').textContent = '$' + downPayment.toLocaleString();
+            document.getElementById('amountFinanced').textContent = '$' + amountFinancedValue.toLocaleString();
+            document.getElementById('monthlyPayment').textContent = '$' + Math.round(monthlyPaymentValue).toLocaleString();
+
+            // Update total with protection products
+            const totalPayment = Math.round(monthlyPaymentValue) + protectionTotal;
+            document.getElementById('totalMonthlyPayment').textContent = '$' + totalPayment.toLocaleString();
+
+            // Update trade-in display if it exists
+            const tradeInElement = document.querySelector('.deal-detail:nth-child(2) span:last-child');
+            if (tradeInElement && hasTradeIn) {
+                tradeInElement.textContent = '-$' + tradeInValue.toLocaleString();
+            } else if (tradeInElement && !hasTradeIn) {
+                tradeInElement.textContent = '$0';
+            }
+        }
+
+        function updateProtectionProducts() {
+            let protectionTotal = 0;
+            let protectionItems = [];
+
+            // Check if extended warranty is selected
+            if (document.getElementById('extendedWarranty').checked) {
+                protectionTotal += extendedWarrantyCost;
+                protectionItems.push('Extended Warranty');
+            }
+
+            // Check if gap insurance is selected
+            if (document.getElementById('gapInsurance').checked) {
+                protectionTotal += gapInsuranceCost;
+                protectionItems.push('Gap Insurance');
+            }
+
+            // Show/hide protection summary
+            const protectionSummary = document.getElementById('protectionSummary');
+            const protectionAmount = document.getElementById('protectionAmount');
+
+            if (protectionTotal > 0) {
+                protectionSummary.style.display = 'flex';
+                protectionAmount.textContent = '$' + protectionTotal + '/mo';
+
+                // Update label to show what's included
+                if (protectionItems.length > 0) {
+                    protectionSummary.querySelector('span:first-child').textContent =
+                        'Protection Products (' + protectionItems.join(' + ') + ')';
+                }
+            } else {
+                protectionSummary.style.display = 'none';
+            }
+
+            // Recalculate total payment
+            const currentMonthlyPayment = parseInt(document.getElementById('monthlyPayment').textContent.replace(/[$,]/g, ''));
+            const totalPayment = currentMonthlyPayment + protectionTotal;
+            document.getElementById('totalMonthlyPayment').textContent = '$' + totalPayment.toLocaleString();
+
+            return protectionTotal;
+        }
+
+        function updateTradeInValue() {
+            // This function is no longer needed since we use AI estimation
+            console.log('Trade-in details updated');
+        }
+
+        function selectDate(element, date) {
+            // Remove active state from all dates
+            document.querySelectorAll('.date-btn').forEach(btn => {
+                btn.classList.remove('date-selected');
+            });
+
+            // Add active state to selected date
+            element.classList.add('date-selected');
+
+            // Format date for display
+            const dateObj = new Date(date);
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            selectedDate = dateObj.toLocaleDateString('en-US', options);
+
+            document.getElementById('selectedDateDisplay').textContent = 'Selected: ' + selectedDate;
+        }
+
+        function selectTime(element, time) {
+            // Remove active state from all times
+            document.querySelectorAll('.time-slot-btn').forEach(btn => {
+                btn.classList.remove('time-selected');
+                btn.classList.add('border-gray-200');
+            });
+
+            // Add active state to selected time
+            element.classList.remove('border-gray-200');
+            element.classList.add('time-selected');
+
+            selectedTime = time;
+            document.getElementById('selectedTimeDisplay').textContent = 'Selected time: ' + selectedTime;
+        }
+
+        function confirmSchedule() {
+            // Update the final display with selected date and time
+            document.getElementById('finalScheduleDisplay').textContent =
+                'Test drive scheduled for ' + selectedDate + ' at ' + selectedTime;
+
+            // Move to confirmation step
+            nextStep();
+        }
+
+        function scheduleVisit() {
+            nextStep();
+        }
+
+        function textDirections() {
+            // Simulate sending directions
+            alert('Directions and visit details have been texted to your phone!');
+        }
+
+        // Initialize
+        showSection(1);
+    </script>
+</body>
+</html>

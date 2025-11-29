@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply for Payment Processing - Get Approved in Minutes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <!-- Navigation -->
+    <nav class="container mx-auto px-6 py-6">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                    <i class="fas fa-robot text-purple-600 text-xl"></i>
+                </div>
+                <span class="text-2xl font-bold">Atlas</span>
+            </div>
+            <div class="hidden md:flex space-x-6">
+                <a href="#" class="hover:text-purple-200 transition">How it Works</a>
+                <a href="#" class="hover:text-purple-200 transition">Pricing</a>
+                <a href="#" class="hover:text-purple-200 transition">Support</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="container mx-auto px-6 py-20">
+        <div class="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+                <div class="inline-flex items-center bg-green-500 bg-opacity-20 rounded-full px-4 py-2 mb-6">
+                    <div class="w-2 h-2 bg-green-400 rounded-full pulse-dot mr-2"></div>
+                    <span class="text-sm font-medium">AI-Powered • 5-Minute Approval</span>
+                </div>
+
+                <h1 class="text-5xl md:text-6xl font-bold mb-6 leading-tight">
+                    Get Approved for<br>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-400">
+                        Payment Processing
+                    </span><br>
+                    in Minutes, Not Days
+                </h1>
+
+                <p class="text-xl text-purple-100 mb-8 leading-relaxed">
+                    Meet Atlas, your AI underwriting assistant. No more confusing forms or long waiting periods.
+                    Just a friendly conversation that gets you approved fast.
+                </p>
+
+                <div class="flex flex-col sm:flex-row gap-4 mb-12">
+                    <button onclick="startApplication()" class="bg-white text-purple-600 px-8 py-4 rounded-xl font-semibold hover:bg-purple-50 transform hover:scale-105 transition-all duration-200 shadow-xl">
+                        <i class="fas fa-rocket mr-2"></i>
+                        Start My Application
+                    </button>
+                    <button class="border-2 border-white text-white px-8 py-4 rounded-xl font-semibold hover:bg-white hover:text-purple-600 transition-all duration-200">
+                        <i class="fas fa-play-circle mr-2"></i>
+                        See How It Works
+                    </button>
+                </div>
+
+                <!-- Trust Indicators -->
+                <div class="flex items-center space-x-6 text-purple-100">
+                    <div class="flex -space-x-2">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23933A5A'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='14' font-weight='bold'%3EJD%3C/text%3E%3C/svg%3E" class="w-10 h-10 rounded-full border-2 border-white">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23E11D48'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='14' font-weight='bold'%3ESM%3C/text%3E%3C/svg%3E" class="w-10 h-10 rounded-full border-2 border-white">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%231E40AF'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='14' font-weight='bold'%3EAK%3C/text%3E%3C/svg%3E" class="w-10 h-10 rounded-full border-2 border-white">
+                    </div>
+                    <span class="text-sm">
+                        <strong>2,847</strong> merchants approved this week
+                    </span>
+                </div>
+            </div>
+
+            <!-- Atlas Visualization -->
+            <div class="relative">
+                <div class="floating">
+                    <div class="w-96 h-96 bg-white bg-opacity-10 rounded-full absolute blur-3xl"></div>
+                    <div class="relative bg-white rounded-3xl p-8 shadow-2xl">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-robot text-white text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-800">Atlas</h3>
+                                    <p class="text-xs text-gray-500">AI Underwriting Assistant</p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-1">
+                                <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                                <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                                <div class="w-2 h-2 bg-gray-300 rounded-full"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-xl p-4 mb-4">
+                            <p class="text-gray-700 text-sm">
+                                Hi! 👋 I'm Atlas. I'll help you get approved for payment processing.
+                                It usually takes about 5 minutes. Ready to start?
+                            </p>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <input type="text" placeholder="Type your response..."
+                                   class="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-700">
+                            <button class="bg-purple-600 text-white px-4 py-2 rounded-xl hover:bg-purple-700 transition">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="container mx-auto px-6 py-20">
+        <h2 class="text-3xl font-bold text-center mb-12">Why Choose Atlas?</h2>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="feature-card rounded-2xl p-6 text-center transform hover:scale-105 transition">
+                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-bolt text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">Lightning Fast</h3>
+                <p class="text-purple-100">Get approved in as little as 5 minutes with our AI-powered review</p>
+            </div>
+
+            <div class="feature-card rounded-2xl p-6 text-center transform hover:scale-105 transition">
+                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-shield-alt text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">Bank-Level Security</h3>
+                <p class="text-purple-100">Your data is encrypted and protected with enterprise-grade security</p>
+            </div>
+
+            <div class="feature-card rounded-2xl p-6 text-center transform hover:scale-105 transition">
+                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-hand-holding-usd text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">Best Rates Guaranteed</h3>
+                <p class="text-purple-100">We'll match or beat any competitor's processing rates</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="container mx-auto px-6 py-20 text-center">
+        <h2 class="text-4xl font-bold mb-6">Ready to Start Processing Payments?</h2>
+        <p class="text-xl text-purple-100 mb-8">Join thousands of businesses already using Atlas</p>
+        <button onclick="startApplication()" class="bg-white text-purple-600 px-12 py-5 rounded-xl font-semibold text-lg hover:bg-purple-50 transform hover:scale-105 transition-all duration-200 shadow-2xl">
+            Apply Now - It's Free
+        </button>
+        <p class="mt-4 text-sm text-purple-200">
+            No commitment • No setup fees • Cancel anytime
+        </p>
+    </section>
+
+    <script>
+        function startApplication() {
+            // In real implementation, this would navigate to the registration page
+            alert('Navigating to application...');
+        }
+    </script>
+</body>
+</html>

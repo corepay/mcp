@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Verification - Atlas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .plaid-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .bank-logo {
+            transition: all 0.2s ease;
+        }
+        .bank-logo:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .verification-step {
+            transition: all 0.3s ease;
+        }
+        .verification-step.active {
+            background: #f0fdf4;
+            border-color: #10b981;
+        }
+        .verification-step.completed {
+            background: #f0fdf4;
+            border-color: #10b981;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b sticky top-0 z-10">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <button class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                        <span class="font-semibold text-gray-800">Bank Verification</span>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-500">
+                    Step 3 of 5
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-8 max-w-4xl">
+        <!-- Atlas Message -->
+        <div class="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-8">
+            <div class="flex items-start space-x-4">
+                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-university text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Secure Bank Verification</h3>
+                    <p class="text-gray-700">
+                        We need to verify your business bank account for payouts. This is secure, encrypted, and only takes a moment.
+                        We use Plaid to connect directly to your bank - you'll never share your password with us.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Verification Options -->
+        <div class="bg-white rounded-2xl shadow-lg p-8">
+            <!-- Option 1: Plaid (Recommended) -->
+            <div class="verification-step border-2 border-gray-200 rounded-xl p-6 mb-6 active">
+                <div class="flex items-start space-x-4">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-check text-green-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-lg font-bold text-gray-800 mb-2">
+                            Instant Bank Verification (Recommended)
+                            <span class="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Fast</span>
+                        </h4>
+                        <p class="text-gray-600 mb-4">
+                            Securely connect your bank account in seconds using Plaid. No manual forms, instant verification.
+                        </p>
+                        <button onclick="launchPlaid()" class="plaid-button text-white px-6 py-3 rounded-xl hover:opacity-90 transition font-semibold">
+                            <i class="fas fa-lock mr-2"></i>
+                            Connect with Plaid
+                        </button>
+                        <div class="flex items-center mt-4 text-sm text-gray-500">
+                            <i class="fas fa-shield-alt mr-2 text-green-500"></i>
+                            Bank-level security • Encrypted connection • 4,000+ banks supported
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Option 2: Manual Entry -->
+            <div class="verification-step border-2 border-gray-200 rounded-xl p-6 mb-6">
+                <div class="flex items-start space-x-4">
+                    <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-keyboard text-gray-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-lg font-bold text-gray-800 mb-2">
+                            Manual Bank Entry
+                            <span class="ml-2 bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">Takes 1-2 days</span>
+                        </h4>
+                        <p class="text-gray-600 mb-4">
+                            Enter your bank account details manually. We'll verify with micro-deposits within 1-2 business days.
+                        </p>
+                        <button onclick="showManualForm()" class="bg-gray-200 text-gray-700 px-6 py-3 rounded-xl hover:bg-gray-300 transition font-semibold">
+                            Enter Manually
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Form (Hidden by default) -->
+            <div id="manualForm" class="hidden border-t pt-6">
+                <h5 class="font-bold text-gray-800 mb-4">Bank Account Details</h5>
+                <form class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Bank Name</label>
+                        <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="e.g., Chase Bank">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Routing Number</label>
+                            <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="9-digit number">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Account Number</label>
+                            <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Account number">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Account Type</label>
+                        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            <option>Checking Account</option>
+                            <option>Savings Account</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-700 transition font-semibold">
+                        Submit for Verification
+                    </button>
+                </form>
+            </div>
+
+            <!-- Popular Banks -->
+            <div class="mt-8 pt-8 border-t">
+                <h5 class="font-semibold text-gray-800 mb-4">Popular Banks (All work with Plaid)</h5>
+                <div class="grid grid-cols-4 md:grid-cols-8 gap-4">
+                    <div class="bank-logo bg-gray-100 rounded-lg p-3 cursor-pointer">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%234285F4' rx='8'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='8' font-weight='bold'%3EChase%3C/text%3E%3C/svg%3E" alt="Chase">
+                    </div>
+                    <div class="bank-logo bg-gray-100 rounded-lg p-3 cursor-pointer">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23ED1C24' rx='8'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='8' font-weight='bold'%3EBofA%3C/text%3E%3C/svg%3E" alt="Bank of America">
+                    </div>
+                    <div class="bank-logo bg-gray-100 rounded-lg p-3 cursor-pointer">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%230096D6' rx='8'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='8' font-weight='bold'%3EWells%3C/text%3E%3C/svg%3E" alt="Wells Fargo">
+                    </div>
+                    <div class="bank-logo bg-gray-100 rounded-lg p-3 cursor-pointer">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23D4232A' rx='8'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='8' font-weight='bold'%3ECiti%3C/text%3E%3C/svg%3E" alt="Citibank">
+                    </div>
+                    <div class="bank-logo bg-gray-100 rounded-lg p-3 cursor-pointer">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%232E7D32' rx='8'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='8' font-weight='bold'%3EUS%3C/text%3E%3C/svg%3E" alt="US Bank">
+                    </div>
+                    <div class="bank-logo bg-gray-100 rounded-lg p-3 cursor-pointer">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%231976D2' rx='8'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='8' font-weight='bold'%3ECapOne%3C/text%3E%3C/svg%3E" alt="Capital One">
+                    </div>
+                    <div class="bank-logo bg-gray-100 rounded-lg p-3 cursor-pointer">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%230052CC' rx='8'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='8' font-weight='bold'%3EBB%26T%3C/text%3E%3C/svg%3E" alt="BB&T">
+                    </div>
+                    <div class="bank-logo bg-gray-100 rounded-lg p-3 cursor-pointer">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23666666' rx='8'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='8' font-weight='bold'%3EOthers%3C/text%3E%3C/svg%3E" alt="Others">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Information -->
+            <div class="mt-8 p-4 bg-green-50 rounded-xl">
+                <div class="flex items-start space-x-3">
+                    <i class="fas fa-shield-alt text-green-600 text-xl mt-1"></i>
+                    <div>
+                        <h5 class="font-semibold text-gray-800 mb-1">Your Security is Our Priority</h5>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li>• We never store your bank login credentials</li>
+                            <li>• All data is encrypted with 256-bit SSL</li>
+                            <li>• Read-only access to verify ownership</li>
+                            <li>• You can revoke access at any time</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skip Option -->
+        <div class="text-center mt-6">
+            <button class="text-gray-500 hover:text-gray-700">
+                Skip for now →
+            </button>
+        </div>
+    </div>
+
+    <!-- Plaid Modal (Simulation) -->
+    <div id="plaidModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" style="display:none;">
+        <div class="bg-white rounded-2xl w-full max-w-md mx-4">
+            <div class="bg-purple-600 text-white p-6 rounded-t-2xl">
+                <h3 class="text-xl font-bold">Connect Your Bank</h3>
+                <p class="text-purple-100 text-sm mt-1">Securely connect with Plaid</p>
+            </div>
+            <div class="p-6">
+                <div class="space-y-3">
+                    <input type="text" placeholder="Username or Email" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                    <input type="password" placeholder="Password" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                    <button onclick="simulatePlaidSuccess()" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-semibold">
+                        Connect
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500 text-center mt-4">
+                    Demo: Enter any credentials to continue
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function launchPlaid() {
+            document.getElementById('plaidModal').style.display = 'flex';
+        }
+
+        function simulatePlaidSuccess() {
+            document.getElementById('plaidModal').style.display = 'none';
+            // Show success message
+            const successDiv = document.createElement('div');
+            successDiv.className = 'fixed top-20 right-8 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            successDiv.innerHTML = '<i class="fas fa-check mr-2"></i>Bank account successfully connected!';
+            document.body.appendChild(successDiv);
+
+            setTimeout(() => {
+                successDiv.remove();
+                window.location.href = '11-terms-and-conditions.html';
+            }, 2000);
+        }
+
+        function showManualForm() {
+            document.getElementById('manualForm').classList.remove('hidden');
+            document.getElementById('manualForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Add script for navigation
+        const script = document.createElement('script');
+        script.src = 'navigation.js';
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>

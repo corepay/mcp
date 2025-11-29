@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AML Risk Assessment - Atlas Underwriting</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+        .sidebar-item:hover {
+            background: rgba(147, 51, 234, 0.1);
+            padding-left: 1.5rem;
+        }
+        .risk-indicator {
+            transition: all 0.3s ease;
+        }
+        .risk-indicator:hover {
+            transform: scale(1.05);
+        }
+        .suspicious-pattern {
+            background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.1), transparent);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white flex flex-col h-screen overflow-hidden">
+            <div class="p-6 flex-1 overflow-y-auto">
+                <div class="flex items-center space-x-3 mb-8">
+                    <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-robot text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold">Atlas</h1>
+                        <p class="text-xs text-gray-400">Admin Portal</p>
+                    </div>
+                </div>
+
+                <nav class="space-y-2">
+                    <a href="10-admin-portal.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="01-application-detail.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-list"></i>
+                        <span>Application Queue</span>
+                    </a>
+                    <a href="02-analytics-dashboard.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Analytics</span>
+                    </a>
+                    <a href="03-merchant-management.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-users"></i>
+                        <span>Merchants</span>
+                    </a>
+                    <a href="06-kyc-aml-dashboard.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg bg-purple-600">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>KYC/AML</span>
+                    </a>
+                    <a href="05-statement-analyzer.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Statement Analyzer</span>
+                    </a>
+                    <a href="04-settings.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="p-6 border-t border-gray-800 bg-gray-900">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23933A5A'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='14' font-weight='bold'%3EJD%3C/text%3E%3C/svg%3E" alt="User" class="w-10 h-10 rounded-full">
+                        <div>
+                            <p class="font-semibold">John Doe</p>
+                            <p class="text-xs text-gray-400">AML Analyst</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-400 hover:text-white">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Top Bar -->
+            <header class="bg-white shadow-sm px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <a href="06-kyc-aml-dashboard.html" class="text-gray-600 hover:text-gray-800">
+                            <i class="fas fa-arrow-left mr-2"></i>Back to KYC/AML
+                        </a>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-800">AML Risk Assessment</h1>
+                            <p class="text-sm text-gray-600">TechRetail Inc - AT-2024-0923</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="bg-yellow-100 text-yellow-800 text-sm px-3 py-1 rounded-full">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>Medium Risk
+                        </span>
+                        <button class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                            <i class="fas fa-file-alt mr-2"></i>Generate SAR
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <div class="p-6">
+                <!-- AML Risk Score -->
+                <div class="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl shadow-lg p-6 mb-8 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-2xl font-bold mb-2">AML Risk Score: <span class="text-4xl">42</span></h2>
+                            <p class="text-yellow-100">Medium Risk - Enhanced Monitoring Required</p>
+                            <div class="mt-4 grid grid-cols-4 gap-4">
+                                <div>
+                                    <span class="text-sm opacity-75">Risk Category</span>
+                                    <p class="text-lg font-semibold">Medium</p>
+                                </div>
+                                <div>
+                                    <span class="text-sm opacity-75">Alerts Found</span>
+                                    <p class="text-lg font-semibold">3</p>
+                                </div>
+                                <div>
+                                    <span class="text-sm opacity-75">Review Status</span>
+                                    <p class="text-lg font-semibold">Pending</p>
+                                </div>
+                                <div>
+                                    <span class="text-sm opacity-75">Next Review</span>
+                                    <p class="text-lg font-semibold">30 Days</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <div class="relative w-32 h-32">
+                                <svg class="w-32 h-32 transform -rotate-90">
+                                    <circle cx="64" cy="64" r="56" stroke="rgba(255,255,255,0.2)" stroke-width="8" fill="none"/>
+                                    <circle cx="64" cy="64" r="56" stroke="white" stroke-width="8" fill="none"
+                                            stroke-dasharray="351.86" stroke-dashoffset="203"
+                                            class="transition-all duration-1000"/>
+                                </svg>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span class="text-3xl font-bold">42</span>
+                                    <span class="text-xs opacity-75">Risk Score</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk Indicators -->
+                <div class="grid md:grid-cols-3 gap-6 mb-8">
+                    <div class="risk-indicator bg-white rounded-xl shadow-lg p-6 border-t-4 border-yellow-500">
+                        <div class="flex items-center justify-between mb-4">
+                            <i class="fas fa-chart-line text-3xl text-yellow-500"></i>
+                            <span class="text-2xl font-bold text-gray-800">62</span>
+                        </div>
+                        <h4 class="font-semibold text-gray-800">Transaction Pattern Risk</h4>
+                        <p class="text-sm text-gray-600 mt-2">Unusual transaction timing detected</p>
+                        <div class="mt-4 space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span>Night Transactions</span>
+                                <span class="font-semibold text-yellow-600">23%</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span>Round Amounts</span>
+                                <span class="font-semibold text-yellow-600">18%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="risk-indicator bg-white rounded-xl shadow-lg p-6 border-t-4 border-green-500">
+                        <div class="flex items-center justify-between mb-4">
+                            <i class="fas fa-globe text-3xl text-green-500"></i>
+                            <span class="text-2xl font-bold text-gray-800">28</span>
+                        </div>
+                        <h4 class="font-semibold text-gray-800">Geographic Risk</h4>
+                        <p class="text-sm text-gray-600 mt-2">Low risk geographic profile</p>
+                        <div class="mt-4 space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span>High Risk Countries</span>
+                                <span class="font-semibold text-green-600">0%</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span>US Domestic</span>
+                                <span class="font-semibold text-green-600">95%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="risk-indicator bg-white rounded-xl shadow-lg p-6 border-t-4 border-yellow-500">
+                        <div class="flex items-center justify-between mb-4">
+                            <i class="fas fa-industry text-3xl text-yellow-500"></i>
+                            <span class="text-2xl font-bold text-gray-800">45</span>
+                        </div>
+                        <h4 class="font-semibold text-gray-800">Industry Risk</h4>
+                        <p class="text-sm text-gray-600 mt-2">Electronics Retail - Medium Risk</p>
+                        <div class="mt-4 space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span>Cash Intensive</span>
+                                <span class="font-semibold text-yellow-600">No</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span>High Value Items</span>
+                                <span class="font-semibold text-yellow-600">Yes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction Analysis -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                    <h3 class="text-lg font-bold text-gray-800 mb-6">
+                        <i class="fas fa-chart-area text-purple-500 mr-2"></i>
+                        Transaction Pattern Analysis (Last 30 Days)
+                    </h3>
+                    <div class="grid lg:grid-cols-2 gap-8">
+                        <div class="h-64">
+                            <canvas id="transactionChart"></canvas>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="timeDistributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alert Details -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                    <h3 class="text-lg font-bold text-gray-800 mb-6">
+                        <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                        Suspicious Activity Alerts
+                    </h3>
+
+                    <div class="space-y-4">
+                        <!-- Alert 1 -->
+                        <div class="border-l-4 border-yellow-500 bg-yellow-50 rounded-lg p-4">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-800">
+                                        Alert #001 - Structuring Pattern Detected
+                                    </h4>
+                                    <p class="text-sm text-gray-600 mt-1">
+                                        Multiple transactions just below $10,000 threshold within 24-hour period
+                                    </p>
+                                    <div class="mt-3 grid grid-cols-3 gap-4 text-sm">
+                                        <div>
+                                            <span class="text-gray-500">Date:</span>
+                                            <span class="font-medium ml-1">Nov 15, 2024</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">Amount:</span>
+                                            <span class="font-medium ml-1">$9,850 × 3</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">Risk Score:</span>
+                                            <span class="font-medium ml-1 text-yellow-600">Medium</span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 flex items-center space-x-2">
+                                        <span class="suspicious-pattern">$9,950</span>
+                                        <span class="text-gray-500">at</span>
+                                        <span class="suspicious-pattern">14:23</span>
+                                        <span class="text-gray-500">,</span>
+                                        <span class="suspicious-pattern">$9,800</span>
+                                        <span class="text-gray-500">at</span>
+                                        <span class="suspicious-pattern">16:45</span>
+                                        <span class="text-gray-500">,</span>
+                                        <span class="suspicious-pattern">$9,900</span>
+                                        <span class="text-gray-500">at</span>
+                                        <span class="suspicious-pattern">19:10</span>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <select class="text-sm border rounded px-3 py-1">
+                                        <option>Open</option>
+                                        <option>In Review</option>
+                                        <option>Cleared</option>
+                                        <option>Escalated</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Alert 2 -->
+                        <div class="border-l-4 border-red-500 bg-red-50 rounded-lg p-4">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-800">
+                                        Alert #002 - High Velocity Unusual Pattern
+                                    </h4>
+                                    <p class="text-sm text-gray-600 mt-1">
+                                        Spike in transaction volume significantly above established baseline
+                                    </p>
+                                    <div class="mt-3 grid grid-cols-3 gap-4 text-sm">
+                                        <div>
+                                            <span class="text-gray-500">Date:</span>
+                                            <span class="font-medium ml-1">Nov 20, 2024</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">Transactions:</span>
+                                            <span class="font-medium ml-1">347 (vs avg 52)</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">Risk Score:</span>
+                                            <span class="font-medium ml-1 text-red-600">High</span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 text-sm">
+                                        <p class="text-red-700 font-medium">
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            560% increase in daily volume - requires immediate investigation
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <select class="text-sm border rounded px-3 py-1 border-red-200">
+                                        <option selected>Escalated</option>
+                                        <option>Open</option>
+                                        <option>In Review</option>
+                                        <option>Cleared</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Alert 3 -->
+                        <div class="border-l-4 border-yellow-500 bg-yellow-50 rounded-lg p-4">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-800">
+                                        Alert #003 - Off-Hours Activity
+                                    </h4>
+                                    <p class="text-sm text-gray-600 mt-1">
+                                        Significant transaction activity between 2:00 AM - 5:00 AM
+                                    </p>
+                                    <div class="mt-3 grid grid-cols-3 gap-4 text-sm">
+                                        <div>
+                                            <span class="text-gray-500">Date:</span>
+                                            <span class="font-medium ml-1">Nov 18, 2024</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">Volume:</span>
+                                            <span class="font-medium ml-1">$18,500</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">Risk Score:</span>
+                                            <span class="font-medium ml-1 text-yellow-600">Medium</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <select class="text-sm border rounded px-3 py-1">
+                                        <option selected>Open</option>
+                                        <option>In Review</option>
+                                        <option>Cleared</option>
+                                        <option>Escalated</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Atlas AI Recommendations -->
+                <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl shadow-lg p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-purple-600 rounded-full p-3 mr-3">
+                            <i class="fas fa-brain text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800">Atlas AI Recommendations</h3>
+                    </div>
+
+                    <div class="grid lg:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-red-700 mb-3">
+                                <i class="fas fa-exclamation-circle mr-2"></i>Immediate Actions Required
+                            </h4>
+                            <ul class="space-y-2 text-sm">
+                                <li class="flex items-start">
+                                    <i class="fas fa-arrow-right text-red-500 mt-1 mr-2"></i>
+                                    <span>Investigate Alert #002 (High Velocity) - File SAR within 30 days</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-arrow-right text-red-500 mt-1 mr-2"></i>
+                                    <span>Enhanced monitoring for next 90 days</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-arrow-right text-red-500 mt-1 mr-2"></i>
+                                    <span>Additional documentation required for large transactions</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4 class="font-semibold text-blue-700 mb-3">
+                                <i class="fas fa-shield-alt mr-2"></i>Ongoing Monitoring
+                            </h4>
+                            <ul class="space-y-2 text-sm">
+                                <li class="flex items-start">
+                                    <i class="fas fa-arrow-right text-blue-500 mt-1 mr-2"></i>
+                                    <span>Daily transaction review for patterns exceeding baseline</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-arrow-right text-blue-500 mt-1 mr-2"></i>
+                                    <span>Weekly AML risk score recalculations</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-arrow-right text-blue-500 mt-1 mr-2"></i>
+                                    <span>Continuous monitoring of transaction timing</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-white rounded-lg border-l-4 border-purple-500">
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-lightbulb text-purple-500 text-xl mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-gray-800">Risk Mitigation Strategy</p>
+                                <p class="text-sm text-gray-700 mt-1">
+                                    While current risk score is 42 (Medium), the recent velocity spike indicates potential
+                                    emerging risk patterns. Recommend implementing $10,000 daily transaction limits
+                                    with manual override requirements until patterns stabilize.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Transaction Volume Chart
+        const ctx1 = document.getElementById('transactionChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 30}, (_, i) => `Day ${i + 1}`),
+                datasets: [{
+                    label: 'Daily Volume ($)',
+                    data: [45000, 52000, 48000, 51000, 49000, 47000, 50000, 52000, 49000, 51000,
+                           48000, 50000, 185000, 49000, 47000, 52000, 48000, 51000, 49000, 50000,
+                           47000, 49000, 51000, 48000, 50000, 49000, 47000, 52000, 48000],
+                    borderColor: 'rgb(147, 51, 234)',
+                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Volume: $${context.parsed.y.toLocaleString()}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + (value / 1000) + 'k';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Time Distribution Chart
+        const ctx2 = document.getElementById('timeDistributionChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: ['0-6', '6-12', '12-18', '18-24'],
+                datasets: [{
+                    label: 'Transaction Count',
+                    data: [25, 120, 180, 22],
+                    backgroundColor: [
+                        'rgba(239, 68, 68, 0.8)',
+                        'rgba(34, 197, 94, 0.8)',
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(245, 158, 11, 0.8)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Transactions'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time of Day (Hours)'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

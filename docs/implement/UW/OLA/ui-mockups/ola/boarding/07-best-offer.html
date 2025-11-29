@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Best Offer - Atlas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .offer-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .offer-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        .offer-card.selected {
+            border-color: #10b981;
+            background: linear-gradient(to bottom, #f0fdf4, #ffffff);
+        }
+        .savings-badge {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            }
+        }
+        .feature-check {
+            animation: checkmark 0.3s ease;
+        }
+        @keyframes checkmark {
+            0% {
+                transform: scale(0) rotate(-45deg);
+            }
+            50% {
+                transform: scale(1.2) rotate(-45deg);
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+            }
+        }
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b sticky top-0 z-10">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <button class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                        <span class="font-semibold text-gray-800">Best Offer</span>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-500">
+                    Step 4 of 5
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-8 max-w-4xl">
+        <!-- Atlas Message -->
+        <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-6 mb-8">
+            <div class="flex items-start space-x-4">
+                <div class="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center flex-shrink-0 floating">
+                    <i class="fas fa-sparkles text-white text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">
+                        Great News! 🎉 Atlas Found Your Perfect Match
+                    </h2>
+                    <p class="text-gray-700">
+                        Based on your coffee shop's $50,000 monthly volume and excellent credit profile,
+                        you qualify for our premium rates. I've compared all options to find you the best deal.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Offer Cards -->
+        <div class="grid md:grid-cols-2 gap-6 mb-8">
+            <!-- Recommended Offer -->
+            <div class="offer-card selected border-2 border-green-500 rounded-2xl p-6 relative" onclick="selectOffer(this, 'recommended')">
+                <div class="absolute -top-3 left-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                    <i class="fas fa-star mr-1"></i>RECOMMENDED
+                </div>
+                <div class="text-center mb-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Premium Direct</h3>
+                    <div class="text-4xl font-bold text-gray-800 mb-1">2.1%</div>
+                    <div class="text-gray-500">+ Interchange</div>
+                    <div class="mt-3 savings-badge bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold inline-block">
+                        Save $8,400/year vs Standard
+                    </div>
+                </div>
+                <ul class="space-y-3 mb-6">
+                    <li class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-500 mr-2 feature-check"></i>
+                        <span>Next-day funding</span>
+                    </li>
+                    <li class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-500 mr-2 feature-check"></i>
+                        <span>$100,000 monthly processing limit</span>
+                    </li>
+                    <li class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-500 mr-2 feature-check"></i>
+                        <span>Chargeback protection</span>
+                    </li>
+                    <li class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-500 mr-2 feature-check"></i>
+                        <span>24/7 premium support</span>
+                    </li>
+                    <li class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-500 mr-2 feature-check"></i>
+                        <span>Advanced analytics dashboard</span>
+                    </li>
+                </ul>
+                <button class="w-full bg-green-500 text-white py-3 rounded-xl hover:bg-green-600 transition font-semibold">
+                    Select Premium Plan
+                </button>
+            </div>
+
+            <!-- Standard Offer -->
+            <div class="offer-card border-2 border-gray-200 rounded-2xl p-6" onclick="selectOffer(this, 'standard')">
+                <div class="text-center mb-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Standard</h3>
+                    <div class="text-4xl font-bold text-gray-800 mb-1">2.9%</div>
+                    <div class="text-gray-500">+ 30¢ per transaction</div>
+                    <div class="mt-3 text-gray-500 text-sm">
+                        No monthly minimums
+                    </div>
+                </div>
+                <ul class="space-y-3 mb-6">
+                    <li class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-check text-gray-400 mr-2"></i>
+                        <span>2-day standard funding</span>
+                    </li>
+                    <li class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-check text-gray-400 mr-2"></i>
+                        <span>$50,000 monthly processing limit</span>
+                    </li>
+                    <li class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-check text-gray-400 mr-2"></i>
+                        <span>Basic chargeback protection</span>
+                    </li>
+                    <li class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-check text-gray-400 mr-2"></i>
+                        <span>Email support only</span>
+                    </li>
+                    <li class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-check text-gray-400 mr-2"></i>
+                        <span>Basic reporting</span>
+                    </li>
+                </ul>
+                <button class="w-full bg-gray-200 text-gray-700 py-3 rounded-xl hover:bg-gray-300 transition font-semibold">
+                    Select Standard Plan
+                </button>
+            </div>
+        </div>
+
+        <!-- Comparison Table -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Quick Comparison</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="text-left py-3 text-gray-600">Feature</th>
+                            <th class="text-center py-3">
+                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Premium</span>
+                            </th>
+                            <th class="text-center py-3 text-gray-600">Standard</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b">
+                            <td class="py-3 text-sm">Processing Rate</td>
+                            <td class="text-center py-3 font-semibold">2.1% + IC</td>
+                            <td class="text-center py-3 text-gray-500">2.9% + 30¢</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-3 text-sm">Monthly Limit</td>
+                            <td class="text-center py-3 font-semibold">$100,000</td>
+                            <td class="text-center py-3 text-gray-500">$50,000</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-3 text-sm">Funding Speed</td>
+                            <td class="text-center py-3">
+                                <span class="text-green-600">Next day</span>
+                            </td>
+                            <td class="text-center py-3 text-gray-500">2 days</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-3 text-sm">Support</td>
+                            <td class="text-center py-3">
+                                <span class="text-green-600">24/7 Premium</span>
+                            </td>
+                            <td class="text-center py-3 text-gray-500">Email only</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 text-sm">Monthly Cost</td>
+                            <td class="text-center py-3 font-bold text-green-600">~$1,050</td>
+                            <td class="text-center py-3 text-gray-500">~$1,750</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Atlas Insight -->
+        <div class="bg-purple-50 border border-purple-200 rounded-xl p-6 mb-8">
+            <div class="flex items-start space-x-3">
+                <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-chart-line text-purple-600"></i>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-1">Atlas Analysis</h4>
+                    <p class="text-sm text-gray-700">
+                        With your current volume, the Premium plan will save you approximately <strong>$8,400 per year</strong>
+                        compared to Standard processing. Your strong cash flow and excellent business history qualify you for our best rates.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Special Note for High-Risk Businesses -->
+        <div id="downsellNote" class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8" style="display:none;">
+            <div class="flex items-start space-x-3">
+                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-info-circle text-blue-600"></i>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-1">Path to Approval</h4>
+                    <p class="text-sm text-gray-700">
+                        While you don't qualify for traditional processing yet, we can get you started with our
+                        <strong>Starter Account</strong> at 3.5%. Process for 3 months, and we'll automatically upgrade you to better rates!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-between items-center">
+            <button class="text-gray-600 hover:text-gray-800 font-medium">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Previous
+            </button>
+            <button onclick="proceedWithSelection()" class="bg-purple-600 text-white px-8 py-3 rounded-xl hover:bg-purple-700 transition font-medium">
+                Continue with Selected Plan
+                <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Chat Widget -->
+    <div class="fixed bottom-8 right-8">
+        <button class="bg-purple-600 text-white w-14 h-14 rounded-full shadow-lg hover:bg-purple-700 transition flex items-center justify-center">
+            <i class="fas fa-comments text-xl"></i>
+        </button>
+    </div>
+
+    <script>
+        let selectedPlan = 'recommended';
+
+        function selectOffer(card, plan) {
+            // Remove selection from all cards
+            document.querySelectorAll('.offer-card').forEach(c => {
+                c.classList.remove('selected', 'border-green-500');
+                c.classList.add('border-gray-200');
+            });
+
+            // Add selection to clicked card
+            card.classList.add('selected', 'border-green-500');
+            card.classList.remove('border-gray-200');
+
+            selectedPlan = plan;
+        }
+
+        function proceedWithSelection() {
+            if (selectedPlan === 'recommended') {
+                alert('Proceeding with Premium Direct plan at 2.1% + Interchange');
+            } else {
+                alert('Proceeding with Standard plan at 2.9% + 30¢');
+            }
+            // In real app, this would save the selection and proceed to next step
+            window.location.href = '04-applicant-dashboard.html';
+        }
+
+        // Simulate different business profiles
+        function checkBusinessProfile() {
+            // This would normally check the actual business profile
+            const isHighRisk = false; // Change to true to show downsell message
+
+            if (isHighRisk) {
+                document.getElementById('downsellNote').style.display = 'block';
+            }
+        }
+
+        // Run on page load
+        checkBusinessProfile();
+    </script>
+</body>
+</html>

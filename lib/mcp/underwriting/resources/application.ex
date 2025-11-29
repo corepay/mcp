@@ -17,9 +17,7 @@ defmodule Mcp.Underwriting.Application do
 
     create :create do
       primary? true
-      accept [:status, :application_data, :risk_score]
-      argument :merchant_id, :uuid, allow_nil?: false
-      change manage_relationship(:merchant_id, :merchant, type: :append_and_remove)
+      accept [:status, :application_data, :risk_score, :subject_id, :subject_type]
     end
 
     update :update do
@@ -30,6 +28,15 @@ defmodule Mcp.Underwriting.Application do
 
   attributes do
     uuid_primary_key :id
+
+    attribute :subject_id, :uuid do
+      allow_nil? false
+    end
+
+    attribute :subject_type, :atom do
+      allow_nil? false
+      constraints one_of: [:merchant, :individual, :property]
+    end
 
     attribute :status, :atom do
       constraints one_of: [:draft, :submitted, :under_review, :manual_review, :approved, :rejected, :more_info_required]
@@ -51,9 +58,9 @@ defmodule Mcp.Underwriting.Application do
   end
 
   relationships do
-    belongs_to :merchant, Mcp.Platform.Merchant do
-      domain Mcp.Platform
-    end
+    # belongs_to :merchant, Mcp.Platform.Merchant do
+    #   domain Mcp.Platform
+    # end
 
     has_many :reviews, Mcp.Underwriting.Review
     has_many :clients, Mcp.Underwriting.Client

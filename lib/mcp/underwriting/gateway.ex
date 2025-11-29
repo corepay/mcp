@@ -18,7 +18,7 @@ defmodule Mcp.Underwriting.Gateway do
   """
   def screen_application(application_id, opts \\ []) do
     tenant = Keyword.get(opts, :tenant)
-    application = Application.get_by_id!(application_id, load: [:merchant], tenant: tenant)
+    application = Application.get_by_id!(application_id, tenant: tenant)
     adapter = get_adapter()
 
     # 1. Screen Business (KYB)
@@ -80,7 +80,8 @@ defmodule Mcp.Underwriting.Gateway do
       
       # 5. Create Risk Assessment
       RiskAssessment.create!(%{
-        merchant_id: application.merchant_id,
+        subject_id: application.subject_id,
+        subject_type: application.subject_type,
         application_id: application.id,
         score: score,
         factors: %{kyb: kyb_result, documents: doc_results, risk_reasons: reasons},

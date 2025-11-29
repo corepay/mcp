@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlas - Your Application</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #9333ea;
+            animation: typing 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+        .field-highlight {
+            animation: pulse-border 2s infinite;
+        }
+        @keyframes pulse-border {
+            0% {
+                box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(147, 51, 234, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(147, 51, 234, 0);
+            }
+        }
+        .progress-step {
+            transition: all 0.3s ease;
+        }
+        .progress-step.active {
+            background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
+            color: white;
+        }
+        .progress-step.completed {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Top Navigation -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <button class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                        <span class="font-semibold text-gray-800">Atlas Application</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-question-circle text-xl"></i>
+                    </button>
+                    <button onclick="saveProgress()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-save text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Progress Bar -->
+    <div class="bg-white border-b sticky top-0 z-10">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700">Application Progress</span>
+                <span class="text-sm text-gray-500">35% Complete</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="progress-step completed flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div class="flex-1 h-1 bg-gray-200"></div>
+                <div class="progress-step active flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold">
+                    2
+                </div>
+                <div class="flex-1 h-1 bg-gray-200"></div>
+                <div class="progress-step bg-gray-200 flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold text-gray-500">
+                    3
+                </div>
+                <div class="flex-1 h-1 bg-gray-200"></div>
+                <div class="progress-step bg-gray-200 flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold text-gray-500">
+                    4
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-8">
+        <div class="grid lg:grid-cols-3 gap-8">
+            <!-- Chat Section (Left) -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-2xl shadow-lg h-[600px] flex flex-col">
+                    <div class="p-4 border-b bg-gradient-to-r from-purple-600 to-purple-700 rounded-t-2xl">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="relative">
+                                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-robot text-white"></i>
+                                    </div>
+                                    <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-white">Atlas</h3>
+                                    <p class="text-xs text-purple-200">AI Assistant • Online</p>
+                                </div>
+                            </div>
+                            <button class="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition">
+                                <i class="fas fa-info-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages -->
+                    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                        <!-- Atlas Message -->
+                        <div class="flex items-start space-x-2">
+                            <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-robot text-purple-600 text-sm"></i>
+                            </div>
+                            <div class="bg-purple-50 rounded-2xl rounded-tl-none p-4 max-w-[85%]">
+                                <p class="text-gray-700 text-sm">
+                                    Great! Now let's talk about your business. What do you do? You can be as specific or general as you'd like.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- User Message -->
+                        <div class="flex items-start space-x-2 justify-end">
+                            <div class="bg-gray-800 text-white rounded-2xl rounded-tr-none p-4 max-w-[85%]">
+                                <p class="text-sm">We run a coffee shop in downtown Seattle</p>
+                            </div>
+                        </div>
+
+                        <!-- Atlas Response with Suggestion -->
+                        <div class="flex items-start space-x-2">
+                            <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-robot text-purple-600 text-sm"></i>
+                            </div>
+                            <div class="bg-purple-50 rounded-2xl rounded-tl-none p-4 max-w-[85%]">
+                                <p class="text-gray-700 text-sm mb-3">
+                                    Perfect! I found a few coffee shops in Seattle. Could you tell me the name or neighborhood?
+                                </p>
+                                <div class="space-y-2">
+                                    <button onclick="selectBusiness(this)" class="w-full text-left bg-white hover:bg-purple-50 border border-purple-200 rounded-lg p-3 transition">
+                                        <div class="font-medium text-sm">Seattle Best Coffee</div>
+                                        <div class="text-xs text-gray-500">Pike Place Market</div>
+                                    </button>
+                                    <button onclick="selectBusiness(this)" class="w-full text-left bg-white hover:bg-purple-50 border border-purple-200 rounded-lg p-3 transition">
+                                        <div class="font-medium text-sm">Espresso Haven</div>
+                                        <div class="text-xs text-gray-500">Capitol Hill</div>
+                                    </button>
+                                    <button onclick="selectBusiness(this)" class="w-full text-left bg-white hover:bg-purple-50 border border-purple-200 rounded-lg p-3 transition">
+                                        <div class="font-medium text-sm">None of these / I'll type it</div>
+                                        <div class="text-xs text-gray-500">Enter manually</div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Atlas Tip -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <div class="flex items-start space-x-2">
+                                <i class="fas fa-lightbulb text-blue-500 mt-0.5"></i>
+                                <div>
+                                    <h4 class="font-medium text-blue-900 text-sm mb-1">Pro Tip</h4>
+                                    <p class="text-blue-700 text-xs">
+                                        Being specific about your business type (e.g., "specialty coffee roaster" instead of just "coffee shop") can help with approval rates!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Typing Indicator -->
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-robot text-purple-600 text-sm"></i>
+                            </div>
+                            <div class="bg-gray-100 rounded-2xl rounded-tl-none px-4 py-3">
+                                <div class="typing-indicator flex space-x-1">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="p-4 border-t">
+                        <div class="flex items-center space-x-2">
+                            <button class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <input type="text"
+                                   placeholder="Ask me anything..."
+                                   class="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                            <button class="bg-purple-600 text-white px-4 py-2 rounded-xl hover:bg-purple-700 transition">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Section (Center/Right) -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-2xl shadow-lg p-8">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Business Information</h2>
+                        <p class="text-gray-600">Tell us about your business. Atlas is helping you fill this out!</p>
+                    </div>
+
+                    <!-- Form Fields -->
+                    <form class="space-y-6">
+                        <!-- Legal Name -->
+                        <div class="form-group">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Legal Business Name
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text"
+                                   id="legalName"
+                                   class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                   placeholder="e.g., Seattle Coffee Roasters LLC">
+                            <p class="mt-1 text-xs text-gray-500">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Must match your business registration documents
+                            </p>
+                        </div>
+
+                        <!-- DBA Name -->
+                        <div class="form-group">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Doing Business As (DBA)
+                                <span class="text-gray-400">(Optional)</span>
+                            </label>
+                            <input type="text"
+                                   class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                   placeholder="e.g., Seattle's Best Coffee">
+                        </div>
+
+                        <!-- Business Address with Auto-fill Highlight -->
+                        <div class="form-group field-highlight">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Business Address
+                                <span class="text-red-500">*</span>
+                                <span class="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                                    <i class="fas fa-magic mr-1"></i>Atlas can help
+                                </span>
+                            </label>
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <input type="text"
+                                       class="md:col-span-2 px-4 py-3 border-2 border-purple-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                       placeholder="Street Address"
+                                       value="1521 1st Ave">
+                                <input type="text"
+                                       class="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                       placeholder="City"
+                                       value="Seattle">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="text"
+                                           class="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                           placeholder="State"
+                                           value="WA">
+                                    <input type="text"
+                                           class="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                           placeholder="ZIP"
+                                           value="98101">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tax ID -->
+                        <div class="form-group">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Tax ID (EIN)
+                                <span class="text-red-500">*</span>
+                                <span class="ml-2 text-xs text-blue-600">
+                                    <i class="fas fa-lock mr-1"></i>Encrypted & Secure
+                                </span>
+                            </label>
+                            <input type="text"
+                                   class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                   placeholder="XX-XXXXXXX"
+                                   maxlength="10">
+                        </div>
+
+                        <!-- Entity Type -->
+                        <div class="form-group">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Business Type
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <select class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                <option value="">Select business type</option>
+                                <option value="llc">LLC (Limited Liability Company)</option>
+                                <option value="corp">Corporation</option>
+                                <option value="sole_prop">Sole Proprietorship</option>
+                                <option value="partnership">Partnership</option>
+                            </select>
+                        </div>
+
+                        <!-- Website -->
+                        <div class="form-group">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Website URL
+                                <span class="text-red-500">*</span>
+                                <span class="ml-2 text-xs text-green-600">
+                                    <i class="fas fa-check-circle mr-1"></i>Helps verify faster
+                                </span>
+                            </label>
+                            <input type="url"
+                                   class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                   placeholder="https://example.com">
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex justify-between pt-6">
+                            <button type="button" class="text-gray-600 hover:text-gray-800 font-medium">
+                                <i class="fas fa-arrow-left mr-2"></i>
+                                Previous
+                            </button>
+                            <button type="button" onclick="nextSection()" class="bg-purple-600 text-white px-8 py-3 rounded-xl hover:bg-purple-700 transition font-medium">
+                                Next Section
+                                <i class="fas fa-arrow-right ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Help Card -->
+                <div class="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 border border-purple-200 rounded-xl p-6">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-sparkles text-purple-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800 mb-2">Atlas is helping!</h3>
+                            <p class="text-sm text-gray-600">
+                                I noticed you selected "Seattle Best Coffee" from the chat. I've filled in the address that matches their Pike Place location. Please confirm it's correct!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Save Button -->
+    <div class="fixed bottom-8 right-8">
+        <button onclick="saveProgress()" class="bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg hover:bg-gray-700 transition flex items-center space-x-2">
+            <i class="fas fa-save"></i>
+            <span>Save Progress</span>
+        </button>
+    </div>
+
+    <script>
+        function selectBusiness(button) {
+            // Remove highlight from other buttons
+            button.parentElement.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('border-purple-500', 'bg-purple-50');
+                btn.classList.add('border-purple-200', 'bg-white');
+            });
+
+            // Highlight selected button
+            button.classList.remove('border-purple-200', 'bg-white');
+            button.classList.add('border-purple-500', 'bg-purple-50');
+
+            // Update form based on selection
+            const businessName = button.querySelector('.font-medium').textContent;
+            if (businessName !== "None of these / I'll type it") {
+                document.getElementById('legalName').value = businessName + ' LLC';
+            }
+        }
+
+        function nextSection() {
+            // Validate and proceed to next section
+            alert('Moving to ownership information...');
+        }
+
+        function saveProgress() {
+            // Save application progress
+            alert('Application saved! You can return anytime.');
+        }
+    </script>
+</body>
+</html>

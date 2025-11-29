@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KYC Analysis - Atlas Underwriting</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+        .sidebar-item:hover {
+            background: rgba(147, 51, 234, 0.1);
+            padding-left: 1.5rem;
+        }
+        .verification-steps {
+            counter-reset: step;
+        }
+        .verification-steps .step::before {
+            counter-increment: step;
+            content: counter(step);
+        }
+        .match-highlight {
+            background: linear-gradient(120deg, transparent 0%, #fef3c7 40%, transparent 100%);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .document-image {
+            background: repeating-conic-gradient(#f3f4f6 0% 25%, transparent 0% 50%) 50% / 20px 20px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white flex flex-col h-screen overflow-hidden">
+            <div class="p-6 flex-1 overflow-y-auto">
+                <div class="flex items-center space-x-3 mb-8">
+                    <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-robot text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold">Atlas</h1>
+                        <p class="text-xs text-gray-400">Admin Portal</p>
+                    </div>
+                </div>
+
+                <nav class="space-y-2">
+                    <a href="10-admin-portal.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="01-application-detail.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-list"></i>
+                        <span>Application Queue</span>
+                    </a>
+                    <a href="02-analytics-dashboard.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Analytics</span>
+                    </a>
+                    <a href="03-merchant-management.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-users"></i>
+                        <span>Merchants</span>
+                    </a>
+                    <a href="06-kyc-aml-dashboard.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg bg-purple-600">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>KYC/AML</span>
+                    </a>
+                    <a href="05-statement-analyzer.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Statement Analyzer</span>
+                    </a>
+                    <a href="04-settings.html" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="p-6 border-t border-gray-800 bg-gray-900">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23933A5A'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='14' font-weight='bold'%3EJD%3C/text%3E%3C/svg%3E" alt="User" class="w-10 h-10 rounded-full">
+                        <div>
+                            <p class="font-semibold">John Doe</p>
+                            <p class="text-xs text-gray-400">Compliance Officer</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-400 hover:text-white">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Top Bar -->
+            <header class="bg-white shadow-sm px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <a href="06-kyc-aml-dashboard.html" class="text-gray-600 hover:text-gray-800">
+                            <i class="fas fa-arrow-left mr-2"></i>Back to KYC/AML
+                        </a>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-800">KYC Analysis: TechRetail Inc</h1>
+                            <p class="text-sm text-gray-600">Application ID: AT-2024-0923</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="bg-yellow-100 text-yellow-800 text-sm px-3 py-1 rounded-full">
+                            <i class="fas fa-clock mr-1"></i>Under Review
+                        </span>
+                        <button class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                            <i class="fas fa-check mr-2"></i>Approve KYC
+                        </button>
+                        <button class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
+                            <i class="fas fa-times mr-2"></i>Reject
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <div class="p-6">
+                <!-- Overall Risk Score -->
+                <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg p-6 mb-8 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-2xl font-bold mb-2">Overall KYC Risk Score: <span class="text-4xl">15</span></h2>
+                            <p class="text-purple-100">Low Risk Merchant - Recommended for Approval</p>
+                            <div class="mt-4 flex items-center space-x-6">
+                                <div>
+                                    <span class="text-sm opacity-75">Confidence Level</span>
+                                    <p class="text-xl font-semibold">96%</p>
+                                </div>
+                                <div>
+                                    <span class="text-sm opacity-75">Manual Review</span>
+                                    <p class="text-xl font-semibold">2 min</p>
+                                </div>
+                                <div>
+                                    <span class="text-sm opacity-75">Last Updated</span>
+                                    <p class="text-xl font-semibold">5m ago</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="relative">
+                            <svg class="w-48 h-48">
+                                <circle cx="96" cy="96" r="88" stroke="rgba(255,255,255,0.2)" stroke-width="8" fill="none"/>
+                                <circle cx="96" cy="96" r="88" stroke="white" stroke-width="8" fill="none"
+                                        stroke-dasharray="553" stroke-dashoffset="470"
+                                        class="score-ring"/>
+                                <text x="96" y="96" text-anchor="middle" dy=".3em" fill="white" font-size="48" font-weight="bold">15</text>
+                                <text x="96" y="120" text-anchor="middle" fill="white" font-size="14">Risk Score</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Verification Components -->
+                <div class="grid lg:grid-cols-2 gap-8 mb-8">
+                    <!-- Identity Verification -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">
+                            <i class="fas fa-user-check text-green-500 mr-2"></i>
+                            Identity Verification
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="verification-steps space-y-4">
+                                <div class="step flex items-start space-x-4">
+                                    <div class="step-number w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold"></div>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-gray-800">Government ID Verification</h4>
+                                        <p class="text-sm text-gray-600 mt-1">Driver's License - California, USA</p>
+                                        <div class="mt-2 grid grid-cols-2 gap-4">
+                                            <div class="document-image bg-gray-100 rounded-lg h-32 flex items-center justify-center">
+                                                <i class="fas fa-id-card text-4xl text-gray-400"></i>
+                                            </div>
+                                            <div class="document-image bg-gray-100 rounded-lg h-32 flex items-center justify-center">
+                                                <i class="fas fa-id-card text-4xl text-gray-400"></i>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2 flex items-center space-x-4 text-sm">
+                                            <span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>Authentic</span>
+                                            <span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>Not Expired</span>
+                                            <span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>Match Score: 98%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="step flex items-start space-x-4">
+                                    <div class="step-number w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold"></div>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-gray-800">Biometric Verification</h4>
+                                        <p class="text-sm text-gray-600 mt-1">Facial Recognition Match</p>
+                                        <div class="mt-2 flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                                            <div class="flex items-center space-x-3">
+                                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='30' fill='%23E5E7EB'/%3E%3Cpath d='M30 20c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 14c-4.4 0-8 3.6-8 8v2h16v-2c0-4.4-3.6-8-8-8z' fill='%239CA3AF'/%3E%3C/svg%3E" alt="ID Photo" class="rounded">
+                                                <i class="fas fa-arrow-right text-gray-400"></i>
+                                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='30' fill='%23E5E7EB'/%3E%3Cpath d='M30 20c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 14c-4.4 0-8 3.6-8 8v2h16v-2c0-4.4-3.6-8-8-8z' fill='%239CA3AF'/%3E%3C/svg%3E" alt="Selfie" class="rounded">
+                                            </div>
+                                            <span class="text-green-600 font-semibold">99.2% Match</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="step flex items-start space-x-4">
+                                    <div class="step-number w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold"></div>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-gray-800">Address Verification</h4>
+                                        <p class="text-sm text-gray-600 mt-1">Utility Bill Confirmation</p>
+                                        <div class="mt-2 p-3 bg-green-50 rounded-lg">
+                                            <p class="text-sm font-medium text-green-800">✓ Address Matched</p>
+                                            <p class="text-sm text-gray-700">742 Evergreen Terrace, Springfield, IL 62701</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Business Verification -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">
+                            <i class="fas fa-building text-blue-500 mr-2"></i>
+                            Business Verification
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="verification-steps space-y-4">
+                                <div class="step flex items-start space-x-4">
+                                    <div class="step-number w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold"></div>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-gray-800">Business Registration</h4>
+                                        <p class="text-sm text-gray-600 mt-1">California Secretary of State</p>
+                                        <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+                                            <div>
+                                                <span class="text-gray-500">Entity Number:</span>
+                                                <span class="font-medium ml-1">C1234567</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-gray-500">Status:</span>
+                                                <span class="text-green-600 font-medium ml-1">Active</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-gray-500">Formation Date:</span>
+                                                <span class="font-medium ml-1">Jan 15, 2020</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-gray-500">Entity Type:</span>
+                                                <span class="font-medium ml-1">LLC</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="step flex items-start space-x-4">
+                                    <div class="step-number w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold"></div>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-gray-800">Tax ID Verification</h4>
+                                        <p class="text-sm text-gray-600 mt-1">EIN Confirmation with IRS</p>
+                                        <div class="mt-2 p-3 bg-green-50 rounded-lg">
+                                            <p class="text-sm"><span class="font-medium">EIN:</span> <span class="match-highlight">81-1234567</span></p>
+                                            <p class="text-sm text-green-600 mt-1"><i class="fas fa-check mr-1"></i>Valid and Active</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="step flex items-start space-x-4">
+                                    <div class="step-number w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold"></div>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-gray-800">Website & Domain</h4>
+                                        <p class="text-sm text-gray-600 mt-1">Online Presence Verification</p>
+                                        <div class="mt-2 flex items-center space-x-3">
+                                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%234285F4'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='16' font-weight='bold'%3EG%3C/text%3E%3C/svg%3E" alt="Site">
+                                            <div>
+                                                <p class="text-sm font-medium">techretail.com</p>
+                                                <p class="text-xs text-green-600"><i class="fas fa-check-circle mr-1"></i>Active SSL Certificate</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk Assessment Details -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                    <h3 class="text-lg font-bold text-gray-800 mb-6">
+                        <i class="fas fa-chart-radar text-purple-500 mr-2"></i>
+                        Risk Assessment Breakdown
+                    </h3>
+                    <div class="grid lg:grid-cols-3 gap-6">
+                        <!-- Identity Risk -->
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-3">Identity Risk Factors</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Document Authenticity</span>
+                                    <span class="text-sm font-semibold text-green-600">Low</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 5%"></div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Biometric Match</span>
+                                    <span class="text-sm font-semibold text-green-600">Very Low</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 1%"></div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Address History</span>
+                                    <span class="text-sm font-semibold text-green-600">Low</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 8%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Business Risk -->
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-3">Business Risk Factors</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Industry Risk</span>
+                                    <span class="text-sm font-semibold text-green-600">Low</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 15%"></div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Geographic Risk</span>
+                                    <span class="text-sm font-semibold text-green-600">Low</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 10%"></div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Operation History</span>
+                                    <span class="text-sm font-semibold text-yellow-600">Medium</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-yellow-500 h-2 rounded-full" style="width: 35%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Transaction Risk -->
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-3">Transaction Risk</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Expected Volume</span>
+                                    <span class="text-sm font-semibold text-green-600">Normal</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 20%"></div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Business Model</span>
+                                    <span class="text-sm font-semibold text-green-600">Clear</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 10%"></div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Source of Funds</span>
+                                    <span class="text-sm font-semibold text-green-600">Verified</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 5%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Atlas AI Findings -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-blue-600 rounded-full p-3 mr-3">
+                            <i class="fas fa-brain text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800">Atlas AI Analysis</h3>
+                    </div>
+
+                    <div class="grid lg:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-green-700 mb-3">
+                                <i class="fas fa-check-circle mr-2"></i>Positive Indicators
+                            </h4>
+                            <ul class="space-y-2 text-sm">
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                                    <span>All government IDs verified with high confidence (>98%)</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                                    <span>Business registered for 4+ years with good standing</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                                    <span>No adverse media or negative public records found</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                                    <span>Consistent information across all documentation</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                                    <span>Physical address matches utility bill records</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4 class="font-semibold text-blue-700 mb-3">
+                                <i class="fas fa-info-circle mr-2"></i>Recommendations
+                            </h4>
+                            <ul class="space-y-2 text-sm">
+                                <li class="flex items-start">
+                                    <i class="fas fa-arrow-right text-blue-500 mt-1 mr-2"></i>
+                                    <span>Approve KYC verification - All checks passed</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-arrow-right text-blue-500 mt-1 mr-2"></i>
+                                    <span>Set review period to 12 months (low risk)</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-arrow-right text-blue-500 mt-1 mr-2"></i>
+                                    <span>No enhanced due diligence required</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-arrow-right text-blue-500 mt-1 mr-2"></i>
+                                    <span>Monitor transaction patterns for first 90 days</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-white rounded-lg border-l-4 border-blue-500">
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-lightbulb text-blue-500 text-xl mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-gray-800">AI Confidence</p>
+                                <p class="text-sm text-gray-700 mt-1">
+                                    Based on comprehensive analysis of 47 data points across 7 verification categories,
+                                    Atlas AI is 96% confident in this positive KYC determination. No manual intervention required.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -17,6 +17,51 @@ defmodule Mcp.Underwriting.GatewayTest do
       |> Ash.create!()
 
     # Create a merchant for the application
+    schema = tenant.company_schema
+    Mcp.Repo.query!("CREATE TABLE IF NOT EXISTS \"#{schema}\".merchants (
+      id uuid PRIMARY KEY,
+      slug text,
+      business_name text,
+      dba_name text,
+      subdomain text,
+      custom_domain text,
+      business_type text,
+      ein text,
+      website_url text,
+      description text,
+      address_line1 text,
+      address_line2 text,
+      city text,
+      state text,
+      postal_code text,
+      country text,
+      phone text,
+      support_email text,
+      plan text,
+      status text,
+      risk_level text,
+      settings jsonb,
+      branding jsonb,
+      max_stores integer,
+      max_products integer,
+      max_monthly_volume decimal,
+      kyc_verified_at timestamp(6),
+      verification_status text,
+      mcc text,
+      tax_id_type text,
+      kyc_status text,
+      kyc_documents jsonb,
+      timezone text,
+      default_currency text,
+      operating_hours jsonb,
+      risk_score integer,
+      risk_profile text,
+      processing_limits jsonb,
+      reseller_id uuid,
+      inserted_at timestamp(6),
+      updated_at timestamp(6)
+    )")
+
     merchant = 
       Mcp.Platform.Merchant
       |> Ash.Changeset.for_create(:create, %{
@@ -29,8 +74,31 @@ defmodule Mcp.Underwriting.GatewayTest do
 
     # WORKAROUND: Manually add columns because Ecto.Migrator fails in Sandbox
     schema = tenant.company_schema
-    Mcp.Repo.query!("ALTER TABLE \"#{schema}\".underwriting_applications ADD COLUMN IF NOT EXISTS submitted_at timestamp(6)")
-    Mcp.Repo.query!("ALTER TABLE \"#{schema}\".underwriting_applications ADD COLUMN IF NOT EXISTS sla_due_at timestamp(6)")
+    Mcp.Repo.query!("CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_applications (
+      id uuid PRIMARY KEY,
+      status text,
+      application_data jsonb,
+      risk_score integer,
+      subject_id uuid,
+      subject_type text,
+      submitted_at timestamp(6),
+      sla_due_at timestamp(6),
+      inserted_at timestamp(6),
+      updated_at timestamp(6)
+    )")
+
+    Mcp.Repo.query!("CREATE TABLE IF NOT EXISTS \"#{schema}\".risk_assessments (
+      id uuid PRIMARY KEY,
+      score integer,
+      factors jsonb,
+      recommendation text,
+      subject_id uuid,
+      subject_type text,
+      application_id uuid,
+      inserted_at timestamp(6),
+      updated_at timestamp(6)
+    )")
+
     Mcp.Repo.query!("CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_activities (id uuid PRIMARY KEY, type text, metadata jsonb, actor_id uuid, application_id uuid, inserted_at timestamp(6), updated_at timestamp(6))")
 
     # Configure Mock Adapter for tests
@@ -45,7 +113,8 @@ defmodule Mcp.Underwriting.GatewayTest do
       application = 
         Mcp.Underwriting.Application
         |> Ash.Changeset.for_create(:create, %{
-          merchant_id: merchant.id,
+          subject_id: merchant.id,
+          subject_type: :merchant,
           application_data: %{
             "business_name" => "Test Corp",
             "legal_structure" => "llc",
@@ -105,7 +174,8 @@ defmodule Mcp.Underwriting.GatewayTest do
        application = 
         Application
         |> Ash.Changeset.for_create(:create, %{
-          merchant_id: merchant.id,
+          subject_id: merchant.id,
+          subject_type: :merchant,
           status: :submitted,
           application_data: %{
             "legal_name" => "Risky Business",
