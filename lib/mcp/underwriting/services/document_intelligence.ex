@@ -5,7 +5,7 @@ defmodule Mcp.Underwriting.Services.DocumentIntelligence do
 
   require Logger
 
-  @base_url "http://the_eye:8000"
+  @base_url "http://localhost:#{System.get_env("THE_EYE_PORT", "48291")}"
 
   @doc """
   Analyzes a document by sending it to the Python service.

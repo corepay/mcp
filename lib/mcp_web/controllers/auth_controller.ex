@@ -97,6 +97,7 @@ defmodule McpWeb.AuthController do
       String.starts_with?(path, "/partners") -> ~p"/partners/sign-in"
       String.starts_with?(path, "/store/account") -> ~p"/store/account/sign-in"
       String.starts_with?(path, "/vendors") -> ~p"/vendors/sign-in"
+      String.starts_with?(path, "/online-application") -> ~p"/online-application/login"
       true -> ~p"/tenant/sign-in"
     end
   end
@@ -111,6 +112,7 @@ defmodule McpWeb.AuthController do
       String.starts_with?(path, "/partners") -> ~p"/partners/sign-in"
       String.starts_with?(path, "/store/account") -> ~p"/store/account/sign-in"
       String.starts_with?(path, "/vendors") -> ~p"/vendors/sign-in"
+      String.starts_with?(path, "/online-application") -> ~p"/online-application/login"
       true -> ~p"/tenant/sign-in"
     end
   end
@@ -159,6 +161,7 @@ defmodule McpWeb.AuthController do
       String.starts_with?(path, "/store/account") -> ~p"/store/account/dashboard"
       String.starts_with?(path, "/vendors") -> ~p"/vendors/dashboard"
       String.starts_with?(path, "/tenant") -> ~p"/tenant/dashboard"
+      String.starts_with?(path, "/online-application") -> ~p"/online-application/application"
       
       # Fallback to context-based or default
       conn.assigns[:current_tenant] -> ~p"/tenant/dashboard"

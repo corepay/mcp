@@ -1,5 +1,10 @@
+# Load environment variables
+{:ok, _} = Application.ensure_all_started(:dotenvy)
+Dotenvy.source!([".env", ".env.example"])
+|> Enum.each(fn {k, v} -> System.put_env(k, v) end)
+
 # Ensure the app is started
-[:telemetry, :ash, :mcp]
+[:telemetry, :ash, :db_connection, :ecto_sql, :postgrex, :mcp]
 |> Enum.each(fn app ->
   case Application.ensure_all_started(app) do
     {:ok, _} -> :ok
@@ -8,12 +13,9 @@
   end
 end)
 
-IO.puts("DATABASE_URL: #{System.get_env("DATABASE_URL")}")
-IO.puts("Checking Mcp.Repo...")
-
-case Process.whereis(Mcp.Repo) do
-  nil -> IO.puts("Mcp.Repo is NOT running!")
-  pid -> IO.puts("Mcp.Repo is running at #{inspect(pid)}")
+# Ensure Repo is running
+if Process.whereis(Mcp.Repo) == nil do
+  {:ok, _} = Mcp.Repo.start_link()
 end
 
 Mcp.Seeder.run()

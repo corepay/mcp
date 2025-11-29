@@ -67,13 +67,7 @@ defmodule McpWeb.Router do
     live "/tenants", MockDashboardLive
     live "/settings", MockDashboardLive
     
-    live_session :admin_underwriting,
-      on_mount: [{McpWeb.Auth.LiveAuth, :require_authenticated}, {McpWeb.Auth.LiveAuth, :require_admin}] do
-      live "/underwriting", Admin.UnderwritingLive
-      live "/underwriting/board", Admin.Underwriting.KanbanLive
-      live "/underwriting/settings", Admin.Underwriting.SettingsLive
-      live "/underwriting/:id", Admin.ReviewLive
-    end
+
   end
 
   # Tenant Portal
@@ -96,6 +90,14 @@ defmodule McpWeb.Router do
     live "/merchants", MockDashboardLive
     live "/gdpr", GdprLive
     live "/change-password", AuthLive.ChangePassword
+
+    live_session :tenant_underwriting,
+      on_mount: [{McpWeb.Auth.LiveAuth, :require_authenticated}] do
+      live "/underwriting", Tenant.UnderwritingLive
+      live "/underwriting/board", Tenant.Underwriting.KanbanLive
+      live "/underwriting/settings", Tenant.Underwriting.SettingsLive
+      live "/underwriting/:id", Tenant.ReviewLive
+    end
     post "/select", TenantSessionController, :create
   end
 

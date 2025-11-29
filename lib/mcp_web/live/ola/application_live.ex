@@ -79,7 +79,7 @@ defmodule McpWeb.Ola.ApplicationLive do
       socket
       |> assign(:conversation_id, nil)
       |> assign(:messages, [
-        %{id: "mock-1", sender: :ai, source: :agent, text: "Hello! I'm Atlas. Please sign in to save your progress."}
+        %{id: "mock-1", sender: :ai, source: :agent, text: "Hello! I'm Atlas. **Please sign in** to save your progress and enable the full application experience."}
       ])
       |> assign(:existing_application, nil)
     end
@@ -337,5 +337,10 @@ defmodule McpWeb.Ola.ApplicationLive do
       true ->
         {"I think I have everything I need for the basics! You can review the application form now.", "done", form}
     end
+  end
+
+  defp process_chat_input(_form, _input) do
+    # Fallback for when we are already done or in an invalid state
+    {"I have already collected your information. Please review the form.", "done", _form}
   end
 end

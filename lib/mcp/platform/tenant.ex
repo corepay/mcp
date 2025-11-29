@@ -49,7 +49,7 @@ defmodule Mcp.Platform.Tenant do
 
     update :update do
       primary? true
-      accept [:name, :slug, :subdomain, :custom_domain, :plan, :status, :features]
+      accept [:name, :slug, :subdomain, :custom_domain, :plan, :status, :features, :settings]
     end
 
     read :by_subdomain do
@@ -147,12 +147,16 @@ defmodule Mcp.Platform.Tenant do
       allow_nil? false
     end
 
+    attribute :settings, :map do
+      default %{}
+    end
+
     timestamps()
   end
 
   relationships do
     has_one :account, Mcp.Finance.Account
-    has_one :settings, Mcp.Platform.TenantSettings
+    # has_one :settings, Mcp.Platform.TenantSettings
     has_one :branding, Mcp.Platform.TenantBranding
   end
 

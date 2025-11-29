@@ -9,10 +9,15 @@ defmodule McpWeb.Ola.RegistrationLive do
     if socket.assigns.current_user do
       {:ok, push_navigate(socket, to: ~p"/online-application")}
     else
+      form =
+        Mcp.Accounts.User
+        |> AshPhoenix.Form.for_create(:register, as: "user", api: Mcp.Accounts)
+        |> to_form()
+
       {:ok,
        socket
        |> assign(:page_title, "Start Application")
-       |> assign(:form, to_form(%{"email" => "", "password" => "", "password_confirmation" => ""}))
+       |> assign(:form, form)
        |> assign(:trigger_submit, false)
        |> assign(:atlas_messages, [
          %{sender: :ai, content: "To get started, I just need to create a secure account for you. This lets you save your progress and come back later if you need to gather documents."}
@@ -22,30 +27,38 @@ defmodule McpWeb.Ola.RegistrationLive do
 
   @impl true
   def handle_event("validate", %{"user" => params}, socket) do
-    # Simple validation or changeset based validation could go here
-    {:noreply, assign(socket, :form, to_form(params))}
+    form = AshPhoenix.Form.validate(socket.assigns.form, params)
+    {:noreply, assign(socket, :form, to_form(form))}
+  end
+
+  def handle_event("validate", params, socket) do
+    # Handle flat params (fallback)
+    user_params = Map.take(params, ["email", "password", "password_confirmation"])
+    form = AshPhoenix.Form.validate(socket.assigns.form, user_params)
+    {:noreply, assign(socket, :form, to_form(form))}
   end
 
   @impl true
   def handle_event("save", %{"user" => params}, socket) do
-    case User.register(params["email"], params["password"], params["password_confirmation"]) do
+    do_save(socket, params)
+  end
+
+  def handle_event("save", params, socket) do
+    # Handle flat params (fallback)
+    user_params = Map.take(params, ["email", "password", "password_confirmation"])
+    do_save(socket, user_params)
+  end
+
+  defp do_save(socket, params) do
+    case AshPhoenix.Form.submit(socket.assigns.form, params: params) do
       {:ok, _user} ->
-        # We need to log the user in. 
-        # Since we can't easily set session in LiveView, we'll redirect to a controller action
-        # or use a token-based approach if available. 
-        # For now, let's assume we redirect to a login action that handles the session.
-        
-        # Actually, standard pattern is to redirect to a controller that logs them in.
-        # But we don't have that controller handy. 
-        # Let's try to simulate login or redirect to login page with pre-filled email.
-        
         {:noreply,
          socket
          |> put_flash(:info, "Account created successfully! Please sign in.")
          |> push_navigate(to: ~p"/online-application/login?email=#{params["email"]}")}
 
-      {:error, changeset} ->
-        {:noreply, assign(socket, :form, to_form(changeset))}
+      {:error, form} ->
+        {:noreply, assign(socket, :form, to_form(form))}
     end
   end
 end

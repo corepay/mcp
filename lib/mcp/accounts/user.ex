@@ -9,13 +9,7 @@ defmodule Mcp.Accounts.User do
   use Ash.Resource,
     domain: Mcp.Accounts,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshAuthentication, AshJsonApi.Resource, AshCloak, AshArchival]
-
-  cloak do
-    vault(Mcp.Secrets)
-    attributes([:totp_secret, :backup_codes, :oauth_tokens])
-    decrypt_by_default([:totp_secret, :backup_codes, :oauth_tokens])
-  end
+    extensions: [AshAuthentication, AshJsonApi.Resource, AshArchival]
 
   postgres do
     table "users"
@@ -156,6 +150,7 @@ defmodule Mcp.Accounts.User do
     update :update do
       primary? true
       accept [:email, :status]
+      require_atomic? false
     end
 
     update :update_sign_in do

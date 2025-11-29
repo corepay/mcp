@@ -8,7 +8,7 @@ defmodule Mcp.Repo.TenantMigrations.CreateUnderwritingTenantTables do
   use Ecto.Migration
 
   def up do
-    create table(:underwriting_reviews, primary_key: false, prefix: prefix()) do
+    create_if_not_exists table(:underwriting_reviews, primary_key: false, prefix: prefix()) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :decision, :text, null: false
       add :notes, :text
@@ -25,7 +25,7 @@ defmodule Mcp.Repo.TenantMigrations.CreateUnderwritingTenantTables do
       add :application_id, :uuid
     end
 
-    create table(:underwriting_documents, primary_key: false, prefix: prefix()) do
+    create_if_not_exists table(:underwriting_documents, primary_key: false, prefix: prefix()) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :type, :text, null: false
       add :issuing_country, :text
@@ -43,10 +43,11 @@ defmodule Mcp.Repo.TenantMigrations.CreateUnderwritingTenantTables do
       add :client_id, :uuid
     end
 
-    create table(:underwriting_clients, primary_key: false, prefix: prefix()) do
+    create_if_not_exists table(:underwriting_clients, primary_key: false, prefix: prefix()) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
+    execute "ALTER TABLE \"#{prefix()}\".\"underwriting_documents\" DROP CONSTRAINT IF EXISTS underwriting_documents_client_id_fkey"
     alter table(:underwriting_documents, prefix: prefix()) do
       modify :client_id,
              references(:underwriting_clients,
@@ -58,25 +59,25 @@ defmodule Mcp.Repo.TenantMigrations.CreateUnderwritingTenantTables do
     end
 
     alter table(:underwriting_clients, prefix: prefix()) do
-      add :type, :text, null: false
-      add :email, :text
-      add :phone, :text
-      add :external_id, :text
-      add :person_details, :map, default: %{}
-      add :company_details, :map, default: %{}
+      add_if_not_exists :type, :text, null: false
+      add_if_not_exists :email, :text
+      add_if_not_exists :phone, :text
+      add_if_not_exists :external_id, :text
+      add_if_not_exists :person_details, :map, default: %{}
+      add_if_not_exists :company_details, :map, default: %{}
 
-      add :inserted_at, :utc_datetime_usec,
+      add_if_not_exists :inserted_at, :utc_datetime_usec,
         null: false,
         default: fragment("(now() AT TIME ZONE 'utc')")
 
-      add :updated_at, :utc_datetime_usec,
+      add_if_not_exists :updated_at, :utc_datetime_usec,
         null: false,
         default: fragment("(now() AT TIME ZONE 'utc')")
 
-      add :application_id, :uuid
+      add_if_not_exists :application_id, :uuid
     end
 
-    create table(:underwriting_checks, primary_key: false, prefix: prefix()) do
+    create_if_not_exists table(:underwriting_checks, primary_key: false, prefix: prefix()) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :type, :text, null: false
       add :status, :text, default: "pending"
@@ -109,10 +110,11 @@ defmodule Mcp.Repo.TenantMigrations.CreateUnderwritingTenantTables do
           )
     end
 
-    create table(:underwriting_applications, primary_key: false, prefix: prefix()) do
+    create_if_not_exists table(:underwriting_applications, primary_key: false, prefix: prefix()) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
+    execute "ALTER TABLE \"#{prefix()}\".\"underwriting_reviews\" DROP CONSTRAINT IF EXISTS underwriting_reviews_application_id_fkey"
     alter table(:underwriting_reviews, prefix: prefix()) do
       modify :application_id,
              references(:underwriting_applications,
@@ -123,6 +125,7 @@ defmodule Mcp.Repo.TenantMigrations.CreateUnderwritingTenantTables do
              )
     end
 
+    execute "ALTER TABLE \"#{prefix()}\".\"underwriting_clients\" DROP CONSTRAINT IF EXISTS underwriting_clients_application_id_fkey"
     alter table(:underwriting_clients, prefix: prefix()) do
       modify :application_id,
              references(:underwriting_applications,
@@ -133,20 +136,21 @@ defmodule Mcp.Repo.TenantMigrations.CreateUnderwritingTenantTables do
              )
     end
 
+    execute "ALTER TABLE \"#{prefix()}\".\"underwriting_applications\" DROP CONSTRAINT IF EXISTS underwriting_applications_merchant_id_fkey"
     alter table(:underwriting_applications, prefix: prefix()) do
-      add :status, :text, default: "draft"
-      add :application_data, :map, default: %{}
-      add :risk_score, :bigint, default: 0
+      add_if_not_exists :status, :text, default: "draft"
+      add_if_not_exists :application_data, :map, default: %{}
+      add_if_not_exists :risk_score, :bigint, default: 0
 
-      add :inserted_at, :utc_datetime_usec,
+      add_if_not_exists :inserted_at, :utc_datetime_usec,
         null: false,
         default: fragment("(now() AT TIME ZONE 'utc')")
 
-      add :updated_at, :utc_datetime_usec,
+      add_if_not_exists :updated_at, :utc_datetime_usec,
         null: false,
         default: fragment("(now() AT TIME ZONE 'utc')")
 
-      add :merchant_id,
+      add_if_not_exists :merchant_id,
           references(:merchants,
             column: :id,
             name: "underwriting_applications_merchant_id_fkey",
@@ -155,7 +159,7 @@ defmodule Mcp.Repo.TenantMigrations.CreateUnderwritingTenantTables do
           )
     end
 
-    create table(:underwriting_addresses, primary_key: false, prefix: prefix()) do
+    create_if_not_exists table(:underwriting_addresses, primary_key: false, prefix: prefix()) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :line1, :text
       add :line2, :text
@@ -182,7 +186,7 @@ defmodule Mcp.Repo.TenantMigrations.CreateUnderwritingTenantTables do
           )
     end
 
-    create table(:risk_assessments, primary_key: false, prefix: prefix()) do
+    create_if_not_exists table(:risk_assessments, primary_key: false, prefix: prefix()) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :score, :bigint, null: false
       add :factors, :map, default: %{}

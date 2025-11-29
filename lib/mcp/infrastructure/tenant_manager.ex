@@ -59,9 +59,10 @@ defmodule Mcp.Infrastructure.TenantManager do
   # Private Helpers
 
   defp check_schema_exists(tenant_schema_name) do
-    query = "SELECT tenant_schema_exists($1) as exists"
+    schema_name = @tenant_schema_prefix <> tenant_schema_name
+    query = "SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = $1)"
 
-    case Repo.query(query, [tenant_schema_name]) do
+    case Repo.query(query, [schema_name]) do
       {:ok, %{rows: [[exists]]}} -> {:ok, exists}
       {:error, reason} ->
         IO.inspect(reason, label: "Check Schema Exists Error")
@@ -70,9 +71,10 @@ defmodule Mcp.Infrastructure.TenantManager do
   end
 
   defp execute_create_tenant_schema(tenant_schema_name) do
-    query = "SELECT create_tenant_schema($1)"
+    schema_name = @tenant_schema_prefix <> tenant_schema_name
+    query = "CREATE SCHEMA IF NOT EXISTS \"#{schema_name}\""
 
-    case Repo.query(query, [tenant_schema_name]) do
+    case Repo.query(query, []) do
       {:ok, _} -> :ok
       {:error, reason} ->
         IO.inspect(reason, label: "Create Tenant Schema Error")
@@ -81,9 +83,10 @@ defmodule Mcp.Infrastructure.TenantManager do
   end
 
   defp execute_drop_tenant_schema(tenant_schema_name) do
-    query = "SELECT drop_tenant_schema($1)"
+    schema_name = @tenant_schema_prefix <> tenant_schema_name
+    query = "DROP SCHEMA IF EXISTS \"#{schema_name}\" CASCADE"
 
-    case Repo.query(query, [tenant_schema_name]) do
+    case Repo.query(query, []) do
       {:ok, _} -> :ok
       {:error, reason} -> {:error, reason}
     end

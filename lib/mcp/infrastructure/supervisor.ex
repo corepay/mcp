@@ -20,7 +20,7 @@ defmodule Mcp.Infrastructure.Supervisor do
       Mcp.Cache.Supervisor,
 
       # Secrets management
-      Mcp.Secrets.Supervisor,
+      # Mcp.Secrets.Supervisor,
 
       # Storage services
       Mcp.Storage.Supervisor,
