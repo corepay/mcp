@@ -2,6 +2,7 @@ import Config
 config :mcp, Oban, testing: :manual
 config :mcp, :token_signing_secret, "test-secret-for-jwt-signing"
 config :mcp, env: :test
+config :mcp, :skip_dns_check, true
 
 # Configure your database
 #
@@ -18,6 +19,9 @@ config :mcp, Mcp.Repo,
   pool_size: 10,
   parameters: [search_path: "public,platform"]
 
+config :mcp, :async_api_key_updates, false
+config :mcp, :compliance_impl, ComplianceMock
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :mcp, McpWeb.Endpoint,
@@ -33,6 +37,9 @@ config :swoosh, :api_client, false
 
 # Print only warnings and errors during test
 config :logger, level: :warning
+
+# Mock OAuth module
+config :mcp, :oauth_module, Mcp.Accounts.OAuthMock
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime

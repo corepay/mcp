@@ -1,12 +1,12 @@
 defmodule Mcp.Security.AuthenticationSecurityTest do
-  use ExUnit.Case, async: true
+  use McpWeb.ConnCase, async: true
+  import Mox
 
   import Plug.Conn
   import Phoenix.ConnTest
 
-  alias Mcp.Accounts.{Auth, Token, User}
+  alias Mcp.Accounts.{Auth, User}
   alias Mcp.Cache.SessionStore
-  alias McpWeb.Auth.SessionPlug
 
   @endpoint McpWeb.Endpoint
 
@@ -28,7 +28,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
       conn =
         conn
         |> delete_req_header("x-csrf-token")
-        |> post("/sign_in", %{
+        |> post("/sign-in", %{
           "email" => "test@example.com",
           "password" => "Password123!"
         })
@@ -38,6 +38,11 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
     end
 
     test "validates CSRF token in OAuth state", %{conn: conn} do
+      # Mock the OAuth provider
+      stub(Mcp.Accounts.OAuthMock, :authorize_url, fn _provider, _state ->
+        "https://accounts.google.com/o/oauth2/v2/auth?client_id=..."
+      end)
+
       # Test that OAuth state parameters include CSRF protection
       conn = get(conn, "/auth/google")
 
@@ -57,14 +62,15 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
       # Setup valid session but manipulated state
       conn =
         conn
+        |> init_test_session(%{})
         |> put_session(:oauth_state, "valid_state")
         |> put_session(:oauth_provider, "google")
 
       # Attempt callback with different state
       conn = get(conn, "/auth/google/callback?code=test&state=manipulated_state")
 
-      assert redirected_to(conn) == "/sign_in"
-      assert get_flash(conn, :error) == "Invalid OAuth state"
+      assert redirected_to(conn) == "/tenant/sign-in"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid OAuth state"
     end
   end
 
@@ -77,13 +83,13 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
         conn =
           conn
           |> recycle()
-          |> post("/sign_in", %{
+          |> post("/sign-in", %{
             "email" => user.email,
             "password" => "wrong_password_#{i}"
           })
 
         if i < 5 do
-          assert get_flash(conn, :error) == "Invalid email or password"
+          assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid email or password"
         end
       end
 
@@ -91,13 +97,13 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
       conn =
         conn
         |> recycle()
-        |> post("/sign_in", %{
+        |> post("/sign-in", %{
           "email" => user.email,
           # Correct password
           "password" => "Password123!"
         })
 
-      assert get_flash(conn, :error) ==
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
                "Account is locked. Please check your email for unlock instructions."
 
       # Verify user is locked in database
@@ -108,7 +114,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
       assert updated_user.unlock_token != nil
     end
 
-    test "generates secure unlock tokens", %{conn: conn} do
+    test "generates secure unlock tokens", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       # Trigger lockout
@@ -147,12 +153,12 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
           conn
           |> recycle()
           |> Map.put(:remote_ip, ip)
-          |> post("/sign_in", %{
+          |> post("/sign-in", %{
             "email" => user.email,
             "password" => "wrong_password"
           })
 
-        assert get_flash(conn, :error) == "Invalid email or password"
+        assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid email or password"
       end)
 
       # User should not be locked yet (attempts from different IPs may not count)
@@ -163,7 +169,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
   end
 
   describe "Session Security" do
-    test "creates secure JWT tokens", %{conn: conn} do
+    test "creates secure JWT tokens", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       {:ok, session} = Auth.authenticate(user.email, "Password123!", "127.0.0.1")
@@ -186,7 +192,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
 
       conn =
         conn
-        |> post("/sign_in", %{
+        |> post("/sign-in", %{
           "email" => user.email,
           "password" => "Password123!"
         })
@@ -207,7 +213,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
 
       conn =
         conn
-        |> post("/sign_in", %{
+        |> post("/sign-in", %{
           "email" => user.email,
           "password" => "Password123!"
         })
@@ -219,7 +225,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
       assert get_session(conn, :current_user) != nil
     end
 
-    test "revokes all sessions on password change", %{conn: conn} do
+    test "revokes all sessions on password change", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       # Create multiple sessions
@@ -238,7 +244,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
       assert {:error, :token_revoked} = Auth.verify_session(session2.access_token)
     end
 
-    test "handles session expiration", %{conn: conn} do
+    test "handles session expiration", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       # Create session
@@ -257,7 +263,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
   end
 
   describe "Password Security" do
-    test "uses bcrypt for password hashing", %{conn: conn} do
+    test "uses bcrypt for password hashing", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       # Verify password is properly hashed
@@ -275,7 +281,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
       # Measure time for non-existent user
       start_time = :erlang.monotonic_time(:millisecond)
 
-      post(conn, "/sign_in", %{
+      post(conn, "/sign-in", %{
         "email" => "nonexistent@example.com",
         "password" => "password"
       })
@@ -285,7 +291,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
       # Measure time for existent user with wrong password
       start_time = :erlang.monotonic_time(:millisecond)
 
-      post(conn, "/sign_in", %{
+      post(conn, "/sign-in", %{
         "email" => user.email,
         "password" => "wrongpassword"
       })
@@ -317,13 +323,13 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
         conn =
           conn
           |> recycle()
-          |> post("/sign_in", %{
+          |> post("/sign-in", %{
             "email" => "test@example.com",
             "password" => weak_password
           })
 
         # Should still fail authentication (user doesn't exist)
-        assert get_flash(conn, :error) == "Invalid email or password"
+        assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid email or password"
       end)
     end
   end
@@ -342,14 +348,14 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
         conn =
           conn
           |> recycle()
-          |> post("/sign_in", %{
+          |> post("/sign-in", %{
             "email" => malicious_email,
             "password" => "Password123!"
           })
 
         # Should not cause server error
         assert conn.status != 500
-        assert get_flash(conn, :error) == "Invalid email or password"
+        assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid email or password"
       end)
     end
 
@@ -366,14 +372,14 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
         conn =
           conn
           |> recycle()
-          |> post("/sign_in", %{
+          |> post("/sign-in", %{
             "email" => injection,
             "password" => injection
           })
 
         # Should not cause database errors or data leakage
         assert conn.status != 500
-        assert get_flash(conn, :error) == "Invalid email or password"
+        assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid email or password"
       end)
     end
 
@@ -383,7 +389,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
 
       conn =
         conn
-        |> post("/sign_in", %{
+        |> post("/sign-in", %{
           "email" => long_email,
           "password" => "Password123!"
         })
@@ -398,8 +404,8 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
       # Test with missing state parameter
       conn = get(conn, "/auth/google/callback?code=test")
 
-      assert redirected_to(conn) == "/sign_in"
-      assert get_flash(conn, :error) == "Invalid OAuth state"
+      assert redirected_to(conn) == "/sign-in"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid OAuth state"
     end
 
     test "prevents OAuth code injection", %{conn: conn} do
@@ -438,16 +444,16 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
         conn = get(conn, "/auth/#{invalid_provider}")
 
         # Should redirect with error
-        assert redirected_to(conn) == "/sign_in"
-        assert get_flash(conn, :error) == "Invalid OAuth provider"
+        assert redirected_to(conn) == "/sign-in"
+        assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid OAuth provider"
       end)
     end
   end
 
   describe "Session Hijacking Prevention" do
-    test "binds session to IP address", %{conn: conn} do
+    test "binds session to IP address", %{conn: _conn} do
       {:ok, user} = create_test_user()
-      original_ip = {127, 0, 0, 1}
+      _original_ip = {127, 0, 0, 1}
 
       # Create session with specific IP
       {:ok, session} = Auth.authenticate(user.email, "Password123!", "127.0.0.1")
@@ -461,7 +467,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
     test "binds session to user agent", %{conn: conn} do
       {:ok, user} = create_test_user()
 
-      conn =
+      _conn =
         conn
         |> put_req_header("user-agent", "TestSecurityBrowser/1.0")
 
@@ -478,7 +484,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
       assert claims["jti"] != nil
     end
 
-    test "detects concurrent sessions", %{conn: conn} do
+    test "detects concurrent sessions", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       # Create multiple sessions
@@ -497,7 +503,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
 
   describe "Security Headers" do
     test "includes security headers in responses", %{conn: conn} do
-      conn = get(conn, "/sign_in")
+      conn = get(conn, "/sign-in")
 
       # Check for security headers (these would be configured in the endpoint/plug)
       # This is a placeholder for actual header verification
@@ -505,7 +511,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
     end
 
     test "prevents clickjacking with X-Frame-Options", %{conn: conn} do
-      conn = get(conn, "/sign_in")
+      conn = get(conn, "/sign-in")
 
       # This would require actual header checking
       # Frame protection should be configured in the endpoint
@@ -528,13 +534,13 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
         conn =
           conn
           |> recycle()
-          |> post("/sign_in", %{
+          |> post("/sign-in", %{
             "email" => email,
             "password" => password
           })
 
         # All should return the same generic error message
-        assert get_flash(conn, :error) == "Invalid email or password"
+        assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid email or password"
       end)
     end
 
@@ -543,7 +549,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
       # For now, test with malformed requests
       conn =
         conn
-        |> post("/sign_in", %{
+        |> post("/sign-in", %{
           "email" => nil,
           "password" => nil
         })
@@ -561,8 +567,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
       last_name: "User",
       email: "test@example.com",
       password: "Password123!",
-      password_confirmation: "Password123!",
-      status: :active
+      password_confirmation: "Password123!"
     }
 
     User.register(Map.merge(default_attrs, attrs))

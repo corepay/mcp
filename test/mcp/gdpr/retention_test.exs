@@ -1,5 +1,5 @@
 defmodule Mcp.Gdpr.RetentionTest do
-  use ExUnit.Case, async: true
+  use Mcp.DataCase, async: true
   alias Ecto.Adapters.SQL
   alias Mcp.Gdpr.Anonymizer
   alias Mcp.Repo

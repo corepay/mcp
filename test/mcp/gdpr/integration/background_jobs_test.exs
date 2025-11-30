@@ -49,7 +49,7 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
   describe "Background Job Processing" do
     setup [:create_user, :auth_user_conn]
 
-    test "export jobs are queued properly", %{conn: conn, user: user} do
+    test "export jobs are queued properly", %{conn: conn, user: _user} do
       # RED: Test that export requests create background jobs
 
       # Request data export
@@ -67,7 +67,7 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
       assert String.starts_with?(export_id, "export_") or is_binary(export_id)
     end
 
-    test "job status tracking works", %{conn: conn, user: user} do
+    test "job status tracking works", %{conn: conn, user: _user} do
       # RED: Test that job status can be tracked over time
 
       # Request export
@@ -88,7 +88,7 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
                status_response["job_id"] or status_response["queue"]
     end
 
-    test "job retry logic on failures", %{conn: conn, user: user} do
+    test "job retry logic on failures", %{conn: conn, user: _user} do
       # RED: Test that failed jobs are properly retried
 
       # Request export with parameters that might cause failure
@@ -119,7 +119,7 @@ defmodule Mcp.Gdpr.Integration.BackgroundJobsTest do
       end
     end
 
-    test "concurrent job handling", %{conn: conn, user: user} do
+    test "concurrent job handling", %{conn: conn, user: _user} do
       # RED: Test that multiple concurrent jobs are handled properly
 
       # Submit multiple export requests

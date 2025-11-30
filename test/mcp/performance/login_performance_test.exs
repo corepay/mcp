@@ -2,12 +2,14 @@ defmodule Mcp.Performance.LoginPerformanceTest do
   # Not async due to shared state
   use ExUnit.Case, async: false
 
-  use Phoenix.ConnTest
-  use Plug.Test
+  import Phoenix.ConnTest
+
+
 
   alias Mcp.Accounts.{Auth, User}
   alias Mcp.Cache.SessionStore
-  alias McpWeb.Endpoint
+
+  alias Mcp.Performance.LoginPerformanceTest.Statistics
 
   @endpoint McpWeb.Endpoint
 
@@ -29,7 +31,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
       assert time < 100_000, "Login page took #{time}μs, expected < 100ms"
     end
 
-    test "handles concurrent login page loads", %{conn: conn} do
+    test "handles concurrent login page loads", %{conn: _conn} do
       num_requests = 10
       num_users = 5
 
@@ -48,7 +50,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
       tasks =
         for i <- 1..num_requests do
           Task.async(fn ->
-            user = Enum.at(users, rem(i - 1, num_users))
+            _user = Enum.at(users, rem(i - 1, num_users))
             conn = build_conn()
 
             {time, result} =
@@ -79,7 +81,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
   end
 
   describe "Authentication Performance" do
-    test "authenticates user within acceptable time", %{conn: conn} do
+    test "authenticates user within acceptable time", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       # Measure authentication time
@@ -93,7 +95,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
       assert session.access_token != nil
     end
 
-    test "handles concurrent authentication requests efficiently", %{conn: conn} do
+    test "handles concurrent authentication requests efficiently", %{conn: _conn} do
       num_requests = 20
       num_users = 5
 
@@ -144,7 +146,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
       assert successes == num_requests, "Success rate: #{successes}/#{num_requests}"
     end
 
-    test "maintains performance with many failed login attempts", %{conn: conn} do
+    test "maintains performance with many failed login attempts", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       num_attempts = 10
@@ -170,7 +172,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
   end
 
   describe "Session Management Performance" do
-    test "creates and verifies sessions efficiently", %{conn: conn} do
+    test "creates and verifies sessions efficiently", %{conn: _conn} do
       {:ok, user} = create_test_user()
       num_sessions = 10
 
@@ -211,7 +213,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
       assert successes == num_sessions
     end
 
-    test "revokes sessions efficiently", %{conn: conn} do
+    test "revokes sessions efficiently", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       # Create multiple sessions
@@ -246,7 +248,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
       assert failures == length(sessions), "Expected all sessions to be revoked"
     end
 
-    test "refreshes tokens efficiently", %{conn: conn} do
+    test "refreshes tokens efficiently", %{conn: _conn} do
       {:ok, user} = create_test_user()
       num_refreshes = 10
 
@@ -255,7 +257,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
 
       # Measure token refresh performance
       times =
-        for i <- 1..num_refreshes do
+        for _i <- 1..num_refreshes do
           {time, _result} =
             :timer.tc(fn ->
               Auth.refresh_jwt_session(session.refresh_token)
@@ -274,7 +276,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
   end
 
   describe "Memory Usage Performance" do
-    test "doesn't leak memory during authentication cycles", %{conn: conn} do
+    test "doesn't leak memory during authentication cycles", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       # Measure initial memory
@@ -305,7 +307,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
       assert memory_growth_mb < 10, "Memory grew by #{memory_growth_mb}MB, expected < 10MB"
     end
 
-    test "efficiently manages session storage", %{conn: conn} do
+    test "efficiently manages session storage", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       # Create many sessions
@@ -350,7 +352,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
   end
 
   describe "Database Performance" do
-    test "efficient database queries during authentication", %{conn: conn} do
+    test "efficient database queries during authentication", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       # This test would require database query instrumentation
@@ -358,7 +360,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
       num_attempts = 20
 
       times =
-        for i <- 1..num_attempts do
+        for _i <- 1..num_attempts do
           {time, _result} =
             :timer.tc(fn ->
               Auth.authenticate(user.email, "Password123!", "127.0.0.1")
@@ -379,7 +381,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
       assert variance < 1_000_000_000, "High variance in auth times: #{variance}"
     end
 
-    test "handles database connection pooling under load", %{conn: conn} do
+    test "handles database connection pooling under load", %{conn: _conn} do
       num_users = 10
       num_requests_per_user = 5
 
@@ -432,7 +434,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
   end
 
   describe "Load Testing" do
-    test "handles sustained load over time", %{conn: conn} do
+    test "handles sustained load over time", %{conn: _conn} do
       {:ok, user} = create_test_user()
       duration_seconds = 5
       # ms between requests
@@ -476,7 +478,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
       assert avg_time < 200_000, "Sustained load avg time: #{avg_time}μs, expected < 200ms"
     end
 
-    test "handles burst load efficiently", %{conn: conn} do
+    test "handles burst load efficiently", %{conn: _conn} do
       num_users = 20
       burst_size = 10
 
@@ -536,7 +538,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
   end
 
   describe "Stress Testing" do
-    test "recovers from resource exhaustion", %{conn: conn} do
+    test "recovers from resource exhaustion", %{conn: _conn} do
       # This test simulates resource exhaustion scenarios
       # In a real environment, this would test memory, CPU, and database limits
 
@@ -613,6 +615,13 @@ defmodule Mcp.Performance.LoginPerformanceTest do
       status: :active
     }
 
-    User.register(Map.merge(default_attrs, attrs))
+    merged_attrs = Map.merge(default_attrs, attrs)
+
+    User.register(
+      merged_attrs.email,
+      merged_attrs.password,
+      merged_attrs.password_confirmation,
+      merged_attrs
+    )
   end
 end

@@ -7,7 +7,7 @@ defmodule Mcp.Underwriting.Gateway do
   alias Mcp.Underwriting.RiskAssessment
 
 
-  alias Mcp.Underwriting.CircuitBreaker
+
 
   def get_adapter(context \\ %{}) do
     Mcp.Underwriting.VendorRouter.select_adapter(context)
@@ -129,27 +129,14 @@ defmodule Mcp.Underwriting.Gateway do
   defp call_adapter(adapter, function, args) do
     service_name = Atom.to_string(adapter)
     
-    try do
-      result = apply(adapter, function, args)
-      
-      case result do
-        {:ok, _} -> 
-          CircuitBreaker.report_success(service_name)
-          result
-        {:error, _reason} ->
-          # Determine if this is a system error or business error
-          # For now, treat all errors as potential system errors unless specific known business errors
-          # This is a simplification. In reality, we'd check `reason`.
-          CircuitBreaker.report_failure(service_name)
-          result
-        _ ->
-          CircuitBreaker.report_success(service_name)
-          result
-      end
-    catch
-      kind, reason ->
-        CircuitBreaker.report_failure(service_name)
-        :erlang.raise(kind, reason, __STACKTRACE__)
+    result_tuple = Mcp.Utils.CircuitBreaker.execute(service_name, fn ->
+      apply(adapter, function, args)
+    end)
+
+    case result_tuple do
+      {:ok, result} -> result
+      {:error, :circuit_open} -> {:error, :circuit_open}
+      {:error, reason} -> {:error, reason}
     end
   end
 

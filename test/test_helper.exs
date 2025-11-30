@@ -15,7 +15,8 @@ end
 # Configure ExUnit for parallel testing where safe
 ExUnit.configure(exclude: [:slow, :integration])
 
-# Test utilities - Remove unused aliases to prevent warnings
+# Test utilities
+# Code.require_file("test/support/mocks.ex")
 
 # Configure test database
 Application.put_env(:mcp, Mcp.Repo,

@@ -2,7 +2,7 @@ defmodule Mcp.Performance.CacheSessionPerformanceTest do
   use ExUnit.Case, async: false
 
   alias Mcp.Accounts.{Token, User}
-  alias Mcp.Cache.{CacheManager, RedisClient}
+  alias Mcp.Cache.CacheManager
 
   describe "Cache Performance" do
     test "cache operations are performant" do
@@ -417,13 +417,13 @@ defmodule Mcp.Performance.CacheSessionPerformanceTest do
       # Create many sessions
       session_count = 500
 
-      sessions =
+      _sessions =
         for _i <- 1..session_count do
           {:ok, session} = Token.create_jwt_token(user, :access)
           session
         end
 
-      after_sessions_memory = :erlang.memory()
+      _after_sessions_memory = :erlang.memory()
 
       # Revoke all sessions
       Token.revoke_user_tokens(user)

@@ -190,9 +190,8 @@ defmodule McpWeb.AuthLive.TwoFactorManagement do
   # defp translate_totp_error(:totp_not_enabled), do: "2FA is not enabled for this account."
   defp translate_totp_error(reason), do: "Verification failed: #{inspect(reason)}"
 
-  defp format_otp_date(nil), do: "Unknown"
-
-  defp format_otp_date(date) do
+  def format_otp_date(nil), do: "Unknown"
+  def format_otp_date(date) do
     Calendar.strftime(date, "%B %d, %Y")
   end
 end

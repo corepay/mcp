@@ -1,7 +1,7 @@
 defmodule Mcp.Registration.RegistrationIntegrationTest do
-  use ExUnit.Case, async: false
+  use Mcp.DataCase, async: false
 
-  alias Mcp.Accounts.User
+
 
   alias Mcp.Registration.{
     EmailService,
@@ -11,8 +11,20 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
     WorkflowOrchestrator
   }
 
+  setup do
+    {:ok, tenant} =
+      Mcp.Platform.Tenant.create(%{
+        name: "Test Tenant",
+        slug: "test-tenant-#{System.unique_integer([:positive])}",
+        subdomain: "test-#{System.unique_integer([:positive])}",
+        company_schema: "test_schema_#{System.unique_integer([:positive])}"
+      })
+
+    {:ok, tenant: tenant}
+  end
+
   describe "complete registration workflow" do
-    test "successful self-service registration" do
+    test "successful self-service registration", %{tenant: tenant} do
       registration_data = %{
         first_name: "Integration",
         last_name: "Test",
@@ -27,16 +39,16 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
       assert {:ok, :allowed} = PolicyValidator.validate_registration_request(registration_data)
 
       # Register the user
-      {:ok, user} = RegistrationService.register_user(registration_data)
+      {:ok, user} = RegistrationService.register_user(registration_data, tenant_id: tenant.id)
 
       assert user.first_name == "Integration"
       assert user.last_name == "Test"
-      assert user.email == "integration.test@example.com"
+      assert to_string(user.email) == "integration.test@example.com"
       assert user.status == :active
       assert user.hashed_password != nil
     end
 
-    test "registration with approval workflow" do
+    test "registration with approval workflow", %{tenant: tenant} do
       registration_data = %{
         first_name: "Approval",
         last_name: "Test",
@@ -53,10 +65,10 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
 
       # Register with approval required
       {:ok, request} =
-        RegistrationService.register_user(registration_data, requires_approval: true)
+        RegistrationService.register_user(registration_data, requires_approval: true, tenant_id: tenant.id)
 
-      assert request.email == "approval.test@example.com"
-      assert request.status == :pending
+      assert to_string(request.email) == "approval.test@example.com"
+      assert request.status == :submitted
       assert request.registration_data != nil
     end
   end
@@ -77,7 +89,7 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
       {:error, :blocked} = PolicyValidator.validate_registration_request(suspicious_data)
     end
 
-    test "limits registration frequency" do
+    test "limits registration frequency", %{tenant: tenant} do
       user_ip = "192.168.1.200"
 
       # First registration should succeed
@@ -94,7 +106,7 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
       assert {:ok, :allowed} = PolicyValidator.validate_registration_request(first_data)
 
       # Create the first user
-      {:ok, _user} = RegistrationService.register_user(first_data)
+      {:ok, _user} = RegistrationService.register_user(first_data, tenant_id: tenant.id)
 
       # Second registration from same IP might be rate limited
       second_data = %{
@@ -214,7 +226,7 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
   end
 
   describe "email service integration" do
-    test "sends verification email on successful registration" do
+    test "sends verification email on successful registration", %{tenant: tenant} do
       registration_data = %{
         first_name: "Email",
         last_name: "Test",
@@ -225,7 +237,7 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
         user_agent: "Test Browser"
       }
 
-      {:ok, user} = RegistrationService.register_user(registration_data)
+      {:ok, user} = RegistrationService.register_user(registration_data, tenant_id: tenant.id)
 
       # Mock email sending
       email_sent = EmailService.send_verification_email(user.email, user.id)
@@ -234,7 +246,7 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
       assert email_sent == :ok or email_sent == :mocked
     end
 
-    test "sends approval notification to admins" do
+    test "sends approval notification to admins", %{tenant: tenant} do
       registration_data = %{
         first_name: "Admin",
         last_name: "Notify",
@@ -246,7 +258,7 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
       }
 
       {:ok, request} =
-        RegistrationService.register_user(registration_data, requires_approval: true)
+        RegistrationService.register_user(registration_data, requires_approval: true, tenant_id: tenant.id)
 
       # Mock admin notification
       notification_sent = EmailService.send_admin_approval_notification(request)
@@ -256,7 +268,7 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
   end
 
   describe "workflow orchestrator" do
-    test "orchestrates complete registration flow" do
+    test "orchestrates complete registration flow", %{tenant: tenant} do
       workflow_data = %{
         user_data: %{
           first_name: "Workflow",
@@ -269,7 +281,8 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
           ip_address: "127.0.0.1",
           user_agent: "Test Browser",
           referrer: "https://example.com",
-          utm_source: "google"
+          utm_source: "google",
+          tenant_id: tenant.id
         }
       }
 
@@ -306,7 +319,7 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
   end
 
   describe "registration request management" do
-    test "approves pending registration request" do
+    test "approves pending registration request", %{tenant: tenant} do
       registration_data = %{
         first_name: "Approve",
         last_name: "Me",
@@ -318,20 +331,20 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
       }
 
       {:ok, request} =
-        RegistrationService.register_user(registration_data, requires_approval: true)
+        RegistrationService.register_user(registration_data, requires_approval: true, tenant_id: tenant.id)
 
-      assert request.status == :pending
+      assert request.status == :submitted
 
       # Approve the request
-      {:ok, user} = RegistrationService.approve_registration(request.id, "admin@example.com")
+      {:ok, user} = RegistrationService.approve_registration(request.id, Ash.UUID.generate())
 
       assert user.first_name == "Approve"
       assert user.last_name == "Me"
-      assert user.email == "approve.me@example.com"
+      assert to_string(user.email) == "approve.me@example.com"
       assert user.status == :active
     end
 
-    test "rejects pending registration request" do
+    test "rejects pending registration request", %{tenant: tenant} do
       registration_data = %{
         first_name: "Reject",
         last_name: "Me",
@@ -343,9 +356,9 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
       }
 
       {:ok, request} =
-        RegistrationService.register_user(registration_data, requires_approval: true)
+        RegistrationService.register_user(registration_data, requires_approval: true, tenant_id: tenant.id)
 
-      assert request.status == :pending
+      assert request.status == :submitted
 
       # Reject the request
       {:ok, rejected_request} =
@@ -362,7 +375,7 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
   end
 
   describe "bulk registration operations" do
-    test "handles multiple registration requests" do
+    test "handles multiple registration requests", %{tenant: tenant} do
       registrations = [
         %{
           first_name: "Bulk",
@@ -386,7 +399,7 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
 
       results =
         Enum.map(registrations, fn data ->
-          RegistrationService.register_user(data)
+          RegistrationService.register_user(data, tenant_id: tenant.id)
         end)
 
       # All registrations should succeed or fail gracefully
@@ -406,7 +419,7 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
   end
 
   describe "edge cases and error handling" do
-    test "handles concurrent registration attempts" do
+    test "handles concurrent registration attempts", %{tenant: tenant} do
       same_email = "concurrent@example.com"
 
       base_data = %{
@@ -423,7 +436,7 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
       tasks =
         for _i <- 1..3 do
           Task.async(fn ->
-            RegistrationService.register_user(base_data)
+            RegistrationService.register_user(base_data, tenant_id: tenant.id)
           end)
         end
 
@@ -466,7 +479,7 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
       end)
     end
 
-    test "handles network failures during registration" do
+    test "handles network failures during registration", %{tenant: tenant} do
       # This would test email service failures, external API calls, etc.
       registration_data = %{
         first_name: "Network",
@@ -479,8 +492,8 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
       }
 
       # Registration should succeed
-      {:ok, user} = RegistrationService.register_user(registration_data)
-      assert user.email == "network.test@example.com"
+      {:ok, user} = RegistrationService.register_user(registration_data, tenant_id: tenant.id)
+      assert to_string(user.email) == "network.test@example.com"
     end
   end
 end

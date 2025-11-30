@@ -12,14 +12,13 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
   alias Mcp.MultiTenant
   alias Mcp.Platform.{DataMigration, DataMigrationLog, DataMigrationRecord, Tenant}
   alias Mcp.Repo
-
   alias Mcp.Services.{
     BackupService,
-    DataImporter,
     DataMigrationEngine,
-    DataTransformer,
-    DataValidator
+    DataTransformer
   }
+  alias Mcp.Services.DataValidator
+
 
   @moduletag :integration
 
@@ -31,15 +30,24 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
     # Create a test tenant
     {:ok, tenant} =
       Tenant.create(%{
-        company_name: "Test ISP",
-        company_schema: "test_tenant_#{:erlang.unique_integer()}",
-        subdomain: "test-isp-#{:erlang.unique_integer()}",
-        plan: :professional,
-        status: :active
+        name: "Test ISP",
+        company_schema: "test_tenant_#{:erlang.unique_integer([:positive])}",
+        subdomain: "test-isp-#{:erlang.unique_integer([:positive])}",
+        slug: "test-isp-#{:erlang.unique_integer([:positive])}",
+        plan: :professional
       })
 
     # Create tenant schema
     {:ok, _} = MultiTenant.create_tenant_schema(tenant.company_schema)
+
+    # Setup temp backup directory
+    temp_backup_dir = Path.join(System.tmp_dir!(), "mcp_backups_#{:erlang.unique_integer([:positive])}")
+    Application.put_env(:mcp, :backup_storage_path, temp_backup_dir)
+    File.mkdir_p!(temp_backup_dir)
+
+    on_exit(fn ->
+      File.rm_rf(temp_backup_dir)
+    end)
 
     %{
       tenant: tenant
@@ -50,7 +58,7 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
     test "imports customer data from CSV to tenant schema", %{tenant: tenant} do
       # Prepare test CSV data
       csv_content = """
-      customer_id,first_name,last_name,email,phone,service_type,monthly_fee
+      cust_id,fname,lname,email_address,phone_num,plan_type,monthly_fee
       CUST001,John,Doe,john@example.com,(555)123-4567,residential_basic,49.99
       CUST002,Jane,Smith,jane@example.com,(555)234-5678,residential_premium,79.99
       CUST003,Bob,Johnson,bob@company.com,(555)345-6789,business_standard,199.99
@@ -232,7 +240,7 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
         # Check error details
         failed_record = hd(failed_records)
         assert is_binary(failed_record.error_message)
-        assert length(failed_record.validation_errors) > 0
+        assert length(failed_record.validation_errors["errors"]) > 0
       after
         File.rm(temp_file)
       end
@@ -242,8 +250,8 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
       # Prepare CSV with data that needs transformation
       csv_content = """
       cust_id,fname,lname,email_addr,phone_num,plan_type,base_fee
-      1,john doe,JOHN@EXAMPLE.COM,555-123-4567,basic,49.99
-      2,jane smith,JANE@EXAMPLE.COM,(555) 234-5678,premium,79.99
+      1,john,doe,JOHN@EXAMPLE.COM,555-123-4567,basic,49.99
+      2,jane,smith,JANE@EXAMPLE.COM,(555) 234-5678,premium,79.99
       """
 
       temp_file = write_temp_file("raw_customers.csv", csv_content)
@@ -321,7 +329,7 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
 
         target_data = first_record.target_data
         assert target_data["customer_id"] == "1"
-        assert target_data["first_name"] == "John Doe"
+        assert target_data["first_name"] == "John"
         assert target_data["email"] == "john@example.com"
         assert target_data["phone"] == "5551234567"
         assert target_data["service_type"] == "residential_basic"
@@ -414,9 +422,11 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
 
       # List backups
       {:ok, backups} = BackupService.list_tenant_backups(tenant.id)
+      # Verify backup exists in list
       assert length(backups) >= 1
-      our_backup = Enum.find(backups, fn b -> b.backup_id == backup_info.backup_id end)
+      our_backup = Enum.find(backups, fn b -> b["backup_id"] == backup_info.backup_id end)
       assert our_backup != nil
+      assert our_backup["tenant_id"] == tenant.id
     end
 
     test "cleanup old backups", %{tenant: tenant} do
@@ -470,11 +480,18 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
 
   defp get_backup_path(backup_id) do
     base_path = Application.get_env(:mcp, :backup_storage_path, "backups")
-    Path.join([base_path, backup_id])
+    
+    parts = String.split(backup_id, "_")
+    if length(parts) >= 4 do
+      tenant_id = Enum.at(parts, 1)
+      Path.join([base_path, "tenant_#{tenant_id}", backup_id])
+    else
+      Path.join([base_path, backup_id])
+    end
   end
 
   defp generate_large_customer_csv(count) do
-    header = "customer_id,first_name,last_name,email,service_type,monthly_fee\n"
+    header = "cust_id,fname,lname,email_address,phone_num,plan_type,monthly_fee\n"
 
     rows =
       Enum.map(1..count, fn i ->
@@ -482,7 +499,7 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
         service_type = if rem(i, 3) == 0, do: "business_standard", else: "residential_basic"
         monthly_fee = if service_type == "business_standard", do: "199.99", else: "49.99"
 
-        "CUST#{String.pad_leading("#{i}", 6, "0")},Customer#{i},Test#{i},#{email},#{service_type},#{monthly_fee}"
+        "CUST#{String.pad_leading("#{i}", 6, "0")},Customer#{i},Test#{i},#{email},(555)000-0000,#{service_type},#{monthly_fee}"
       end)
 
     header <> Enum.join(rows, "\n")

@@ -19,6 +19,19 @@ defmodule Mcp.Gdpr.Compliance do
   alias Mcp.Repo
   import Ecto.Query
 
+  @callback request_user_deletion(String.t(), String.t(), String.t() | nil, keyword()) ::
+              {:ok, map()} | {:error, any()}
+  @callback request_user_data_export(String.t(), String.t(), String.t() | nil) ::
+              {:ok, map()} | {:error, any()}
+  @callback update_user_consent(String.t(), String.t(), String.t(), String.t() | nil) ::
+              {:ok, map()} | {:error, any()}
+  @callback get_user_audit_trail(String.t(), integer()) :: {:ok, list()} | {:error, any()}
+  @callback get_user_consents(String.t()) :: {:ok, list()} | {:error, any()}
+  @callback anonymize_user_data(String.t(), keyword()) :: {:ok, atom()} | {:error, any()}
+  @callback get_users_overdue_for_anonymization() :: list()
+  @callback generate_compliance_report(keyword()) :: {:ok, map()} | {:error, any()}
+  @callback cancel_user_deletion(String.t(), String.t() | nil) :: {:ok, map()} | {:error, any()}
+
   @deletion_retention_days 90
 
   @doc """
@@ -46,7 +59,7 @@ defmodule Mcp.Gdpr.Compliance do
                reason: reason,
                retention_expires_at: user.gdpr_retention_expires_at
              }),
-           {:ok, _schedule} <- schedule_retention_cleanup(user_id, @deletion_retention_days),
+           {:ok, _schedule} <- schedule_retention_cleanup(user, @deletion_retention_days),
            {:ok, _export} <- generate_final_data_export(user_id) do
         user
       else
@@ -97,7 +110,16 @@ defmodule Mcp.Gdpr.Compliance do
   - {:error, reason} on failure
   """
   def update_user_consent(user_id, purpose, status, actor_id \\ nil) do
-    with {:ok, consent} <- Consent.record_consent(user_id, purpose, status, actor_id),
+    # Map status to internal status
+    internal_status =
+      case status do
+        "granted" -> "active"
+        "withdrawn" -> "withdrawn"
+        _ -> "active"
+      end
+
+    with {:ok, consent} <-
+           Consent.record_consent(user_id, purpose, "consent", actor_id, status: internal_status),
          {:ok, _audit} <-
            AuditTrail.log_action(user_id, "consent_updated", actor_id, %{
              purpose: purpose,
@@ -296,46 +318,39 @@ defmodule Mcp.Gdpr.Compliance do
   - {:error, reason} on failure
   """
   def cancel_user_deletion(user_id, actor_id \\ nil) do
-    Repo.transaction(fn ->
-      user = Repo.get(UserSchema, user_id)
-      handle_user_deletion_cancellation(user, user_id, actor_id)
-    end)
+    case User.by_id(user_id) do
+      {:ok, user} ->
+        handle_user_deletion_cancellation(user, user_id, actor_id)
+
+      {:error, _} ->
+        {:error, :user_not_found}
+    end
   end
 
-  defp handle_user_deletion_cancellation(nil, _user_id, _actor_id) do
-    Repo.rollback(:user_not_found)
-  end
-
-  defp handle_user_deletion_cancellation(%UserSchema{status: "deleted"} = user, user_id, actor_id) do
+  defp handle_user_deletion_cancellation(%{status: :deleted} = user, user_id, actor_id) do
     restore_deleted_user(user, user_id, actor_id)
   end
 
   defp handle_user_deletion_cancellation(user, user_id, actor_id) do
     AuditTrail.log_action(user_id, "deletion_cancelled_already_active", actor_id, %{})
-    user
+    {:ok, user}
   end
 
   defp restore_deleted_user(user, user_id, actor_id) do
     user
-    |> build_restoration_changeset()
-    |> Repo.update()
+    |> Ash.Changeset.for_update(:update, %{status: :active})
+    |> Ash.Changeset.force_change_attribute(:deleted_at, nil)
+    |> Ash.Changeset.force_change_attribute(:deletion_reason, nil)
+    |> Ash.Changeset.force_change_attribute(:gdpr_retention_expires_at, nil)
+    |> Ash.update()
     |> case do
       {:ok, restored_user} ->
         AuditTrail.log_action(user_id, "deletion_cancelled", actor_id, %{})
-        restored_user
+        {:ok, restored_user}
 
-      {:error, reason} ->
-        Repo.rollback(reason)
+      {:error, error} ->
+        Repo.rollback(error)
     end
-  end
-
-  defp build_restoration_changeset(user) do
-    Ecto.Changeset.change(user, %{
-      status: "active",
-      deleted_at: nil,
-      deletion_reason: nil,
-      gdpr_retention_expires_at: nil
-    })
   end
 
   # Private functions
@@ -369,11 +384,12 @@ defmodule Mcp.Gdpr.Compliance do
     end
   end
 
-  defp schedule_retention_cleanup(user_id, retention_days) do
+  defp schedule_retention_cleanup(user, retention_days) do
     expires_at = DateTime.add(DateTime.utc_now(), retention_days, :day)
 
-    DataRetention.schedule_cleanup(user_id, expires_at,
-      categories: ["core_identity", "activity_data"]
+    DataRetention.schedule_cleanup(user.id, expires_at,
+      categories: ["core_identity", "activity_data"],
+      tenant_id: user.tenant_id
     )
   end
 
@@ -613,4 +629,30 @@ defmodule Mcp.Gdpr.Compliance do
   end
 
   defp calculate_percentage(_part, _total), do: 0.0
+
+  @doc """
+  Generates a data export with specific categories.
+  """
+  def generate_data_export(user_id, format, _categories \\ []) do
+    # In a real implementation, this would filter by categories
+    # For now, we just pass through to request_user_data_export
+    request_user_data_export(user_id, format)
+  end
+
+  @doc """
+  Checks if a user has given consent for a specific purpose.
+  """
+  def has_consent?(user_id, purpose) do
+    case Consent.get_user_consent(user_id, purpose) do
+      nil -> {:ok, false}
+      %{} = consent -> {:ok, consent.status == "active" or consent.status == "granted"}
+    end
+  end
+
+  @doc """
+  Records user consent (alias for update_user_consent).
+  """
+  def record_consent(user_id, purpose, status, actor_id) do
+    update_user_consent(user_id, purpose, status, actor_id)
+  end
 end

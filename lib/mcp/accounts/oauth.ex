@@ -10,6 +10,16 @@ defmodule Mcp.Accounts.OAuth do
 
   @supported_providers [:google, :github]
 
+  @callback authorize_url(atom(), String.t()) :: String.t() | {:error, String.t()}
+  @callback callback(atom(), map(), map()) :: {:ok, User.t()} | {:error, term()}
+  @callback authenticate_oauth(User.t(), String.t() | nil) :: {:ok, User.t()} | {:error, term()}
+  @callback oauth_linked?(User.t(), atom()) :: boolean()
+  @callback unlink_oauth(User.t(), atom()) :: {:ok, User.t()} | {:error, term()}
+  @callback link_oauth(User.t(), atom(), map(), map()) :: {:ok, User.t()} | {:error, term()}
+  @callback get_oauth_info(User.t(), atom()) :: map()
+  @callback get_linked_providers(User.t()) :: [atom()]
+  @callback refresh_oauth_token(User.t(), atom()) :: {:ok, User.t()} | {:error, term()}
+
   @doc """
   Generates OAuth authorize URL for a provider.
 

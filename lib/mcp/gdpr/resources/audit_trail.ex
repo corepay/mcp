@@ -11,6 +11,7 @@ defmodule Mcp.Gdpr.Resources.AuditTrail do
 
   postgres do
     table "gdpr_audit_trail"
+    schema("platform")
     repo(Mcp.Repo)
   end
 
@@ -83,7 +84,8 @@ defmodule Mcp.Gdpr.Resources.AuditTrail do
         :data_categories,
         :legal_basis,
         :retention_period_days,
-        :details
+        :details,
+        :processed_at
       ]
     end
   end

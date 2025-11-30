@@ -2,7 +2,7 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
   use ExUnit.Case, async: false
 
   alias Mcp.Accounts.{Token, TOTP, User}
-  alias Mcp.Cache.RedisClient
+
 
   describe "Authentication Security" do
     test "prevents timing attacks on password verification" do
@@ -27,7 +27,7 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
           {time, _result} =
             :timer.tc(fn ->
               # Simulate password verification timing
-              Bcrypt.check_pass(%{hashed_password: user.hashed_password}, password)
+              Bcrypt.verify_pass(password, user.hashed_password)
             end)
 
           time
@@ -71,7 +71,7 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
     end
 
     test "generates cryptographically secure tokens" do
-      {:ok, user} =
+      {:ok, _user} =
         User.register(%{
           first_name: "Token",
           last_name: "Test",
@@ -135,8 +135,8 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
         })
 
       # Create initial session tokens
-      {:ok, access_token} = Token.create_jwt_token(user, :access)
-      {:ok, refresh_token} = Token.create_jwt_token(user, :refresh)
+      {:ok, _access_token} = Token.create_jwt_token(user, :access)
+      {:ok, _refresh_token} = Token.create_jwt_token(user, :refresh)
 
       # Change password
       User.change_password(user, %{
@@ -169,7 +169,7 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
     end
 
     test "prevents session fixation" do
-      {:ok, user} =
+      {:ok, _user} =
         User.register(%{
           first_name: "Fixation",
           last_name: "Test",
@@ -340,7 +340,7 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
     end
 
     test "implements IP-based rate limiting" do
-      ip_address = "192.168.1.100"
+      _ip_address = "192.168.1.100"
 
       # Simulate multiple requests from same IP
       requests =
@@ -499,7 +499,7 @@ defmodule Mcp.Security.ComprehensiveSecurityTest do
     end
 
     test "implements audit trails" do
-      {:ok, user} =
+      {:ok, _user} =
         User.register(%{
           first_name: "Audit",
           last_name: "Test",

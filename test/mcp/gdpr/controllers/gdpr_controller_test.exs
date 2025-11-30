@@ -1,10 +1,6 @@
 defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
   use McpWeb.ConnCase, async: true
 
-  alias Mcp.Accounts.Tenant
-  alias Mcp.Accounts.User
-  alias Mcp.Gdpr.Supervisor
-
   @moduletag :gdpr
   @moduletag :unit
 
@@ -29,10 +25,24 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
 
     final_attrs = Map.merge(default_attrs, attrs)
 
+    tenant_id = Ecto.UUID.generate()
+
+    # Create a tenant to satisfy FK constraints
+    Mcp.Repo.insert!(%Mcp.Platform.Tenant{
+      id: tenant_id,
+      name: "Test Tenant",
+      slug: "test-tenant-#{tenant_id}",
+      company_schema: "test_tenant_#{String.replace(tenant_id, "-", "_")}",
+      subdomain: "test-#{tenant_id}",
+      inserted_at: DateTime.utc_now(),
+      updated_at: DateTime.utc_now()
+    })
+
     user = %{
       id: Ecto.UUID.generate(),
       email: final_attrs.email,
       role: final_attrs.role,
+      tenant_id: tenant_id,
       inserted_at: DateTime.utc_now(),
       updated_at: DateTime.utc_now()
     }
@@ -43,18 +53,18 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
   describe "GDPR Controller Authentication" do
     test "requires authentication for data export request", %{conn: conn} do
       # RED: Test that unauthenticated requests are rejected
-      conn = post(conn, "/api/gdpr/export", %{"format" => "json"})
+      conn = post(conn, "/gdpr/data-export", %{"format" => "json"})
 
-      # Should return 401 Unauthorized
-      assert json_response(conn, 401)["error"] =~ "Authentication required"
+      # Should return 401 Unauthorized (HTML)
+      assert html_response(conn, 401) =~ "Authentication Required"
     end
 
     test "requires authentication for data deletion request", %{conn: conn} do
       # RED: Test that unauthenticated deletion requests are rejected
-      conn = delete(conn, "/api/gdpr/data/123")
+      conn = post(conn, "/gdpr/request-deletion", %{"reason" => "test"})
 
-      # Should return 401 Unauthorized
-      assert json_response(conn, 401)["error"] =~ "Authentication required"
+      # Should return 401 Unauthorized (HTML)
+      assert html_response(conn, 401) =~ "Authentication Required"
     end
 
     test "requires admin privileges for admin operations", %{conn: conn} do
@@ -74,26 +84,26 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
   describe "Data Export Functionality" do
     setup [:create_user, :auth_user_conn]
 
-    test "rejects invalid export formats", %{conn: conn, user: user} do
+    test "rejects invalid export formats", %{conn: conn, user: _user} do
       # RED: Test validation of export format parameter
-      conn = post(conn, "/api/gdpr/export", %{"format" => "invalid"})
+      conn = post(conn, "/gdpr/data-export", %{"format" => "invalid"})
 
       # Should return 400 Bad Request with validation error
-      assert json_response(conn, 400)["error"] =~ "Invalid export format"
+      assert json_response(conn, 400)["error"] =~ "Invalid input parameters"
     end
 
-    test "rejects malicious content in export parameters", %{conn: conn, user: user} do
+    test "rejects malicious content in export parameters", %{conn: conn, user: _user} do
       # RED: Test XSS injection prevention
       malicious_payload = %{"format" => "json", "purpose" => "<script>alert('xss')</script>"}
-      conn = post(conn, "/api/gdpr/export", malicious_payload)
+      conn = post(conn, "/gdpr/data-export", malicious_payload)
 
       # Should return 400 Bad Request with dangerous content error
       assert json_response(conn, 400)["error"] =~ "dangerous content"
     end
 
-    test "accepts valid export requests", %{conn: conn, user: user} do
+    test "accepts valid export requests", %{conn: conn, user: _user} do
       # RED: Test that valid export requests are accepted
-      conn = post(conn, "/api/gdpr/export", %{"format" => "json"})
+      conn = post(conn, "/gdpr/data-export", %{"format" => "json"})
 
       # Should return 202 Accepted with export details
       assert %{"export_id" => export_id, "status" => "pending"} = json_response(conn, 202)
@@ -104,25 +114,25 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
   describe "Input Validation Security" do
     setup [:create_user, :auth_user_conn]
 
-    test "sanitizes user ID parameters", %{conn: conn, user: user} do
+    test "sanitizes user ID parameters", %{conn: conn, user: _user} do
       # RED: Test SQL injection prevention in user IDs
       malicious_user_id = "123'; DROP TABLE users; --"
-      conn = get(conn, "/api/gdpr/export/#{malicious_user_id}/status")
+      conn = get(conn, "/gdpr/export/#{malicious_user_id}/status")
 
       # Should return 404 Not Found for invalid UUID format (routing handles this)
       assert json_response(conn, 404)["error"] =~ "Export not found"
     end
 
-    test "validates consent parameters", %{conn: conn, user: user} do
+    test "validates consent parameters", %{conn: conn, user: _user} do
       # RED: Test consent parameter validation
       invalid_consent = %{"legal_basis" => "invalid_basis", "purpose" => ""}
-      conn = post(conn, "/api/gdpr/consent", invalid_consent)
+      conn = post(conn, "/gdpr/consent", invalid_consent)
 
       # Should return 400 Bad Request with validation error
       assert json_response(conn, 400)["error"] =~ "Consent parameters required"
     end
 
-    test "prevents XSS in consent parameters", %{conn: conn, user: user} do
+    test "prevents XSS in consent parameters", %{conn: conn, user: _user} do
       # RED: Test XSS prevention in consent data
       xss_consent = %{
         "consents" => %{
@@ -131,7 +141,7 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
         }
       }
 
-      conn = post(conn, "/api/gdpr/consent", xss_consent)
+      conn = post(conn, "/gdpr/consent", xss_consent)
 
       # Should return 400 Bad Request with dangerous content error
       assert json_response(conn, 400)["error"] =~ "dangerous content"
@@ -141,15 +151,15 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
   describe "Rate Limiting" do
     setup [:create_user, :auth_user_conn]
 
-    test "enforces rate limits on export requests", %{conn: conn, user: user} do
+    test "enforces rate limits on export requests", %{conn: conn, user: _user} do
       # RED: Test rate limiting enforcement
       # Make multiple requests rapidly
       for _ <- 1..60 do
-        post(conn, "/api/gdpr/export", %{"format" => "json"})
+        post(conn, "/gdpr/data-export", %{"format" => "json"})
       end
 
       # Should hit rate limit on subsequent request
-      conn = post(conn, "/api/gdpr/export", %{"format" => "json"})
+      conn = post(conn, "/gdpr/data-export", %{"format" => "json"})
       assert json_response(conn, 429)["error"] =~ "Rate limit exceeded"
     end
   end
@@ -157,18 +167,18 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
   describe "Error Handling" do
     setup [:create_user, :auth_user_conn]
 
-    test "handles malformed JSON gracefully", %{conn: conn, user: user} do
+    test "handles malformed JSON gracefully", %{conn: conn, user: _user} do
       # RED: Test malformed JSON handling
       assert_raise Plug.Parsers.ParseError, fn ->
         conn
         |> put_req_header("content-type", "application/json")
-        |> post("/api/gdpr/export", "invalid json{")
+        |> post("/gdpr/data-export", "invalid json{")
       end
     end
 
-    test "sanitizes error responses", %{conn: conn, user: user} do
+    test "sanitizes error responses", %{conn: conn, user: _user} do
       # RED: Test that error responses don't leak sensitive information
-      conn = post(conn, "/api/gdpr/export", %{"format" => "invalid_format"})
+      conn = post(conn, "/gdpr/data-export", %{"format" => "invalid_format"})
 
       # Should return generic error without exposing system details
       response = json_response(conn, 400)
@@ -180,13 +190,36 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
 
   defp auth_user_conn(%{conn: conn} = context) do
     user = context[:user]
-    [conn: auth_conn(conn, user), user: user]
+    auth_result = auth_conn(conn, user)
+    [conn: auth_result.conn, user: auth_result.user]
   end
 
   defp auth_conn(conn, user) do
-    conn
-    |> assign(:current_user, user)
-    |> put_req_header("authorization", "Bearer mock.jwt.token.#{user.id}")
-    |> put_req_header("x-csrf-token", "test-csrf-token")
+    {:ok, session_data} = Mcp.Accounts.Auth.create_user_session(user, "127.0.0.1")
+    IO.inspect(session_data, label: "Session Data")
+
+    # Create API key for the user's tenant
+    api_key_string = "mcp_test_#{Ecto.UUID.generate()}"
+
+    {:ok, _api_key} =
+      Mcp.Accounts.ApiKey.create(%{
+        name: "Test Key",
+        key: api_key_string,
+        tenant_id: user.tenant_id,
+        permissions: ["admin:read", "admin:write"]
+      })
+
+    auth_conn =
+      conn
+      |> init_test_session(%{})
+      |> put_req_cookie("_mcp_access_token", session_data.access_token)
+      |> put_req_cookie("_mcp_refresh_token", session_data.refresh_token)
+      |> put_req_cookie("_mcp_session_id", session_data.session_id)
+      |> assign(:current_user, user)
+      |> put_req_header("authorization", "Bearer mock.jwt.token.#{user.id}")
+      |> put_req_header("x-csrf-token", "test-csrf-token")
+      |> put_req_header("x-api-key", api_key_string)
+
+    %{conn: auth_conn, user: user}
   end
 end

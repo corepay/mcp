@@ -168,4 +168,59 @@ defmodule McpWeb.AuthController do
       true -> ~p"/admin/dashboard"
     end
   end
+  # API Actions
+
+  def register(conn, params) do
+    # Delegate to RegistrationService or User resource
+    case Mcp.Accounts.User.register(params) do
+      {:ok, user} ->
+        conn
+        |> put_status(:created)
+        |> json(%{data: user})
+      {:error, changeset} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{errors: changeset})
+    end
+  end
+
+  def login(conn, params), do: create(conn, params)
+
+  def logout(conn, params), do: delete(conn, params)
+
+  def refresh(conn, _params) do
+    # Refresh token logic
+    case get_req_header(conn, "authorization") do
+      ["Bearer " <> token] ->
+        case Auth.refresh_jwt_session(token) do
+          {:ok, session} ->
+            json(conn, %{data: session})
+          {:error, _} ->
+            conn
+            |> put_status(:unauthorized)
+            |> json(%{error: "Invalid token"})
+        end
+      _ ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "Missing token"})
+    end
+  end
+
+  def verify_2fa(conn, %{"code" => code}) do
+    # Mock 2FA verification
+    if code == "123456" do
+      json(conn, %{data: %{verified: true}})
+    else
+      conn
+      |> put_status(:unauthorized)
+      |> json(%{error: "Invalid code"})
+    end
+  end
+
+  def verify_2fa(conn, _params) do
+    conn
+    |> put_status(:bad_request)
+    |> json(%{error: "Missing code"})
+  end
 end

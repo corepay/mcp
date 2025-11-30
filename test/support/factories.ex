@@ -31,9 +31,28 @@ defmodule Mcp.TestFactories do
   end
 
   def insert(:registration_request, attrs) do
+    tenant_id =
+      if Map.has_key?(attrs, :tenant_id) do
+        attrs.tenant_id
+      else
+        id = Ecto.UUID.generate()
+
+        Mcp.Repo.insert!(%Mcp.Platform.Tenant{
+          id: id,
+          name: "Factory Tenant #{id}",
+          slug: "factory-tenant-#{id}",
+          company_schema: "factory_tenant_#{String.replace(id, "-", "_")}",
+          subdomain: "factory-#{id}",
+          inserted_at: DateTime.utc_now(),
+          updated_at: DateTime.utc_now()
+        })
+
+        id
+      end
+
     default_attrs =
       %{
-        tenant_id: Map.get(attrs, :tenant_id, Ecto.UUID.generate()),
+        tenant_id: tenant_id,
         type: Map.get(attrs, :type, :customer),
         email: Map.get(attrs, :email, sequence(:email, &"register#{&1}@example.com")),
         first_name: Map.get(attrs, :first_name, "Test"),
@@ -59,7 +78,6 @@ defmodule Mcp.TestFactories do
       {:ok, request} -> request
       {:error, reason} -> raise "Failed to create registration request: #{inspect(reason)}"
     end
-    |> Ash.create()
   end
 
   # Variant factories for registration requests
@@ -80,10 +98,7 @@ defmodule Mcp.TestFactories do
   def insert(:submitted_registration_request, attrs) do
     request = insert(:registration_request, attrs)
 
-    {:ok, submitted} =
-      request
-      |> RegistrationRequest.submit(%{})
-      |> Ash.update()
+    {:ok, submitted} = RegistrationRequest.submit(request, %{})
 
     submitted
   end
@@ -92,10 +107,7 @@ defmodule Mcp.TestFactories do
     request = insert(:submitted_registration_request, attrs)
     approver_id = Map.get(attrs, :approved_by_id, Ecto.UUID.generate())
 
-    {:ok, approved} =
-      request
-      |> RegistrationRequest.approve(approver_id)
-      |> Ash.update()
+    {:ok, approved} = RegistrationRequest.approve(request, approver_id)
 
     approved
   end
@@ -106,7 +118,7 @@ defmodule Mcp.TestFactories do
 
     {:ok, rejected} =
       request
-      |> RegistrationRequest.reject(reason)
+      |> RegistrationRequest.reject(reason, "system")
       |> Ash.update()
 
     rejected

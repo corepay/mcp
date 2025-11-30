@@ -65,7 +65,6 @@ defmodule Mcp.Infrastructure.TenantManager do
     case Repo.query(query, [schema_name]) do
       {:ok, %{rows: [[exists]]}} -> {:ok, exists}
       {:error, reason} ->
-        IO.inspect(reason, label: "Check Schema Exists Error")
         {:error, reason}
     end
   end
@@ -77,7 +76,6 @@ defmodule Mcp.Infrastructure.TenantManager do
     case Repo.query(query, []) do
       {:ok, _} -> :ok
       {:error, reason} ->
-        IO.inspect(reason, label: "Create Tenant Schema Error")
         {:error, reason}
     end
   end

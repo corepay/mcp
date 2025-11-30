@@ -4,10 +4,15 @@ defmodule McpWeb.GdprController do
   require Logger
 
   alias Mcp.Accounts.UserSchema
-  alias Mcp.Gdpr.Compliance
+  # alias Mcp.Gdpr.Compliance # Removed direct alias
   alias Mcp.Repo
   alias McpWeb.Auth.GdprAuthPlug
   alias McpWeb.InputValidation
+
+  @compliance_impl Application.compile_env(:mcp, :compliance_impl, Mcp.Gdpr.Compliance)
+
+  plug GdprAuthPlug, require_auth: true
+  plug GdprAuthPlug, [require_admin: true] when action in [:admin_compliance, :admin_delete_user]
 
   @doc """
   Request data export for the authenticated user.
@@ -28,7 +33,7 @@ defmodule McpWeb.GdprController do
           request_id: request_id
         })
 
-        case Compliance.request_user_data_export(user.id, format, user.id) do
+        case @compliance_impl.request_user_data_export(user.id, format, user.id) do
           {:ok, export} ->
             # Log successful export request
             GdprAuthPlug.log_audit_event(conn, "DATA_EXPORT_REQUEST_ACCEPTED", %{
@@ -39,7 +44,9 @@ defmodule McpWeb.GdprController do
             })
 
             # GREEN: Add tenant context to export response
-            current_tenant = conn.assigns[:tenant_schema] || user.tenant_schema
+            current_tenant =
+              conn.assigns[:tenant_schema] || Map.get(user, :tenant_id) ||
+                Map.get(user, :tenant_schema)
 
             conn
             |> put_resp_header("x-tenant-id", current_tenant)
@@ -106,9 +113,21 @@ defmodule McpWeb.GdprController do
   end
 
   @doc """
+  Alias for request_data_export to match router configuration.
+  """
+  def create_data_export(conn, params), do: request_data_export(conn, params)
+
+  @doc """
+  Render the data export request page.
+  """
+  def data_export_request(conn, _params) do
+    render(conn, :data_export_request)
+  end
+
+  @doc """
   Get the status of a data export request.
   """
-  def get_export_status(conn, %{"export_id" => export_id}) do
+  def get_export_status(conn, %{"token" => export_id}) do
     user = conn.assigns.current_user
 
     case get_export_for_user(export_id, user.id) do
@@ -134,7 +153,7 @@ defmodule McpWeb.GdprController do
   @doc """
   Download a completed data export.
   """
-  def download_export(conn, %{"export_id" => export_id}) do
+  def download_export(conn, %{"token" => export_id}) do
     user = conn.assigns.current_user
 
     case get_export_for_user(export_id, user.id) do
@@ -181,7 +200,7 @@ defmodule McpWeb.GdprController do
       ip_address: conn.assigns[:gdpr_ip_address]
     })
 
-    case Compliance.request_user_deletion(user.id, reason, actor_id) do
+    case @compliance_impl.request_user_deletion(user.id, reason, actor_id, []) do
       {:ok, updated_user} ->
         # Log successful deletion request
         GdprAuthPlug.log_audit_event(conn, "ACCOUNT_DELETION_REQUEST_ACCEPTED", %{
@@ -253,7 +272,9 @@ defmodule McpWeb.GdprController do
   end
 
   def request_deletion(conn, _params) do
-    request_deletion(conn, %{"reason" => "user_request"})
+    conn
+    |> put_status(:bad_request)
+    |> json(%{error: "Reason is required"})
   end
 
   @doc """
@@ -263,7 +284,7 @@ defmodule McpWeb.GdprController do
     user = conn.assigns.current_user
     actor_id = user.id
 
-    case Compliance.cancel_user_deletion(user.id, actor_id) do
+    case @compliance_impl.cancel_user_deletion(user.id, actor_id) do
       {:ok, restored_user} ->
         Logger.info("User deletion request cancelled for user #{user.id}")
 
@@ -316,7 +337,7 @@ defmodule McpWeb.GdprController do
   def get_consent(conn, _params) do
     user = conn.assigns.current_user
 
-    case Compliance.get_user_consents(user.id) do
+    case @compliance_impl.get_user_consents(user.id) do
       {:ok, consents} when is_list(consents) ->
         render_consents_response(conn, consents)
 
@@ -406,10 +427,11 @@ defmodule McpWeb.GdprController do
   @doc """
   Get user audit trail.
   """
-  def get_audit_trail(conn, %{"limit" => limit}) do
+  def get_audit_trail(conn, params) do
+    limit = Map.get(params, "limit", "100")
     user = conn.assigns.current_user
 
-    case Compliance.get_user_audit_trail(user.id, String.to_integer(limit)) do
+    case @compliance_impl.get_user_audit_trail(user.id, String.to_integer(limit)) do
       {:ok, audit_trail} when is_list(audit_trail) ->
         render_audit_trail_response(conn, audit_trail)
 
@@ -470,7 +492,7 @@ defmodule McpWeb.GdprController do
       ip_address: conn.assigns[:gdpr_ip_address]
     })
 
-    case Compliance.request_user_deletion(user_id, reason, admin_user.id) do
+    case @compliance_impl.request_user_deletion(user_id, reason, admin_user.id, []) do
       {:ok, updated_user} ->
         # Log successful admin deletion
         GdprAuthPlug.log_audit_event(conn, "ADMIN_USER_DELETION_COMPLETED", %{
@@ -533,10 +555,10 @@ defmodule McpWeb.GdprController do
   @doc """
   Admin endpoint to get compliance report.
   """
-  def admin_get_compliance_report(conn, _params) do
+  def admin_compliance(conn, _params) do
     admin_user = conn.assigns.current_user
 
-    case Compliance.generate_compliance_report() do
+    case @compliance_impl.generate_compliance_report([]) do
       {:ok, report} ->
         conn
         |> put_status(:ok)
@@ -713,7 +735,7 @@ defmodule McpWeb.GdprController do
   defp update_multiple_consents(user_id, consent_updates, actor_id) do
     results =
       Enum.map(consent_updates, fn {purpose, status} ->
-        Compliance.update_user_consent(user_id, purpose, status, actor_id)
+        @compliance_impl.update_user_consent(user_id, purpose, status, actor_id)
       end)
 
     case Enum.find(results, fn result -> match?({:error, _}, result) end) do
@@ -749,12 +771,12 @@ defmodule McpWeb.GdprController do
   end
 
   defp get_overdue_users_for_anonymization do
-    Compliance.get_users_overdue_for_anonymization()
+    @compliance_impl.get_users_overdue_for_anonymization()
   end
 
   defp anonymize_overdue_users(users, actor_id) do
     Enum.count(users, fn user ->
-      case Compliance.anonymize_user_data(user.id, %{actor_id: actor_id}) do
+      case @compliance_impl.anonymize_user_data(user.id, %{actor_id: actor_id}) do
         {:ok, _} ->
           true
 
@@ -822,7 +844,7 @@ defmodule McpWeb.GdprController do
     end
   end
 
-  def delete_user_data(conn, %{"user_id" => user_id}) do
+  def delete_user_data(conn, %{"id" => user_id}) do
     current_user = conn.assigns.current_user
     request_id = conn.assigns[:gdpr_request_id]
 
@@ -830,7 +852,8 @@ defmodule McpWeb.GdprController do
     case InputValidation.validate_user_id(user_id) do
       {:ok, _uuid} ->
         # GREEN: Implement tenant isolation - users can only delete data from same tenant
-        current_tenant = conn.assigns[:tenant_schema] || current_user.tenant_schema
+        current_tenant =
+          conn.assigns[:tenant_schema] || current_user[:tenant_id] || current_user.tenant_id
 
         # For testing: detect cross-tenant access by comparing current user's tenant with target user
         # In real implementation, this would query the user from the appropriate tenant schema

@@ -9,19 +9,10 @@ defmodule Mcp.Platform.TenantUserManagerTest do
   use ExUnit.Case, async: false
   use Mcp.DataCase
 
-  alias Mcp.MultiTenant
-  alias Mcp.Platform.TenantPermissions
   alias Mcp.Platform.TenantUserManager
 
+
   @tenant_schema "test_tenant"
-  @valid_user_attrs %{
-    email: "test@example.com",
-    first_name: "John",
-    last_name: "Doe",
-    role: :viewer,
-    department: "Engineering",
-    job_title: "Developer"
-  }
 
   describe "create_tenant_owner/2" do
     test "creates tenant owner with admin role" do
@@ -51,7 +42,7 @@ defmodule Mcp.Platform.TenantUserManagerTest do
       assert {:error, reason} =
                TenantUserManager.create_tenant_owner(@tenant_schema, invalid_attrs)
 
-      assert reason != nil
+      assert reason == :invalid_attrs
     end
   end
 
@@ -425,7 +416,7 @@ defmodule Mcp.Platform.TenantUserManagerTest do
   end
 
   defp find_user_by_token(token) do
-    MultiTenant.with_tenant_context(@tenant_schema, fn ->
+    McpWeb.TenantContext.with_tenant_context(@tenant_schema, fn ->
       query = "SELECT * FROM tenant_users WHERE invitation_token = $1"
 
       case Mcp.Repo.query(query, [token]) do
@@ -440,7 +431,7 @@ defmodule Mcp.Platform.TenantUserManagerTest do
   end
 
   defp update_user_invitation_expiry(user_id, expiry_time) do
-    MultiTenant.with_tenant_context(@tenant_schema, fn ->
+    McpWeb.TenantContext.with_tenant_context(@tenant_schema, fn ->
       query = "UPDATE tenant_users SET invitation_expires_at = $1 WHERE id = $2"
       Mcp.Repo.query(query, [expiry_time, user_id])
     end)

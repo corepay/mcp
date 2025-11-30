@@ -1,27 +1,31 @@
 defmodule McpWeb.OAuthControllerTest do
-  use ExUnit.Case, async: true
-  use Phoenix.ConnTest
+  use McpWeb.ConnCase, async: false
+  import Plug.Conn
+  import Phoenix.ConnTest
 
   import Mox
 
-  alias Mcp.Accounts.{Auth, OAuth, User}
+  alias Mcp.Accounts.{Auth, User}
+  alias Mcp.Accounts.OAuthMock, as: OAuth
   alias Mcp.Cache.SessionStore
-  alias McpWeb.OAuthController
 
   @endpoint McpWeb.Endpoint
 
   # Setup Mox for test isolation
   setup :verify_on_exit!
 
-  setup %{conn: conn} do
+  setup do
     # Clean up any existing sessions
     SessionStore.flush_all()
 
-    {:ok,
-     conn:
-       conn
-       |> Map.put(:remote_ip, {127, 0, 0, 1})
-       |> put_req_header("user-agent", "Test Browser")}
+    conn =
+      build_conn()
+      |> Map.put(:remote_ip, {127, 0, 0, 1})
+      |> put_req_header("user-agent", "Test Browser")
+      |> init_test_session(%{})
+      |> fetch_flash()
+
+    {:ok, conn: conn}
   end
 
   describe "OAuth Authorization" do
@@ -64,10 +68,10 @@ defmodule McpWeb.OAuthControllerTest do
     end
 
     test "rejects invalid OAuth provider", %{conn: conn} do
-      conn = get(conn, "/auth/invalid")
+      conn = get(conn, "/auth/invalid_provider")
 
-      assert redirected_to(conn) == "/sign_in"
-      assert get_flash(conn, :error) == "Invalid OAuth provider"
+      assert redirected_to(conn) == "/tenant/sign-in"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid OAuth provider"
     end
   end
 
@@ -102,30 +106,21 @@ defmodule McpWeb.OAuthControllerTest do
       expect(OAuth, :callback, fn :google, code, captured_state ->
         assert captured_state == state
         assert code == "test_auth_code"
-        # nil user means new user will be created
-        {:ok, nil, tokens}
+        {:ok, user_info, tokens}
       end)
 
       # Mock user creation
-      expect(OAuth, :authenticate_oauth, fn user, _ip ->
-        assert user.email == "google.user@example.com"
-        create_test_session(user)
-      end)
-
-      # Mock OAuth user info for user creation
-      expect(OAuth, :callback, 2, fn :google, code, captured_state ->
-        if captured_state == state do
-          # First call returns user info for user creation
-          {:ok, user_info, tokens}
-        else
-          {:ok, nil, tokens}
-        end
+      expect(OAuth, :authenticate_oauth, fn user_info, _ip ->
+        assert user_info.email == "google.user@example.com"
+        # Create the user as if it was just registered via OAuth
+        {:ok, user} = create_test_user(%{email: user_info.email})
+        {:ok, user}
       end)
 
       conn = get(conn, "/auth/google/callback?code=test_auth_code&state=#{state}")
 
-      assert redirected_to(conn) == "/dashboard"
-      assert get_flash(conn, :info) =~ "Successfully signed in with Google"
+      assert redirected_to(conn) == "/tenant/dashboard"
+      assert Phoenix.Flash.get(conn, :info) =~ "Successfully signed in with Google"
       assert get_session(conn, :user_token) != nil
       assert get_session(conn, :current_user) != nil
 
@@ -135,12 +130,11 @@ defmodule McpWeb.OAuthControllerTest do
     end
 
     test "handles successful GitHub OAuth callback for existing user", %{conn: conn} do
-      # Create existing user
       {:ok, existing_user} = create_test_user(%{email: "github.user@example.com"})
 
       state = "oauth_github_state_456"
 
-      user_info = %{
+      _user_info = %{
         provider: :github,
         id: "github_user_456",
         email: "github.user@example.com",
@@ -178,8 +172,8 @@ defmodule McpWeb.OAuthControllerTest do
 
       conn = get(conn, "/auth/github/callback?code=test_github_code&state=#{state}")
 
-      assert redirected_to(conn) == "/dashboard"
-      assert get_flash(conn, :info) =~ "Successfully signed in with GitHub"
+      assert redirected_to(conn) == "/tenant/dashboard"
+      assert Phoenix.Flash.get(conn, :info) =~ "Successfully signed in with GitHub"
       assert get_session(conn, :user_token) != nil
       assert get_session(conn, :current_user) != nil
     end
@@ -214,8 +208,8 @@ defmodule McpWeb.OAuthControllerTest do
 
       conn = get(conn, "/auth/google/callback?code=test_code&state=#{state}")
 
-      assert redirected_to(conn) == "/change_password"
-      assert get_flash(conn, :warning) =~ "Please change your password"
+      assert redirected_to(conn) == "/tenant/change-password"
+      assert Phoenix.Flash.get(conn, :warning) =~ "Please change your password"
       assert get_session(conn, :temp_user_token) != nil
     end
   end
@@ -230,8 +224,8 @@ defmodule McpWeb.OAuthControllerTest do
 
       conn = get(conn, "/auth/google/callback?code=test_code&state=different_state")
 
-      assert redirected_to(conn) == "/sign_in"
-      assert get_flash(conn, :error) == "Invalid OAuth state"
+      assert redirected_to(conn) == "/tenant/sign-in"
+      assert Phoenix.Flash.get(conn, :error) == "Invalid OAuth state"
 
       # Session should be cleaned up
       assert get_session(conn, :oauth_state) == nil
@@ -241,8 +235,8 @@ defmodule McpWeb.OAuthControllerTest do
     test "rejects callback without state", %{conn: conn} do
       conn = get(conn, "/auth/google/callback?code=test_code")
 
-      assert redirected_to(conn) == "/sign_in"
-      assert get_flash(conn, :error) == "Invalid OAuth state"
+      assert redirected_to(conn) == "/tenant/sign-in"
+      assert Phoenix.Flash.get(conn, :error) == "Invalid OAuth state"
     end
 
     test "handles token exchange failure", %{conn: conn} do
@@ -261,9 +255,9 @@ defmodule McpWeb.OAuthControllerTest do
 
       conn = get(conn, "/auth/google/callback?code=invalid_code&state=#{state}")
 
-      assert redirected_to(conn) == "/sign_in"
-      assert get_flash(conn, :error) =~ "Failed to exchange authorization code"
-      assert get_flash(conn, :error) =~ "(400)"
+      assert redirected_to(conn) == "/tenant/sign-in"
+      assert Phoenix.Flash.get(conn, :error) =~ "Failed to exchange authorization code"
+      assert Phoenix.Flash.get(conn, :error) =~ "(400)"
     end
 
     test "handles user info fetch failure", %{conn: conn} do
@@ -282,9 +276,35 @@ defmodule McpWeb.OAuthControllerTest do
 
       conn = get(conn, "/auth/github/callback?code=test_code&state=#{state}")
 
-      assert redirected_to(conn) == "/sign_in"
-      assert get_flash(conn, :error) =~ "Failed to fetch user information"
-      assert get_flash(conn, :error) =~ "(401)"
+      assert redirected_to(conn) == "/tenant/sign-in"
+      assert Phoenix.Flash.get(conn, :error) =~ "Failed to fetch user information"
+      assert Phoenix.Flash.get(conn, :error) =~ "(401)"
+    end
+
+    test "handles concurrent login attempts", %{conn: conn} do
+      state = "oauth_creation_error_state"
+
+      conn =
+        conn
+        |> put_session(:oauth_state, state)
+        |> put_session(:oauth_provider, "google")
+
+      # Mock OAuth callback to return a user
+      expect(OAuth, :callback, fn :google, _code, captured_state ->
+        assert captured_state == state
+        {:ok, %{email: "concurrent@example.com"}, %{access_token: "token"}}
+      end)
+
+      # Mock authenticate_oauth to simulate a concurrent login attempt
+      # This means the user is already logged in, and we try to log in again via OAuth
+      expect(OAuth, :authenticate_oauth, fn _user, _ip ->
+        {:error, :already_authenticated}
+      end)
+
+      conn = get(conn, "/auth/google/callback?code=test_code&state=#{state}")
+
+      assert redirected_to(conn) == "/tenant/dashboard"
+      assert Phoenix.Flash.get(conn, :error) =~ "You are already signed in"
     end
 
     test "handles user creation failure", %{conn: conn} do
@@ -303,8 +323,8 @@ defmodule McpWeb.OAuthControllerTest do
 
       conn = get(conn, "/auth/google/callback?code=test_code&state=#{state}")
 
-      assert redirected_to(conn) == "/sign_in"
-      assert get_flash(conn, :error) == "Failed to create user account"
+      assert redirected_to(conn) == "/tenant/sign-in"
+      assert Phoenix.Flash.get(conn, :error) == "Failed to create user account"
     end
 
     test "handles session creation failure", %{conn: conn} do
@@ -330,8 +350,8 @@ defmodule McpWeb.OAuthControllerTest do
 
       conn = get(conn, "/auth/google/callback?code=test_code&state=#{state}")
 
-      assert redirected_to(conn) == "/sign_in"
-      assert get_flash(conn, :error) =~ "Failed to create session"
+      assert redirected_to(conn) == "/tenant/sign-in"
+      assert Phoenix.Flash.get(conn, :error) =~ "Failed to create session"
     end
   end
 
@@ -373,7 +393,7 @@ defmodule McpWeb.OAuthControllerTest do
       conn = get(conn, "/oauth/link/github/callback?code=link_code&state=#{state}")
 
       assert redirected_to(conn) == "/settings/security"
-      assert get_flash(conn, :info) =~ "GitHub account linked successfully"
+      assert Phoenix.Flash.get(conn, :info) =~ "GitHub account linked successfully"
 
       # Session should be cleaned up
       assert get_session(conn, :oauth_state) == nil
@@ -395,7 +415,7 @@ defmodule McpWeb.OAuthControllerTest do
       conn = get(conn, "/oauth/link/google/callback?code=test_code&state=#{state}")
 
       assert redirected_to(conn) == "/settings/security"
-      assert get_flash(conn, :error) == "Invalid OAuth linking request"
+      assert Phoenix.Flash.get(conn, :error) == "Invalid OAuth linking request"
     end
 
     test "handles linking failure", %{conn: conn} do
@@ -425,7 +445,7 @@ defmodule McpWeb.OAuthControllerTest do
       conn = get(conn, "/oauth/link/github/callback?code=test_code&state=#{state}")
 
       assert redirected_to(conn) == "/settings/security"
-      assert get_flash(conn, :error) =~ "Failed to link GitHub"
+      assert Phoenix.Flash.get(conn, :error) =~ "Failed to link GitHub"
     end
   end
 
@@ -449,7 +469,7 @@ defmodule McpWeb.OAuthControllerTest do
       conn = delete(conn, "/oauth/unlink/github")
 
       assert redirected_to(conn) == "/settings/security"
-      assert get_flash(conn, :info) =~ "GitHub account unlinked successfully"
+      assert Phoenix.Flash.get(conn, :info) =~ "GitHub account unlinked successfully"
     end
 
     test "rejects unlinking unlinked provider", %{conn: conn} do
@@ -467,7 +487,7 @@ defmodule McpWeb.OAuthControllerTest do
       conn = delete(conn, "/oauth/unlink/google")
 
       assert redirected_to(conn) == "/settings/security"
-      assert get_flash(conn, :error) =~ "Google is not linked to your account"
+      assert Phoenix.Flash.get(conn, :error) =~ "Google is not linked to your account"
     end
 
     test "rejects unlinking without authentication", %{conn: conn} do
@@ -640,8 +660,8 @@ defmodule McpWeb.OAuthControllerTest do
     test "handles invalid provider in callback", %{conn: conn} do
       conn = get(conn, "/auth/invalid/callback?code=test&state=test")
 
-      assert redirected_to(conn) == "/sign_in"
-      assert get_flash(conn, :error) =~ "Invalid OAuth provider: invalid"
+      assert redirected_to(conn) == "/tenant/sign-in"
+      assert Phoenix.Flash.get(conn, :error) =~ "Invalid OAuth provider: invalid"
     end
 
     test "extracts client IP correctly", %{conn: conn} do
@@ -653,11 +673,11 @@ defmodule McpWeb.OAuthControllerTest do
         |> put_session(:oauth_provider, "google")
 
       # Mock OAuth to capture IP
-      captured_ip = nil
+      _captured_ip = nil
 
       expect(OAuth, :callback, fn :google, _code, _state ->
         # This would normally capture IP via OAuth.authenticate_oauth
-        captured_ip = "203.0.113.1"
+        _captured_ip = "203.0.113.1"
         {:error, :test}
       end)
 
@@ -694,8 +714,7 @@ defmodule McpWeb.OAuthControllerTest do
       last_name: "User",
       email: "test@example.com",
       password: "Password123!",
-      password_confirmation: "Password123!",
-      status: :active
+      password_confirmation: "Password123!"
     }
 
     User.register(Map.merge(default_attrs, attrs))

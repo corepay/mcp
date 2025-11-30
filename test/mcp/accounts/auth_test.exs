@@ -6,7 +6,7 @@ defmodule Mcp.Accounts.AuthTest do
   describe "authentication" do
     test "authenticates user with valid credentials" do
       # Create a test user
-      {:ok, user} =
+      {:ok, _user} =
         Ash.create(
           Mcp.Accounts.User,
           %{
@@ -80,7 +80,7 @@ defmodule Mcp.Accounts.AuthTest do
   describe "session management" do
     test "creates valid session tokens" do
       # Create a test user
-      {:ok, user} =
+      {:ok, _user} =
         Ash.create(
           Mcp.Accounts.User,
           %{
@@ -105,7 +105,7 @@ defmodule Mcp.Accounts.AuthTest do
 
     test "revokes session tokens" do
       # Create a test user
-      {:ok, user} =
+      {:ok, _user} =
         Ash.create(
           Mcp.Accounts.User,
           %{

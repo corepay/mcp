@@ -21,22 +21,55 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
     routing_config = blueprint.routing_config || %{mode: :single, primary_provider: :ollama}
     requested_provider = Keyword.get(opts, :provider, routing_config[:primary_provider] || :ollama)
     execution_id = Keyword.get(opts, :execution_id)
+    tenant_id = Keyword.get(opts, :tenant_id, "default")
     
-    start_time = System.monotonic_time(:millisecond)
+    # Rate Limit Check
+    case Mcp.Utils.RateLimiter.check_limit("tenant:#{tenant_id}", 100) do
+      :ok ->
+        start_time = System.monotonic_time(:millisecond)
 
-    {result, usage_stats} = execute_with_fallback(blueprint, instructions, context, requested_provider, routing_config)
+        {result, usage_stats} = execute_with_fallback(blueprint, instructions, context, requested_provider, routing_config)
 
-    latency = System.monotonic_time(:millisecond) - start_time
+        latency = System.monotonic_time(:millisecond) - start_time
 
-    if execution_id do
-      track_usage(execution_id, usage_stats[:provider], usage_stats, latency, opts)
+        # Emit Telemetry
+        Mcp.Telemetry.execute(
+          [:ai, :agent, :completion], 
+          %{latency: latency, total_tokens: usage_stats[:total_tokens] || 0, cost: usage_stats[:cost] || 0},
+          %{
+            blueprint: blueprint.name,
+            provider: usage_stats[:provider],
+            model: usage_stats[:model],
+            cached: Map.get(usage_stats, :cached, false),
+            tenant_id: context[:tenant_id]
+          }
+        )
+
+        if execution_id do
+          track_usage(execution_id, usage_stats[:provider], usage_stats, latency, opts)
+        end
+
+        result
+
+      {:error, :rate_limit_exceeded} ->
+        IO.warn("Rate limit exceeded for tenant #{tenant_id}")
+        {:ok, %{"error" => "Rate limit exceeded. Please try again later."}}
     end
-
-    result
   end
 
   defp execute_with_fallback(blueprint, instructions, context, provider, config) do
-    {result, stats} = execute_provider(provider, blueprint, instructions, context)
+    # Wrap execution with Circuit Breaker
+    result_tuple = Mcp.Utils.CircuitBreaker.execute(provider, fn ->
+      execute_provider(provider, blueprint, instructions, context)
+    end)
+
+    {result, stats} = case result_tuple do
+      {:ok, {res, st}} -> {res, st}
+      {:error, :circuit_open} -> 
+        {{:ok, %{"error" => "Circuit open for provider #{provider}"}}, %{provider: provider, model: "unknown", cost: 0}}
+      {:error, reason} ->
+        {{:ok, %{"error" => "Provider error: #{inspect(reason)}"}}, %{provider: provider, model: "unknown", cost: 0}}
+    end
     
     # Check if we need fallback
     should_fallback? = 
@@ -48,10 +81,15 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
       fallback_provider = config[:fallback_provider] || :openrouter
       IO.puts("⚠️ Low confidence or error with #{provider}. Falling back to #{fallback_provider}...")
       
-      {fallback_result, fallback_stats} = execute_provider(fallback_provider, blueprint, instructions, context)
-      
-      # Return fallback result, but we might want to log the primary failure somewhere too
-      {fallback_result, fallback_stats}
+      # Also wrap fallback in Circuit Breaker
+      fallback_tuple = Mcp.Utils.CircuitBreaker.execute(fallback_provider, fn ->
+        execute_provider(fallback_provider, blueprint, instructions, context)
+      end)
+
+      case fallback_tuple do
+        {:ok, {fb_res, fb_st}} -> {fb_res, fb_st}
+        _ -> {result, stats} # Return original failure if fallback also fails
+      end
     else
       {result, stats}
     end
@@ -106,31 +144,59 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
     ollama_port = System.get_env("OLLAMA_PORT", "42736")
     ollama_base_url = System.get_env("OLLAMA_BASE_URL", "http://localhost:#{ollama_port}/api/chat")
 
-    llm = ChatOllamaAI.new!(%{
-      model: model_name,
-      endpoint: ollama_base_url,
-      temperature: 0.1,
-      format: "json"
-    })
-
-    {:ok, chain} = LLMChain.new!(%{llm: llm, verbose: true})
-    |> LLMChain.add_message(Message.new_system!(system_prompt))
-    |> LLMChain.add_message(Message.new_user!(user_message))
-    |> LLMChain.run()
-
-    last_message = chain.last_message
-    content = extract_content(last_message)
+    # Check Semantic Cache
+    cache_key_prompt = system_prompt <> user_message
     
-    usage_stats = %{
-      provider: :ollama,
-      model: model_name,
-      prompt_tokens: 0,
-      completion_tokens: 0,
-      total_tokens: 0,
-      cost: 0
-    }
+    case Mcp.Ai.SemanticCache.get(cache_key_prompt, model_name, :ollama) do
+      {:ok, cached_response} ->
+        IO.puts("⚡️ Cache Hit for Agent [#{blueprint.name}]")
+        usage_stats = %{
+          provider: :ollama,
+          model: model_name,
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0,
+          cost: Decimal.new(0),
+          cached: true
+        }
+        {cached_response, usage_stats}
 
-    {parse_json(content), usage_stats}
+      nil ->
+        llm = ChatOllamaAI.new!(%{
+          model: model_name,
+          endpoint: ollama_base_url,
+          temperature: 0.1,
+          format: "json"
+        })
+
+        {:ok, chain} = LLMChain.new!(%{llm: llm, verbose: true})
+        |> LLMChain.add_message(Message.new_system!(system_prompt))
+        |> LLMChain.add_message(Message.new_user!(user_message))
+        |> LLMChain.run()
+
+        last_message = chain.last_message
+        content = extract_content(last_message)
+        
+        usage_stats = %{
+          provider: :ollama,
+          model: model_name,
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0,
+          cost: Decimal.new(0)
+        }
+
+        result = parse_json(content)
+        
+        # Cache the successful result
+        case result do
+          {:ok, json_result} -> 
+            Mcp.Ai.SemanticCache.put(cache_key_prompt, model_name, :ollama, json_result)
+            {{:ok, json_result}, usage_stats}
+          other -> 
+            {other, usage_stats}
+        end
+    end
   end
 
   defp run_openrouter(blueprint, instructions, context) do
@@ -178,12 +244,10 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
 
         {parse_json(content), usage_stats}
 
-      {:ok, %{status: status, body: body}} ->
-        IO.inspect(body, label: "OpenRouter Error #{status}")
+      {:ok, %{status: status}} ->
         {{:ok, %{"error" => "OpenRouter request failed: #{status}"}}, %{provider: :openrouter, model: model}}
-        
-      {:error, reason} ->
-        IO.inspect(reason, label: "OpenRouter Request Failed")
+
+      {:error, _reason} ->
         {{:ok, %{"error" => "OpenRouter request failed"}}, %{provider: :openrouter, model: model}}
     end
   end

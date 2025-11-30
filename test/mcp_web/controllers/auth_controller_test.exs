@@ -5,7 +5,7 @@ defmodule McpWeb.Controllers.AuthControllerTest do
 
   describe "POST /auth/login" do
     test "authenticates with valid credentials", %{conn: conn} do
-      {:ok, user} =
+      {:ok, _user} =
         User.register(%{
           first_name: "Controller",
           last_name: "Test",
@@ -60,7 +60,7 @@ defmodule McpWeb.Controllers.AuthControllerTest do
     end
 
     test "handles case-insensitive email", %{conn: conn} do
-      {:ok, user} =
+      {:ok, _user} =
         User.register(%{
           first_name: "Case",
           last_name: "Test",
@@ -91,7 +91,7 @@ defmodule McpWeb.Controllers.AuthControllerTest do
         })
 
       # Simulate TOTP being enabled
-      {:ok, user_with_totp} =
+      {:ok, _user_with_totp} =
         Ash.update(user, %{
           otp_verified_at: DateTime.utc_now(),
           otp_last_used_at: DateTime.utc_now()
@@ -126,7 +126,7 @@ defmodule McpWeb.Controllers.AuthControllerTest do
 
   describe "POST /auth/verify-2fa" do
     test "verifies TOTP code", %{conn: conn} do
-      {:ok, user} =
+      {:ok, _user} =
         User.register(%{
           first_name: "2FA",
           last_name: "Verify",
@@ -170,7 +170,7 @@ defmodule McpWeb.Controllers.AuthControllerTest do
   describe "POST /auth/refresh" do
     test "refreshes access token", %{conn: conn} do
       # First login to get tokens
-      {:ok, user} =
+      {:ok, _user} =
         User.register(%{
           first_name: "Refresh",
           last_name: "Test",
@@ -220,7 +220,7 @@ defmodule McpWeb.Controllers.AuthControllerTest do
   describe "POST /auth/logout" do
     test "logs out user and revokes token", %{conn: conn} do
       # First login
-      {:ok, user} =
+      {:ok, _user} =
         User.register(%{
           first_name: "Logout",
           last_name: "Test",
@@ -345,7 +345,7 @@ defmodule McpWeb.Controllers.AuthControllerTest do
 
   describe "POST /auth/forgot-password" do
     test "sends password reset email", %{conn: conn} do
-      {:ok, user} =
+      {:ok, _user} =
         User.register(%{
           first_name: "Forgot",
           last_name: "Password",
@@ -465,7 +465,7 @@ defmodule McpWeb.Controllers.AuthControllerTest do
 
     test "prevents brute force attacks", %{conn: conn} do
       # This would test account lockout functionality
-      {:ok, user} =
+      {:ok, _user} =
         User.register(%{
           first_name: "Brute",
           last_name: "Force",
@@ -598,7 +598,7 @@ defmodule McpWeb.Controllers.AuthControllerTest do
 
     test "allows access with valid token", %{conn: conn} do
       # Get valid token
-      {:ok, user} =
+      {:ok, _user} =
         User.register(%{
           first_name: "Protected",
           last_name: "Access",

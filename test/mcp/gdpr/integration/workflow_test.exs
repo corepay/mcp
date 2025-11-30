@@ -49,7 +49,7 @@ defmodule Mcp.Gdpr.Integration.WorkflowTest do
   describe "End-to-End GDPR Workflow" do
     setup [:create_user, :auth_user_conn]
 
-    test "complete data export workflow", %{conn: conn, user: user} do
+    test "complete data export workflow", %{conn: conn, user: _user} do
       # RED: Test complete workflow from request to status check to download
       # 1. Request data export
       conn = post(conn, "/api/gdpr/export", %{"format" => "json"})

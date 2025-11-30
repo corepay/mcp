@@ -21,6 +21,7 @@ defmodule Mcp.Cache.CacheManager do
   @callback setex(String.t(), integer(), term(), keyword()) :: :ok | {:error, term()}
   @callback clear_pattern(String.t(), keyword()) :: :ok | {:error, term()}
   @callback get_stats() :: {:ok, map()}
+  @callback warm_cache(list(), keyword()) :: {:ok, list()} | {:error, term()}
 
   # Default TTL values for different cache types
   @default_ttls %{

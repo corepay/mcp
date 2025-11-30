@@ -393,7 +393,7 @@ defmodule Mcp.Gdpr.System.PerformanceTest do
       end
     end
 
-    test "throughput regression detection", %{conn: conn} do
+    test "throughput regression detection", %{conn: _conn} do
       # RED: Test that throughput doesn't regress
 
       # Measure throughput by timing requests

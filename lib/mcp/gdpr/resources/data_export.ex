@@ -12,6 +12,7 @@ defmodule Mcp.Gdpr.Resources.DataExport do
 
   postgres do
     table "gdpr_exports"
+    schema("platform")
     repo(Mcp.Repo)
   end
 
@@ -37,6 +38,7 @@ defmodule Mcp.Gdpr.Resources.DataExport do
     attribute :completed_at, :utc_datetime_usec
     attribute :error_message, :string
     attribute :expires_at, :utc_datetime_usec
+    attribute :estimated_completion, :utc_datetime_usec
 
     create_timestamp :inserted_at
     update_timestamp :updated_at

@@ -1,7 +1,7 @@
 defmodule Mcp.Accounts.AuthRealTest do
   use ExUnit.Case, async: false
 
-  import Ecto.Query
+
   alias Ecto.Adapters.SQL.Sandbox
   alias Mcp.Accounts.{Auth, User}
   alias Mcp.Repo

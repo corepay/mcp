@@ -7,9 +7,10 @@ defmodule McpWeb.Plugs.TenantAuthorizationTest do
   """
 
   use ExUnit.Case, async: false
-  use Plug.Test
+  import Plug.Test
+  import Plug.Conn
 
-  alias Mcp.Platform.TenantPermissions
+
   alias McpWeb.Plugs.TenantAuthorization
 
   @opts [required_permissions: [:user_management]]

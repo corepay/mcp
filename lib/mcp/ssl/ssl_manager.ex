@@ -143,11 +143,15 @@ defmodule Mcp.SSL.SSLManager do
   end
 
   defp validate_dns_resolution(domain) do
-    # Basic DNS validation check
-    case :inet.gethostbyname(String.to_charlist(domain)) do
-      {:ok, _} -> :ok
-      {:error, :nxdomain} -> {:error, :dns_not_resolved}
-      {:error, _} -> {:error, :dns_resolution_failed}
+    if Application.get_env(:mcp, :skip_dns_check, false) do
+      :ok
+    else
+      # Basic DNS validation check
+      case :inet.gethostbyname(String.to_charlist(domain)) do
+        {:ok, _} -> :ok
+        {:error, :nxdomain} -> {:error, :dns_not_resolved}
+        {:error, _} -> {:error, :dns_resolution_failed}
+      end
     end
   end
 

@@ -5,6 +5,8 @@ defmodule Mcp.Gdpr.Schemas.GdprConsent do
   use Ecto.Schema
   import Ecto.Changeset
 
+  # Schema for GDPR consent records
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "gdpr_consents" do

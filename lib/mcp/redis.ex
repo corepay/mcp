@@ -34,6 +34,10 @@ defmodule Mcp.Redis do
     GenServer.call(@redis_name, {:clear_pattern, pattern})
   end
 
+  def pipeline(commands) when is_list(commands) do
+    GenServer.call(@redis_name, {:pipeline, commands})
+  end
+
   # Server Callbacks
 
   @impl true
@@ -132,6 +136,18 @@ defmodule Mcp.Redis do
 
       {:error, reason} ->
         Logger.error("Redis KEYS error for pattern #{pattern}: #{inspect(reason)}")
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:pipeline, commands}, _from, %{conn: conn} = state) do
+    case Redix.pipeline(conn, commands) do
+      {:ok, results} ->
+        {:reply, {:ok, results}, state}
+
+      {:error, reason} ->
+        Logger.error("Redis pipeline error: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
     end
   end

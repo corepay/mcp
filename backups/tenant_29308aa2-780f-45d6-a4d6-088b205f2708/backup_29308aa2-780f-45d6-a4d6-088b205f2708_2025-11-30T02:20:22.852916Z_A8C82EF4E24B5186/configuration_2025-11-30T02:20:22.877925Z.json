@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "tenant": {
+    "id": "29308aa2-780f-45d6-a4d6-088b205f2708",
+    "status": "active",
+    "plan": "professional",
+    "settings": {},
+    "company_schema": "test_tenant_13442",
+    "subdomain": "test-isp-13474",
+    "custom_domain": null,
+    "branding": null,
+    "company_name": "Test ISP"
+  },
+  "backup_timestamp": "2025-11-30T02:20:22.877925Z",
+  "platform_version": "1.0.0"
+}

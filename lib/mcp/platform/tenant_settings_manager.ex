@@ -215,6 +215,28 @@ defmodule Mcp.Platform.TenantSettingsManager do
     end
   end
 
+  @doc """
+  Initializes tenant settings.
+  """
+  def initialize_tenant_settings(tenant_id, _user_id) do
+    # Ensure settings exist
+    with {:ok, tenant} <- Tenant.get_by_id(tenant_id) do
+      if tenant.settings do
+        {:ok, tenant.settings}
+      else
+        # Initialize default settings
+        default_settings = %{
+          "features" => ["analytics", "oauth"],
+          "branding" => %{"primary_color" => "#000000"}
+        }
+        case Tenant.update(tenant, %{settings: default_settings}) do
+          {:ok, updated} -> {:ok, updated.settings}
+          error -> error
+        end
+      end
+    end
+  end
+
   defp get_features_from_settings(settings) do
     Map.get(settings || %{}, "features", [])
   end

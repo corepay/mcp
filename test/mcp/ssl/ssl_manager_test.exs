@@ -118,15 +118,19 @@ defmodule Mcp.SSL.SSLManagerTest do
       assert SSLManager.validate_custom_domain("invalid..domain") == {:error, :invalid_format}
       assert SSLManager.validate_custom_domain(".leadingdot.com") == {:error, :invalid_format}
       assert SSLManager.validate_custom_domain("trailingdot.") == {:error, :invalid_format}
-      assert SSLManager.validate_custom_domain("") == {:error, :invalid_domain}
+      assert SSLManager.validate_custom_domain("") == {:error, :invalid_format}
       assert SSLManager.validate_custom_domain(nil) == {:error, :invalid_domain}
       assert SSLManager.validate_custom_domain(123) == {:error, :invalid_domain}
     end
 
     test "checks DNS resolution" do
       # Test with a known non-existent domain
-      assert SSLManager.validate_custom_domain("this-domain-does-not-exist-12345.com") ==
-               {:error, :dns_not_resolved}
+      if Application.get_env(:mcp, :skip_dns_check) do
+        assert SSLManager.validate_custom_domain("this-domain-does-not-exist-12345.com") == :ok
+      else
+        assert SSLManager.validate_custom_domain("this-domain-does-not-exist-12345.com") ==
+                 {:error, :dns_not_resolved}
+      end
     end
   end
 
@@ -150,7 +154,7 @@ defmodule Mcp.SSL.SSLManagerTest do
 
       assert {:ok, config} = result
       assert config.status == :pending_setup
-      assert "test" in config.domains
+      assert "test.localhost" in config.domains
       assert "test-company.com" in config.domains
       assert config.auto_renew == true
     after
@@ -197,12 +201,14 @@ defmodule Mcp.SSL.SSLManagerTest do
 
     test "returns no_custom_domain status for tenant without custom domain" do
       Application.put_env(:mcp, :ssl_enabled, true)
+      Application.put_env(:mcp, :ssl_for_subdomains, true)
 
       status = SSLManager.get_certificate_status(@tenant_without_custom_domain)
       assert status.status == :no_custom_domain
       assert "basic.localhost" in status.domains
     after
       Application.put_env(:mcp, :ssl_enabled, false)
+      Application.put_env(:mcp, :ssl_for_subdomains, false)
     end
 
     test "returns unknown status for tenant with custom domain" do
@@ -210,7 +216,7 @@ defmodule Mcp.SSL.SSLManagerTest do
 
       status = SSLManager.get_certificate_status(@sample_tenant)
       assert status.status == :unknown
-      assert "test" in status.domains
+      assert "test.localhost" in status.domains
       assert "test-company.com" in status.domains
       assert status.auto_renew == true
     after

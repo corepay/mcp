@@ -16,7 +16,7 @@ defmodule Mcp.Accounts.UserSchema do
     field :anonymized_at, :utc_datetime_usec
     field :confirmed_at, :utc_datetime_usec
     field :last_sign_in_at, :utc_datetime_usec
-    field :last_sign_in_ip, :string
+    field :last_sign_in_ip, Mcp.Types.EctoInet
     field :sign_in_count, :integer, default: 0
     field :failed_attempts, :integer, default: 0
     field :locked_at, :utc_datetime_usec
@@ -26,6 +26,7 @@ defmodule Mcp.Accounts.UserSchema do
     field :totp_secret, :string
     field :backup_codes, {:array, :string}
     field :oauth_tokens, :map, default: %{}
+    field :tenant_id, :binary_id
 
     timestamps()
   end

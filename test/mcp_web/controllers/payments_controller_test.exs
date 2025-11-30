@@ -44,7 +44,7 @@ defmodule McpWeb.PaymentsControllerTest do
       customer: customer,
       payment_method: payment_method
     } do
-      params = %{
+      _params = %{
         "amount" => 1000,
         "currency" => "USD",
         "customer_id" => customer.id,

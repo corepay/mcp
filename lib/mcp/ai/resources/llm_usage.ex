@@ -1,7 +1,26 @@
 defmodule Mcp.Ai.LlmUsage do
   use Ash.Resource,
     domain: Mcp.Ai,
-    data_layer: AshPostgres.DataLayer
+    data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
+
+  policies do
+    policy action_type(:read) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+    end
+
+    policy action_type(:create) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+    end
+
+    policy action_type(:destroy) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+    end
+    
+    policy action_type(:update) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+    end
+  end
 
   postgres do
     table "llm_usages"

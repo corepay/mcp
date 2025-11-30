@@ -322,7 +322,8 @@ defmodule Mcp.Gdpr.RetentionReactor do
   end
 
   # Create audit trail entry for retention actions
-  defp create_retention_audit(record_id, action, policy_id, details) do
+  @doc false
+  def create_retention_audit(record_id, action, policy_id, details) do
     Ash.create!(
       AuditTrail,
       %{

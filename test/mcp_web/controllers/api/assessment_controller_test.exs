@@ -45,7 +45,7 @@ defmodule McpWeb.Api.AssessmentControllerTest do
         |> put_req_header("accept", "application/vnd.mcp.v1+json")
         |> post(~p"/api/assessments", payload)
 
-      assert %{"data" => %{"id" => id, "status" => status, "results" => results}} = json_response(conn, 201)
+      assert %{"data" => %{"id" => _id, "status" => status, "results" => results}} = json_response(conn, 201)
       
       # Verify Orchestrator ran (Synchronous for v1)
       assert status == "completed"

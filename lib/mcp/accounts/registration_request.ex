@@ -100,6 +100,10 @@ defmodule Mcp.Accounts.RegistrationRequest do
       description "Reason for rejection if status is rejected"
     end
 
+    attribute :reviewed_by, :string do
+      description "ID or email of the user who reviewed this request"
+    end
+
     attribute :context, :map do
       default %{}
       description "Additional context metadata"
@@ -138,6 +142,7 @@ defmodule Mcp.Accounts.RegistrationRequest do
 
     update :submit do
       accept [:context]
+      require_atomic? false
 
       change set_attribute(:status, :submitted)
       change set_attribute(:submitted_at, DateTime.utc_now())
@@ -146,6 +151,7 @@ defmodule Mcp.Accounts.RegistrationRequest do
     update :approve do
       accept [:rejection_reason]
       argument :approver_id, :uuid, allow_nil?: false
+      require_atomic? false
 
       change set_attribute(:status, :approved)
       change set_attribute(:approved_at, DateTime.utc_now())
@@ -153,10 +159,13 @@ defmodule Mcp.Accounts.RegistrationRequest do
     end
 
     update :reject do
-      accept [:rejection_reason]
+      accept [:rejection_reason, :reviewed_by]
+      argument :reviewer_id, :string
+      require_atomic? false
 
       change set_attribute(:status, :rejected)
       change set_attribute(:rejected_at, DateTime.utc_now())
+      change set_attribute(:reviewed_by, arg(:reviewer_id))
     end
 
     read :by_id do
@@ -207,7 +216,7 @@ defmodule Mcp.Accounts.RegistrationRequest do
 
     define :submit, args: [:context]
     define :approve, args: [:approver_id]
-    define :reject, args: [:rejection_reason]
+    define :reject, args: [:rejection_reason, :reviewer_id]
     define :by_id, args: [:id], get?: true
     define :by_email, args: [:email]
     define :pending
@@ -218,7 +227,7 @@ defmodule Mcp.Accounts.RegistrationRequest do
   end
 
   validations do
-    validate match(:email, ~r/@/)
+    validate match(:email, ~r/@/), where: changing(:email)
     validate present([:tenant_id, :type, :email])
   end
 end

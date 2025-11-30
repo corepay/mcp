@@ -11,13 +11,14 @@ defmodule Mcp.Gdpr.Resources.User do
 
   postgres do
     table "users"
+    schema("platform")
     repo(Mcp.Repo)
   end
 
   attributes do
     uuid_primary_key :id
 
-    attribute :email, :string do
+    attribute :email, :ci_string do
       allow_nil? false
     end
 

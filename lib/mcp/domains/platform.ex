@@ -25,5 +25,8 @@ defmodule Mcp.Platform do
     resource Mcp.Platform.Email
     resource Mcp.Platform.Phone
     resource Mcp.Platform.PayfacConfiguration
+    resource Mcp.Platform.DataMigration
+    resource Mcp.Platform.DataMigrationRecord
+    resource Mcp.Platform.DataMigrationLog
   end
 end

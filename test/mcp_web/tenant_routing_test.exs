@@ -1,6 +1,7 @@
 defmodule McpWeb.TenantRoutingTest do
-  use ExUnit.Case, async: true
-  use Plug.Test
+  use ExUnit.Case, async: false
+  import Plug.Test
+  import Plug.Conn
   import Mock
 
   alias Mcp.Platform.Tenant
@@ -33,7 +34,6 @@ defmodule McpWeb.TenantRoutingTest do
     test "identifies tenant by subdomain" do
       conn =
         conn(:get, "http://test.localhost")
-        |> put_req_header("host", "test.localhost")
 
       # Mock the Tenant.read! call
       with_mock Tenant, [:passthrough],
@@ -53,7 +53,6 @@ defmodule McpWeb.TenantRoutingTest do
     test "identifies tenant by custom domain" do
       conn =
         conn(:get, "http://custom.example.com")
-        |> put_req_header("host", "custom.example.com")
 
       # Mock the Tenant.read! call
       with_mock Tenant, [:passthrough],
@@ -73,7 +72,6 @@ defmodule McpWeb.TenantRoutingTest do
     test "handles base domain without tenant context" do
       conn =
         conn(:get, "http://localhost")
-        |> put_req_header("host", "localhost")
 
       # Mock the Tenant.read! call
       with_mock Tenant, [:passthrough],
@@ -93,7 +91,6 @@ defmodule McpWeb.TenantRoutingTest do
     test "handles www subdomain as base domain" do
       conn =
         conn(:get, "http://www.localhost")
-        |> put_req_header("host", "www.localhost")
 
       opts = TenantRouting.init(base_domain: "localhost")
       result_conn = TenantRouting.call(conn, opts)
@@ -104,7 +101,6 @@ defmodule McpWeb.TenantRoutingTest do
     test "handles tenant not found" do
       conn =
         conn(:get, "http://nonexistent.localhost")
-        |> put_req_header("host", "nonexistent.localhost")
 
       # Mock the Tenant.read! call
       with_mock Tenant, [:passthrough],
@@ -124,7 +120,7 @@ defmodule McpWeb.TenantRoutingTest do
     test "handles invalid host header" do
       conn =
         conn(:get, "http://")
-        |> put_req_header("host", "")
+        |> Map.put(:host, "")
 
       opts = TenantRouting.init(base_domain: "localhost")
       result_conn = TenantRouting.call(conn, opts)
@@ -136,7 +132,6 @@ defmodule McpWeb.TenantRoutingTest do
     test "handles port in host header" do
       conn =
         conn(:get, "http://test.localhost:4000")
-        |> put_req_header("host", "test.localhost:4000")
 
       # Mock the Tenant.read! call
       with_mock Tenant, [:passthrough],
@@ -157,7 +152,6 @@ defmodule McpWeb.TenantRoutingTest do
       conn =
         conn(:get, "http://internal-host")
         |> put_req_header("x-forwarded-host", "test.localhost")
-        |> put_req_header("host", "internal-host")
 
       # Mock the Tenant.read! call
       with_mock Tenant, [:passthrough],
@@ -225,7 +219,6 @@ defmodule McpWeb.TenantRoutingTest do
     test "skips tenant routing when skip_subdomain_extraction is true" do
       conn =
         conn(:get, "http://any-host.com")
-        |> put_req_header("host", "any-host.com")
 
       opts = TenantRouting.init(skip_subdomain_extraction: true)
       result_conn = TenantRouting.call(conn, opts)

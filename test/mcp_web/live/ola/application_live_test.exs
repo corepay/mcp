@@ -2,7 +2,7 @@ defmodule McpWeb.Ola.ApplicationLiveTest do
   use McpWeb.ConnCase
   import Phoenix.LiveViewTest
 
-  alias Mcp.Underwriting.Application, as: UnderwritingApplication
+
   require Ash.Query
 
   setup do

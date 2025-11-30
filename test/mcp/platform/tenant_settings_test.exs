@@ -69,11 +69,11 @@ defmodule Mcp.Platform.TenantSettingsTest do
 
     test "gets setting by tenant and category" do
       tenant = tenant_fixture()
-      user = user_fixture()
+      _user = user_fixture()
 
       # Create settings in different categories
-      general_setting = setting_fixture(tenant, :general, "timezone", "UTC")
-      billing_setting = setting_fixture(tenant, :billing, "currency", "USD")
+      _general_setting = setting_fixture(tenant, :general, "timezone", "UTC")
+      _billing_setting = setting_fixture(tenant, :billing, "currency", "USD")
 
       # Test getting all settings for tenant
       {:ok, all_settings} = TenantSettings.by_tenant(tenant.id)
@@ -109,7 +109,7 @@ defmodule Mcp.Platform.TenantSettingsTest do
 
     test "deletes setting" do
       tenant = tenant_fixture()
-      user = user_fixture()
+      _user = user_fixture()
       setting = setting_fixture(tenant, :general, "timezone", "UTC")
 
       assert {:ok, _deleted_setting} = TenantSettings.destroy_setting(setting)
@@ -121,7 +121,7 @@ defmodule Mcp.Platform.TenantSettingsTest do
   describe "TenantSettingsManager" do
     test "gets all tenant settings organized by category" do
       tenant = tenant_fixture()
-      user = user_fixture()
+      _user = user_fixture()
 
       # Create settings in multiple categories
       setting_fixture(tenant, :general, "timezone", "UTC")
@@ -408,7 +408,7 @@ defmodule Mcp.Platform.TenantSettingsTest do
         font_family: "Inter, sans-serif"
       }
 
-      assert {:ok, branding} =
+      assert {:ok, _branding} =
                TenantSettingsManager.update_tenant_branding(
                  tenant.id,
                  branding_params,

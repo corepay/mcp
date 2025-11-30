@@ -1,7 +1,7 @@
 defmodule McpWeb.TenantSettingsControllerTest do
   use McpWeb.ConnCase
 
-  alias Mcp.Platform.{FeatureToggle, TenantSettingsManager}
+  alias Mcp.Platform.TenantSettingsManager
 
   @moduletag :capture_log
 
@@ -35,7 +35,7 @@ defmodule McpWeb.TenantSettingsControllerTest do
     test "handles invalid category", %{conn: conn} do
       conn = get(conn, ~p"/#{conn.assigns.tenant_schema}/settings/invalid")
       assert redirected_to(conn) == ~p"/#{conn.assigns.tenant_schema}/settings"
-      assert get_flash(conn, :error) == "Invalid category"
+      assert Phoenix.Flash.get(conn, :error) == "Invalid category"
     end
   end
 
@@ -68,7 +68,7 @@ defmodule McpWeb.TenantSettingsControllerTest do
         put(conn, ~p"/#{tenant.company_schema}/settings/general", %{"settings" => settings_params})
 
       assert redirected_to(conn) == ~p"/#{tenant.company_schema}/settings/general"
-      assert get_flash(conn, :info) == "General settings updated successfully"
+      assert Phoenix.Flash.get(conn, :info) == "General settings updated successfully"
 
       # Verify settings were actually updated
       {:ok, updated_settings} = TenantSettingsManager.get_category_settings(tenant.id, :general)
@@ -84,7 +84,7 @@ defmodule McpWeb.TenantSettingsControllerTest do
         put(conn, ~p"/#{tenant.company_schema}/settings/invalid", %{"settings" => settings_params})
 
       assert redirected_to(conn) == ~p"/#{tenant.company_schema}/settings"
-      assert get_flash(conn, :error) == "Invalid category"
+      assert Phoenix.Flash.get(conn, :error) == "Invalid category"
     end
   end
 
@@ -121,7 +121,7 @@ defmodule McpWeb.TenantSettingsControllerTest do
       conn = post(conn, ~p"/#{tenant.company_schema}/settings/features/#{feature}?action=enable")
 
       assert redirected_to(conn) == ~p"/#{tenant.company_schema}/settings/features"
-      assert get_flash(conn, :info) =~ "enabled successfully"
+      assert Phoenix.Flash.get(conn, :info) =~ "enabled successfully"
 
       # Verify feature was enabled
       assert TenantSettingsManager.feature_enabled?(tenant.id, :customer_portal)
@@ -139,7 +139,7 @@ defmodule McpWeb.TenantSettingsControllerTest do
       conn = post(conn, ~p"/#{tenant.company_schema}/settings/features/#{feature}?action=disable")
 
       assert redirected_to(conn) == ~p"/#{tenant.company_schema}/settings/features"
-      assert get_flash(conn, :info) =~ "disabled successfully"
+      assert Phoenix.Flash.get(conn, :info) =~ "disabled successfully"
 
       # Verify feature was disabled
       refute TenantSettingsManager.feature_enabled?(tenant.id, :customer_portal)
@@ -171,7 +171,7 @@ defmodule McpWeb.TenantSettingsControllerTest do
       conn = post(conn, ~p"/#{tenant.company_schema}/settings/features/invalid_feature")
 
       assert redirected_to(conn) == ~p"/#{tenant.company_schema}/settings/features"
-      assert get_flash(conn, :error) =~ "Failed to toggle invalid_feature"
+      assert Phoenix.Flash.get(conn, :error) =~ "Failed to toggle invalid_feature"
     end
   end
 
@@ -203,7 +203,7 @@ defmodule McpWeb.TenantSettingsControllerTest do
         })
 
       assert redirected_to(conn) == ~p"/#{tenant.company_schema}/settings/branding"
-      assert get_flash(conn, :info) == "Branding updated successfully"
+      assert Phoenix.Flash.get(conn, :info) == "Branding updated successfully"
 
       # Verify branding was updated
       {:ok, updated_branding} = TenantSettingsManager.get_tenant_branding(tenant.id)
@@ -226,7 +226,7 @@ defmodule McpWeb.TenantSettingsControllerTest do
         })
 
       assert redirected_to(conn) == ~p"/#{tenant.company_schema}/settings/branding"
-      assert get_flash(conn, :error) =~ "Failed to update branding"
+      assert Phoenix.Flash.get(conn, :error) =~ "Failed to update branding"
     end
   end
 
@@ -279,7 +279,7 @@ defmodule McpWeb.TenantSettingsControllerTest do
 
     test "imports settings from valid JSON file", %{conn: conn} do
       tenant = conn.assigns.current_tenant
-      user = conn.assigns.current_user
+      _user = conn.assigns.current_user
 
       # Create test JSON content
       import_data = %{
@@ -308,7 +308,7 @@ defmodule McpWeb.TenantSettingsControllerTest do
       conn = post(conn, ~p"/#{tenant.company_schema}/settings/import", %{"file" => upload})
 
       assert redirected_to(conn) == ~p"/#{tenant.company_schema}/settings"
-      assert get_flash(conn, :info) == "Settings imported successfully"
+      assert Phoenix.Flash.get(conn, :info) == "Settings imported successfully"
 
       # Verify settings were imported
       {:ok, imported_settings} = TenantSettingsManager.get_category_settings(tenant.id, :general)
@@ -335,7 +335,7 @@ defmodule McpWeb.TenantSettingsControllerTest do
       conn = post(conn, ~p"/#{tenant.company_schema}/settings/import", %{"file" => upload})
 
       assert redirected_to(conn) == ~p"/#{tenant.company_schema}/settings/import-export"
-      assert get_flash(conn, :error) == "Invalid JSON file format"
+      assert Phoenix.Flash.get(conn, :error) == "Invalid JSON file format"
 
       # Clean up
       File.rm!(tmp_path)
@@ -347,7 +347,7 @@ defmodule McpWeb.TenantSettingsControllerTest do
       conn = post(conn, ~p"/#{tenant.company_schema}/settings/import", %{})
 
       assert redirected_to(conn) == ~p"/#{tenant.company_schema}/settings/import-export"
-      assert get_flash(conn, :error) == "Please select a file to import"
+      assert Phoenix.Flash.get(conn, :error) == "Please select a file to import"
     end
   end
 
@@ -381,9 +381,9 @@ defmodule McpWeb.TenantSettingsControllerTest do
   end
 
   describe "authentication and authorization" do
-    test "redirects unauthenticated users", %{conn: conn} do
+    test "renders 401 for unauthenticated users", %{conn: conn} do
       conn = get(conn, ~p"/test_tenant/settings")
-      assert redirected_to(conn) == ~p"/users/log_in"
+      assert html_response(conn, 401) =~ "Unauthorized"
     end
 
     test "redirects non-admin authenticated users", %{conn: conn} do

@@ -11,7 +11,7 @@ defmodule McpWeb.ApiStandardTest do
       assert %{"error" => %{"code" => "error", "message" => "Not Found", "details" => nil}} = json_response(conn, 404)
     end
 
-    test "Validation error returns standard error format", %{conn: conn} do
+    test "Validation error returns standard error format", %{conn: _conn} do
       # Trigger a validation error via a dummy changeset in FallbackController
       # Since we can't easily invoke FallbackController directly without a controller action,
       # we'll rely on unit testing the view directly for this part.

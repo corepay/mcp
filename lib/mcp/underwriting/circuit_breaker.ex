@@ -1,62 +1,51 @@
 defmodule Mcp.Underwriting.CircuitBreaker do
   @moduledoc """
-  A simple Circuit Breaker implementation using GenServer.
-  Tracks failures per service (vendor) and manages Open/Closed/Half-Open states.
+  Simple circuit breaker implementation using GenServer.
+  Tracks failures per service and opens the circuit when threshold is reached.
   """
 
   use GenServer
   require Logger
 
   # Configuration
-  @threshold 5
-  @reset_timeout :timer.seconds(60)
+  @failure_threshold 5
+  @reset_timeout_ms 60_000 # 1 minute
 
   # Client API
 
-  def start_link(_opts) do
+  def start_link(_opts \\ []) do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
-  @doc """
-  Checks if the circuit is open for a given service.
-  Returns :ok if closed (allowed), or {:error, :circuit_open} if open.
-  """
-  def check_circuit(service) do
-    GenServer.call(__MODULE__, {:check, service})
+  def check_circuit(service_name) do
+    GenServer.call(__MODULE__, {:check_circuit, service_name})
   end
 
-  @doc """
-  Reports a success for a service. Resets failure count.
-  """
-  def report_success(service) do
-    GenServer.cast(__MODULE__, {:success, service})
+  def report_failure(service_name) do
+    GenServer.cast(__MODULE__, {:report_failure, service_name})
   end
 
-  @doc """
-  Reports a failure for a service. Increments failure count and may open the circuit.
-  """
-  def report_failure(service) do
-    GenServer.cast(__MODULE__, {:failure, service})
+  def report_success(service_name) do
+    GenServer.cast(__MODULE__, {:report_success, service_name})
   end
 
   # Server Callbacks
 
   @impl true
   def init(_) do
-    {:ok, %{services: %{}}}
+    {:ok, %{}}
   end
 
   @impl true
-  def handle_call({:check, service}, _from, state) do
-    service_state = get_service_state(state, service)
-
-    case service_state.status do
-      :open ->
-        if System.monotonic_time(:millisecond) > service_state.reset_at do
-          # Timeout expired, try half-open (allow this request)
-          # We don't change state to half-open explicitly here, we just allow it.
-          # If it succeeds, it will reset. If it fails, it will update reset_at.
-          {:reply, :ok, state}
+  def handle_call({:check_circuit, service_name}, _from, state) do
+    case Map.get(state, service_name) do
+      %{status: :open, open_until: open_until} ->
+        if DateTime.compare(DateTime.utc_now(), open_until) == :gt do
+          # Half-open state (allow one request to check)
+          # For simplicity, we'll just close it on check if timeout expired
+          # In a real implementation, we'd go to half-open
+          new_state = Map.put(state, service_name, %{status: :closed, failures: 0})
+          {:reply, :ok, new_state}
         else
           {:reply, {:error, :circuit_open}, state}
         end
@@ -67,30 +56,30 @@ defmodule Mcp.Underwriting.CircuitBreaker do
   end
 
   @impl true
-  def handle_cast({:success, service}, state) do
-    # Reset failures on success
-    new_services = Map.put(state.services, service, %{status: :closed, failures: 0, reset_at: nil})
-    {:noreply, %{state | services: new_services}}
+  def handle_cast({:report_failure, service_name}, state) do
+    current_service_state = Map.get(state, service_name, %{status: :closed, failures: 0})
+    
+    new_failures = current_service_state.failures + 1
+    
+    new_service_state = 
+      if new_failures >= @failure_threshold do
+        Logger.warning("Circuit breaker opening for service: #{service_name}")
+        %{
+          status: :open, 
+          failures: new_failures,
+          open_until: DateTime.add(DateTime.utc_now(), @reset_timeout_ms, :millisecond)
+        }
+      else
+        %{current_service_state | failures: new_failures}
+      end
+
+    {:noreply, Map.put(state, service_name, new_service_state)}
   end
 
   @impl true
-  def handle_cast({:failure, service}, state) do
-    service_state = get_service_state(state, service)
-    new_failures = service_state.failures + 1
-
-    new_service_state =
-      if new_failures >= @threshold do
-        Logger.warning("Circuit Breaker OPEN for #{service}. Failures: #{new_failures}")
-        %{status: :open, failures: new_failures, reset_at: System.monotonic_time(:millisecond) + @reset_timeout}
-      else
-        %{service_state | failures: new_failures}
-      end
-
-    new_services = Map.put(state.services, service, new_service_state)
-    {:noreply, %{state | services: new_services}}
-  end
-
-  defp get_service_state(state, service) do
-    Map.get(state.services, service, %{status: :closed, failures: 0, reset_at: nil})
+  def handle_cast({:report_success, service_name}, state) do
+    # Reset failures on success
+    new_state = Map.put(state, service_name, %{status: :closed, failures: 0})
+    {:noreply, new_state}
   end
 end

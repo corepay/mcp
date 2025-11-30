@@ -308,7 +308,7 @@ defmodule McpWeb.AuthLive.TwoFactorSetup do
   # defp translate_totp_error(:totp_not_enabled), do: "2FA is not enabled for this account."
   defp translate_totp_error(reason), do: "Verification failed: #{inspect(reason)}"
 
-  defp generate_backup_codes_content(backup_codes) do
+  def generate_backup_codes_content(backup_codes) do
     content = [
       "MCP Platform - 2FA Backup Codes",
       "Generated on: #{DateTime.to_string(DateTime.utc_now())}",

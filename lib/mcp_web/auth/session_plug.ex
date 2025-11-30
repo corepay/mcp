@@ -120,6 +120,12 @@ defmodule McpWeb.Auth.SessionPlug do
     refresh_token = conn.cookies[@refresh_token_cookie]
     session_id = conn.cookies[@session_id_cookie]
 
+    IO.inspect(get_req_header(conn, "cookie"),
+      label: "SessionPlug Cookie Header (#{conn.request_path})"
+    )
+
+    IO.inspect(conn.cookies, label: "SessionPlug Cookies (#{conn.request_path})")
+
     if access_token && refresh_token && session_id do
       case decrypt_tokens(access_token, refresh_token) do
         {:ok, decrypted_access, decrypted_refresh} ->
@@ -136,6 +142,7 @@ defmodule McpWeb.Auth.SessionPlug do
   defp handle_existing_session(conn, access_token, refresh_token, session_id, opts) do
     case Mcp.Accounts.Auth.verify_jwt_access_token(access_token) do
       {:ok, claims} ->
+        IO.puts("SessionPlug: Access token verified")
         # Set current user and session data
         user_data = extract_user_data_from_claims(claims)
 
@@ -155,40 +162,68 @@ defmodule McpWeb.Auth.SessionPlug do
         |> put_session("user_token", access_token)
         |> maybe_refresh_session(opts)
 
-      {:error, _reason} ->
+      {:error, reason} ->
+        IO.puts("SessionPlug: Access token invalid: #{inspect(reason)}")
         # Access token invalid, try refresh
         case Mcp.Accounts.Auth.refresh_jwt_session(refresh_token, get_session_opts(conn)) do
           {:ok, new_session_data} ->
+            IO.puts("SessionPlug: Session refreshed")
+
             conn
             |> set_jwt_session(new_session_data)
             |> assign(:current_session, new_session_data)
             |> assign(:current_user, new_session_data.user)
             |> put_session("user_token", new_session_data.access_token)
 
-          {:error, _refresh_reason} ->
+          {:error, refresh_reason} ->
+            IO.puts("SessionPlug: Refresh failed: #{inspect(refresh_reason)}")
             handle_invalid_session(conn, :invalid_token, opts)
         end
     end
   end
 
   defp handle_no_session(conn, _opts) do
-    home_path = get_home_path(conn)
+    IO.puts("SessionPlug: handle_no_session called")
 
-    conn
-    |> put_status(:unauthorized)
-    |> Phoenix.Controller.put_view(McpWeb.ErrorHTML)
-    |> Phoenix.Controller.render("401.html", layout: false, home_path: home_path)
-    |> halt()
+    if api_request?(conn) do
+      conn
+      |> put_status(:unauthorized)
+      |> Phoenix.Controller.json(%{error: "Authentication required"})
+      |> halt()
+    else
+      home_path = get_home_path(conn)
+
+      conn
+      |> put_status(:unauthorized)
+      |> Phoenix.Controller.put_view(McpWeb.ErrorHTML)
+      |> Phoenix.Controller.render("401.html", layout: false, home_path: home_path)
+      |> halt()
+    end
   end
 
-  defp handle_invalid_session(conn, _reason, _opts) do
-    home_path = get_home_path(conn)
+  defp handle_invalid_session(conn, reason, _opts) do
+    IO.puts("SessionPlug: handle_invalid_session called: #{inspect(reason)}")
 
-    clear_jwt_session(conn)
-    |> put_status(:unauthorized)
-    |> Phoenix.Controller.put_view(McpWeb.ErrorHTML)
-    |> Phoenix.Controller.render("401.html", layout: false, home_path: home_path)
-    |> halt()
+    if api_request?(conn) do
+      conn
+      |> clear_jwt_session()
+      |> put_status(:unauthorized)
+      |> Phoenix.Controller.json(%{error: "Invalid session"})
+      |> halt()
+    else
+      home_path = get_home_path(conn)
+
+      clear_jwt_session(conn)
+      |> put_status(:unauthorized)
+      |> Phoenix.Controller.put_view(McpWeb.ErrorHTML)
+      |> Phoenix.Controller.render("401.html", layout: false, home_path: home_path)
+      |> halt()
+    end
+  end
+
+  defp api_request?(conn) do
+    String.starts_with?(conn.request_path, "/api") or
+      match?(["application/json" | _], get_req_header(conn, "accept"))
   end
 
   defp get_home_path(conn) do

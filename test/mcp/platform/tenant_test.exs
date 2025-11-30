@@ -139,7 +139,7 @@ defmodule Mcp.Platform.TenantTest do
       assert updated.plan == :professional
     end
 
-    test "updates plan with trial end date", %{tenant: tenant} do
+    test "updates plan with trial end date", %{tenant: _tenant} do
       # Trial end date logic needs to be in the resource
       # Skipping for now as attributes might be missing
     end
@@ -158,7 +158,7 @@ defmodule Mcp.Platform.TenantTest do
     end
 
     test "completes onboarding", %{tenant: tenant} do
-      {:ok, completed} = Tenant.complete_onboarding(tenant)
+      {:ok, _completed} = Tenant.complete_onboarding(tenant)
       # Assertions depend on implementation details
     end
   end

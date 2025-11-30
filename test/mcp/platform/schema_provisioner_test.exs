@@ -58,7 +58,7 @@ defmodule Mcp.Platform.SchemaProvisionerTest do
     test "handles invalid tenant slug" do
       invalid_slug = ""
 
-      assert {:error, reason} = SchemaProvisioner.provision_tenant_schema(invalid_slug)
+      assert {:error, _reason} = SchemaProvisioner.provision_tenant_schema(invalid_slug)
       # Should fail with some kind of validation error
     end
   end

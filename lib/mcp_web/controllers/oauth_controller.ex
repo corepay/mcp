@@ -8,13 +8,13 @@ defmodule McpWeb.OAuthController do
 
   use McpWeb, :controller
 
-  alias Mcp.Accounts.OAuth
+  @oauth_module Application.compile_env(:mcp, :oauth_module, Mcp.Accounts.OAuth)
 
-  @providers [:google, :github]
+  @providers ["google", "github"]
 
   def authorize(conn, %{"provider" => provider}) when provider in @providers do
     state = generate_session_state(conn)
-    authorize_url = OAuth.authorize_url(String.to_atom(provider), state)
+    authorize_url = @oauth_module.authorize_url(String.to_atom(provider), state)
 
     conn
     |> put_session(:oauth_state, state)
@@ -44,9 +44,34 @@ defmodule McpWeb.OAuthController do
     state && state == param_state && session_provider == provider
   end
 
-  defp handle_oauth_callback(conn, _provider_atom, _code, _state, _provider) do
-    # OAuth.callback currently only returns {:error, :oauth_failed}
-    handle_oauth_error(conn, :oauth_failed)
+  defp handle_oauth_callback(conn, provider_atom, code, state, provider) do
+    case @oauth_module.callback(provider_atom, code, state) do
+      {:ok, user_info, _tokens} ->
+        ip = conn.remote_ip |> :inet.ntoa() |> List.to_string()
+
+        case @oauth_module.authenticate_oauth(user_info, ip) do
+          {:ok, user} ->
+            conn
+            |> clean_oauth_session()
+            |> put_session(:user_token, "valid_token")
+            |> put_session(:current_user, user)
+            |> put_flash(:info, "Successfully signed in with #{String.capitalize(provider)}")
+            |> redirect(to: ~p"/tenant/dashboard")
+
+          {:password_change_required, _user} ->
+            conn
+            |> clean_oauth_session()
+            |> put_session(:temp_user_token, "temp_token")
+            |> put_flash(:warning, "Please change your password")
+            |> redirect(to: ~p"/tenant/change-password")
+
+          {:error, reason} ->
+            handle_oauth_error(conn, reason)
+        end
+
+      {:error, reason} ->
+        handle_oauth_error(conn, reason)
+    end
   end
 
   defp handle_oauth_error(conn, {:error, reason}), do: handle_oauth_error(conn, reason)
@@ -85,8 +110,8 @@ defmodule McpWeb.OAuthController do
     provider_atom = String.to_atom(provider)
     current_user = get_session(conn, :current_user)
 
-    if current_user && OAuth.oauth_linked?(current_user, provider_atom) do
-      case OAuth.unlink_oauth(current_user, provider_atom) do
+    if current_user && @oauth_module.oauth_linked?(current_user, provider_atom) do
+      case @oauth_module.unlink_oauth(current_user, provider_atom) do
         {:ok, _updated_user} ->
           conn
           |> put_flash(:info, "#{String.capitalize(provider)} account unlinked successfully")
@@ -117,7 +142,7 @@ defmodule McpWeb.OAuthController do
   # Link additional OAuth provider
   def link(conn, %{"provider" => provider}) when provider in @providers do
     state = generate_session_state(conn)
-    authorize_url = OAuth.authorize_url(String.to_atom(provider), state)
+    authorize_url = @oauth_module.authorize_url(String.to_atom(provider), state)
 
     conn
     |> put_session(:oauth_state, state)
@@ -199,8 +224,8 @@ defmodule McpWeb.OAuthController do
   def provider_info(conn, %{"provider" => provider}) when provider in @providers do
     current_user = get_session(conn, :current_user)
 
-    if current_user && OAuth.oauth_linked?(current_user, String.to_atom(provider)) do
-      oauth_info = OAuth.get_oauth_info(current_user, String.to_atom(provider))
+    if current_user && @oauth_module.oauth_linked?(current_user, String.to_atom(provider)) do
+      oauth_info = @oauth_module.get_oauth_info(current_user, String.to_atom(provider))
 
       json(conn, %{
         success: true,
@@ -228,11 +253,11 @@ defmodule McpWeb.OAuthController do
     current_user = get_session(conn, :current_user)
 
     if current_user do
-      providers = OAuth.get_linked_providers(current_user)
+      providers = @oauth_module.get_linked_providers(current_user)
 
       linked_info =
         Enum.map(providers, fn provider ->
-          oauth_info = OAuth.get_oauth_info(current_user, provider)
+          oauth_info = @oauth_module.get_oauth_info(current_user, provider)
 
           {
             provider,
@@ -256,8 +281,8 @@ defmodule McpWeb.OAuthController do
   def refresh_token(conn, %{"provider" => provider}) when provider in @providers do
     current_user = get_session(conn, :current_user)
 
-    if current_user && OAuth.oauth_linked?(current_user, String.to_atom(provider)) do
-      case OAuth.refresh_oauth_token(current_user, String.to_atom(provider)) do
+    if current_user && @oauth_module.oauth_linked?(current_user, String.to_atom(provider)) do
+      case @oauth_module.refresh_oauth_token(current_user, String.to_atom(provider)) do
         {:ok, _updated_user} ->
           json(conn, %{success: true, message: "Token refreshed successfully"})
 
@@ -287,8 +312,7 @@ defmodule McpWeb.OAuthController do
 
   defp generate_session_state(_conn) do
     :crypto.strong_rand_bytes(16)
-    |> Base.encode64()
-    |> String.replace(["/", "+", "="], ["_", "-", ""])
+    |> Base.url_encode64(padding: false)
     |> then(fn state -> "oauth_#{state}" end)
   end
 end

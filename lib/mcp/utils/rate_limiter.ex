@@ -3,7 +3,7 @@ defmodule Mcp.Utils.RateLimiter do
   A simple sliding window rate limiter using Redis.
   """
   
-  alias Mcp.Redix, as: Redis
+  alias Mcp.Redis, as: Redis
 
   # Default window size in seconds (e.g., 60 seconds)
   @window_size 60
@@ -27,7 +27,7 @@ defmodule Mcp.Utils.RateLimiter do
       ["EXPIRE", redis_key, @window_size + 1] # Set expiry
     ]
 
-    case Redix.pipeline(Redis, commands) do
+    case Redis.pipeline(commands) do
       {:ok, [_, _, count, _]} ->
         if count <= limit do
           :ok

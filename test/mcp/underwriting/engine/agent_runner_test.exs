@@ -46,7 +46,7 @@ defmodule Mcp.Underwriting.Engine.AgentRunnerTest do
     test "falls back to OpenRouter when confidence is low" do
       pipeline = Ash.create!(Pipeline, %{name: "Test Pipeline"})
       
-      execution = Ash.create!(Execution, %{
+      _execution = Ash.create!(Execution, %{
         pipeline_id: pipeline.id,
         subject_id: Ecto.UUID.generate(),
         subject_type: :individual,
@@ -64,7 +64,7 @@ defmodule Mcp.Underwriting.Engine.AgentRunnerTest do
         }
       }
 
-      instructions = %InstructionSet{
+      _instructions = %InstructionSet{
         instructions: "Respond with {\"confidence\": 0.5}"
       }
 

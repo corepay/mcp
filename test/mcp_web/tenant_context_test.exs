@@ -1,10 +1,11 @@
 defmodule McpWeb.TenantContextTest do
   use ExUnit.Case, async: false
-  use Plug.Test
+  import Plug.Test
+  import Plug.Conn
 
   import Mox
 
-  alias Mcp.Cache.TenantIsolation
+
   alias Mcp.Platform.Tenant
   alias Mcp.Repo
   alias McpWeb.TenantContext

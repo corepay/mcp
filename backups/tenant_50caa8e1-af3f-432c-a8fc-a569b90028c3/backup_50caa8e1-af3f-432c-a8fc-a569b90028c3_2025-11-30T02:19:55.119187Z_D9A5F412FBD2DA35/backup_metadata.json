@@ -1,0 +1,37 @@
+{
+  "tenant_id": "50caa8e1-af3f-432c-a8fc-a569b90028c3",
+  "backup_id": "backup_50caa8e1-af3f-432c-a8fc-a569b90028c3_2025-11-30T02:19:55.119187Z_D9A5F412FBD2DA35",
+  "components": {
+    "database": {
+      "timestamp": "2025-11-30T02:19:55.121146Z",
+      "type": "full",
+      "filename": "database_full_2025-11-30T02:19:55.121146Z.sql",
+      "path": "backups/tenant_50caa8e1-af3f-432c-a8fc-a569b90028c3/backup_50caa8e1-af3f-432c-a8fc-a569b90028c3_2025-11-30T02:19:55.119187Z_D9A5F412FBD2DA35/database_full_2025-11-30T02:19:55.121146Z.sql",
+      "size_bytes": 20,
+      "table_count": 1
+    },
+    "files": {
+      "reason": "File backup disabled in options",
+      "type": "files",
+      "skipped": true
+    },
+    "configuration": {
+      "timestamp": "2025-11-30T02:19:55.131855Z",
+      "filename": "configuration_2025-11-30T02:19:55.131855Z.json",
+      "path": "backups/tenant_50caa8e1-af3f-432c-a8fc-a569b90028c3/backup_50caa8e1-af3f-432c-a8fc-a569b90028c3_2025-11-30T02:19:55.119187Z_D9A5F412FBD2DA35/configuration_2025-11-30T02:19:55.131855Z.json",
+      "size_bytes": 410
+    }
+  },
+  "backup_options": {
+    "include_files": false,
+    "type": "full"
+  },
+  "backup_type": "full",
+  "created_at": "2025-11-30T02:19:55.137424Z",
+  "tenant_name": "Test ISP",
+  "platform_info": {
+    "version": "1.0.0",
+    "database_version": "PostgreSQL 15.0",
+    "backup_tool_version": "1.0.0"
+  }
+}

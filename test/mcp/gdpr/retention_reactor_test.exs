@@ -10,14 +10,10 @@ defmodule Mcp.Gdpr.RetentionReactorTest do
 
       # Note: This is a basic smoke test
       # In a real scenario, you'd have test data and policies set up
-      result =
-        case RetentionReactor.run(args) do
-          {:ok, result} -> result
-          {:error, reason} -> reason
-        end
-
-      # The reactor should either succeed or fail gracefully
-      assert is_map(result) or is_atom(result)
+      case Reactor.run(RetentionReactor, args) do
+        {:ok, _result} -> assert true
+        {:error, _reason} -> flunk("Reactor failed")
+      end
     end
   end
 

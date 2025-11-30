@@ -62,4 +62,44 @@ defmodule Mcp.Platform.FeatureToggle do
       {:error, _} -> false
     end
   end
+  @doc """
+  Gets enabled features for a tenant.
+  """
+  def enabled_features(tenant_id) do
+    TenantSettingsManager.get_enabled_features(tenant_id)
+  end
+
+  @doc """
+  Gets info for a feature.
+  """
+  def get_feature_info(feature_name) do
+    get_feature_definition(to_string(feature_name))
+  end
+
+  @doc """
+  Disables a feature.
+  """
+  def disable_feature(feature) do
+    # Mock disable
+    {:ok, %{feature | enabled: false}}
+  end
+
+  @doc """
+  Enables a feature.
+  """
+  def enable_feature(feature) do
+    # Mock enable
+    {:ok, %{feature | enabled: true}}
+  end
+
+  @doc """
+  Checks if a feature is enabled.
+  """
+  def is_enabled(tenant_id, feature_name) do
+    if feature_enabled?(tenant_id, feature_name) do
+      {:ok, %{name: feature_name, enabled: true}}
+    else
+      {:error, :not_enabled}
+    end
+  end
 end

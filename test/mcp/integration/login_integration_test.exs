@@ -1,14 +1,15 @@
 defmodule Mcp.Integration.LoginIntegrationTest do
   # Not async due to shared infrastructure
   use ExUnit.Case, async: false
-  use Phoenix.ConnTest
+  import Plug.Conn
+  import Phoenix.ConnTest
 
   import Mox
 
   alias Mcp.Accounts.{Auth, OAuth, User}
   alias Mcp.Cache.SessionStore
-  alias McpWeb.Auth.SessionPlug
-  alias McpWeb.{AuthController, Endpoint, OAuthController}
+
+
 
   @endpoint McpWeb.Endpoint
 
@@ -107,7 +108,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       # Mock OAuth flow
       state = "oauth_test_state_123"
 
-      user_info = %{
+      _user_info = %{
         provider: :google,
         id: "google_user_123",
         email: "google.user@example.com",
@@ -141,7 +142,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
         {:ok, nil, tokens}
       end)
 
-      expect(OAuth, :callback, fn :google, code, captured_state ->
+      expect(OAuth, :callback, fn :google, _code, _captured_state ->
         # This call would create the user
         {:ok, nil, tokens}
       end)
@@ -159,7 +160,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
         |> get("/auth/google/callback?code=test_auth_code&state=#{state}")
 
       assert redirected_to(conn) == "/dashboard"
-      assert get_flash(conn, :info) =~ "Successfully signed in with Google"
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "Successfully signed in with Google"
     end
 
     test "OAuth flow with existing user", %{conn: conn} do
@@ -188,7 +189,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
         |> get("/auth/github/callback?code=github_code&state=#{state}")
 
       assert redirected_to(conn) == "/dashboard"
-      assert get_flash(conn, :info) =~ "Successfully signed in with GitHub"
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "Successfully signed in with GitHub"
     end
 
     test "OAuth flow with error handling", %{conn: conn} do
@@ -243,7 +244,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
 
       # Access protected route with expired session
       # This would be handled by SessionPlug middleware
-      conn = get(conn, "/dashboard")
+      _conn = get(conn, "/dashboard")
       # Should redirect to login if session is invalid
     end
 
@@ -261,7 +262,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       # Logout
       conn = delete(recycle(conn), "/sign_out")
       assert redirected_to(conn) == "/"
-      assert get_flash(conn, :info) =~ "signed out successfully"
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "Logged out successfully"
 
       # Try to access protected route
       conn = get(recycle(conn), "/dashboard")
@@ -271,7 +272,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
   end
 
   describe "Multi-tenant Integration" do
-    test "session includes tenant context", %{conn: conn} do
+    test "session includes tenant context", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       # Authenticate with tenant context
@@ -285,7 +286,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       assert is_list(claims["authorized_contexts"])
     end
 
-    test "cross-tenant authorization", %{conn: conn} do
+    test "cross-tenant authorization", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       # Create session with specific tenant
@@ -369,7 +370,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       assert conn.status in [200, 302, 500]
     end
 
-    test "network timeout handling", %{conn: conn} do
+    test "network timeout handling", %{conn: _conn} do
       # Test with simulated network timeouts
       # This would require mocking external service calls
       # Placeholder
@@ -455,7 +456,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
   end
 
   describe "Performance Integration" do
-    test "concurrent user logins", %{conn: conn} do
+    test "concurrent user logins", %{conn: _conn} do
       num_users = 5
       num_requests = 3
 
@@ -573,7 +574,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
     end
 
     test "handles different content types", %{conn: conn} do
-      {:ok, user} = create_test_user()
+      {:ok, _user} = create_test_user()
 
       # Test with different Accept headers
       content_types = [
@@ -597,7 +598,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
   end
 
   describe "Production Environment Simulation" do
-    test "handles production-like load", %{conn: conn} do
+    test "handles production-like load", %{conn: _conn} do
       # Simulate production load with multiple user types and operations
       num_operations = 100
 
@@ -681,7 +682,14 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       status: :active
     }
 
-    User.register(Map.merge(default_attrs, attrs))
+    merged_attrs = Map.merge(default_attrs, attrs)
+
+    User.register(
+      merged_attrs.email,
+      merged_attrs.password,
+      merged_attrs.password_confirmation,
+      merged_attrs
+    )
   end
 
   defp create_test_session(user) do

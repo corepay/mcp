@@ -18,7 +18,7 @@ defmodule Mcp.Accounts.AuthTokenTest do
       assert token.type == :access
       assert token.context == context
       assert token.device_info == device_info
-      assert token.expires_at > DateTime.utc_now()
+      assert DateTime.compare(token.expires_at, DateTime.utc_now()) == :gt
       assert token.revoked_at == nil
       assert token.used_at == nil
     end
@@ -32,7 +32,7 @@ defmodule Mcp.Accounts.AuthTokenTest do
       assert token.type == :refresh
       assert token.context == context
       assert token.device_info == device_info
-      assert token.expires_at > DateTime.utc_now()
+      assert DateTime.compare(token.expires_at, DateTime.utc_now()) == :gt
       assert token.revoked_at == nil
       assert token.used_at == nil
     end

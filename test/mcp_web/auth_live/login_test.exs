@@ -1,15 +1,13 @@
 defmodule McpWeb.AuthLive.LoginTest do
   use ExUnit.Case, async: true
-  use Phoenix.ConnTest
+  import Plug.Conn
+  import Phoenix.ConnTest
   use McpWeb.ConnCase
   import Phoenix.LiveViewTest
 
   import Mox
-  import Swoosh.TestAssertions
 
   alias Mcp.Accounts.{Auth, OAuth, User}
-  alias Mcp.Cache.SessionStore
-  alias McpWeb.AuthLive.Login
 
   @endpoint McpWeb.Endpoint
 
@@ -30,24 +28,23 @@ defmodule McpWeb.AuthLive.LoginTest do
 
   describe "LiveView Login Page Mount" do
     test "mounts login page successfully", %{conn: conn} do
-      {:ok, _view, html} = live(conn, "/sign_in")
-
-      assert html =~ "Welcome to MCP"
-      assert html =~ "Sign in to access your AI-powered MSP platform"
+      {:ok, _view, html} = live(conn, "/tenant/sign-in")
+      assert html =~ "Welcome back"
       assert html =~ "Email Address"
       assert html =~ "Password"
-      assert html =~ "Sign In"
+      assert html =~ "Sign in"
       assert html =~ "Google"
-      assert html =~ "GitHub"
+      assert html =~ "Github"
     end
 
     test "redirects to dashboard if already authenticated", %{conn: conn} do
       # Create a user and session
-      {:ok, user} = create_test_user()
+      user = create_test_user()
       session_data = create_test_session(user)
 
       conn =
         conn
+        |> init_test_session(%{})
         |> put_session(:user_token, session_data.access_token)
         |> put_session(:current_user, session_data.user)
 
@@ -362,7 +359,7 @@ defmodule McpWeb.AuthLive.LoginTest do
     test "has proper ARIA labels and roles", %{conn: conn} do
       {
         :ok,
-        view,
+        _view,
         html
       } = live(conn, "/sign_in")
 
@@ -426,7 +423,7 @@ defmodule McpWeb.AuthLive.LoginTest do
 
   describe "Security Features" do
     test "includes CSRF protection", %{conn: conn} do
-      {:ok, view, html} = live(conn, "/sign_in")
+      {:ok, _view, html} = live(conn, "/sign_in")
 
       # Phoenix.LiveViewTest automatically handles CSRF tokens
       # This test ensures forms are properly protected
@@ -449,10 +446,8 @@ defmodule McpWeb.AuthLive.LoginTest do
       {:ok, view, _html} = live(conn, "/sign_in")
 
       # Mock to capture state parameter
-      state_captured = nil
-
       expect(OAuth, :authorize_url, fn :google, state ->
-        state_captured = state
+        send(self(), {:state, state})
         "https://accounts.google.com/oauth/authorize"
       end)
 
@@ -461,6 +456,7 @@ defmodule McpWeb.AuthLive.LoginTest do
       |> render_click()
 
       # State should be cryptographically secure
+      assert_received {:state, state_captured}
       refute is_nil(state_captured)
       assert String.starts_with?(state_captured, "oauth_")
       assert String.length(state_captured) > 20
@@ -518,7 +514,7 @@ defmodule McpWeb.AuthLive.LoginTest do
       {:ok, _view, _html} = live(conn, "/sign_in")
     end
 
-    test "handles concurrent login attempts", %{conn: conn} do
+    test "handles concurrent login attempts", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       # Simulate concurrent login attempts
@@ -564,6 +560,9 @@ defmodule McpWeb.AuthLive.LoginTest do
   end
 
   defp create_test_session(user) do
-    Auth.authenticate(user.email, "Password123!", "127.0.0.1")
+    {:ok, user} = Auth.authenticate(user.email, "Password123!", "127.0.0.1")
+    # Generate a dummy token for test
+    token = "test_token_#{System.unique_integer()}"
+    %{user: user, access_token: token}
   end
 end

@@ -219,6 +219,8 @@ defmodule McpWeb.Auth.GdprAuthPlug do
           assign(conn, :current_user, user)
 
         {:error, reason} ->
+          IO.puts("GdprAuthPlug: Authentication failed: #{inspect(reason)}")
+
           log_audit_event(conn, "AUTHENTICATION_FAILED", %{
             reason: reason,
             required_auth: Keyword.get(opts, :require_auth, true)

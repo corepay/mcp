@@ -1,12 +1,22 @@
 defmodule Mcp.Registration.RegistrationServiceTest do
   use Mcp.DataCase, async: true
 
-  alias Mcp.Accounts.RegistrationRequest
   alias Mcp.Registration.RegistrationService
 
   describe "initialize_registration/4" do
     test "creates a registration request successfully" do
-      tenant_id = Ecto.UUID.generate()
+      {:ok, tenant} =
+        Ash.create(
+          Mcp.Platform.Tenant,
+          %{
+            name: "Test Tenant",
+            slug: "test-tenant-#{Ecto.UUID.generate()}",
+            subdomain: "test-#{Ecto.UUID.generate()}"
+          },
+          action: :create
+        )
+
+      tenant_id = tenant.id
 
       registration_data = %{
         "email" => "test@example.com",
@@ -25,7 +35,7 @@ defmodule Mcp.Registration.RegistrationServiceTest do
 
       assert request.tenant_id == tenant_id
       assert request.type == :customer
-      assert request.email == "test@example.com"
+      assert to_string(request.email) == "test@example.com"
       assert request.first_name == "John"
       assert request.last_name == "Doe"
       assert request.company_name == "Test Company"
@@ -52,8 +62,21 @@ defmodule Mcp.Registration.RegistrationServiceTest do
 
   describe "submit_registration/1" do
     test "submits a pending registration request" do
+      # Create a tenant first
+      tenant_id = Ecto.UUID.generate()
+
+      Mcp.Repo.insert!(%Mcp.Platform.Tenant{
+        id: tenant_id,
+        name: "Test Tenant",
+        slug: "test-tenant-#{tenant_id}",
+        company_schema: "test_tenant_#{String.replace(tenant_id, "-", "_")}",
+        subdomain: "test-#{tenant_id}",
+        inserted_at: DateTime.utc_now(),
+        updated_at: DateTime.utc_now()
+      })
+
       # Create a registration request first
-      {:ok, request} = insert(:registration_request)
+      request = insert(:registration_request, %{tenant_id: tenant_id})
       assert request.status == :pending
 
       {:ok, submitted} = RegistrationService.submit_registration(request.id)
@@ -65,14 +88,15 @@ defmodule Mcp.Registration.RegistrationServiceTest do
     test "returns error for non-existent request" do
       non_existent_id = Ecto.UUID.generate()
 
-      {:error, :not_found} = RegistrationService.submit_registration(non_existent_id)
+      {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Query.NotFound{}]}} =
+        RegistrationService.submit_registration(non_existent_id)
     end
   end
 
   describe "approve_registration/2" do
     test "approves a submitted registration request" do
       # Create and submit a registration request
-      {:ok, request} = insert(:submitted_registration_request)
+      request = insert(:submitted_registration_request)
       approver_id = Ecto.UUID.generate()
 
       {:ok, approved} = RegistrationService.approve_registration(request.id, approver_id)
@@ -86,7 +110,7 @@ defmodule Mcp.Registration.RegistrationServiceTest do
       non_existent_id = Ecto.UUID.generate()
       approver_id = Ecto.UUID.generate()
 
-      {:error, :not_found} =
+      {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Query.NotFound{}]}} =
         RegistrationService.approve_registration(non_existent_id, approver_id)
     end
   end
@@ -94,7 +118,7 @@ defmodule Mcp.Registration.RegistrationServiceTest do
   describe "reject_registration/2" do
     test "rejects a registration request with reason" do
       # Create and submit a registration request
-      {:ok, request} = insert(:submitted_registration_request)
+      request = insert(:submitted_registration_request)
       reason = "Invalid company information"
 
       {:ok, rejected} = RegistrationService.reject_registration(request.id, reason)
@@ -108,19 +132,22 @@ defmodule Mcp.Registration.RegistrationServiceTest do
       non_existent_id = Ecto.UUID.generate()
       reason = "Test rejection"
 
-      {:error, :not_found} = RegistrationService.reject_registration(non_existent_id, reason)
+      {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Query.NotFound{}]}} =
+        RegistrationService.reject_registration(non_existent_id, reason)
     end
 
     test "returns error for invalid reason" do
-      {:ok, request} = insert(:submitted_registration_request)
+      request = insert(:submitted_registration_request)
 
-      {:error, :invalid_reason} = RegistrationService.reject_registration(request.id, 123)
+      {:error,
+       %Ash.Error.Invalid{errors: [%Ash.Error.Changes.InvalidAttribute{field: :rejection_reason}]}} =
+        RegistrationService.reject_registration(request.id, 123)
     end
   end
 
   describe "get_registration/1" do
     test "returns existing registration request" do
-      {:ok, request} = insert(:registration_request)
+      request = insert(:registration_request)
 
       {:ok, found} = RegistrationService.get_registration(request.id)
 
@@ -132,20 +159,21 @@ defmodule Mcp.Registration.RegistrationServiceTest do
     test "returns error for non-existent request" do
       non_existent_id = Ecto.UUID.generate()
 
-      {:error, :not_found} = RegistrationService.get_registration(non_existent_id)
+      {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Query.NotFound{}]}} =
+        RegistrationService.get_registration(non_existent_id)
     end
   end
 
   describe "list_pending_registrations/1" do
     test "returns all pending registration requests when no tenant specified" do
       # Create mixed status requests
-      {:ok, _pending1} = insert(:registration_request, %{email: "pending1@example.com"})
-      {:ok, _pending2} = insert(:registration_request, %{email: "pending2@example.com"})
+      _pending1 = insert(:registration_request, %{email: "pending1@example.com"})
+      _pending2 = insert(:registration_request, %{email: "pending2@example.com"})
 
-      {:ok, _submitted} =
+      _submitted =
         insert(:submitted_registration_request, %{email: "submitted@example.com"})
 
-      {:ok, _approved} = insert(:approved_registration_request, %{email: "approved@example.com"})
+      _approved = insert(:approved_registration_request, %{email: "approved@example.com"})
 
       {:ok, pending} = RegistrationService.list_pending_registrations()
 
@@ -156,14 +184,24 @@ defmodule Mcp.Registration.RegistrationServiceTest do
     test "returns pending requests for specific tenant" do
       tenant_id = Ecto.UUID.generate()
 
+      Mcp.Repo.insert!(%Mcp.Platform.Tenant{
+        id: tenant_id,
+        name: "Test Tenant",
+        slug: "test-tenant-#{tenant_id}",
+        company_schema: "test_tenant_#{String.replace(tenant_id, "-", "_")}",
+        subdomain: "test-#{tenant_id}",
+        inserted_at: DateTime.utc_now(),
+        updated_at: DateTime.utc_now()
+      })
+
       # Create requests for the tenant
-      {:ok, _pending1} =
+      _pending1 =
         insert(:registration_request, %{tenant_id: tenant_id, email: "pending1@example.com"})
 
-      {:ok, _pending2} =
+      _pending2 =
         insert(:registration_request, %{tenant_id: tenant_id, email: "pending2@example.com"})
 
-      {:ok, _submitted} =
+      _submitted =
         insert(:submitted_registration_request, %{
           tenant_id: tenant_id,
           email: "submitted@example.com"
@@ -172,7 +210,17 @@ defmodule Mcp.Registration.RegistrationServiceTest do
       # Create requests for another tenant
       other_tenant_id = Ecto.UUID.generate()
 
-      {:ok, _other_pending} =
+      Mcp.Repo.insert!(%Mcp.Platform.Tenant{
+        id: other_tenant_id,
+        name: "Other Tenant",
+        slug: "other-tenant-#{other_tenant_id}",
+        company_schema: "other_tenant_#{String.replace(other_tenant_id, "-", "_")}",
+        subdomain: "other-#{other_tenant_id}",
+        inserted_at: DateTime.utc_now(),
+        updated_at: DateTime.utc_now()
+      })
+
+      _other_pending =
         insert(:registration_request, %{tenant_id: other_tenant_id, email: "other@example.com"})
 
       {:ok, pending} = RegistrationService.list_pending_registrations(tenant_id)

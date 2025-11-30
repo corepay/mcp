@@ -16,7 +16,6 @@ defmodule Mcp.Merchants.UnderwritingTest do
         })
       rescue
         e ->
-          IO.inspect(e, label: "Tenant Creation Error")
           reraise e, __STACKTRACE__
       end
 
@@ -62,7 +61,6 @@ defmodule Mcp.Merchants.UnderwritingTest do
           }, tenant: tenant.company_schema)
         rescue
           e ->
-            IO.inspect(e, label: "Review Creation Error")
             reraise e, __STACKTRACE__
         end
 

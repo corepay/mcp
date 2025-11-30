@@ -47,7 +47,7 @@ defmodule Mcp.Gdpr.Integration.DataIsolationTest do
   describe "Multi-Tenant Data Isolation" do
     setup [:create_tenant_user, :auth_tenant_user_conn]
 
-    test "tenant1 cannot access tenant2 data", %{conn: conn, user: user1, tenant: tenant1} do
+    test "tenant1 cannot access tenant2 data", %{conn: conn, user: _user1, tenant: _tenant1} do
       # GREEN: Test that users from one tenant cannot access another tenant's data
 
       # Create user from different tenant
@@ -96,7 +96,7 @@ defmodule Mcp.Gdpr.Integration.DataIsolationTest do
       refute Map.has_key?(response, "cross_tenant_data")
     end
 
-    test "export requests are tenant-isolated", %{conn: conn, user: user, tenant: tenant} do
+    test "export requests are tenant-isolated", %{conn: conn, user: _user, tenant: tenant} do
       # RED: Test that export requests are properly isolated by tenant
 
       # Request export for current tenant user
@@ -112,7 +112,7 @@ defmodule Mcp.Gdpr.Integration.DataIsolationTest do
                get_resp_header(conn, "x-tenant-id") == [tenant]
     end
 
-    test "audit trail maintains tenant separation", %{conn: conn, user: user, tenant: tenant} do
+    test "audit trail maintains tenant separation", %{conn: conn, user: _user, tenant: tenant} do
       # RED: Test that audit entries are properly separated by tenant
 
       # Perform GDPR action
@@ -150,13 +150,13 @@ defmodule Mcp.Gdpr.Integration.DataIsolationTest do
 
     test "user enumeration across tenants is prevented", %{
       conn: conn,
-      user: user1,
-      tenant: tenant1
+      user: _user1,
+      tenant: _tenant1
     } do
       # RED: Test that users cannot enumerate users across tenants
 
       # Create user from different tenant
-      [user: user2] = create_tenant_user(%{tenant: "tenant2"})
+      [user: _user2] = create_tenant_user(%{tenant: "tenant2"})
 
       # Try to access user2's export data
       conn = get(conn, "/api/gdpr/export/#{Ecto.UUID.generate()}/status")
@@ -170,7 +170,7 @@ defmodule Mcp.Gdpr.Integration.DataIsolationTest do
       refute String.contains?(response["error"], "user not found")
     end
 
-    test "audit trail injection prevention", %{conn: conn, user: user, tenant: tenant} do
+    test "audit trail injection prevention", %{conn: conn, user: _user, tenant: tenant} do
       # RED: Test that users cannot inject audit entries for other tenants
 
       # Try to inject audit entry for different tenant via malicious parameters
@@ -200,7 +200,7 @@ defmodule Mcp.Gdpr.Integration.DataIsolationTest do
       end
     end
 
-    test "tenant isolation in compliance reports", %{conn: conn, user: user, tenant: tenant} do
+    test "tenant isolation in compliance reports", %{conn: conn, user: _user, tenant: tenant} do
       # RED: Test that compliance reports are properly scoped to tenant
 
       # Create admin connection

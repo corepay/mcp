@@ -7,7 +7,12 @@ defmodule Mcp.Cache.TenantIsolation do
   """
 
   require Logger
-  alias Mcp.Cache.CacheManager
+  require Logger
+  # alias Mcp.Cache.CacheManager # Removed alias to avoid confusion, using helper instead
+
+  defp cache_manager do
+    Application.get_env(:mcp, :cache_manager, Mcp.Cache.CacheManager)
+  end
 
   @doc """
   Get a value from tenant-isolated cache.
@@ -19,7 +24,7 @@ defmodule Mcp.Cache.TenantIsolation do
     tenant_id = resolve_tenant_id(opts)
     cache_opts = Keyword.put(opts, :tenant_id, tenant_id)
 
-    CacheManager.get(key, cache_opts)
+    cache_manager().get(key, cache_opts)
   end
 
   @doc """
@@ -32,7 +37,7 @@ defmodule Mcp.Cache.TenantIsolation do
     tenant_id = resolve_tenant_id(opts)
     cache_opts = Keyword.put(opts, :tenant_id, tenant_id)
 
-    CacheManager.set(key, value, cache_opts)
+    cache_manager().set(key, value, cache_opts)
   end
 
   @doc """
@@ -43,7 +48,7 @@ defmodule Mcp.Cache.TenantIsolation do
     tenant_id = resolve_tenant_id(opts)
     cache_opts = Keyword.put(opts, :tenant_id, tenant_id)
 
-    CacheManager.delete(key, cache_opts)
+    cache_manager().delete(key, cache_opts)
   end
 
   @doc """
@@ -54,7 +59,7 @@ defmodule Mcp.Cache.TenantIsolation do
     tenant_id = resolve_tenant_id(opts)
     cache_opts = Keyword.put(opts, :tenant_id, tenant_id)
 
-    CacheManager.exists?(key, cache_opts)
+    cache_manager().exists?(key, cache_opts)
   end
 
   @doc """
@@ -65,7 +70,7 @@ defmodule Mcp.Cache.TenantIsolation do
   defmacro with_tenant_cache(tenant_id_or_conn, do: block) do
     quote do
       tenant_id =
-        resolve_tenant_id_from_input(unquote(tenant_id_or_conn))
+        Mcp.Cache.TenantIsolation.resolve_tenant_id_from_input(unquote(tenant_id_or_conn))
 
       Process.put(:current_tenant_id, tenant_id)
 
@@ -96,7 +101,7 @@ defmodule Mcp.Cache.TenantIsolation do
 
     results =
       Enum.map(patterns, fn pattern ->
-        CacheManager.clear_pattern(pattern, tenant_id: resolved_tenant_id)
+        cache_manager().clear_pattern(pattern, tenant_id: resolved_tenant_id)
       end)
 
     # Return :ok if all operations succeeded, otherwise return first error
@@ -114,7 +119,7 @@ defmodule Mcp.Cache.TenantIsolation do
     resolved_tenant_id = resolve_tenant_id(tenant_id: tenant_id)
 
     # Get overall cache stats and then tenant-specific info
-    case CacheManager.get_stats() do
+    case cache_manager().get_stats() do
       {:ok, stats} ->
         tenant_stats = %{
           tenant_id: resolved_tenant_id,
@@ -187,7 +192,7 @@ defmodule Mcp.Cache.TenantIsolation do
         {key, value, [tenant_id: tenant_id, type: :tenant_info]}
       end)
 
-    case CacheManager.warm_cache(cache_ops, tenant_id: tenant_id) do
+    case cache_manager().warm_cache(cache_ops, tenant_id: tenant_id) do
       {:ok, results} ->
         successful_warms = Enum.count(results, &(&1 == :ok))
 
@@ -227,7 +232,7 @@ defmodule Mcp.Cache.TenantIsolation do
     case input do
       nil -> "global"
       tenant_id when is_binary(tenant_id) -> tenant_id
-      conn when is_map(conn) -> resolve_tenant_id_from_conn(conn)
+      conn when is_map(conn) and is_map_key(conn, :assigns) -> resolve_tenant_id_from_conn(conn)
       _ -> "global"
     end
   end
@@ -244,7 +249,7 @@ defmodule Mcp.Cache.TenantIsolation do
     # with pattern matching to count keys without loading them all
     pattern = "tenant:#{tenant_id}:*"
 
-    case CacheManager.get(pattern, tenant_id: tenant_id) do
+    case cache_manager().get(pattern, tenant_id: tenant_id) do
       # Placeholder - actual implementation would use Redis SCAN
       {:ok, _} -> 1
       {:error, :not_found} -> 0
@@ -271,7 +276,7 @@ defmodule Mcp.Cache.TenantIsolation do
   end
 
   defp migrate_cache_key(key, source_tenant_id, target_tenant_id) do
-    case CacheManager.get(key, tenant_id: source_tenant_id) do
+    case cache_manager().get(key, tenant_id: source_tenant_id) do
       {:ok, value} ->
         copy_and_delete_key(key, value, source_tenant_id, target_tenant_id)
 
@@ -282,9 +287,9 @@ defmodule Mcp.Cache.TenantIsolation do
   end
 
   defp copy_and_delete_key(key, value, source_tenant_id, target_tenant_id) do
-    case CacheManager.set(key, value, tenant_id: target_tenant_id) do
+    case cache_manager().set(key, value, tenant_id: target_tenant_id) do
       :ok ->
-        CacheManager.delete(key, tenant_id: source_tenant_id)
+        cache_manager().delete(key, tenant_id: source_tenant_id)
         {:ok, key}
 
       error ->

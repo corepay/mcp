@@ -25,7 +25,7 @@ defmodule McpWeb.Api.InstructionSetControllerTest do
         |> put_req_header("accept", "application/vnd.mcp.v1+json")
         |> post(~p"/api/instruction_sets", payload)
 
-      assert %{"data" => %{"id" => id, "name" => "New Policy"}} = json_response(conn, 201)
+      assert %{"data" => %{"id" => _id, "name" => "New Policy"}} = json_response(conn, 201)
     end
   end
 end

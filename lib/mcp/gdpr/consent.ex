@@ -17,7 +17,7 @@ defmodule Mcp.Gdpr.Consent do
       user_id: user_id,
       purpose: purpose,
       legal_basis: legal_basis,
-      status: "active",
+      status: Keyword.get(opts, :status, "active"),
       scope: Keyword.get(opts, :scope, %{}),
       valid_until: Keyword.get(opts, :valid_until),
       metadata: Keyword.get(opts, :metadata, %{})
@@ -35,6 +35,15 @@ defmodule Mcp.Gdpr.Consent do
     GdprConsent
     |> where([c], c.user_id == ^user_id and c.status == "active")
     |> Repo.all()
+  end
+
+  @doc """
+  Gets user consent for a specific purpose.
+  """
+  def get_user_consent(user_id, purpose) do
+    GdprConsent
+    |> where([c], c.user_id == ^user_id and c.purpose == ^purpose and c.status == "active")
+    |> Repo.one()
   end
 
   @doc """

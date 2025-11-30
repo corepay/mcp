@@ -2,7 +2,22 @@ defmodule Mcp.Finance.Account do
   use Ash.Resource,
     domain: Mcp.Finance,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshDoubleEntry.Account, AshArchival]
+    extensions: [AshDoubleEntry.Account, AshArchival],
+    authorizers: [Ash.Policy.Authorizer]
+
+  policies do
+    policy action_type(:read) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+    end
+
+    policy action_type(:create) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+    end
+    
+    policy action_type(:destroy) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+    end
+  end
 
   postgres do
     table "accounts"

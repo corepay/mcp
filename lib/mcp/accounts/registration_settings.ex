@@ -8,7 +8,7 @@ defmodule Mcp.Accounts.RegistrationSettings do
   alias Mcp.Platform.Tenant
 
   @default_settings %{
-    "allow_self_registration" => true,
+    "allow_self_registration" => false,
     "require_approval" => false,
     "require_email_verification" => true,
     "require_captcha" => false,
@@ -20,8 +20,17 @@ defmodule Mcp.Accounts.RegistrationSettings do
     "custom_fields" => [],
     "welcome_email_enabled" => true,
     "terms_url" => nil,
-    "privacy_url" => nil
+    "privacy_url" => nil,
+    "customer_registration_enabled" => false,
+    "vendor_registration_enabled" => false
   }
+
+  @doc """
+  Creates default registration settings for a tenant.
+  """
+  def create_default_settings(tenant_id) do
+    update_settings(tenant_id, @default_settings)
+  end
 
   @doc """
   Gets current registration settings for a tenant.

@@ -2,7 +2,7 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
   use McpWeb.ConnCase
   import Phoenix.LiveViewTest
 
-  alias Mcp.Underwriting.Application
+
   alias Mcp.Underwriting.Activity
   require Ash.Query
 
@@ -110,7 +110,7 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
     |> render_click()
 
     # 7. Verify Modal Appears
-    rendered = render(view)
+    _rendered = render(view)
     assert has_element?(view, "#request-info-modal")
     assert render(view) =~ "Reason for request"
 

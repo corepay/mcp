@@ -7,6 +7,7 @@ defmodule McpWeb.AuthLive.TwoFactorSetupTest do
   # Basic test to ensure the 2FA LiveView components can be started
   test "2FA setup LiveView mounts successfully" do
     # Test that the LiveView module exists and has the correct structure
+    Code.ensure_loaded(TwoFactorSetup)
     assert function_exported?(TwoFactorSetup, :mount, 3)
     assert function_exported?(TwoFactorSetup, :handle_event, 3)
     assert function_exported?(TwoFactorSetup, :handle_info, 2)
@@ -14,6 +15,7 @@ defmodule McpWeb.AuthLive.TwoFactorSetupTest do
 
   test "2FA management component exists" do
     # Test that the management component exists
+    Code.ensure_loaded(TwoFactorManagement)
     assert function_exported?(TwoFactorManagement, :update, 2)
     assert function_exported?(TwoFactorManagement, :handle_event, 3)
     assert function_exported?(TwoFactorManagement, :render, 1)
@@ -35,7 +37,7 @@ defmodule McpWeb.AuthLive.TwoFactorSetupTest do
       "test_2fa"
     ]
 
-    for handler <- handlers do
+    for _handler <- handlers do
       # This tests that the handle_event function can handle different event types
       assert is_function(&TwoFactorSetup.handle_event/3)
     end

@@ -2,7 +2,26 @@ defmodule Mcp.Ai.Document do
   use Ash.Resource,
     domain: Mcp.Ai,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshArchival]
+    extensions: [AshArchival],
+    authorizers: [Ash.Policy.Authorizer]
+
+  policies do
+    policy action_type(:read) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+    end
+
+    policy action_type(:create) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+    end
+
+    policy action_type(:update) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+    end
+    
+    policy action_type(:destroy) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+    end
+  end
 
   postgres do
     table "documents"
@@ -87,11 +106,16 @@ defmodule Mcp.Ai.Document do
         allow_nil? true
       end
 
+      argument :knowledge_base_ids, {:array, :uuid} do
+        allow_nil? true
+      end
+
       # Filter by cosine similarity and optional scopes
       filter expr(
                cosine_similarity(embedding, ^arg(:query_embedding)) > ^arg(:similarity_threshold) and
                (is_nil(^arg(:tenant_id)) or tenant_id == ^arg(:tenant_id)) and
-               (is_nil(^arg(:merchant_id)) or merchant_id == ^arg(:merchant_id))
+               (is_nil(^arg(:merchant_id)) or merchant_id == ^arg(:merchant_id)) and
+               (is_nil(^arg(:knowledge_base_ids)) or knowledge_base_id in ^arg(:knowledge_base_ids))
              )
     end
   end

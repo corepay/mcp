@@ -42,6 +42,7 @@ defmodule McpWeb.Router do
   end
 
   pipeline :jwt_auth do
+    plug :fetch_session
     plug McpWeb.Auth.SessionPlug
   end
 
@@ -68,8 +69,6 @@ defmodule McpWeb.Router do
     live "/dashboard", Platform.DashboardLive
     live "/tenants", MockDashboardLive
     live "/settings", MockDashboardLive
-    
-
   end
 
   # Tenant Portal
@@ -100,6 +99,7 @@ defmodule McpWeb.Router do
       live "/underwriting/settings", Tenant.Underwriting.SettingsLive
       live "/underwriting/:id", Tenant.ReviewLive
     end
+
     post "/select", TenantSessionController, :create
   end
 
@@ -227,13 +227,13 @@ defmodule McpWeb.Router do
   scope "/online-application", McpWeb do
     pipe_through [:browser, :ola_layout]
 
-    live_session :ola_auth, on_mount: [{McpWeb.Auth.LiveAuth, :optional_auth}], session: %{"portal_context" => "ola"} do
+    live_session :ola_auth,
+      on_mount: [{McpWeb.Auth.LiveAuth, :optional_auth}],
+      session: %{"portal_context" => "ola"} do
       live "/", Ola.RegistrationLive, :index
       live "/application", Ola.ApplicationLive, :index
       live "/login", AuthLive.Login, :index
     end
-
-
   end
 
   # Default/Public Routes
@@ -245,6 +245,10 @@ defmodule McpWeb.Router do
     # Auth Routes - Global sign-in removed in favor of scoped routes
     post "/sign-in", AuthController, :create
     delete "/sign-out", AuthController, :delete
+
+    # Routes for tests
+    live "/register", Ola.RegistrationLive, :index
+    live "/password-reset", AuthLive.ChangePassword, :index
   end
 
   # API Routes
@@ -252,6 +256,50 @@ defmodule McpWeb.Router do
     pipe_through :api
 
     get "/health", HealthController, :health
+  end
+
+  scope "/api/gdpr", McpWeb do
+    pipe_through [:api, :jwt_auth]
+
+    post "/request-deletion", GdprController, :request_deletion
+    post "/export", GdprController, :request_data_export
+    get "/export/:token/status", GdprController, :get_export_status
+    post "/consent", GdprController, :update_consent
+    get "/consent", GdprController, :get_consent
+    get "/audit-trail", GdprController, :get_audit_trail
+    delete "/data/:id", GdprController, :delete_user_data
+    get "/deletion-status", GdprController, :get_deletion_status
+    get "/admin/compliance", GdprController, :admin_compliance
+  end
+
+  scope "/auth", McpWeb do
+    pipe_through :api
+
+    post "/register", AuthController, :register
+    post "/login", AuthController, :login
+    post "/logout", AuthController, :logout
+    post "/refresh", AuthController, :refresh
+    post "/verify-2fa", AuthController, :verify_2fa
+    post "/forgot-password", AuthController, :forgot_password
+    post "/reset-password", AuthController, :reset_password
+  end
+
+  scope "/auth", McpWeb do
+    pipe_through :browser
+
+    get "/:provider", OAuthController, :authorize
+    get "/:provider/callback", OAuthController, :callback
+  end
+
+  scope "/oauth", McpWeb do
+    pipe_through [:browser, :jwt_auth]
+
+    delete "/unlink/:provider", OAuthController, :unlink
+    get "/link/:provider", OAuthController, :link
+    get "/link/:provider/callback", OAuthController, :link_callback
+    get "/provider/:provider", OAuthController, :provider_info
+    get "/providers", OAuthController, :linked_providers
+    post "/refresh/:provider", OAuthController, :refresh_token
   end
 
   scope "/api", McpWeb do
@@ -267,7 +315,65 @@ defmodule McpWeb.Router do
     post "/instruction_sets", Api.InstructionSetController, :create
     get "/instruction_sets/:id", Api.InstructionSetController, :show
 
-    # Webhooks
     resources "/webhooks/endpoints", Api.WebhookController, except: [:new, :edit]
+
+    # Payments API
+    post "/payments", PaymentsController, :create
+    get "/payments/:id", PaymentsController, :show
+    post "/payments/forms/sessions", PaymentsController, :create_form_session
+    post "/payments/boarding/merchants", PaymentsController, :create_merchant
+
+    resources "/payment_methods", PaymentMethodsController, only: [:create, :show, :delete]
+
+    # Customers API
+    resources "/customers", CustomersController, only: [:create, :show, :delete]
+    # Test uses POST for update?
+    post "/customers/:id", CustomersController, :update
+
+    post "/voids", VoidsController, :create
+    post "/refunds", RefundsController, :create
+    get "/refunds/:id", RefundsController, :show
+
+    post "/webhooks/qorpay", WebhooksController, :handle_qorpay
+
+    get "/payments/utilities/bin/:bin", PaymentsController, :bin_lookup
+    get "/payments/transactions/:id", PaymentsController, :show_transaction
+
+    get "/profile", AuthController, :profile
+  end
+
+  scope "/gdpr", McpWeb do
+    pipe_through [:browser, :jwt_auth]
+
+    post "/request-deletion", GdprController, :request_deletion
+    post "/cancel-deletion", GdprController, :cancel_deletion
+    get "/consent", GdprController, :get_consent
+    post "/consent", GdprController, :update_consent
+    get "/audit-trail", GdprController, :get_audit_trail
+    get "/data-export", GdprController, :data_export_request
+    post "/data-export", GdprController, :create_data_export
+    get "/export/:token", GdprController, :download_export
+  end
+
+  # Dynamic tenant routes (must be last)
+  scope "/:tenant_schema", McpWeb do
+    pipe_through [:browser, :jwt_auth]
+
+    get "/settings", TenantSettingsController, :index
+    get "/settings/dashboard", TenantSettingsController, :dashboard
+    get "/settings/import-export", TenantSettingsController, :import_export
+    get "/settings/export", TenantSettingsController, :export_settings
+    post "/settings/import", TenantSettingsController, :import_settings
+
+    # Specific settings pages
+    get "/settings/features", TenantSettingsController, :features
+    post "/settings/features/:feature", TenantSettingsController, :toggle_feature
+    get "/settings/branding", TenantSettingsController, :branding
+    put "/settings/branding", TenantSettingsController, :update_branding
+
+    # Category routes (catch-all for settings)
+    get "/settings/:category", TenantSettingsController, :show_category
+    put "/settings/:category", TenantSettingsController, :update_category
+    get "/settings/:category/edit", TenantSettingsController, :edit_category
   end
 end

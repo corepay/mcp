@@ -235,23 +235,17 @@ defmodule Mcp.Seeder do
       |> Ash.Query.set_tenant(tenant.company_schema)
       |> Ash.read_one()
 
-    IO.inspect(exists, label: "Merchant Search Result (#{slug})")
-
     case exists do
       {:ok, nil} ->
-        IO.puts("Merchant search returned {:ok, nil}, creating...")
         create_merchant(tenant, name, slug)
 
       {:ok, merchant} ->
-        IO.inspect(merchant, label: "Found Merchant")
         merchant
 
       {:error, _} ->
-        IO.puts("Merchant not found (error), creating...")
         create_merchant(tenant, name, slug)
 
       nil ->
-        IO.puts("Merchant search returned nil, creating...")
         create_merchant(tenant, name, slug)
     end
   end
