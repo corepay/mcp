@@ -15,6 +15,14 @@ defmodule Mcp.Finance.Transfer do
     balance_resource(Mcp.Finance.Balance)
   end
 
+  actions do
+    defaults [:read, :destroy]
+    create :create do
+      primary? true
+      accept [:amount, :from_account_id, :to_account_id, :description]
+    end
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -23,9 +31,14 @@ defmodule Mcp.Finance.Transfer do
       default &DateTime.utc_now/0
     end
 
+    attribute :description, :string
+
     attribute :updated_at, :utc_datetime_usec do
       default &DateTime.utc_now/0
       match_other_defaults? true
     end
+  end
+  code_interface do
+    define :create
   end
 end

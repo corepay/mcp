@@ -6,51 +6,44 @@ defmodule Mcp.Underwriting.VendorRouter do
   alias Mcp.Underwriting.Adapters.ComplyCube
   alias Mcp.Underwriting.Adapters.Idenfy
   alias Mcp.Underwriting.Adapters.Mock
-
   alias Mcp.Underwriting.CircuitBreaker
 
   def select_adapter(_context \\ %{}) do
-    # 1. Check if we are in test mode or forced mock
-    if Application.get_env(:mcp, :underwriting_adapter) == Mock do
-      Mock
-    else
-      # Fetch settings from DB (or default)
-      settings = 
-        case Mcp.Underwriting.VendorSettings.get_settings() do
-          {:ok, [record | _]} -> record
-          {:ok, []} -> %{preferred_vendor: :comply_cube} # Default
-          _ -> %{preferred_vendor: :comply_cube}
-        end
+    # 1. Determine preferred adapter based on config or env
+    adapter = determine_adapter()
 
-      preferred = settings.preferred_vendor
-      preferred_adapter = get_adapter_module(preferred)
-      
-      # Check circuit for preferred vendor
-      if CircuitBreaker.check_circuit(service_name(preferred_adapter)) == :ok do
-        preferred_adapter
+    # 2. Check circuit breaker
+    if CircuitBreaker.check_circuit(service_name(adapter)) == :ok do
+      adapter
+    else
+      # Fallback logic
+      fallback = get_fallback_adapter(adapter)
+      if CircuitBreaker.check_circuit(service_name(fallback)) == :ok do
+        fallback
       else
-        # Preferred is down, try fallback
-        fallback = get_fallback_vendor(preferred)
-        fallback_adapter = get_adapter_module(fallback)
-        
-        if CircuitBreaker.check_circuit(service_name(fallback_adapter)) == :ok do
-          fallback_adapter
-        else
-          # Both down, return preferred (will likely fail, or we could return a special error tuple if we refactor Gateway)
-          # For now, return preferred to maintain contract, Gateway will handle the failure
-          preferred_adapter
-        end
+        # Both down, return original (Gateway handles failure)
+        adapter
       end
     end
   end
 
-  defp get_adapter_module(:idenfy), do: Idenfy
-  defp get_adapter_module(:comply_cube), do: ComplyCube
-  defp get_adapter_module(_), do: ComplyCube
+  defp determine_adapter do
+    case Application.get_env(:mcp, :underwriting_adapter) do
+      :idenfy -> Idenfy
+      :complycube -> ComplyCube
+      :mock -> Mock
+      _ ->
+        # Auto-detect based on API keys
+        cond do
+          System.get_env("COMPLY_CUBE_API_KEY") -> ComplyCube
+          true -> Mock
+        end
+    end
+  end
 
-  defp get_fallback_vendor(:idenfy), do: :comply_cube
-  defp get_fallback_vendor(:comply_cube), do: :idenfy
-  defp get_fallback_vendor(_), do: :idenfy
+  defp get_fallback_adapter(Idenfy), do: ComplyCube
+  defp get_fallback_adapter(ComplyCube), do: Idenfy
+  defp get_fallback_adapter(_), do: Mock
 
   defp service_name(adapter), do: Atom.to_string(adapter)
 end

@@ -18,5 +18,11 @@ defmodule Mcp.Underwriting do
     resource Mcp.Underwriting.VendorSettings
     resource Mcp.Underwriting.Activity
     resource Mcp.Underwriting.DocumentAnalysis
+
+    # Agentic UaaS Resources
+    resource Mcp.Underwriting.AgentBlueprint
+    resource Mcp.Underwriting.InstructionSet
+    resource Mcp.Underwriting.Pipeline
+    resource Mcp.Underwriting.Execution
   end
 end

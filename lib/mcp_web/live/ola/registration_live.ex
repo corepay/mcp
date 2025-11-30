@@ -2,7 +2,7 @@ defmodule McpWeb.Ola.RegistrationLive do
   use McpWeb, :live_view
 
 
-  alias Mcp.Accounts.User
+
 
   @impl true
   def mount(_params, _session, socket) do

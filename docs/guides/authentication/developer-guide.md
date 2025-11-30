@@ -791,6 +791,63 @@ defmodule McpWeb.AuthControllerTest do
 end
 ```
 
+### 7. API Key Authentication
+
+For 3rd party integrations (e.g., RAG, Underwriting), we use API Keys with
+granular permissions and limits.
+
+#### API Key Resource
+
+```elixir
+# lib/mcp/accounts/api_key.ex
+defmodule Mcp.Accounts.ApiKey do
+  use Ash.Resource, domain: Mcp.Accounts, data_layer: AshPostgres.DataLayer
+
+  attributes do
+    uuid_primary_key :id
+    attribute :key_hash, :string, sensitive?: true
+    attribute :prefix, :string
+    
+    # Configuration
+    attribute :rate_limit, :integer # Requests per minute
+    attribute :spending_limit, :decimal # Monthly USD limit
+    
+    # Scoping
+    attribute :permissions, {:array, :string} # e.g. ["underwriting:read"]
+    attribute :scopes, {:array, :string} # e.g. ["merchant:123"]
+  end
+  
+  # ... actions and relationships
+end
+```
+
+#### Authentication Plug
+
+The `McpWeb.Plugs.RequireApiKey` plug handles verification and enforcement:
+
+```elixir
+# lib/mcp_web/plugs/require_api_key.ex
+defmodule McpWeb.Plugs.RequireApiKey do
+  def call(conn, _opts) do
+    with [key] <- get_req_header(conn, "x-api-key"),
+         {:ok, api_key} <- verify_key(key) do
+         
+      # Enforce Limits
+      check_rate_limit(api_key)
+      check_spending_limit(api_key)
+      
+      # Assign context
+      conn
+      |> assign(:current_api_key, api_key)
+      |> assign(:current_permissions, api_key.permissions)
+      |> assign(:allowed_merchant_ids, api_key.allowed_merchant_ids)
+    else
+      _ -> halt_unauthorized(conn)
+    end
+  end
+end
+```
+
 ## Security Best Practices
 
 ### 1. Password Security

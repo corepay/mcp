@@ -308,7 +308,37 @@ Phoenix handles session validation automatically through:
 - CSRF protection for form submissions
 - User status checks
 
-## API Authentication (Future Implementation)
+## API Authentication
+
+### API Key Authentication
+
+For programmatic access, use the `X-API-Key` header.
+
+**Header:** `X-API-Key: YOUR_API_KEY`
+
+**Response (401 Unauthorized):**
+
+```json
+{
+  "error": {
+    "type": "authentication_error",
+    "message": "Invalid or missing API key"
+  }
+}
+```
+
+**Response (429 Too Many Requests):**
+
+```json
+{
+  "error": {
+    "type": "rate_limit_exceeded",
+    "message": "Rate limit exceeded"
+  }
+}
+```
+
+### JWT Authentication (Future Implementation)
 
 Currently the platform uses Phoenix session-based authentication. JWT token API
 authentication is planned for future releases and will be added to `/api/`

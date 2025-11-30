@@ -26,7 +26,7 @@ Application.put_env(:mcp, Mcp.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 10,
   show_sensitive_data_on_connection_error: true,
-  ownership_timeout: 60_000
+  ownership_timeout: 180_000
 )
 
 # Configure test environment

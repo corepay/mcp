@@ -19,7 +19,13 @@ defmodule McpWeb.FallbackController do
   def call(conn, {:error, %Ash.Error.Invalid{} = error}) do
     conn
     |> put_status(:unprocessable_entity)
-    |> json(%{status: "error", message: inspect(error)})
+    |> json(%{
+      error: %{
+        code: "invalid_request",
+        message: "Invalid request parameters",
+        details: Ash.Error.to_ash_error(error) |> Map.get(:errors, []) |> Enum.map(&Map.take(&1, [:field, :message, :code]))
+      }
+    })
   end
 
   def call(conn, {:error, :not_found}) do
@@ -32,6 +38,12 @@ defmodule McpWeb.FallbackController do
   def call(conn, {:error, reason}) do
     conn
     |> put_status(:internal_server_error)
-    |> json(%{status: "error", message: inspect(reason)})
+    |> json(%{
+      error: %{
+        code: "internal_server_error",
+        message: "An unexpected error occurred",
+        details: inspect(reason)
+      }
+    })
   end
 end

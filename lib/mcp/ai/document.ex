@@ -37,7 +37,25 @@ defmodule Mcp.Ai.Document do
       constraints dimensions: 1536
     end
 
+    attribute :reseller_id, :uuid do
+      allow_nil? true
+    end
+
     timestamps()
+  end
+
+  relationships do
+    belongs_to :knowledge_base, Mcp.Ai.KnowledgeBase do
+      allow_nil? true
+    end
+
+    belongs_to :tenant, Mcp.Platform.Tenant do
+      allow_nil? true
+    end
+
+    belongs_to :merchant, Mcp.Platform.Merchant do
+      allow_nil? true
+    end
   end
 
   actions do
@@ -45,7 +63,7 @@ defmodule Mcp.Ai.Document do
 
     create :create do
       primary? true
-      accept [:content, :metadata, :embedding]
+      accept [:content, :metadata, :embedding, :tenant_id, :merchant_id, :reseller_id, :knowledge_base_id]
     end
 
     update :update do
@@ -61,9 +79,19 @@ defmodule Mcp.Ai.Document do
         default 0.7
       end
 
-      # Filter by cosine similarity
+      argument :tenant_id, :uuid do
+        allow_nil? true
+      end
+      
+      argument :merchant_id, :uuid do
+        allow_nil? true
+      end
+
+      # Filter by cosine similarity and optional scopes
       filter expr(
-               cosine_similarity(embedding, ^arg(:query_embedding)) > ^arg(:similarity_threshold)
+               cosine_similarity(embedding, ^arg(:query_embedding)) > ^arg(:similarity_threshold) and
+               (is_nil(^arg(:tenant_id)) or tenant_id == ^arg(:tenant_id)) and
+               (is_nil(^arg(:merchant_id)) or merchant_id == ^arg(:merchant_id))
              )
     end
   end

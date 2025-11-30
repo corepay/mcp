@@ -75,15 +75,19 @@ defmodule McpWeb.Ola.ApplicationLive do
       |> assign(:messages, Enum.reverse(messages.results))
       |> assign(:existing_application, existing_application)
     else
-      # Fallback for guest/unauthenticated users (Mock Mode)
+      # Real implementation using AgentRunner
+      execution_id = socket.assigns[:execution_id] || create_execution(socket)
+      
+      # We don't run the agent here yet, as we wait for user input.
+      # Unless we want a welcome message, which we can trigger via a separate task or just wait.
+      
       socket
-      |> assign(:conversation_id, nil)
-      |> assign(:messages, [
-        %{id: "mock-1", sender: :ai, source: :agent, text: "Hello! I'm Atlas. **Please sign in** to save your progress and enable the full application experience."}
-      ])
+      |> assign(:execution_id, execution_id)
+      |> assign(:conversation_id, nil) # Or create one?
+      |> assign(:messages, [])
       |> assign(:existing_application, nil)
     end
-    |> then(&{:ok, &1})
+    {:ok, socket}
   end
 
   @impl true
@@ -106,6 +110,16 @@ defmodule McpWeb.Ola.ApplicationLive do
      socket 
      |> assign(:mode, mode)
      |> assign(:messages, updated_messages)}
+  end
+
+  @impl true
+  def handle_event("prev_step", _params, socket) do
+    {:noreply, assign(socket, :step, socket.assigns.step - 1)}
+  end
+
+  @impl true
+  def handle_event("next_step", _params, socket) do
+    {:noreply, assign(socket, :step, socket.assigns.step + 1)}
   end
 
   @impl true
@@ -271,29 +285,57 @@ defmodule McpWeb.Ola.ApplicationLive do
       
       {:noreply, socket}
     else
-      # Mock mode
-      messages = socket.assigns.messages ++ [%{id: "mock-user-#{System.unique_integer()}", sender: :user, source: :user, text: text}]
+    # Real implementation using AgentRunner
+    # We need to construct a proper message history or context
+    # For now, we'll just send the current message to the "OLA" agent
+    
+    # Assuming we have a blueprint named "OLA" or similar, or we use a default
+    # We need to find or create an execution for this session
+    
+    # TODO: Manage Execution ID in socket assigns
+    execution_id = socket.assigns[:execution_id] || create_execution(socket)
+    
+    # Run the agent
+    case Mcp.Underwriting.Engine.AgentRunner.run(
+      %{id: execution_id, tenant_id: socket.assigns.current_tenant.id}, 
+      [%{role: :user, content: text}], 
+      [] # No tools for now, or add tools as needed
+    ) do
+      {:ok, response_text} ->
+         messages = socket.assigns.messages ++ [%{id: "ai-#{System.unique_integer()}", sender: :ai, source: :agent, text: response_text}]
+         {:noreply, assign(socket, messages: messages, execution_id: execution_id)}
       
-      # Simple mock response
-      {response, _, updated_form} = process_chat_input(socket.assigns.form, text)
-      messages = messages ++ [%{id: "mock-ai-#{System.unique_integer()}", sender: :ai, source: :agent, text: response}]
-
-      {:noreply, 
-       socket 
-       |> assign(:messages, messages)
-       |> assign(:form, updated_form)}
+      # AgentRunner.run returns a dynamic result, usually {:ok, map} or {:error, reason}
+      # The compiler warns that {:error, reason} might not match if it thinks it always returns {:ok, ...}
+      # But AgentRunner.run spec says it returns result.
+      # Let's match on anything else as error to be safe and satisfy compiler.
+      result ->
+         put_flash(socket, :error, "AI Error: #{inspect(result)}")
+         {:noreply, socket}
     end
   end
-
-  @impl true
-  def handle_event("prev_step", _params, socket) do
-    {:noreply, assign(socket, :step, socket.assigns.step - 1)}
+    {:noreply, socket}
   end
 
-  @impl true
-  def handle_event("next_step", _params, socket) do
-    {:noreply, assign(socket, :step, socket.assigns.step + 1)}
+  defp create_execution(socket) do
+    # Helper to create a new execution for the session
+    # In a real app, this would be tied to the Application resource
+    # For now, we stub it by creating a dummy execution or just returning a UUID if AgentRunner supports it
+    # But AgentRunner expects a real Execution struct or at least an ID that exists if it tries to update it.
+    # Let's assume we create a transient execution.
+    
+    # For this refactor, we'll just return a UUID and ensure AgentRunner handles it or we create a real one.
+    # Since we don't have the full context here, let's create a real Execution if possible.
+    
+    {:ok, execution} = Mcp.Underwriting.Execution.create(%{
+      tenant_id: socket.assigns.current_tenant.id,
+      status: :running,
+      trigger: "ola_chat"
+    })
+    execution.id
   end
+
+
 
   @impl true
   def handle_info(%Phoenix.Socket.Broadcast{payload: message}, socket) do
@@ -310,38 +352,5 @@ defmodule McpWeb.Ola.ApplicationLive do
       end
 
     {:noreply, assign(socket, :messages, messages)}
-  end
-
-  defp process_chat_input(form, input) do
-    # This is a simplified mock. In reality, we'd use an LLM or a more complex state machine.
-    # We check which field is empty and assume the input is for that field.
-    
-    params = form.params
-    
-    cond do
-      is_nil(params["business_name"]) || params["business_name"] == "" ->
-        new_params = Map.put(params, "business_name", input)
-        {"Thanks! And what is the DBA (Doing Business As) name?", "dba_name", to_form(new_params)}
-        
-      is_nil(params["dba_name"]) || params["dba_name"] == "" ->
-        new_params = Map.put(params, "dba_name", input)
-        {"Got it. What type of business is it (LLC, Corp, etc.)?", "business_type", to_form(new_params)}
-        
-      is_nil(params["business_type"]) || params["business_type"] == "" ->
-        new_params = Map.put(params, "business_type", input)
-        {"Understood. Please provide your EIN or Tax ID.", "ein", to_form(new_params)}
-        
-      is_nil(params["ein"]) || params["ein"] == "" ->
-        new_params = Map.put(params, "ein", input)
-        {"Excellent. Now, what is the best email address to reach you?", "email", to_form(new_params)}
-        
-      true ->
-        {"I think I have everything I need for the basics! You can review the application form now.", "done", form}
-    end
-  end
-
-  defp process_chat_input(form, _input) do
-    # Fallback for when we are already done or in an invalid state
-    {"I have already collected your information. Please review the form.", "done", form}
   end
 end

@@ -7,6 +7,7 @@ defmodule Mcp.Seeder do
   alias Mcp.Accounts.User
   alias Mcp.Platform.{Tenant, Merchant, Store}
   alias Mcp.Platform.TenantUserManager
+  alias Mcp.Underwriting.AgentBlueprint
 
   @password "Password123!"
 
@@ -20,6 +21,9 @@ defmodule Mcp.Seeder do
     # 2. Create Tenants
     seed_tenant("Acme Corp", "acme", "acme")
     seed_tenant("Globex Corp", "globex", "globex")
+
+    # 3. Create Agent Blueprints
+    seed_agent_blueprints()
 
     IO.puts("✅ Seeding Complete!")
   end
@@ -290,5 +294,125 @@ defmodule Mcp.Seeder do
       },
       tenant: tenant.company_schema
     )
+  end
+
+
+  defp seed_agent_blueprints do
+    IO.puts("  - Seeding Agent Blueprints...")
+
+    agents = [
+      %{
+        name: "MerchantUnderwriter",
+        description: "The core decision maker for merchant applications.",
+        base_prompt: "You are a senior commercial underwriter. Your goal is to assess the legitimacy and creditworthiness of a business. Analyze the provided application data, financial statements, and risk signals to make a funding decision.",
+        tools: [:verify_ein, :check_ofac, :google_search, :analyze_cash_flow]
+      },
+      %{
+        name: "The Eye",
+        description: "The document extraction & analysis specialist.",
+        base_prompt: "You are The Eye, an advanced OCR and document analysis engine. Your goal is to extract structured data from financial documents (PDFs, images) with 100% accuracy. Identify document types, extract key fields, and flag any signs of tampering.",
+        tools: [:ocr_document, :extract_key_values, :detect_tampering]
+      },
+      %{
+        name: "FraudDetective",
+        description: "The risk anomaly hunter.",
+        base_prompt: "You are a forensic investigator specializing in fraud detection. Analyze the application context for inconsistencies, synthetic identity patterns, and network anomalies. Look for mismatched data, high-risk IP addresses, and known fraud patterns.",
+        tools: [:reverse_image_search, :check_ip_reputation, :analyze_behavioral_biometrics]
+      },
+      %{
+        name: "AgentArchitect",
+        description: "The expert system for designing other AI agents.",
+        base_prompt: "You are the Agent Architect, an expert AI systems designer specializing in the MCP platform. Your goal is to help users design and configure new AI agents.
+        
+        You have deep knowledge of the following resources:
+        1. AgentBlueprint: Defines the persona (name, base_prompt, tools, routing_config).
+        2. InstructionSet: Defines specific policies (instructions).
+        
+        When a user asks for a new agent:
+        1. Interview them to understand the role and requirements.
+        2. Suggest a persona (Name, Base Prompt).
+        3. Suggest necessary tools.
+        4. Suggest a routing configuration (Ollama vs OpenRouter) based on complexity.
+        5. Output the configuration in JSON format or Elixir seed format.",
+        tools: [],
+        routing_config: %{mode: :single, primary_provider: :openrouter} # Use the smartest model for architecture
+      },
+      %{
+        name: "ResponseReviewer",
+        description: "The guardrails agent that reviews all outputs.",
+        base_prompt: "You are a Response Reviewer and Compliance Officer.
+        Your goal is to review the output of other AI agents before it is sent to the user.
+        
+        Check for:
+        1. PII (Personally Identifiable Information) that should be redacted.
+        2. Professional tone.
+        3. Accuracy and relevance to the original request.
+        4. Safety and policy compliance.
+        
+        If the response is safe and good, return it as is (or slightly polished).
+        If the response contains PII, redact it (replace with [REDACTED]).
+        If the response is unsafe or hallucinates, rewrite it to be safe.",
+        tools: [],
+        routing_config: %{mode: :single, primary_provider: :ollama} # Fast local review is usually sufficient
+      },
+      %{
+        name: "MortgageUnderwriter",
+        description: "Specialist in residential mortgage underwriting.",
+        base_prompt: "You are a Mortgage Underwriter. Your goal is to assess borrower risk for residential property loans.
+        
+        Focus on:
+        1. Debt-to-Income (DTI) Ratio (Front-end and Back-end).
+        2. Loan-to-Value (LTV) Ratio.
+        3. Credit History and Derogatory Marks.
+        4. Employment Stability (2-year history).
+        5. Source of Funds for Down Payment.
+        
+        Analyze the provided application and credit report data to recommend approval or denial.",
+        tools: [:calculator, :verify_employment],
+        routing_config: %{mode: :fallback, primary_provider: :ollama, fallback_provider: :openrouter, min_confidence: 0.9}
+      },
+      %{
+        name: "AutoLoanUnderwriter",
+        description: "Specialist in vehicle financing and risk.",
+        base_prompt: "You are an Auto Loan Underwriter. Your goal is to assess risk for vehicle financing.
+        
+        Focus on:
+        1. Payment-to-Income (PTI) Ratio.
+        2. Loan-to-Value (LTV) based on vehicle book value.
+        3. Credit Score and Auto-specific credit history (past repos).
+        4. Employment verification.
+        
+        Ensure the loan terms match the vehicle depreciation curve.",
+        tools: [:vehicle_valuation, :verify_income],
+        routing_config: %{mode: :single, primary_provider: :ollama}
+      },
+      %{
+        name: "RentalScreener",
+        description: "Specialist in tenant screening for residential leases.",
+        base_prompt: "You are a Rental Screening Agent. Your goal is to assess a tenant's eligibility for a lease.
+        
+        Focus on:
+        1. Rent-to-Income Ratio (Standard: 30%).
+        2. Eviction History.
+        3. Criminal Background (relevant to property safety).
+        4. Landlord References.
+        
+        Provide a 'Pass', 'Conditional', or 'Fail' recommendation.",
+        tools: [:background_check, :verify_income],
+        routing_config: %{mode: :single, primary_provider: :ollama}
+      }
+    ]
+
+    Enum.each(agents, fn agent_attrs ->
+      case Ash.Query.filter(AgentBlueprint, name == ^agent_attrs.name) |> Ash.read_one() do
+        {:ok, nil} ->
+          Ash.create!(AgentBlueprint, agent_attrs)
+          IO.puts("    + Created #{agent_attrs.name}")
+        {:ok, _existing} ->
+          IO.puts("    . #{agent_attrs.name} already exists")
+        _ ->
+          IO.puts("    ! Failed to check #{agent_attrs.name}")
+      end
+    end)
   end
 end

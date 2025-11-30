@@ -49,7 +49,8 @@ config :mcp,
     Mcp.Finance,
     Mcp.Audit,
     Mcp.Ai,
-    Mcp.Underwriting
+    Mcp.Underwriting,
+    Mcp.Webhooks
   ],
   base_domain: "localhost"
 
@@ -57,6 +58,11 @@ config :mcp, Mcp.Repo, types: Mcp.PostgresTypes
 
 config :ash_typescript,
   output_file: "assets/js/ash_generated.ts"
+
+config :mcp, :llm,
+  ollama_base_url: System.get_env("OLLAMA_BASE_URL", "http://localhost:11434"),
+  openrouter_base_url: "https://openrouter.ai/api/v1",
+  openrouter_api_key: System.get_env("OPENROUTER_API_KEY")
 
 config :mcp, :qorpay,
   base_url: System.get_env("QORPAY_SANDBOX_URL", "https://api-sandbox.qorcommerce.io/v3"),

@@ -3,6 +3,7 @@ defmodule Mcp.Finance do
     extensions: [AshJsonApi.Domain]
 
   resources do
+    resource Mcp.Finance.Ledger
     resource Mcp.Finance.Account
     resource Mcp.Finance.Balance
     resource Mcp.Finance.Transfer

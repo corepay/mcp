@@ -15,11 +15,20 @@ defmodule Mcp.Finance.Account do
     transfer_resource(Mcp.Finance.Transfer)
   end
 
+  actions do
+    defaults [:read, :destroy]
+    create :create do
+      primary? true
+      accept [:name, :identifier, :merchant_id, :mid_id, :currency, :type]
+    end
+  end
+
   attributes do
     uuid_primary_key :id
 
     attribute :name, :string, allow_nil?: false
     attribute :identifier, :string, allow_nil?: false
+    attribute :type, :atom, allow_nil?: false
 
     # Cross-schema links
     attribute :merchant_id, :uuid
@@ -33,5 +42,8 @@ defmodule Mcp.Finance.Account do
     belongs_to :tenant, Mcp.Platform.Tenant do
       domain Mcp.Platform
     end
+  end
+  code_interface do
+    define :create
   end
 end

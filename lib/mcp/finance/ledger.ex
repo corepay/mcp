@@ -1,50 +1,46 @@
 defmodule Mcp.Finance.Ledger do
-  @moduledoc """
-  Context module for financial ledger operations and calculations.
-  """
-  require Ash.Query
-  alias Mcp.Finance.{Account, Transfer}
+  use Ash.Resource,
+    domain: Mcp.Finance,
+    data_layer: AshPostgres.DataLayer
 
-  @doc """
-  Calculates the total incoming volume for a merchant's account on a specific date.
-  """
-  def calculate_daily_volume(merchant_id, date) do
-    # 1. Find the merchant's account
-    account = get_merchant_account(merchant_id)
+  postgres do
+    table "ledgers"
+    repo Mcp.Repo
+  end
 
-    case account do
-      nil ->
-        {:error, :account_not_found}
+  attributes do
+    uuid_primary_key :id
+    attribute :account_id, :uuid, allow_nil?: false
+    attribute :amount, :decimal, allow_nil?: false
+    attribute :currency, :string, allow_nil?: false, default: "USD"
+    attribute :type, :atom do
+      constraints one_of: [:credit, :debit]
+      allow_nil? false
+    end
+    attribute :description, :string
+    attribute :reference_id, :string # External reference (e.g. Stripe ID)
+    attribute :status, :atom do
+      constraints one_of: [:pending, :cleared, :failed]
+      default :pending
+    end
 
-      account ->
-        # 2. Sum transfers to this account on the given date
-        start_of_day = DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
-        end_of_day = DateTime.new!(date, ~T[23:59:59.999999], "Etc/UTC")
+    timestamps()
+  end
 
-        Transfer
-        |> Ash.Query.filter(to_account_id == ^account.id)
-        |> Ash.Query.filter(timestamp >= ^start_of_day and timestamp <= ^end_of_day)
-        |> Ash.read!()
-        |> Enum.reduce(Decimal.new(0), fn transfer, acc ->
-          Decimal.add(acc, transfer.amount)
-        end)
-        |> then(&{:ok, &1})
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [:account_id, :amount, :currency, :type, :description, :reference_id, :status]
+    end
+
+    update :update do
+      accept [:status]
     end
   end
 
-  @doc """
-  Fetches the settlement amount from the payment gateway for a merchant on a specific date.
-  Currently a stub.
-  """
-  def get_gateway_settlement(_merchant_id, _date) do
-    # In a real implementation, this would call QorPay API
-    # For now, we return a random amount or 0
-    {:ok, Decimal.new("1000.00")}
-  end
-
-  defp get_merchant_account(merchant_id) do
-    Account
-    |> Ash.Query.filter(merchant_id == ^merchant_id)
-    |> Ash.read_one!()
+  code_interface do
+    define :create
+    define :read
   end
 end

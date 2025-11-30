@@ -47,7 +47,9 @@ defmodule McpWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug McpWeb.Plugs.ApiVersioning
     plug McpWeb.ApiSecurityHeaders
+    plug McpWeb.Plugs.RequireApiKey
   end
 
   # Platform Admin Portal
@@ -250,5 +252,22 @@ defmodule McpWeb.Router do
     pipe_through :api
 
     get "/health", HealthController, :health
+  end
+
+  scope "/api", McpWeb do
+    pipe_through :api
+
+    # V1 Routes (Header-based versioning handled by controller namespace resolution or explicit routing)
+    # For now, we map /assessments directly to Api.AssessmentController
+    # In a full setup, we might use a macro to dispatch based on conn.assigns.api_version
+
+    post "/assessments", Api.AssessmentController, :create
+    get "/assessments/:id", Api.AssessmentController, :show
+
+    post "/instruction_sets", Api.InstructionSetController, :create
+    get "/instruction_sets/:id", Api.InstructionSetController, :show
+
+    # Webhooks
+    resources "/webhooks/endpoints", Api.WebhookController, except: [:new, :edit]
   end
 end
