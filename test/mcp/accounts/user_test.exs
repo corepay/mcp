@@ -116,16 +116,13 @@ defmodule Mcp.Accounts.UserTest do
       assert active_user.status == :active
     end
 
-    test "soft deletes user", %{user: user} do
-      assert :ok = User.soft_delete(user)
+    test "soft deletes user" do
+      user = insert(:user, %{status: :active})
+      assert {:ok, _} = User.soft_delete(user)
 
-      # Fetch user to verify status (AshArchival might hide it from standard queries, so we might need to include archived)
-      # But for now, let's assume we can fetch it or it's gone from standard view.
-      # If AshArchival is active, standard read will filter it out.
-      # Let's check if it's "deleted" by trying to fetch it.
-
-      # If we want to verify it's soft deleted, we should check the DB directly or use a specific query.
-      # For this test, let's just assert :ok.
+      # Verify status update
+      updated = User.get_by_id!(user.id)
+      assert updated.status == :deleted
     end
 
     test "updates sign in information", %{user: user} do
@@ -175,7 +172,8 @@ defmodule Mcp.Accounts.UserTest do
       assert :ok = User.destroy(user)
 
       # Verify user is gone
-      assert nil == User.get(user.id)
+      assert {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Query.NotFound{}]}} =
+               User.get(user.id)
     end
   end
 

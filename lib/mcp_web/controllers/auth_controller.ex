@@ -28,6 +28,7 @@ defmodule McpWeb.AuthController do
 
         conn
         |> McpWeb.Auth.SessionPlug.set_jwt_session(session)
+        |> put_session("user_token", session.access_token)
         |> put_session(:current_user, user)
         |> put_flash(:info, "Welcome back!")
         |> redirect(to: redirect_to)
@@ -60,6 +61,18 @@ defmodule McpWeb.AuthController do
         |> put_flash(:error, "Authentication failed: #{inspect(reason)}")
         |> redirect(to: sign_in_path)
     end
+  end
+
+  def create(conn, %{}) do
+    conn
+    |> put_flash(:error, "Invalid login request (empty)")
+    |> redirect(to: ~p"/tenant/sign-in")
+  end
+
+  def create(conn, _params) do
+    conn
+    |> put_flash(:error, "Invalid login request")
+    |> redirect(to: ~p"/tenant/sign-in")
   end
 
   def delete(conn, _params) do
@@ -132,12 +145,18 @@ defmodule McpWeb.AuthController do
 
   defp get_client_ip(conn) do
     # Try to get real IP, fallback to remote address
-    case get_req_header(conn, "x-forwarded-for") do
-      [ip | _] -> ip
-      [] -> get_req_header(conn, "x-real-ip") || to_string(conn.remote_ip)
-      nil -> get_req_header(conn, "x-real-ip") || to_string(conn.remote_ip)
-    end
+    List.first(get_req_header(conn, "x-forwarded-for")) ||
+      List.first(get_req_header(conn, "x-real-ip")) ||
+      format_ip(conn.remote_ip)
   end
+
+  defp format_ip(ip) when is_tuple(ip) do
+    ip
+    |> :inet.ntoa()
+    |> to_string()
+  end
+
+  defp format_ip(_), do: "unknown"
 
   defp generate_temp_token(_user) do
     # Generate a temporary token for password change flow
@@ -162,12 +181,12 @@ defmodule McpWeb.AuthController do
       String.starts_with?(path, "/vendors") -> ~p"/vendors/dashboard"
       String.starts_with?(path, "/tenant") -> ~p"/tenant/dashboard"
       String.starts_with?(path, "/online-application") -> ~p"/online-application/application"
-      
       # Fallback to context-based or default
       conn.assigns[:current_tenant] -> ~p"/tenant/dashboard"
       true -> ~p"/admin/dashboard"
     end
   end
+
   # API Actions
 
   def register(conn, params) do
@@ -177,6 +196,7 @@ defmodule McpWeb.AuthController do
         conn
         |> put_status(:created)
         |> json(%{data: user})
+
       {:error, changeset} ->
         conn
         |> put_status(:unprocessable_entity)
@@ -195,11 +215,13 @@ defmodule McpWeb.AuthController do
         case Auth.refresh_jwt_session(token) do
           {:ok, session} ->
             json(conn, %{data: session})
+
           {:error, _} ->
             conn
             |> put_status(:unauthorized)
             |> json(%{error: "Invalid token"})
         end
+
       _ ->
         conn
         |> put_status(:bad_request)

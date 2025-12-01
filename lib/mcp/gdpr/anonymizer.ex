@@ -223,14 +223,14 @@ defmodule Mcp.Gdpr.Anonymizer do
       backup_codes: [],
       oauth_tokens: %{},
       last_sign_in_ip: anonymize_ip(user.last_sign_in_ip, strategy),
-      status: :deleted
+      status: :suspended
     }
 
     {:ok, anonymized}
   end
 
   defp apply_anonymization(user, anonymized_data) do
-    User.update(user, anonymized_data)
+    User.gdpr_anonymize(user, anonymized_data)
   end
 
   defp anonymize_related_data(user_id, _strategy) do
@@ -271,7 +271,7 @@ defmodule Mcp.Gdpr.Anonymizer do
     :crypto.strong_rand_bytes(32) |> Base.encode64()
   end
 
-  defp anonymize_ip(nil, _strategy), do: nil
+  defp anonymize_ip(nil, _strategy), do: "0.0.0.0"
 
   defp anonymize_ip(ip, _strategy) when is_binary(ip) do
     case anonymize_field(ip, :ip_address, nil, []) do

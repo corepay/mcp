@@ -11,16 +11,14 @@ defmodule Mcp.Gdpr.Export do
   @doc """
   Creates an export request.
   """
-  def create_export(user_id, format, opts \\ []) do
+  def create_export(user_id, format, _opts \\ []) do
     expires_at = DateTime.add(DateTime.utc_now(), 7, :day)
 
     export_attrs = %{
       user_id: user_id,
-      request_id: Keyword.get(opts, :request_id, Ecto.UUID.generate()),
       format: format,
       status: "pending",
-      expires_at: expires_at,
-      metadata: Keyword.get(opts, :metadata, %{})
+      expires_at: expires_at
     }
 
     %GdprExport{}

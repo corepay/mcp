@@ -11,12 +11,23 @@ defmodule Mcp.Platform.TenantSettings.Changes do
     value_type = Ash.Changeset.get_attribute(changeset, :value_type)
     validation_rules = Ash.Changeset.get_attribute(changeset, :validation_rules)
 
-    case validate_value_by_type(value, value_type, validation_rules) do
-      :ok ->
-        changeset
+    if is_nil(value) do
+      changeset
+    else
+      case validate_value_by_type(value, value_type, validation_rules) do
+        :ok ->
+          changeset
 
-      {:error, message} ->
-        Ash.Changeset.add_error(changeset, :value, message)
+        {:error, message} ->
+          error =
+            Ash.Error.Changes.InvalidAttribute.exception(
+              field: :value,
+              message: message,
+              value: value
+            )
+
+          Ash.Changeset.add_error(changeset, error)
+      end
     end
   end
 

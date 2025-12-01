@@ -1,5 +1,5 @@
 defmodule Mcp.Platform.TenantMigrationManagerTest do
-  use ExUnit.Case, async: false
+  use Mcp.DataCase
 
   alias Mcp.Platform.SchemaProvisioner
   alias Mcp.Platform.TenantMigrationManager
@@ -7,6 +7,9 @@ defmodule Mcp.Platform.TenantMigrationManagerTest do
   @test_tenant_slug "test_migration_tenant_#{System.unique_integer([:positive])}"
 
   setup do
+    # Checkout a real connection, bypassing sandbox for migrations
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo, sandbox: false)
+
     # Clean up any existing test tenant
     cleanup_test_tenant()
 
@@ -20,7 +23,8 @@ defmodule Mcp.Platform.TenantMigrationManagerTest do
   describe "migrate_tenant/2" do
     test "successfully migrates a new tenant schema" do
       # Provision schema first (without migrations)
-      assert {:ok, _} = SchemaProvisioner.provision_tenant_schema(@test_tenant_slug)
+      assert {:ok, _} =
+               SchemaProvisioner.provision_tenant_schema(@test_tenant_slug, skip_tables: true)
 
       # Run migrations
       assert {:ok, :migrated} = TenantMigrationManager.migrate_tenant(@test_tenant_slug)
@@ -36,7 +40,9 @@ defmodule Mcp.Platform.TenantMigrationManagerTest do
 
     test "handles tenant with no pending migrations" do
       # Provision and migrate once
-      assert {:ok, _} = SchemaProvisioner.provision_tenant_schema(@test_tenant_slug)
+      assert {:ok, _} =
+               SchemaProvisioner.provision_tenant_schema(@test_tenant_slug, skip_tables: true)
+
       assert {:ok, :migrated} = TenantMigrationManager.migrate_tenant(@test_tenant_slug)
 
       # Try to migrate again
@@ -57,7 +63,9 @@ defmodule Mcp.Platform.TenantMigrationManagerTest do
 
   describe "migration status" do
     test "reports correct status for migrated tenant" do
-      assert {:ok, _} = SchemaProvisioner.provision_tenant_schema(@test_tenant_slug)
+      assert {:ok, _} =
+               SchemaProvisioner.provision_tenant_schema(@test_tenant_slug, skip_tables: true)
+
       assert {:ok, :migrated} = TenantMigrationManager.migrate_tenant(@test_tenant_slug)
 
       {:ok, status} = TenantMigrationManager.tenant_migration_status(@test_tenant_slug)
@@ -68,7 +76,8 @@ defmodule Mcp.Platform.TenantMigrationManagerTest do
     end
 
     test "reports pending migrations for new tenant" do
-      assert {:ok, _} = SchemaProvisioner.provision_tenant_schema(@test_tenant_slug)
+      assert {:ok, _} =
+               SchemaProvisioner.provision_tenant_schema(@test_tenant_slug, skip_tables: true)
 
       {:ok, status} = TenantMigrationManager.tenant_migration_status(@test_tenant_slug)
       assert status.status == :pending_migrations
@@ -90,8 +99,8 @@ defmodule Mcp.Platform.TenantMigrationManagerTest do
       tenant_2 = @test_tenant_slug <> "_2"
 
       # Provision multiple tenants
-      assert {:ok, _} = SchemaProvisioner.provision_tenant_schema(tenant_1)
-      assert {:ok, _} = SchemaProvisioner.provision_tenant_schema(tenant_2)
+      assert {:ok, _} = SchemaProvisioner.provision_tenant_schema(tenant_1, skip_tables: true)
+      assert {:ok, _} = SchemaProvisioner.provision_tenant_schema(tenant_2, skip_tables: true)
 
       # Note: These aren't in the platform.tenants table, so migrate_all_tenants won't find them
       # This test demonstrates the basic functionality, but full integration would require

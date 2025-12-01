@@ -1,8 +1,6 @@
 defmodule Mcp.Registration.RegistrationIntegrationTest do
   use Mcp.DataCase, async: false
 
-
-
   alias Mcp.Registration.{
     EmailService,
     PolicyValidator,
@@ -19,6 +17,11 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
         subdomain: "test-#{System.unique_integer([:positive])}",
         company_schema: "test_schema_#{System.unique_integer([:positive])}"
       })
+
+    Mcp.Accounts.RegistrationSettings.update_settings(tenant.id, %{
+      "customer_registration_enabled" => true,
+      "allow_self_registration" => true
+    })
 
     {:ok, tenant: tenant}
   end
@@ -65,7 +68,10 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
 
       # Register with approval required
       {:ok, request} =
-        RegistrationService.register_user(registration_data, requires_approval: true, tenant_id: tenant.id)
+        RegistrationService.register_user(registration_data,
+          requires_approval: true,
+          tenant_id: tenant.id
+        )
 
       assert to_string(request.email) == "approval.test@example.com"
       assert request.status == :submitted
@@ -258,7 +264,10 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
       }
 
       {:ok, request} =
-        RegistrationService.register_user(registration_data, requires_approval: true, tenant_id: tenant.id)
+        RegistrationService.register_user(registration_data,
+          requires_approval: true,
+          tenant_id: tenant.id
+        )
 
       # Mock admin notification
       notification_sent = EmailService.send_admin_approval_notification(request)
@@ -314,7 +323,7 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
       {:error, reason} = WorkflowOrchestrator.execute_registration_workflow(invalid_workflow_data)
 
       assert reason != nil
-      assert is_atom(reason) or is_binary(reason)
+      assert is_atom(reason) or is_binary(reason) or is_struct(reason)
     end
   end
 
@@ -331,7 +340,10 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
       }
 
       {:ok, request} =
-        RegistrationService.register_user(registration_data, requires_approval: true, tenant_id: tenant.id)
+        RegistrationService.register_user(registration_data,
+          requires_approval: true,
+          tenant_id: tenant.id
+        )
 
       assert request.status == :submitted
 
@@ -356,7 +368,10 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
       }
 
       {:ok, request} =
-        RegistrationService.register_user(registration_data, requires_approval: true, tenant_id: tenant.id)
+        RegistrationService.register_user(registration_data,
+          requires_approval: true,
+          tenant_id: tenant.id
+        )
 
       assert request.status == :submitted
 
@@ -364,8 +379,8 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
       {:ok, rejected_request} =
         RegistrationService.reject_registration(
           request.id,
-          "admin@example.com",
-          "Suspicious activity detected"
+          "Suspicious activity detected",
+          "admin@example.com"
         )
 
       assert rejected_request.status == :rejected

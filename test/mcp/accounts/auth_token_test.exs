@@ -1,5 +1,5 @@
 defmodule Mcp.Accounts.AuthTokenTest do
-  use ExUnit.Case, async: false
+  use Mcp.DataCase, async: false
 
   alias Mcp.Accounts.{AuthToken, JWT, User}
 
@@ -89,7 +89,7 @@ defmodule Mcp.Accounts.AuthTokenTest do
         "exp" => DateTime.utc_now() |> DateTime.add(-1, :hour) |> DateTime.to_unix()
       }
 
-      {:ok, expired_token} = JWT.generate_token(claims)
+      {:ok, expired_token, _claims} = JWT.generate_token(claims)
 
       assert {:error, _} = AuthToken.by_token(expired_token)
     end
@@ -125,8 +125,8 @@ defmodule Mcp.Accounts.AuthTokenTest do
       {:ok, revoked_token} = AuthToken.generate_access_token(user.id, %{}, %{})
       AuthToken.revoke(revoked_token)
 
-      result = AuthToken.by_user(user.id)
-      active_count = length(result.results)
+      {:ok, tokens} = AuthToken.by_user(user.id)
+      active_count = length(tokens)
 
       # Should have 3 active tokens (not including the revoked one)
       assert active_count == 3
@@ -144,10 +144,10 @@ defmodule Mcp.Accounts.AuthTokenTest do
       {:ok, token_to_revoke} = AuthToken.generate_access_token(user1.id, %{}, %{})
       AuthToken.revoke(token_to_revoke)
 
-      result = AuthToken.active_tokens()
+      {:ok, tokens} = AuthToken.active_tokens()
 
       # Should have 2 active tokens
-      assert length(result.results) == 2
+      assert length(tokens) == 2
     end
 
     test "revoke_all_for_user destroys all user tokens", %{user: user} do
@@ -159,8 +159,8 @@ defmodule Mcp.Accounts.AuthTokenTest do
       # Revoke all tokens
       AuthToken.destroy(AuthToken.revoke_all_for_user(user.id))
 
-      result = AuthToken.by_user(user.id)
-      assert Enum.empty?(result.results)
+      {:ok, tokens} = AuthToken.by_user(user.id)
+      assert Enum.empty?(tokens)
     end
   end
 
@@ -253,11 +253,10 @@ defmodule Mcp.Accounts.AuthTokenTest do
       {:ok, user: user}
     end
 
-    test "read action returns paginated results" do
-      result = AuthToken.read()
-      assert is_map(result)
-      assert is_list(result.results)
-      assert length(result.results) >= 10
+    test "read action returns results" do
+      {:ok, results} = AuthToken.read()
+      assert is_list(results)
+      assert length(results) >= 10
     end
 
     test "active_users filter excludes revoked tokens", %{user: user} do
@@ -265,21 +264,21 @@ defmodule Mcp.Accounts.AuthTokenTest do
       {:ok, token_to_revoke} = AuthToken.generate_access_token(user.id, %{}, %{})
       AuthToken.revoke(token_to_revoke)
 
-      active_result = AuthToken.active_tokens()
-      all_result = AuthToken.read()
+      {:ok, active_result} = AuthToken.active_tokens()
+      {:ok, result} = AuthToken.read()
 
       # Active tokens should be fewer than all tokens
-      assert length(active_result.results) < length(all_result.results)
+      assert length(active_result) < length(result)
     end
 
     test "by_user filter only returns tokens for specific user", %{user: user} do
       {:ok, other_user} = User.register("other@example.com", "Password123!", "Password123!")
       {:ok, _other_token} = AuthToken.generate_access_token(other_user.id, %{}, %{})
 
-      result = AuthToken.by_user(user.id)
+      {:ok, tokens} = AuthToken.by_user(user.id)
 
       # All tokens should belong to our user
-      Enum.each(result.results, fn token ->
+      Enum.each(tokens, fn token ->
         assert token.user_id == user.id
       end)
     end

@@ -46,6 +46,8 @@ defmodule Mcp.Gdpr.RetentionReactor do
 
   # Step 2: Process each policy to find overdue records
   step :process_policies do
+    argument :load_policies, source: result(:load_policies)
+
     run fn %{load_policies: policies} ->
       results =
         Enum.map(policies, fn policy ->
@@ -87,6 +89,8 @@ defmodule Mcp.Gdpr.RetentionReactor do
 
   # Step 3: Apply retention actions to overdue records
   step :apply_retention_actions do
+    argument :process_policies, source: result(:process_policies)
+
     run fn %{process_policies: policy_results} ->
       processing_results =
         Enum.map(policy_results, fn {:ok, policy_result} ->
@@ -118,6 +122,8 @@ defmodule Mcp.Gdpr.RetentionReactor do
 
   # Step 4: Update policy processing timestamps
   step :update_policy_timestamps do
+    argument :apply_retention_actions, source: result(:apply_retention_actions)
+
     run fn %{apply_retention_actions: processing_results} ->
       Enum.each(processing_results.results, fn %{policy: policy, result: result} ->
         # Mark policies as processed regardless of individual record success/failure

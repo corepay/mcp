@@ -18,6 +18,11 @@ defmodule Mcp.Registration.RegistrationServiceTest do
 
       tenant_id = tenant.id
 
+      alias Mcp.Accounts.RegistrationSettings
+
+      {:ok, _settings} = RegistrationSettings.create_default_settings(tenant_id)
+      RegistrationSettings.update_settings(tenant_id, %{"customer_registration_enabled" => true})
+
       registration_data = %{
         "email" => "test@example.com",
         "first_name" => "John",
@@ -46,6 +51,22 @@ defmodule Mcp.Registration.RegistrationServiceTest do
 
     test "handles invalid registration data" do
       tenant_id = Ecto.UUID.generate()
+
+      # Create tenant for FK constraint
+      Mcp.Repo.insert!(%Mcp.Platform.Tenant{
+        id: tenant_id,
+        name: "Test Tenant",
+        slug: "test-tenant-#{tenant_id}",
+        company_schema: "test_tenant_#{String.replace(tenant_id, "-", "_")}",
+        subdomain: "test-#{tenant_id}",
+        inserted_at: DateTime.utc_now(),
+        updated_at: DateTime.utc_now()
+      })
+
+      alias Mcp.Accounts.RegistrationSettings
+      {:ok, _settings} = RegistrationSettings.create_default_settings(tenant_id)
+      RegistrationSettings.update_settings(tenant_id, %{"customer_registration_enabled" => true})
+
       registration_data = %{}
 
       {:error, reason} =
@@ -99,11 +120,16 @@ defmodule Mcp.Registration.RegistrationServiceTest do
       request = insert(:submitted_registration_request)
       approver_id = Ecto.UUID.generate()
 
-      {:ok, approved} = RegistrationService.approve_registration(request.id, approver_id)
+      {:ok, user} = RegistrationService.approve_registration(request.id, approver_id)
 
-      assert approved.status == :approved
-      assert approved.approved_by_id == approver_id
-      assert approved.approved_at != nil
+      assert user.email == request.email
+      assert user.status == :active
+
+      # Verify request was approved
+      {:ok, updated_request} = RegistrationService.get_registration(request.id)
+      assert updated_request.status == :approved
+      assert updated_request.approved_by_id == approver_id
+      assert updated_request.approved_at != nil
     end
 
     test "returns error for non-existent request" do
@@ -233,7 +259,7 @@ defmodule Mcp.Registration.RegistrationServiceTest do
 
   describe "get_registration_status/1" do
     test "returns detailed status for existing request" do
-      {:ok, request} =
+      request =
         insert(:submitted_registration_request, %{
           submitted_at: DateTime.utc_now() |> DateTime.add(-1, :hour)
         })
@@ -253,13 +279,14 @@ defmodule Mcp.Registration.RegistrationServiceTest do
     test "returns error for non-existent request" do
       non_existent_id = Ecto.UUID.generate()
 
-      {:error, :not_found} = RegistrationService.get_registration_status(non_existent_id)
+      {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Query.NotFound{}]}} =
+        RegistrationService.get_registration_status(non_existent_id)
     end
   end
 
   describe "process_registration/1" do
     test "processes approved registration and creates user" do
-      {:ok, request} = insert(:approved_registration_request)
+      request = insert(:approved_registration_request)
 
       {:ok, user} = RegistrationService.process_registration(request.id)
 
@@ -271,11 +298,12 @@ defmodule Mcp.Registration.RegistrationServiceTest do
     test "returns error for non-existent request" do
       non_existent_id = Ecto.UUID.generate()
 
-      {:error, :not_found} = RegistrationService.process_registration(non_existent_id)
+      {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Query.NotFound{}]}} =
+        RegistrationService.process_registration(non_existent_id)
     end
 
     test "returns error for non-approved request" do
-      {:ok, request} = insert(:submitted_registration_request)
+      request = insert(:submitted_registration_request)
 
       {:error, :not_approved} = RegistrationService.process_registration(request.id)
     end

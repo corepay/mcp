@@ -21,13 +21,17 @@ defmodule McpWeb.Portals.AuthComponents do
 
   def auth_layout(assigns) do
     ~H"""
-    <div class="min-h-screen flex flex-col md:flex-row bg-base-200 font-sans">
+    <div
+      class="min-h-screen flex flex-col md:flex-row bg-base-200 font-sans"
+      role="main"
+      aria-label={@title}
+    >
       <CoreComponents.flash kind={:info} title="Info" flash={@flash} />
       <CoreComponents.flash kind={:error} title="Error" flash={@flash} />
       <CoreComponents.flash kind={:success} title="Success" flash={@flash} />
       <CoreComponents.flash kind={:warning} title="Warning" flash={@flash} />
-
-      <!-- Left Side: Branding/Context (Hidden on mobile) -->
+      
+    <!-- Left Side: Branding/Context (Hidden on mobile) -->
       <div class="hidden md:flex md:w-1/2 relative overflow-hidden bg-base-200">
         <!-- Background Gradients (Context Aware) -->
         <div class={["absolute inset-0 bg-gradient-to-br opacity-20", @gradient_class]}></div>
@@ -148,9 +152,11 @@ defmodule McpWeb.Portals.AuthComponents do
             "input input-bordered w-full pl-10 focus:input-primary transition-all duration-200",
             @field.errors != [] && "input-error"
           ]}
+          aria-invalid={@field.errors != []}
+          aria-describedby={@field.id <> "-error"}
         />
       </div>
-      <label :for={msg <- @field.errors} class="label">
+      <label :for={msg <- @field.errors} class="label" id={@field.id <> "-error"}>
         <span class="label-text-alt text-error">{msg}</span>
       </label>
     </div>

@@ -25,10 +25,10 @@ defmodule Mcp.MultiTenantTest do
     end
 
     test "handles existing schema gracefully" do
-      {:ok, _} = MultiTenant.create_tenant_schema(@test_tenant_schema)
+      {:ok, schema_name} = MultiTenant.create_tenant_schema(@test_tenant_schema)
 
-      assert {:error, :schema_already_exists} =
-               MultiTenant.create_tenant_schema(@test_tenant_schema)
+      # Should be idempotent and return success
+      assert {:ok, ^schema_name} = MultiTenant.create_tenant_schema(@test_tenant_schema)
     end
 
     test "drops tenant schema" do

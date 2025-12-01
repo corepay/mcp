@@ -63,7 +63,9 @@ defmodule Mcp.Infrastructure.TenantManager do
     query = "SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = $1)"
 
     case Repo.query(query, [schema_name]) do
-      {:ok, %{rows: [[exists]]}} -> {:ok, exists}
+      {:ok, %{rows: [[exists]]}} ->
+        {:ok, exists}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -74,7 +76,9 @@ defmodule Mcp.Infrastructure.TenantManager do
     query = "CREATE SCHEMA IF NOT EXISTS \"#{schema_name}\""
 
     case Repo.query(query, []) do
-      {:ok, _} -> :ok
+      {:ok, _} ->
+        :ok
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -91,14 +95,20 @@ defmodule Mcp.Infrastructure.TenantManager do
   end
 
   defp run_tenant_migrations(schema_name) do
-    path = Application.app_dir(:mcp, "priv/repo/tenant_migrations")
-    
-    try do
-      Ecto.Migrator.run(Repo, path, :up, all: true, prefix: schema_name)
-    rescue
-      _e -> 
-        # In test sandbox, this might fail. We catch it to avoid crashing.
-        :error
+    if Application.get_env(:mcp, :run_tenant_migrations, true) do
+      path = Application.app_dir(:mcp, "priv/repo/tenant_migrations")
+
+      try do
+        Ecto.Migrator.run(Repo, path, :up, all: true, prefix: schema_name)
+      rescue
+        e ->
+          require Logger
+          Logger.error("Failed to run tenant migrations for #{schema_name}: #{inspect(e)}")
+          # In test sandbox, this might fail. We catch it to avoid crashing.
+          :error
+      end
+    else
+      :ok
     end
   end
 end

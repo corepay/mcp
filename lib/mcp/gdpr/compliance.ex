@@ -192,6 +192,10 @@ defmodule Mcp.Gdpr.Compliance do
           Repo.rollback(:user_not_deleted)
       end
     end)
+    |> case do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @doc """

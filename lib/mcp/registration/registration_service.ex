@@ -7,18 +7,24 @@ defmodule Mcp.Registration.RegistrationService do
   alias Mcp.Accounts.User
   require Ash.Query
 
+  alias Mcp.Accounts.RegistrationSettings
+  alias Mcp.Registration.PolicyValidator
+
   def initialize_registration(tenant_id, type, data, context \\ %{}) do
-    RegistrationRequest.initialize(
-      tenant_id,
-      type,
-      data["email"],
-      data["first_name"],
-      data["last_name"],
-      data["phone"],
-      data["company_name"],
-      data,
-      context
-    )
+    with {:ok, settings} <- RegistrationSettings.get_current_settings(tenant_id),
+         :ok <- PolicyValidator.validate_registration_enabled(settings, type) do
+      RegistrationRequest.initialize(
+        tenant_id,
+        type,
+        data[:email] || data["email"],
+        data[:first_name] || data["first_name"],
+        data[:last_name] || data["last_name"],
+        data[:phone] || data["phone"],
+        data[:company_name] || data["company_name"],
+        data,
+        context
+      )
+    end
   end
 
   def submit_registration(request_id) do
@@ -28,8 +34,9 @@ defmodule Mcp.Registration.RegistrationService do
   end
 
   def approve_registration(request_id, approver_id) do
-    with {:ok, request} <- RegistrationRequest.by_id(request_id) do
-      RegistrationRequest.approve(request, approver_id)
+    with {:ok, request} <- RegistrationRequest.by_id(request_id),
+         {:ok, _approved_request} <- RegistrationRequest.approve(request, approver_id) do
+      process_registration(request_id)
     end
   end
 
@@ -46,23 +53,27 @@ defmodule Mcp.Registration.RegistrationService do
   def get_registration_status(request_id) do
     case RegistrationRequest.by_id(request_id) do
       {:ok, request} ->
-        {:ok, %{
-          id: request.id,
-          status: request.status,
-          email: request.email,
-          type: request.type,
-          submitted_at: request.submitted_at,
-          approved_at: request.approved_at,
-          rejected_at: request.rejected_at,
-          rejection_reason: request.rejection_reason
-        }}
-      error -> error
+        {:ok,
+         %{
+           id: request.id,
+           status: request.status,
+           email: request.email,
+           type: request.type,
+           submitted_at: request.submitted_at,
+           approved_at: request.approved_at,
+           rejected_at: request.rejected_at,
+           rejection_reason: request.rejection_reason
+         }}
+
+      error ->
+        error
     end
   end
 
   def list_pending_registrations(tenant_id \\ nil) do
     if tenant_id do
-      RegistrationRequest.by_tenant(tenant_id)
+      RegistrationRequest
+      |> Ash.Query.for_read(:by_tenant, %{tenant_id: tenant_id})
       |> Ash.Query.filter(status == :pending)
       |> Ash.read()
     else
@@ -76,7 +87,8 @@ defmodule Mcp.Registration.RegistrationService do
         # Create user from request
         User.register(%{
           "email" => request.email,
-          "password" => "Temporary123!", # Should probably generate this or handle differently
+          # Should probably generate this or handle differently
+          "password" => "Temporary123!",
           "password_confirmation" => "Temporary123!",
           "first_name" => request.first_name,
           "last_name" => request.last_name,
@@ -99,11 +111,11 @@ defmodule Mcp.Registration.RegistrationService do
     else
       # Direct registration
       User.register(%{
-        "email" => data["email"],
-        "password" => data["password"],
-        "password_confirmation" => data["password"],
-        "first_name" => data["first_name"],
-        "last_name" => data["last_name"],
+        "email" => data[:email] || data["email"],
+        "password" => data[:password] || data["password"],
+        "password_confirmation" => data[:password_confirmation] || data["password_confirmation"],
+        "first_name" => data[:first_name] || data["first_name"],
+        "last_name" => data[:last_name] || data["last_name"],
         "tenant_id" => tenant_id
       })
     end

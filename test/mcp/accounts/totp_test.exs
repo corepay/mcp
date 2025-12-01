@@ -352,7 +352,7 @@ defmodule Mcp.Accounts.TOTPTest do
         assert length(Enum.uniq(codes)) == 10
 
         Enum.each(codes, fn code ->
-          assert String.length(code) == 16
+          assert String.length(code) == 8
           assert String.match?(code, ~r/^[A-Za-z0-9]+$/)
         end)
       end)

@@ -10,6 +10,7 @@ defmodule Mcp.Platform.TenantBranding do
 
   alias Mcp.Platform.TenantBranding.Changes
   alias Mcp.Repo
+  require Ash.Query
 
   postgres do
     table "tenant_branding"
@@ -38,6 +39,8 @@ defmodule Mcp.Platform.TenantBranding do
       ]
 
       change &Changes.validate_colors/2
+      change &maybe_activate_first_branding/2
+      change &deactivate_others/2
     end
 
     update :update_branding do
@@ -55,12 +58,15 @@ defmodule Mcp.Platform.TenantBranding do
       ]
 
       change &Changes.validate_colors/2
+      change &deactivate_others/2
       require_atomic? false
     end
 
     update :activate do
       accept []
       change set_attribute(:is_active, true)
+      change &deactivate_others/2
+      require_atomic? false
     end
 
     read :by_id do
@@ -137,5 +143,45 @@ defmodule Mcp.Platform.TenantBranding do
       --font-family: #{branding.font_family};
     }
     """
+  end
+
+  defp maybe_activate_first_branding(changeset, _context) do
+    if Ash.Changeset.get_attribute(changeset, :is_active) do
+      changeset
+    else
+      tenant_id = Ash.Changeset.get_attribute(changeset, :tenant_id)
+
+      exists? =
+        __MODULE__
+        |> Ash.Query.filter(tenant_id == ^tenant_id)
+        |> Ash.exists?()
+
+      if exists? do
+        changeset
+      else
+        Ash.Changeset.force_change_attribute(changeset, :is_active, true)
+      end
+    end
+  end
+
+  defp deactivate_others(changeset, _context) do
+    Ash.Changeset.after_action(changeset, fn _changeset, result ->
+      if result.is_active do
+        tenant_id = result.tenant_id
+
+        __MODULE__
+        |> Ash.Query.filter(tenant_id == ^tenant_id and id != ^result.id)
+        |> Ash.read!()
+        |> Enum.each(fn branding ->
+          branding
+          |> Ash.Changeset.for_update(:update_branding, %{is_active: false})
+          |> Ash.update!()
+        end)
+
+        {:ok, result}
+      else
+        {:ok, result}
+      end
+    end)
   end
 end

@@ -98,7 +98,7 @@ defmodule Mcp.Accounts.User do
 
     # Account status
     attribute :status, :atom do
-      constraints one_of: [:active, :suspended, :deleted, :anonymized]
+      constraints one_of: [:active, :suspended, :deleted, :anonymized, :locked]
       default :active
       allow_nil? false
     end
@@ -109,8 +109,13 @@ defmodule Mcp.Accounts.User do
       allow_nil? false
     end
 
-    attribute :first_name, :string
-    attribute :last_name, :string
+    attribute :first_name, :string do
+      constraints max_length: 255
+    end
+
+    attribute :last_name, :string do
+      constraints max_length: 255
+    end
 
     attribute :tenant_id, :uuid
 
@@ -218,9 +223,12 @@ defmodule Mcp.Accounts.User do
       end
     end
 
-    destroy :soft_delete do
-      primary? true
-      # AshArchival handles the actual soft deletion logic
+    update :soft_delete do
+      require_atomic? false
+      argument :reason, :string
+      change set_attribute(:deletion_reason, arg(:reason))
+      change set_attribute(:status, :deleted)
+      change set_attribute(:deleted_at, &DateTime.utc_now/0)
     end
 
     update :anonymize do
@@ -236,15 +244,35 @@ defmodule Mcp.Accounts.User do
         |> Ash.Changeset.force_change_attribute(:hashed_password, "deleted")
         |> Ash.Changeset.force_change_attribute(:totp_secret, nil)
         |> Ash.Changeset.force_change_attribute(:backup_codes, [])
-        |> Ash.Changeset.force_change_attribute(:status, :suspended)
+        |> Ash.Changeset.force_change_attribute(:status, :anonymized)
       end
+    end
+
+    update :gdpr_anonymize do
+      accept [
+        :email,
+        :hashed_password,
+        :totp_secret,
+        :backup_codes,
+        :oauth_tokens,
+        :last_sign_in_ip,
+        :status
+      ]
+
+      require_atomic? false
     end
 
     update :lock_account do
       accept []
       require_atomic? false
       change set_attribute(:locked_at, DateTime.utc_now())
-      change set_attribute(:unlock_token, Ecto.UUID.generate())
+
+      change set_attribute(
+               :unlock_token,
+               "unlock_" <> Base.url_encode64(:crypto.strong_rand_bytes(32), padding: false)
+             )
+
+      change set_attribute(:status, :locked)
     end
 
     update :unlock_account do
@@ -290,6 +318,7 @@ defmodule Mcp.Accounts.User do
     define :change_password, args: [:password, :password_confirmation]
     define :soft_delete
     define :anonymize
+    define :gdpr_anonymize
     define :destroy
     define :lock_account
     define :unlock_account

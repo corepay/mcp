@@ -1,5 +1,7 @@
 defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
-  use McpWeb.ConnCase, async: true
+  use McpWeb.ConnCase, async: false
+  import Mox
+  setup :verify_on_exit!
 
   @moduletag :gdpr
   @moduletag :unit
@@ -98,10 +100,21 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
       conn = post(conn, "/gdpr/data-export", malicious_payload)
 
       # Should return 400 Bad Request with dangerous content error
-      assert json_response(conn, 400)["error"] =~ "dangerous content"
+      assert json_response(conn, 400)["reason"] =~ "dangerous content"
     end
 
     test "accepts valid export requests", %{conn: conn, user: _user} do
+      # Mock the compliance implementation
+      ComplianceMock
+      |> expect(:request_user_data_export, fn _user_id, _format, _actor_id ->
+        {:ok,
+         %{
+           id: "export_123",
+           status: "pending",
+           estimated_completion: DateTime.utc_now()
+         }}
+      end)
+
       # RED: Test that valid export requests are accepted
       conn = post(conn, "/gdpr/data-export", %{"format" => "json"})
 
@@ -117,10 +130,14 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
     test "sanitizes user ID parameters", %{conn: conn, user: _user} do
       # RED: Test SQL injection prevention in user IDs
       malicious_user_id = "123'; DROP TABLE users; --"
-      conn = get(conn, "/gdpr/export/#{malicious_user_id}/status")
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/gdpr/export/#{malicious_user_id}/status")
 
       # Should return 404 Not Found for invalid UUID format (routing handles this)
-      assert json_response(conn, 404)["error"] =~ "Export not found"
+      assert json_response(conn, 404)["error"]["message"] == "Not Found"
     end
 
     test "validates consent parameters", %{conn: conn, user: _user} do
@@ -152,6 +169,12 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
     setup [:create_user, :auth_user_conn]
 
     test "enforces rate limits on export requests", %{conn: conn, user: _user} do
+      # Mock compliance to allow multiple calls
+      ComplianceMock
+      |> stub(:request_user_data_export, fn _user_id, _format, _actor_id ->
+        {:ok, %{id: "export_123", status: "pending", estimated_completion: DateTime.utc_now()}}
+      end)
+
       # RED: Test rate limiting enforcement
       # Make multiple requests rapidly
       for _ <- 1..60 do
@@ -182,7 +205,7 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
 
       # Should return generic error without exposing system details
       response = json_response(conn, 400)
-      assert response["error"] =~ "Invalid export format"
+      assert response["reason"] =~ "Invalid export format"
       refute String.contains?(response["error"], "database")
       refute String.contains?(response["error"], "stack trace")
     end

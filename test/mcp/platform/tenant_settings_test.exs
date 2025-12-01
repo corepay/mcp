@@ -28,10 +28,10 @@ defmodule Mcp.Platform.TenantSettingsTest do
 
     test "validates required fields" do
       attrs = %{}
-      assert {:error, changeset} = TenantSettings.create_setting(attrs)
-      assert %{tenant_id: ["can't be blank"]} = errors_on(changeset)
-      assert %{category: ["can't be blank"]} = errors_on(changeset)
-      assert %{key: ["can't be blank"]} = errors_on(changeset)
+      assert {:error, %Ash.Error.Invalid{} = error} = TenantSettings.create_setting(attrs)
+      assert %{tenant_id: ["attribute tenant_id is required"]} = ash_errors_on(error.changeset)
+      assert %{category: ["attribute category is required"]} = ash_errors_on(error.changeset)
+      assert %{key: ["attribute key is required"]} = ash_errors_on(error.changeset)
     end
 
     test "enforces unique tenant setting constraint" do
@@ -47,8 +47,8 @@ defmodule Mcp.Platform.TenantSettingsTest do
       }
 
       assert {:ok, _setting1} = TenantSettings.create_setting(attrs)
-      assert {:error, changeset} = TenantSettings.create_setting(attrs)
-      assert %{tenant_category_key: ["has already been taken"]} = errors_on(changeset)
+      assert {:error, %Ash.Error.Invalid{} = error} = TenantSettings.create_setting(attrs)
+      assert %{tenant_id: ["has already been taken"]} = ash_errors_on(error.changeset)
     end
 
     test "validates category values" do
@@ -63,8 +63,10 @@ defmodule Mcp.Platform.TenantSettingsTest do
         last_updated_by: user.id
       }
 
-      assert {:error, changeset} = TenantSettings.create_setting(attrs)
-      assert %{category: ["is invalid"]} = errors_on(changeset)
+      assert {:error, %Ash.Error.Invalid{} = error} = TenantSettings.create_setting(attrs)
+
+      assert %{category: ["atom must be one of %{atom_list}, got: %{value}"]} =
+               ash_errors_on(error.changeset)
     end
 
     test "gets setting by tenant and category" do
@@ -112,9 +114,10 @@ defmodule Mcp.Platform.TenantSettingsTest do
       _user = user_fixture()
       setting = setting_fixture(tenant, :general, "timezone", "UTC")
 
-      assert {:ok, _deleted_setting} = TenantSettings.destroy_setting(setting)
+      assert :ok = TenantSettings.destroy_setting(setting)
 
-      assert {:error, :not_found} = TenantSettings.get_setting(tenant.id, :general, "timezone")
+      assert {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Query.NotFound{}]}} =
+               TenantSettings.get_setting(tenant.id, :general, "timezone")
     end
   end
 
@@ -271,8 +274,8 @@ defmodule Mcp.Platform.TenantSettingsTest do
       }
 
       assert {:ok, _feature1} = FeatureToggle.enable_feature(attrs)
-      assert {:error, changeset} = FeatureToggle.enable_feature(attrs)
-      assert %{tenant_feature: ["has already been taken"]} = errors_on(changeset)
+      assert {:error, %Ash.Error.Invalid{} = error} = FeatureToggle.enable_feature(attrs)
+      assert %{tenant_id: ["has already been taken"]} = ash_errors_on(error.changeset)
     end
   end
 
@@ -440,7 +443,7 @@ defmodule Mcp.Platform.TenantSettingsTest do
 
       {:ok, summary} = TenantSettingsManager.get_tenant_config_summary(tenant.id)
 
-      assert summary.tenant_info.company_name == tenant.company_name
+      assert summary.tenant_info.company_name == tenant.name
       assert summary.settings_summary.total_settings > 0
       assert summary.features_summary.total_enabled > 0
       assert is_integer(summary.settings_summary.categories_configured)
@@ -463,8 +466,8 @@ defmodule Mcp.Platform.TenantSettingsTest do
         last_updated_by: user.id
       }
 
-      assert {:error, changeset} = TenantSettings.create_setting(attrs)
-      assert {:value, ["String must be at least 2 characters"]} in errors_on(changeset)
+      assert {:error, %Ash.Error.Invalid{} = error} = TenantSettings.create_setting(attrs)
+      assert {:value, ["String must be at least 2 characters"]} in ash_errors_on(error.changeset)
 
       # Test number validation with min/max value
       attrs = %{
@@ -477,8 +480,8 @@ defmodule Mcp.Platform.TenantSettingsTest do
         last_updated_by: user.id
       }
 
-      assert {:error, changeset} = TenantSettings.create_setting(attrs)
-      assert {:value, ["Value must be at most 1000"]} in errors_on(changeset)
+      assert {:error, %Ash.Error.Invalid{} = error} = TenantSettings.create_setting(attrs)
+      assert {:value, ["Value must be at most 1000"]} in ash_errors_on(error.changeset)
     end
 
     test "handles encrypted settings" do
@@ -534,14 +537,19 @@ defmodule Mcp.Platform.TenantSettingsTest do
   # Helper functions for fixtures
 
   defp tenant_fixture do
+    unique_suffix = System.unique_integer([:positive])
+
     %Mcp.Platform.Tenant{}
     |> Ecto.Changeset.change(%{
-      company_name: "Test ISP",
-      company_schema: "test_isp",
-      subdomain: "testisp",
-      slug: "testisp",
+      id: Ecto.UUID.generate(),
+      name: "Test ISP #{unique_suffix}",
+      company_schema: "test_isp_#{unique_suffix}",
+      subdomain: "testisp#{unique_suffix}",
+      slug: "testisp#{unique_suffix}",
       plan: :starter,
-      status: :active
+      status: :active,
+      inserted_at: DateTime.utc_now(),
+      updated_at: DateTime.utc_now()
     })
     |> Mcp.Repo.insert!()
   end
@@ -549,10 +557,14 @@ defmodule Mcp.Platform.TenantSettingsTest do
   defp user_fixture do
     %Mcp.Accounts.User{}
     |> Ecto.Changeset.change(%{
+      id: Ecto.UUID.generate(),
       email: "test@example.com",
       first_name: "Test",
       last_name: "User",
-      status: :active
+      hashed_password: "hashed_password",
+      status: :active,
+      inserted_at: DateTime.utc_now(),
+      updated_at: DateTime.utc_now()
     })
     |> Mcp.Repo.insert!()
   end
@@ -560,23 +572,29 @@ defmodule Mcp.Platform.TenantSettingsTest do
   defp setting_fixture(tenant, category, key, value) do
     %Mcp.Platform.TenantSettings{}
     |> Ecto.Changeset.change(%{
+      id: Ecto.UUID.generate(),
       tenant_id: tenant.id,
       category: category,
       key: key,
       value: value,
-      value_type: :string
+      value_type: :string,
+      inserted_at: DateTime.utc_now(),
+      updated_at: DateTime.utc_now()
     })
     |> Mcp.Repo.insert!()
   end
 
   defp branding_fixture(tenant, user, name, is_active \\ true, additional_attrs \\ %{}) do
     base_attrs = %{
+      id: Ecto.UUID.generate(),
       tenant_id: tenant.id,
       name: name,
       primary_color: "#3B82F6",
       secondary_color: "#6B7280",
       theme: :light,
-      created_by: user.id
+      created_by: user.id,
+      inserted_at: DateTime.utc_now(),
+      updated_at: DateTime.utc_now()
     }
 
     attrs = Map.merge(base_attrs, additional_attrs)
@@ -585,5 +603,20 @@ defmodule Mcp.Platform.TenantSettingsTest do
     |> Ecto.Changeset.change(attrs)
     |> Ecto.Changeset.change(is_active: is_active)
     |> Mcp.Repo.insert!()
+  end
+
+  defp ash_errors_on(changeset) do
+    changeset.errors
+    |> Enum.map(fn error ->
+      message =
+        if Map.has_key?(error, :message) do
+          error.message
+        else
+          Exception.message(error)
+        end
+
+      {error.field, message}
+    end)
+    |> Enum.group_by(fn {field, _} -> field end, fn {_, message} -> message end)
   end
 end

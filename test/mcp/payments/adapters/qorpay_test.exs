@@ -10,7 +10,7 @@ defmodule Mcp.Payments.Gateways.QorPayTest do
   test "authorize/4 sends correct request and handles success" do
     Req.Test.stub(Mcp.Payments.Gateways.QorPay, fn conn ->
       assert conn.method == "POST"
-      assert conn.request_path == "/v3/payment/authorize"
+      assert conn.request_path == "/payment/authorize"
       {:ok, body, _} = Plug.Conn.read_body(conn)
       params = Jason.decode!(body)
 
@@ -39,7 +39,7 @@ defmodule Mcp.Payments.Gateways.QorPayTest do
   test "capture/3 sends correct request" do
     Req.Test.stub(Mcp.Payments.Gateways.QorPay, fn conn ->
       assert conn.method == "POST"
-      assert conn.request_path == "/v3/payment/capture"
+      assert conn.request_path == "/payment/capture"
 
       Req.Test.json(conn, %{
         "status" => "approved",

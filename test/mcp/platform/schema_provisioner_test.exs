@@ -6,14 +6,22 @@ defmodule Mcp.Platform.SchemaProvisionerTest do
   alias Mcp.Platform.Tenant
   alias Mcp.Repo
 
-  @test_tenant_slug "test_tenant_#{System.unique_integer([:positive])}"
+  @test_tenant_slug "test-tenant-#{System.unique_integer([:positive])}"
 
   setup do
+    # Enable tenant migrations for this test
+    original_config = Application.get_env(:mcp, :run_tenant_migrations)
+    Application.put_env(:mcp, :run_tenant_migrations, true)
+
+    # Checkout a real connection, bypassing sandbox for migrations
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo, sandbox: false)
+
     # Clean up any existing test tenant
     cleanup_test_tenant()
 
     on_exit(fn ->
       cleanup_test_tenant()
+      Application.put_env(:mcp, :run_tenant_migrations, original_config)
     end)
 
     :ok
@@ -66,8 +74,8 @@ defmodule Mcp.Platform.SchemaProvisionerTest do
   describe "initialize_tenant_schema/2" do
     test "initializes an existing schema" do
       # Create schema manually
-      schema_name = "acq_" <> @test_tenant_slug
-      {:ok, _} = Repo.query("CREATE SCHEMA #{schema_name}")
+      schema_name = "acq_" <> String.replace(@test_tenant_slug, "-", "_")
+      {:ok, _} = Repo.query("CREATE SCHEMA IF NOT EXISTS #{schema_name}")
 
       assert {:ok, :initialized} = SchemaProvisioner.initialize_tenant_schema(@test_tenant_slug)
 
@@ -94,8 +102,8 @@ defmodule Mcp.Platform.SchemaProvisionerTest do
       # Add some test data
       MultiTenant.with_tenant_context(@test_tenant_slug, fn ->
         Repo.query("""
-        INSERT INTO merchants (id, slug, business_name, subdomain, status, plan)
-        VALUES (gen_random_uuid(), 'test-merchant', 'Test Business', 'test', 'active', 'starter')
+        INSERT INTO merchants (id, slug, business_name, subdomain, status, plan, inserted_at, updated_at)
+        VALUES (gen_random_uuid(), 'test-merchant', 'Test Business', 'test', 'active', 'starter', NOW(), NOW())
         """)
       end)
 
@@ -130,14 +138,14 @@ defmodule Mcp.Platform.SchemaProvisionerTest do
     test "tenant creation triggers schema provisioning" do
       tenant_attrs = %{
         slug: @test_tenant_slug,
-        company_name: "Test Company",
+        name: "Test Company",
         subdomain: @test_tenant_slug,
         company_schema: @test_tenant_slug,
-        plan: :trial
+        plan: :starter
       }
 
       # Create tenant - this should trigger schema provisioning
-      assert {:ok, tenant} = Tenant.create(tenant_attrs, action: :create_with_defaults)
+      assert {:ok, tenant} = Tenant.create(tenant_attrs, action: :create)
 
       # Give some time for async provisioning to complete
       Process.sleep(2000)

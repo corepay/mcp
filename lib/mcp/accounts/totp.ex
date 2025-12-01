@@ -29,6 +29,8 @@ defmodule Mcp.Accounts.TOTP do
 
   Returns :ok if valid, {:error, reason} otherwise.
   """
+  def verify_code(nil, _code), do: {:error, :totp_not_enabled}
+
   def verify_code(user, code) when is_binary(code) do
     case user.totp_secret do
       nil ->
@@ -55,15 +57,17 @@ defmodule Mcp.Accounts.TOTP do
 
   Returns {:ok, user} with the code removed if valid.
   """
+  def verify_backup_code(nil, _code), do: {:error, :no_backup_codes}
+
   def verify_backup_code(user, code) when is_binary(code) do
     backup_codes = user.backup_codes || []
 
-    # Hash the provided code to compare with stored hashes
-    code_hash = hash_backup_code(code)
+    # Find the matching hash using Bcrypt.verify_pass
+    matching_hash = Enum.find(backup_codes, fn hash -> Bcrypt.verify_pass(code, hash) end)
 
-    if code_hash in backup_codes do
+    if matching_hash do
       # Remove the used backup code
-      new_backup_codes = List.delete(backup_codes, code_hash)
+      new_backup_codes = List.delete(backup_codes, matching_hash)
 
       case User.update(user, %{backup_codes: new_backup_codes}) do
         {:ok, updated_user} -> {:ok, updated_user}
@@ -128,6 +132,8 @@ defmodule Mcp.Accounts.TOTP do
   @doc """
   Checks if TOTP is enabled for a user.
   """
+  def totp_enabled?(nil), do: false
+
   def totp_enabled?(user) do
     not is_nil(user.totp_secret)
   end
@@ -271,9 +277,6 @@ defmodule Mcp.Accounts.TOTP do
   end
 
   defp hash_backup_code(code) do
-    :crypto.hash(:sha256, code)
-    |> Base.encode16(case: :lower)
-    # Mock bcrypt prefix for test expectation
-    |> then(&("$2b$" <> &1))
+    Bcrypt.hash_pwd_salt(code)
   end
 end

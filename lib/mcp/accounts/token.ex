@@ -16,11 +16,35 @@ defmodule Mcp.Accounts.Token do
     # type is :access or :refresh
     # opts has expires_in
 
-    # We can use AuthToken.generate_access_token or generate_refresh_token
+    expires_in = opts[:expires_in] || {1, :hour}
+    expires_at = calculate_expires_at(expires_in)
+    jti = "jti_#{System.unique_integer([:positive])}"
+
+    attrs = %{
+      user_id: user.id,
+      token: Mcp.Accounts.JWT.generate_random_token(),
+      expires_at: expires_at,
+      jti: jti,
+      context: %{},
+      device_info: %{}
+    }
+
     case type do
-      :access -> AuthToken.generate_access_token(user, "jti_#{System.unique_integer()}", opts)
-      :refresh -> AuthToken.generate_refresh_token(user, "jti_#{System.unique_integer()}", opts)
+      :access -> AuthToken.create_access_token(attrs)
+      :refresh -> AuthToken.create_refresh_token(attrs)
     end
+  end
+
+  defp calculate_expires_at({amount, unit}) do
+    seconds =
+      case unit do
+        :second -> amount
+        :minute -> amount * 60
+        :hour -> amount * 3600
+        :day -> amount * 86400
+      end
+
+    DateTime.utc_now() |> DateTime.add(seconds, :second)
   end
 
   def cleanup_expired_tokens do
@@ -54,9 +78,8 @@ defmodule Mcp.Accounts.Token do
     |> Ash.create()
   end
 
-  def find_token_by_jti(_jti) do
-    # Not implemented in AuthToken yet, but not used in failing test
-    {:ok, %{jti: "mock_jti", user_id: "mock_user_id"}}
+  def find_token_by_jti(jti) do
+    AuthToken.by_jti(jti)
   end
 
   def find_tokens_by_session(session_id) do

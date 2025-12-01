@@ -1,5 +1,5 @@
 defmodule Mcp.Gdpr.RetentionReactorTest do
-  use ExUnit.Case, async: false
+  use Mcp.DataCase, async: false
 
   alias Mcp.Gdpr.RetentionReactor
 
@@ -10,9 +10,9 @@ defmodule Mcp.Gdpr.RetentionReactorTest do
 
       # Note: This is a basic smoke test
       # In a real scenario, you'd have test data and policies set up
-      case Reactor.run(RetentionReactor, args) do
+      case Reactor.run(RetentionReactor, args, async?: false) do
         {:ok, _result} -> assert true
-        {:error, _reason} -> flunk("Reactor failed")
+        {:error, reason} -> flunk("Reactor failed: #{inspect(reason)}")
       end
     end
   end

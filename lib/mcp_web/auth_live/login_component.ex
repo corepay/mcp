@@ -4,9 +4,8 @@ defmodule McpWeb.AuthLive.LoginComponent do
   """
   use McpWeb, :live_component
   import Phoenix.Component
-  alias Mcp.Accounts.OAuth
 
-@oauth_providers ["google", "github"]
+  @oauth_providers ["google", "github"]
 
   @impl true
   def mount(socket) do
@@ -42,7 +41,7 @@ defmodule McpWeb.AuthLive.LoginComponent do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="w-full">
+    <div id={@id} class="w-full">
       <div class="mb-8 text-center md:text-left">
         <h3 class="text-2xl font-bold text-base-content">Welcome back</h3>
         <p class="text-base-content/60">Please enter your details to sign in.</p>
@@ -50,12 +49,14 @@ defmodule McpWeb.AuthLive.LoginComponent do
 
       <.form
         for={@form}
+        id="main-login-form"
         action={~p"/sign-in"}
         method="post"
         phx-change="validate"
         phx-target={@myself}
         class="space-y-6"
       >
+        <input :if={@return_to} type="hidden" name="return_to" value={@return_to} />
         <McpWeb.Portals.AuthComponents.auth_input
           field={@form[:email]}
           type="email"
@@ -96,7 +97,11 @@ defmodule McpWeb.AuthLive.LoginComponent do
               />
             </button>
           </div>
-          <label :for={msg <- @form[:password].errors} class="label">
+          <label
+            :for={msg <- @form[:password].errors}
+            class="label"
+            id={@form[:password].id <> "-error"}
+          >
             <span class="label-text-alt text-error">{msg}</span>
           </label>
           <div class="label">
@@ -144,6 +149,7 @@ defmodule McpWeb.AuthLive.LoginComponent do
           phx-target={@myself}
           class="btn btn-outline w-full hover:bg-base-200 hover:text-base-content"
           disabled={@loading || @oauth_loading[provider]}
+          aria-label={"Sign in with #{String.capitalize(provider)}"}
         >
           <span :if={@oauth_loading[provider]} class="loading loading-spinner loading-xs"></span>
           <McpWeb.Core.CoreComponents.icon name="hero-globe-alt" class="size-5 mr-2" />
@@ -161,7 +167,13 @@ defmodule McpWeb.AuthLive.LoginComponent do
         <p class="py-4 text-base-content/70">
           Enter your email address and we'll send you instructions to reset your password.
         </p>
-        <.form for={%{}} as={:recovery} phx-submit="request_recovery" phx-target={@myself}>
+        <.form
+          for={%{}}
+          as={:recovery}
+          id="recovery-form"
+          phx-submit="request_recovery"
+          phx-target={@myself}
+        >
           <div class="form-control w-full mb-4">
             <input
               type="email"
@@ -180,6 +192,10 @@ defmodule McpWeb.AuthLive.LoginComponent do
           </div>
         </.form>
       </McpWeb.Core.CoreComponents.modal>
+
+      <div role="status" aria-live="polite" aria-atomic="true" class="sr-only">
+        <p :for={announcement <- @announcements}>{announcement}</p>
+      </div>
     </div>
     """
   end
@@ -193,6 +209,9 @@ defmodule McpWeb.AuthLive.LoginComponent do
       |> assign(:remember_me, login_params["remember_me"] == "true")
       |> validate_form(login_params)
       |> maybe_clear_errors()
+
+    form = to_form(login_params, as: :login, errors: Enum.to_list(socket.assigns.errors))
+    socket = assign(socket, :form, form)
 
     {:noreply, socket}
   end
@@ -212,7 +231,7 @@ defmodule McpWeb.AuthLive.LoginComponent do
 
       # Generate OAuth state and redirect
       state = generate_oauth_state()
-      oauth_url = OAuth.authorize_url(String.to_atom(provider), state)
+      oauth_url = oauth_module().authorize_url(String.to_atom(provider), state)
 
       # We need to push the event to the parent LiveView to handle the redirect
       # or use push_event directly if it works from component (it should)
@@ -343,8 +362,7 @@ defmodule McpWeb.AuthLive.LoginComponent do
 
   defp generate_oauth_state do
     :crypto.strong_rand_bytes(16)
-    |> Base.encode64()
-    |> String.replace(["/", "+", "="], ["_", "-", ""])
+    |> Base.url_encode64(padding: false)
     |> then(fn state -> "oauth_#{state}" end)
   end
 
@@ -415,5 +433,9 @@ defmodule McpWeb.AuthLive.LoginComponent do
   defp add_announcement(socket, message) do
     announcements = [message | socket.assigns.announcements] |> Enum.take(3)
     assign(socket, :announcements, announcements)
+  end
+
+  defp oauth_module do
+    Application.get_env(:mcp, :oauth_module, Mcp.Accounts.OAuth)
   end
 end

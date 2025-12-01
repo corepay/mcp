@@ -5,6 +5,11 @@ defmodule Mcp.Payments.TransactionReactorTest do
 
   describe "run/1" do
     test "successfully processes a payment via QorPay" do
+      # Mock QorPay response
+      Req.Test.stub(Mcp.Payments.Gateways.QorPay, fn conn ->
+        Req.Test.json(conn, %{status: "approved"})
+      end)
+
       # Create a customer and payment method first
       customer =
         Mcp.Payments.Customer

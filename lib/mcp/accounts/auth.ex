@@ -18,6 +18,10 @@ defmodule Mcp.Accounts.Auth do
     user =
       User
       |> Ash.Query.for_read(:by_email, %{email: email})
+      |> Ash.Query.set_context(%{
+        ash_archival: %{include_archived?: true},
+        private: %{ash_archival: %{include_archived?: true}}
+      })
       |> Ash.read_one()
 
     case user do
@@ -26,7 +30,8 @@ defmodule Mcp.Accounts.Auth do
           user.status == :suspended ->
             {:error, :account_suspended}
 
-          user.status == :deleted ->
+          user.status == :deleted or not is_nil(user.deleted_at) or
+              (Map.has_key?(user, :archived_at) and not is_nil(user.archived_at)) ->
             {:error, :account_deleted}
 
           user.locked_at != nil ->
@@ -81,7 +86,7 @@ defmodule Mcp.Accounts.Auth do
   @doc """
   Creates a user session with JWT tokens.
   """
-  def create_user_session(user, ip_address \\ nil, _opts \\ []) do
+  def create_user_session(user, ip_address \\ nil, opts \\ []) do
     # Update user's sign-in information
     case User.update_sign_in(user, ip_address) do
       {:ok, _} -> :ok
@@ -98,10 +103,12 @@ defmodule Mcp.Accounts.Auth do
       "ip" => ip_address
     }
 
+    tenant_id = Keyword.get(opts, :tenant_id, user.tenant_id)
+
     # Generate tokens directly using JWT service
     access_claims = %{
       "sub" => user.id,
-      "tenant_id" => user.tenant_id,
+      "tenant_id" => tenant_id,
       "type" => "access",
       "iat" => DateTime.utc_now() |> DateTime.to_unix(),
       "exp" => DateTime.utc_now() |> DateTime.add(24, :hour) |> DateTime.to_unix()
@@ -109,7 +116,7 @@ defmodule Mcp.Accounts.Auth do
 
     refresh_claims = %{
       "sub" => user.id,
-      "tenant_id" => user.tenant_id,
+      "tenant_id" => tenant_id,
       "type" => "refresh",
       "iat" => DateTime.utc_now() |> DateTime.to_unix(),
       "exp" => DateTime.utc_now() |> DateTime.add(30, :day) |> DateTime.to_unix()
@@ -153,8 +160,14 @@ defmodule Mcp.Accounts.Auth do
 
       {:ok, count} ->
         # Increment failed attempts counter
-        increment_failed_attempts(user.id, count + 1)
-        Logger.warning("Failed authentication attempt #{count + 1} for user: #{user.id}")
+        new_count = count + 1
+        increment_failed_attempts(user.id, new_count)
+        Logger.warning("Failed authentication attempt #{new_count} for user: #{user.id}")
+
+        if new_count >= 5 do
+          lock_account(user.id)
+          Logger.warning("Account locked for user #{user.id} after #{new_count} failed attempts")
+        end
     end
 
     :ok
@@ -320,14 +333,42 @@ defmodule Mcp.Accounts.Auth do
     end
   end
 
-  def revoke_user_sessions(user_id), do: revoke_all_user_sessions(user_id)
+  def revoke_user_sessions(user_id) do
+    # Store revocation timestamp in session store
+    revocation_key = "revocation:#{user_id}"
+    data = %{user_id: user_id, revoked_at: DateTime.utc_now() |> DateTime.add(1, :second)}
+    # Keep revocation record for a reasonable time (e.g., 24 hours matching token expiry)
+    SessionStore.create_session(revocation_key, data, ttl: 86_400)
+
+    # Also try to revoke individual tokens if tracked
+    revoke_all_user_sessions(user_id)
+  end
 
   def verify_session(token) do
-    # Mock verification
-    if token == "invalid_token" do
-      {:error, :invalid_token}
-    else
-      {:ok, %{user_id: "mock_user_id"}}
+    case verify_jwt_access_token(token) do
+      {:ok, claims} ->
+        user_id = claims["sub"]
+        iat = claims["iat"]
+
+        # Check if sessions have been revoked
+        revocation_key = "revocation:#{user_id}"
+
+        case SessionStore.get_session(revocation_key) do
+          {:ok, %{data: %{revoked_at: revoked_at}}} ->
+            # Check if token was issued before revocation
+            if iat < DateTime.to_unix(revoked_at) do
+              {:error, :token_revoked}
+            else
+              {:ok, claims}
+            end
+
+          _ ->
+            # No revocation record or error reading it
+            {:ok, claims}
+        end
+
+      error ->
+        error
     end
   end
 
@@ -370,7 +411,7 @@ defmodule Mcp.Accounts.Auth do
       {:ok, nil} ->
         {:ok, 0}
 
-      {:ok, %{count: count}} ->
+      {:ok, %{data: %{count: count}}} ->
         {:ok, count}
 
       {:error, _reason} ->
@@ -381,7 +422,7 @@ defmodule Mcp.Accounts.Auth do
 
   defp increment_failed_attempts(user_id, count) do
     cache_key = "failed_attempts:#{user_id}"
-    data = %{count: count, last_attempt: DateTime.utc_now()}
+    data = %{user_id: user_id, count: count, last_attempt: DateTime.utc_now()}
 
     # 1 hour TTL
     SessionStore.create_session(cache_key, data, ttl: 3_600)
@@ -391,7 +432,7 @@ defmodule Mcp.Accounts.Auth do
     # Mark account as locked in User resource
     case User.by_id(user_id) do
       {:ok, user} ->
-        User.update(user, %{status: "locked", locked_at: DateTime.utc_now()})
+        User.lock_account(user)
 
       {:error, reason} ->
         {:error, reason}

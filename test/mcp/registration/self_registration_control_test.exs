@@ -176,7 +176,7 @@ defmodule Mcp.Registration.SelfRegistrationControlTest do
     test "allows customer self-registration when enabled", %{tenant_id: tenant_id} do
       # Create settings with customer registration enabled
       {:ok, _settings} = RegistrationSettings.create_default_settings(tenant_id)
-      RegistrationSettings.update_settings(tenant_id, %{customer_registration_enabled: true})
+      RegistrationSettings.update_settings(tenant_id, %{"customer_registration_enabled" => true})
 
       customer_data = %{
         first_name: "John",
@@ -202,33 +202,33 @@ defmodule Mcp.Registration.SelfRegistrationControlTest do
     test "can enable customer self-registration", %{tenant_id: tenant_id} do
       # Create default settings
       {:ok, settings} = RegistrationSettings.create_default_settings(tenant_id)
-      assert settings.customer_registration_enabled == false
+      assert settings["customer_registration_enabled"] == false
 
       # Update to enable customer registration
       {:ok, updated_settings} =
         RegistrationSettings.update_settings(tenant_id, %{
-          customer_registration_enabled: true
+          "customer_registration_enabled" => true
         })
 
-      assert updated_settings.customer_registration_enabled == true
+      assert updated_settings["customer_registration_enabled"] == true
       # Unchanged
-      assert updated_settings.vendor_registration_enabled == false
+      assert updated_settings["vendor_registration_enabled"] == false
     end
 
     test "can enable vendor self-registration", %{tenant_id: tenant_id} do
       # Create default settings
       {:ok, settings} = RegistrationSettings.create_default_settings(tenant_id)
-      assert settings.vendor_registration_enabled == false
+      assert settings["vendor_registration_enabled"] == false
 
       # Update to enable vendor registration
       {:ok, updated_settings} =
         RegistrationSettings.update_settings(tenant_id, %{
-          vendor_registration_enabled: true
+          "vendor_registration_enabled" => true
         })
 
-      assert updated_settings.vendor_registration_enabled == true
+      assert updated_settings["vendor_registration_enabled"] == true
       # Unchanged
-      assert updated_settings.customer_registration_enabled == false
+      assert updated_settings["customer_registration_enabled"] == false
     end
 
     test "can enable both customer and vendor self-registration", %{tenant_id: tenant_id} do
@@ -238,12 +238,12 @@ defmodule Mcp.Registration.SelfRegistrationControlTest do
       # Update to enable both
       {:ok, updated_settings} =
         RegistrationSettings.update_settings(tenant_id, %{
-          customer_registration_enabled: true,
-          vendor_registration_enabled: true
+          "customer_registration_enabled" => true,
+          "vendor_registration_enabled" => true
         })
 
-      assert updated_settings.customer_registration_enabled == true
-      assert updated_settings.vendor_registration_enabled == true
+      assert updated_settings["customer_registration_enabled"] == true
+      assert updated_settings["vendor_registration_enabled"] == true
     end
   end
 

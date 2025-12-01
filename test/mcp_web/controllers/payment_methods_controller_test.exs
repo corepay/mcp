@@ -4,12 +4,40 @@ defmodule McpWeb.PaymentMethodsControllerTest do
   alias Mcp.Payments.Customer
   alias Mcp.Payments.PaymentMethod
 
+  alias Mcp.Accounts.ApiKey
+
   setup %{conn: conn} do
-    %{conn: Plug.Conn.put_req_header(conn, "x-forwarded-host", "localhost")}
+    # Create API Key
+    key = "mcp_sk_#{Ecto.UUID.generate()}"
+
+    ApiKey.create!(%{
+      name: "Test Key",
+      key: key,
+      permissions: ["payment_methods:write", "payment_methods:read"]
+    })
+
+    conn =
+      conn
+      |> Plug.Conn.put_req_header("x-forwarded-host", "localhost")
+      |> Plug.Conn.put_req_header("x-api-key", key)
+
+    Application.put_env(:mcp, :req_options, plug: {Req.Test, Mcp.Payments.Gateways.QorPay})
+    on_exit(fn -> Application.put_env(:mcp, :req_options, []) end)
+
+    %{conn: conn}
   end
 
   describe "POST /api/payment_methods" do
     test "creates a payment method successfully", %{conn: conn} do
+      # Mock QorPay Card Tokenization/Auth
+      Req.Test.stub(Mcp.Payments.Gateways.QorPay, fn conn ->
+        Req.Test.json(conn, %{
+          "status" => "approved",
+          "transaction_id" => "trans_123",
+          "auth_code" => "auth_123"
+        })
+      end)
+
       customer =
         Customer
         |> Ash.Changeset.for_create(:create, %{email: "test@example.com", name: "Test User"})
@@ -19,10 +47,12 @@ defmodule McpWeb.PaymentMethodsControllerTest do
         "customer_id" => customer.id,
         "provider" => "qorpay",
         "type" => "card",
-        "last4" => "4242",
-        "brand" => "visa",
-        "exp_month" => 12,
-        "exp_year" => 2025
+        "card" => %{
+          "number" => "4242424242424242",
+          "exp_month" => 12,
+          "exp_year" => 2025,
+          "cvv" => "123"
+        }
       }
 
       conn = post(conn, ~p"/api/payment_methods", params)

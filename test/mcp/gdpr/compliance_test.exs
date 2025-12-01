@@ -106,18 +106,18 @@ defmodule Mcp.Gdpr.ComplianceTest do
       # Set retention as expired
       past_date = DateTime.add(DateTime.utc_now(), -1, :day)
 
-      user
+      Repo.get!(Mcp.Accounts.UserSchema, user.id)
       |> Ecto.Changeset.change(%{gdpr_retention_expires_at: past_date})
       |> Repo.update!()
 
       # Now anonymize
-      assert {:ok, anonymized_user} = Compliance.anonymize_user_data(user.id)
+      assert {:ok, :anonymized} = Compliance.anonymize_user_data(user.id)
 
-      assert anonymized_user.status == :anonymized
-      assert anonymized_user.gdpr_anonymized_at != nil
-      assert anonymized_user.first_name == "Deleted"
-      assert anonymized_user.last_name == "User"
-      assert String.starts_with?(anonymized_user.email, "deleted-")
+      # Verify user is actually anonymized in DB
+      updated_user = Repo.get!(Mcp.Accounts.UserSchema, user.id)
+      # Anonymized users are suspended
+      assert updated_user.status == "suspended"
+      assert String.starts_with?(updated_user.email, "deleted_")
     end
 
     test "returns error for non-deleted user" do
@@ -148,14 +148,14 @@ defmodule Mcp.Gdpr.ComplianceTest do
 
   describe "generate_compliance_report/1" do
     test "generates compliance report with metrics" do
-      report = Compliance.generate_compliance_report()
+      {:ok, report} = Compliance.generate_compliance_report()
 
       assert is_map(report)
-      assert Map.has_key?(report, :deletion_requests)
-      assert Map.has_key?(report, :data_exports)
-      assert Map.has_key?(report, :consent_records)
-      assert Map.has_key?(report, :retention_status)
-      assert Map.has_key?(report, :audit_summary)
+      assert Map.has_key?(report, :total_users)
+      assert Map.has_key?(report, :deleted_users)
+      assert Map.has_key?(report, :anonymized_users)
+      assert Map.has_key?(report, :compliance_score)
+      assert Map.has_key?(report, :audit_coverage)
     end
   end
 

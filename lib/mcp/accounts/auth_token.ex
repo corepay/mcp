@@ -74,13 +74,57 @@ defmodule Mcp.Accounts.AuthToken do
     defaults [:read, :destroy]
 
     create :create_access_token do
-      accept [:user_id, :token, :expires_at, :context, :device_info, :session_id, :device_id, :jti]
+      accept [
+        :user_id,
+        :token,
+        :expires_at,
+        :context,
+        :device_info,
+        :session_id,
+        :device_id,
+        :jti
+      ]
+
       change set_attribute(:type, :access)
+
+      change fn changeset, _ ->
+        if Ash.Changeset.get_attribute(changeset, :token) do
+          changeset
+        else
+          Ash.Changeset.change_attribute(
+            changeset,
+            :token,
+            Mcp.Accounts.JWT.generate_random_token()
+          )
+        end
+      end
     end
 
     create :create_refresh_token do
-      accept [:user_id, :token, :expires_at, :context, :device_info, :session_id, :device_id, :jti]
+      accept [
+        :user_id,
+        :token,
+        :expires_at,
+        :context,
+        :device_info,
+        :session_id,
+        :device_id,
+        :jti
+      ]
+
       change set_attribute(:type, :refresh)
+
+      change fn changeset, _ ->
+        if Ash.Changeset.get_attribute(changeset, :token) do
+          changeset
+        else
+          Ash.Changeset.change_attribute(
+            changeset,
+            :token,
+            Mcp.Accounts.JWT.generate_random_token()
+          )
+        end
+      end
     end
 
     read :by_token do
@@ -106,6 +150,12 @@ defmodule Mcp.Accounts.AuthToken do
       filter expr(session_id == ^arg(:session_id))
     end
 
+    read :by_jti do
+      argument :jti, :string, allow_nil?: false
+      get? true
+      filter expr(jti == ^arg(:jti))
+    end
+
     update :revoke_by_session do
       argument :session_id, :string, allow_nil?: false
       change set_attribute(:revoked_at, &DateTime.utc_now/0)
@@ -119,6 +169,7 @@ defmodule Mcp.Accounts.AuthToken do
 
     update :mark_used do
       change set_attribute(:used_at, &DateTime.utc_now/0)
+      require_atomic? false
     end
 
     destroy :revoke_all_for_user do
@@ -137,6 +188,7 @@ defmodule Mcp.Accounts.AuthToken do
     define :by_token, args: [:token], get?: true
     define :by_user, args: [:user_id]
     define :by_session, args: [:session_id]
+    define :by_jti, args: [:jti], get?: true
     define :active_tokens
     define :revoke
     define :revoke_by_session, args: [:session_id]
@@ -154,34 +206,33 @@ defmodule Mcp.Accounts.AuthToken do
 
   def verify_and_get_user(token_string) do
     with {:ok, token} <- by_token(token_string),
-         {:ok, user} <- Ash.load(token, :user) do
-      # Mark token as used
-      mark_used(token)
+         {:ok, user} <- Ash.load(token, :user),
+         {:ok, _updated_token} <- mark_used(token) do
       {:ok, user.user}
     end
   end
 
   def generate_access_token(user_id, context, device_info) do
     expires_at = DateTime.utc_now() |> DateTime.add(3600, :second)
-    
+
     create_access_token(%{
       user_id: user_id,
       token: Mcp.Accounts.JWT.generate_random_token(),
       expires_at: expires_at,
-      context: context,
-      device_info: device_info
+      context: context || %{},
+      device_info: device_info || %{}
     })
   end
 
   def generate_refresh_token(user_id, context, device_info) do
     expires_at = DateTime.utc_now() |> DateTime.add(30, :day)
-    
+
     create_refresh_token(%{
       user_id: user_id,
       token: Mcp.Accounts.JWT.generate_random_token(),
       expires_at: expires_at,
-      context: context,
-      device_info: device_info
+      context: context || %{},
+      device_info: device_info || %{}
     })
   end
 
@@ -190,30 +241,34 @@ defmodule Mcp.Accounts.AuthToken do
       {:ok, tokens} ->
         Enum.each(tokens, &revoke/1)
         :ok
-      error -> error
+
+      error ->
+        error
     end
   end
 
   def generate_token_pair(user_id, context, device_info) do
     # This is a helper to generate both access and refresh tokens
     # In a real app, this might use JWT service, but here we create records
-    
+
     expires_at = DateTime.utc_now() |> DateTime.add(3600, :second)
-    
-    with {:ok, access_token} <- create_access_token(%{
-           user_id: user_id, 
-           token: Mcp.Accounts.JWT.generate_random_token(),
-           expires_at: expires_at,
-           context: context,
-           device_info: device_info
-         }),
-         {:ok, refresh_token} <- create_refresh_token(%{
-           user_id: user_id,
-           token: Mcp.Accounts.JWT.generate_random_token(),
-           expires_at: DateTime.add(expires_at, 30, :day),
-           context: context,
-           device_info: device_info
-         }) do
+
+    with {:ok, access_token} <-
+           create_access_token(%{
+             user_id: user_id,
+             token: Mcp.Accounts.JWT.generate_random_token(),
+             expires_at: expires_at,
+             context: context,
+             device_info: device_info
+           }),
+         {:ok, refresh_token} <-
+           create_refresh_token(%{
+             user_id: user_id,
+             token: Mcp.Accounts.JWT.generate_random_token(),
+             expires_at: DateTime.add(expires_at, 30, :day),
+             context: context,
+             device_info: device_info
+           }) do
       {:ok, %{access_token: access_token, refresh_token: refresh_token}}
     end
   end

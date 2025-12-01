@@ -16,11 +16,22 @@ config :mcp, Mcp.Repo,
   database: "mcp_test#{System.get_env("MIX_TEST_PARTITION")}",
   port: String.to_integer(System.get_env("POSTGRES_PORT") || "41789"),
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: 10,
+  pool_size: 20,
+  queue_target: 5000,
   parameters: [search_path: "public,platform"]
 
 config :mcp, :async_api_key_updates, false
 config :mcp, :compliance_impl, ComplianceMock
+config :mcp, :run_tenant_migrations, false
+config :mcp, :agent_runner_adapter, :mock
+
+config :mcp, :qorpay,
+  base_url: "http://qorpay.test",
+  app_key: "test_key",
+  client_key: "test_client",
+  mid: "test_mid"
+
+config :mcp, :req_options, plug: {Req.Test, Mcp.Payments.Gateways.QorPay}
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.

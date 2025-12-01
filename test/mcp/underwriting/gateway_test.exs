@@ -7,7 +7,7 @@ defmodule Mcp.Underwriting.GatewayTest do
 
   setup do
     # Create Tenant
-    tenant = 
+    tenant =
       Mcp.Platform.Tenant
       |> Ash.Changeset.for_create(:create, %{
         name: "Test Tenant",
@@ -62,7 +62,7 @@ defmodule Mcp.Underwriting.GatewayTest do
       updated_at timestamp(6)
     )")
 
-    merchant = 
+    merchant =
       Mcp.Platform.Merchant
       |> Ash.Changeset.for_create(:create, %{
         business_name: "Test Merchant",
@@ -99,18 +99,23 @@ defmodule Mcp.Underwriting.GatewayTest do
       updated_at timestamp(6)
     )")
 
-    Mcp.Repo.query!("CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_activities (id uuid PRIMARY KEY, type text, metadata jsonb, actor_id uuid, application_id uuid, inserted_at timestamp(6), updated_at timestamp(6))")
+    Mcp.Repo.query!(
+      "CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_activities (id uuid PRIMARY KEY, type text, metadata jsonb, actor_id uuid, application_id uuid, inserted_at timestamp(6), updated_at timestamp(6))"
+    )
 
     # Configure Mock Adapter for tests
-    Elixir.Application.put_env(:mcp, :underwriting_adapter, Mcp.Underwriting.Adapters.Mock)
+    Elixir.Application.put_env(:mcp, :underwriting_adapter, :mock)
 
     {:ok, merchant: merchant, tenant: tenant.company_schema}
   end
 
   describe "screen_application/1" do
-    test "successfully screens an application and creates risk assessment", %{merchant: merchant, tenant: tenant} do
+    test "successfully screens an application and creates risk assessment", %{
+      merchant: merchant,
+      tenant: tenant
+    } do
       # 1. Create Application
-      application = 
+      application =
         Mcp.Underwriting.Application
         |> Ash.Changeset.for_create(:create, %{
           subject_id: merchant.id,
@@ -128,22 +133,22 @@ defmodule Mcp.Underwriting.GatewayTest do
       # 2. Run Screening
       # We need to ensure the Gateway runs in the tenant context
       # Since Gateway.screen_application/1 doesn't take a tenant, we might need to update it or set it in the process.
-      # For now, let's assume we need to pass it or set it. 
+      # For now, let's assume we need to pass it or set it.
       # If Gateway doesn't support it, we'll need to refactor Gateway.
       # But first, let's try to run it. If it fails, we'll know.
       # Actually, let's update Gateway to accept opts or set the tenant.
       # But for this step, let's just fix the test calls we control.
-      
+
       # To make Gateway work without changing it yet, we can try setting the tenant in the process if Ash supports it.
       # But Ash usually requires passing it explicitly.
       # Let's try passing it as a second argument if we modify Gateway, but for now let's just update the test code around it.
-      
+
       assert {:ok, score} = Gateway.screen_application(application.id, tenant: tenant)
 
       require Ash.Query
 
       # 3. Verify Risk Assessment
-      assessment = 
+      assessment =
         RiskAssessment
         |> Ash.Query.filter(application_id == ^application.id)
         |> Ash.read_one!(tenant: tenant)
@@ -156,7 +161,7 @@ defmodule Mcp.Underwriting.GatewayTest do
       updated_app = Application.get_by_id!(application.id, tenant: tenant)
       assert updated_app.status == :approved
       assert updated_app.risk_score == score
-      
+
       # 5. Verify Activity Log
       activities = Mcp.Underwriting.Activity |> Ash.read!(tenant: tenant)
       assert length(activities) > 0
@@ -167,11 +172,11 @@ defmodule Mcp.Underwriting.GatewayTest do
     end
 
     test "handles high risk scenario", %{merchant: merchant, tenant: tenant} do
-       # 1. Create Application with "Badguy" to trigger mock watchlist hit (if mock logic existed for that)
-       # But our current mock logic for KYB is simple. 
-       # Let's just verify the structure for now.
-       
-       application = 
+      # 1. Create Application with "Badguy" to trigger mock watchlist hit (if mock logic existed for that)
+      # But our current mock logic for KYB is simple.
+      # Let's just verify the structure for now.
+
+      application =
         Application
         |> Ash.Changeset.for_create(:create, %{
           subject_id: merchant.id,

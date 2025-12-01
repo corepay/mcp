@@ -38,6 +38,25 @@ defmodule Mcp.Platform.TenantSettings do
       change &Changes.encrypt_value/2
     end
 
+    create :upsert_setting do
+      accept [
+        :tenant_id,
+        :category,
+        :key,
+        :value,
+        :value_type,
+        :description,
+        :last_updated_by,
+        :encrypted,
+        :validation_rules
+      ]
+
+      change &Changes.validate_value/2
+      change &Changes.encrypt_value/2
+      upsert? true
+      upsert_identity :tenant_category_key
+    end
+
     update :update_setting do
       accept [:value, :last_updated_by]
       change &Changes.validate_value/2
@@ -76,6 +95,7 @@ defmodule Mcp.Platform.TenantSettings do
 
   code_interface do
     define :create_setting
+    define :upsert_setting
     define :update_setting
     define :get_setting, args: [:tenant_id, :category, :key]
     define :by_tenant, args: [:tenant_id]
@@ -99,7 +119,8 @@ defmodule Mcp.Platform.TenantSettings do
                     :business_info,
                     :security,
                     :notifications,
-                    :integrations
+                    :integrations,
+                    :feature
                   ]
     end
 
@@ -107,7 +128,7 @@ defmodule Mcp.Platform.TenantSettings do
       allow_nil? false
     end
 
-    attribute :value, :map do
+    attribute :value, Mcp.Types.Any do
       allow_nil? true
     end
 

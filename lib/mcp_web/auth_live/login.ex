@@ -181,17 +181,11 @@ defmodule McpWeb.AuthLive.Login do
   defp default_redirect_path(:ola), do: "/online-application/application"
   defp default_redirect_path(_), do: "/tenant"
 
-
-
   defp assign_flash_from_session(socket, session) do
     flash_messages = session["flash"] || %{}
 
-    if flash_messages != %{} do
-      # We need to pass these to the component via assigns if we want them to show up there
-      # For now, standard flash mechanism might be enough if component uses it
-      socket
-    else
-      socket
-    end
+    Enum.reduce(flash_messages, socket, fn {key, message}, acc ->
+      put_flash(acc, String.to_atom(key), message)
+    end)
   end
 end

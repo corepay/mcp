@@ -3,7 +3,9 @@ defmodule McpWeb.PaymentMethodsControllerAchTest do
 
   alias Mcp.Payments.Customer
 
-  setup do
+  alias Mcp.Accounts.ApiKey
+
+  setup %{conn: conn} do
     customer =
       Customer
       |> Ash.Changeset.for_create(:create, %{email: "ach@example.com", name: "ACH User"})
@@ -12,14 +14,28 @@ defmodule McpWeb.PaymentMethodsControllerAchTest do
     Application.put_env(:mcp, :req_options, plug: {Req.Test, Mcp.Payments.Gateways.QorPay})
     on_exit(fn -> Application.put_env(:mcp, :req_options, []) end)
 
-    %{customer: customer}
+    # Create API Key
+    key = "mcp_sk_#{Ecto.UUID.generate()}"
+
+    ApiKey.create!(%{
+      name: "Test Key",
+      key: key,
+      permissions: ["payment_methods:write", "payment_methods:read"]
+    })
+
+    conn =
+      conn
+      |> Plug.Conn.put_req_header("x-forwarded-host", "localhost")
+      |> Plug.Conn.put_req_header("x-api-key", key)
+
+    %{customer: customer, conn: conn}
   end
 
   test "tokenizes bank account and creates payment method", %{conn: conn, customer: customer} do
     # Mock QorPay ACH Tokenization
     Req.Test.stub(Mcp.Payments.Gateways.QorPay, fn conn ->
       case conn.request_path do
-        "/v3/payment/ach/token" ->
+        "/payment/ach/token" ->
           Req.Test.json(conn, %{
             "status" => "approved",
             "token" => "tok_ach_123"

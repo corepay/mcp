@@ -30,24 +30,29 @@ defmodule Mcp.Registration.PolicyValidator do
       :ok
     end
   end
+
   defp validate_ip_address(_), do: :ok
 
   defp validate_email_domain(%{email: email}) when is_binary(email) do
     cond do
       String.contains?(email, "@spam.com") ->
         {:error, :domain_not_allowed}
+
       String.contains?(email, "@temp-mail.com") ->
         {:error, :high_risk}
+
       true ->
         :ok
     end
   end
+
   defp validate_email_domain(_), do: :ok
 
   defp validate_rate_limit(%{ip_address: "192.168.1.200", email: "second.user@example.com"}) do
     # Simulate rate limit for specific test case
     {:error, :rate_limited}
   end
+
   defp validate_rate_limit(_), do: :ok
 
   defp determine_approval_requirement(%{email: email}) do
@@ -57,6 +62,7 @@ defmodule Mcp.Registration.PolicyValidator do
       {:ok, :allowed}
     end
   end
+
   def get_default_settings do
     %{
       "customer_registration_enabled" => false,
@@ -65,23 +71,42 @@ defmodule Mcp.Registration.PolicyValidator do
   end
 
   def validate_registration_enabled(settings, type) do
-    key = "#{type}_registration_enabled"
-    
-    if Map.get(settings, key, false) do
+    enabled =
+      case type do
+        :customer ->
+          Map.get(settings, "customer_registration_enabled") ||
+            Map.get(settings, :customer_registration_enabled)
+
+        :vendor ->
+          Map.get(settings, "vendor_registration_enabled") ||
+            Map.get(settings, :vendor_registration_enabled)
+
+        _ ->
+          false
+      end
+
+    if enabled do
       :ok
     else
-      message = case type do
-        :customer -> "Customer self-registration is currently disabled. Please contact the merchant for an invitation."
-        :vendor -> "Vendor self-registration is currently disabled. Please contact the merchant for an invitation."
-        _ -> "This entity type can only register via invitation (invitation-only)"
-      end
-      
-      reason = case type do
-        :customer -> :customer_registration_disabled
-        :vendor -> :vendor_registration_disabled
-        _ -> :invitation_only_registration
-      end
-      
+      message =
+        case type do
+          :customer ->
+            "Customer self-registration is currently disabled. Please contact the merchant for an invitation."
+
+          :vendor ->
+            "Vendor self-registration is currently disabled. Please contact the merchant for an invitation."
+
+          _ ->
+            "This entity type can only register via invitation (invitation-only)"
+        end
+
+      reason =
+        case type do
+          :customer -> :customer_registration_disabled
+          :vendor -> :vendor_registration_disabled
+          _ -> :invitation_only_registration
+        end
+
       {:error, {:validation_failed, reason, message}}
     end
   end

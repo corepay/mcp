@@ -8,8 +8,6 @@ defmodule Mcp.Platform.Tenants.Changes.ProvisionTenant do
 
       case Mcp.MultiTenant.create_tenant_schema(schema_suffix) do
         {:ok, _schema_name} ->
-          # In a real scenario, we would also run migrations here
-          # Mcp.MultiTenant.run_tenant_migrations(schema_suffix)
           {:ok, tenant}
 
         {:error, :schema_already_exists} ->

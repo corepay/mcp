@@ -2,9 +2,24 @@ defmodule McpWeb.CustomersControllerTest do
   use McpWeb.ConnCase
 
   alias Mcp.Payments.Customer
+  alias Mcp.Accounts.ApiKey
 
   setup %{conn: conn} do
-    %{conn: Plug.Conn.put_req_header(conn, "x-forwarded-host", "localhost")}
+    # Create API Key
+    key = "mcp_sk_#{Ecto.UUID.generate()}"
+
+    ApiKey.create!(%{
+      name: "Test Key",
+      key: key,
+      permissions: ["customers:write", "customers:read"]
+    })
+
+    conn =
+      conn
+      |> Plug.Conn.put_req_header("x-forwarded-host", "localhost")
+      |> Plug.Conn.put_req_header("x-api-key", key)
+
+    %{conn: conn}
   end
 
   describe "POST /api/customers" do

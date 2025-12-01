@@ -16,7 +16,7 @@ defmodule Mcp.Ai.LlmUsage do
     policy action_type(:destroy) do
       authorize_if expr(tenant_id == ^actor(:tenant_id))
     end
-    
+
     policy action_type(:update) do
       authorize_if expr(tenant_id == ^actor(:tenant_id))
     end
@@ -24,29 +24,34 @@ defmodule Mcp.Ai.LlmUsage do
 
   postgres do
     table "llm_usages"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   attributes do
     uuid_primary_key :id
+
     attribute :provider, :atom do
       constraints one_of: [:ollama, :openrouter]
       allow_nil? false
     end
+
     attribute :model, :string, allow_nil?: false
     attribute :prompt_tokens, :integer, allow_nil?: false
     attribute :completion_tokens, :integer, allow_nil?: false
     attribute :total_tokens, :integer, allow_nil?: false
+
     attribute :cost, :decimal do
       allow_nil? false
       default 0.0
     end
+
     attribute :latency_ms, :integer
-    
+
     attribute :merchant_id, :uuid
     attribute :reseller_id, :uuid
     attribute :api_key_id, :uuid
-    attribute :transfer_id, :uuid # Link to Finance Transfer when posted
+    # Link to Finance Transfer when posted
+    attribute :transfer_id, :uuid
 
     timestamps()
   end
@@ -55,7 +60,20 @@ defmodule Mcp.Ai.LlmUsage do
     defaults [:read, :destroy]
 
     create :create do
-      accept [:provider, :model, :prompt_tokens, :completion_tokens, :total_tokens, :cost, :latency_ms, :merchant_id, :reseller_id, :api_key_id]
+      primary? true
+
+      accept [
+        :provider,
+        :model,
+        :prompt_tokens,
+        :completion_tokens,
+        :total_tokens,
+        :cost,
+        :latency_ms,
+        :merchant_id,
+        :reseller_id,
+        :api_key_id
+      ]
     end
 
     update :update_transfer do
@@ -70,6 +88,7 @@ defmodule Mcp.Ai.LlmUsage do
 
   def calculate_spend(api_key_id, start_date, end_date) do
     require Ash.Query
+
     Mcp.Ai.LlmUsage
     |> Ash.Query.filter(api_key_id == ^api_key_id)
     |> Ash.Query.filter(inserted_at > ^start_date and inserted_at < ^end_date)

@@ -1,0 +1,17 @@
+Running ExUnit with seed: 0, max_cases: 20
+Excluding tags: [:slow, :integration, :external_api, :performance]
+
+
+
+  1) test retention reactor execution reactor can be started and executed (Mcp.Gdpr.RetentionReactorTest)
+     test/mcp/gdpr/retention_reactor_test.exs:7
+     Reactor failed: %Reactor.Error.Invalid{errors: [%Reactor.Error.Invalid.RunStepError{error: %FunctionClauseError{module: Mcp.Gdpr.RetentionReactor, function: :run_0_generated_DF95CA45B3DA21398917B21B2A561B3D, arity: 1, kind: nil, args: nil, clauses: nil}, step: %Reactor.Step{arguments: [%Reactor.Argument{description: nil, name: :_, source: %Reactor.Template.Result{name: :load_policies, sub_path: []}, transform: nil}], async?: true, context: %{}, description: nil, impl: {Reactor.Step.AnonFn, [run: &Mcp.Gdpr.RetentionReactor.run_0_generated_DF95CA45B3DA21398917B21B2A561B3D/1, compensate: nil, undo: nil, backoff: nil]}, name: :process_policies, max_retries: :infinity, ref: :process_policies, transform: nil, guards: []}, splode: Reactor.Error, bread_crumbs: [], vars: [], path: [], stacktrace: #Splode.Stacktrace<>, class: :invalid}], splode: Reactor.Error, bread_crumbs: [], vars: [], path: [], stacktrace: #Splode.Stacktrace<>, class: :unknown}
+     code: {:error, reason} -> flunk("Reactor failed: #{inspect(reason)}")
+     stacktrace:
+       test/mcp/gdpr/retention_reactor_test.exs:15: (test)
+
+--max-failures reached, aborting test suite
+Finished in 0.2 seconds (0.00s async, 0.2s sync)
+1 test, 1 failure
+[os_mon] memory supervisor port (memsup): Erlang has closed
+[os_mon] cpu supervisor port (cpu_sup): Erlang has closed
