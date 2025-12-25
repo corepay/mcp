@@ -488,12 +488,6 @@ defmodule McpWeb.AuthController do
         conn
         |> put_status(:bad_request)
         |> text("Invalid or expired reset token")
-
-      # Handle find_user_by_reset_token fallback
-      {:error, :not_found} ->
-        conn
-        |> put_status(:bad_request)
-        |> text("Invalid or expired reset token")
     end
   end
 end
