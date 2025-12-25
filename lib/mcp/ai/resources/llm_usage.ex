@@ -94,7 +94,8 @@ defmodule Mcp.Ai.LlmUsage do
     |> Ash.Query.filter(inserted_at > ^start_date and inserted_at < ^end_date)
     |> Ash.sum(:cost)
     |> case do
-      {:ok, val} -> val || Decimal.new(0)
+      {:ok, nil} -> Decimal.new(0)
+      {:ok, val} -> val
       _ -> Decimal.new(0)
     end
   end

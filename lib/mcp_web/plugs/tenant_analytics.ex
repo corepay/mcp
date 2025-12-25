@@ -70,9 +70,9 @@ defmodule McpWeb.Plugs.TenantAnalytics do
       |> List.first()
       |> String.trim()
 
-    if subdomain && subdomain != "www" do
+    if subdomain != "www" do
       case Tenant.by_subdomain(subdomain) do
-        [tenant | _] -> tenant
+        {:ok, tenant} -> tenant
         _ -> nil
       end
     else
@@ -134,28 +134,31 @@ defmodule McpWeb.Plugs.TenantAnalytics do
 
     cond do
       String.starts_with?(path, "/analytics/public") -> true
-      String.contains?(path, "/dashboards/") && public_dashboard_request?(conn) -> true
+      # Placeholder for future public dashboard check
+      # String.contains?(path, "/dashboards/") && public_dashboard_request?(conn) -> true
       true -> false
     end
   end
 
-  defp public_dashboard_request?(conn) do
-    # Check if the requested dashboard is public
-    dashboard_slug = get_dashboard_slug_from_path(conn.request_path)
+  # defp public_dashboard_request?(conn) do
+  #   case get_dashboard_slug_from_path(conn.request_path) do
+  #     nil -> false
+  #     slug ->
+  #       # Check if dashboard is public
+  #       case Mcp.Analytics.Dashboard.get_public_dashboard(slug) do
+  #         {:ok, _dashboard} -> true
+  #         _ -> false
+  #       end
+  #   end
+  # end
 
-    if dashboard_slug do
-      # This would query the database to check if dashboard is public
-      # For now, return false
-      false
-    else
-      false
-    end
-  end
-
-  defp get_dashboard_slug_from_path(path) do
-    case Regex.run(~r{/dashboards/([^/]+)}, path) do
-      [_match, slug] -> slug
-      _ -> nil
-    end
-  end
+  # defp get_dashboard_slug_from_path(path) do
+  #   parts = String.split(path, "/")
+  #   # Expected format: /dashboards/:slug/...
+  #   case Enum.find_index(parts, fn p -> p == "dashboards" end) do
+  #     nil -> nil
+  #     idx when idx + 1 < length(parts) -> Enum.at(parts, idx + 1)
+  #     _ -> nil
+  #   end
+  # end
 end

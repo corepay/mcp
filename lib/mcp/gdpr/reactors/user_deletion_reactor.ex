@@ -372,7 +372,7 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
 
         :ok
 
-      {:error, reason} ->
+      reason ->
         # If cancellation fails, log it
         AuditTrail.log_event(
           user_id,

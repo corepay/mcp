@@ -69,9 +69,6 @@ defmodule Mcp.Storage.LocalClient do
         files = Enum.filter(paths, &File.regular?/1)
         relative_paths = Enum.map(files, &Path.relative_to(&1, @storage_path))
         {:ok, relative_paths}
-
-      error ->
-        error
     end
   end
 

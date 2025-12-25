@@ -27,16 +27,10 @@ defmodule McpWeb.Auth.AuthorizationPlug do
   Call the plug to handle authorization.
   """
   def call(conn, opts) do
-    current_session = get_session(conn)
-
-    if current_session do
-      conn
-      |> extract_tenant_context(opts)
-      |> validate_authorization(opts)
-      |> set_tenant_context()
-    else
-      conn
-    end
+    conn
+    |> extract_tenant_context(opts)
+    |> validate_authorization(opts)
+    |> set_tenant_context()
   end
 
   @doc """

@@ -8,7 +8,7 @@ defmodule Mcp.Repo.Migrations.CreateUnderwritingDocuments do
   use Ecto.Migration
 
   def up do
-    create table(:underwriting_documents, primary_key: false) do
+    create table(:underwriting_documents, primary_key: false, prefix: "platform") do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :file_path, :text, null: false
       add :file_name, :text, null: false

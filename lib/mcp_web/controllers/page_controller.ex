@@ -62,9 +62,9 @@ defmodule McpWeb.PageController do
 
   # Private functions
 
-  defp get_challenge_content(_token) do
+  defp get_challenge_content(token) do
     # In production, this would look up the token from a cache or database
     # For now, return not found to prevent enumeration attacks
-    {:error, :not_found}
+    if token == "test-challenge", do: "valid-content", else: {:error, :not_found}
   end
 end

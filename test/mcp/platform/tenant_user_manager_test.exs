@@ -339,7 +339,7 @@ defmodule Mcp.Platform.TenantUserManagerTest do
 
   describe "permission checking" do
     test "tenant owner has all permissions" do
-      owner = %{role: :admin, is_tenant_owner: true}
+      _owner = %{role: :admin, is_tenant_owner: true}
       # These functions don't exist in the implementation I saw?
       # I didn't see user_has_permission? in TenantUserManager.ex
       # Let's check if they are there.
@@ -355,7 +355,7 @@ defmodule Mcp.Platform.TenantUserManagerTest do
     end
   end
 
-  defp create_test_users(tenant_id, owner, count) do
+  defp create_test_users(tenant_id, _owner, count) do
     Enum.map(1..count, fn i ->
       user_attrs = %{
         email: "user#{i}_#{System.unique_integer([:positive])}@example.com",
@@ -384,14 +384,4 @@ defmodule Mcp.Platform.TenantUserManagerTest do
   end
 
   # Helper functions
-
-  defp find_user_by_token(tenant_id, token) do
-    # This helper was using SQL query on tenant_users table which doesn't exist in this implementation
-    # (users are in tenant settings).
-    # So we can't use this helper as is.
-    # We should inspect tenant settings.
-    {:ok, tenant} = Mcp.Platform.Tenant.get(tenant_id)
-    invitations = Map.get(tenant.settings || %{}, "invitations", [])
-    Enum.find(invitations, fn inv -> inv["token"] == token end)
-  end
 end

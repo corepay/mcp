@@ -16,7 +16,7 @@ defmodule McpWeb.HealthController do
       status: "healthy",
       timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
       service: "mcp-gdpr",
-      version: version_to_string(Application.spec(:mcp, :vsn)) || "unknown"
+      version: version_to_string(Application.spec(:mcp, :vsn))
     }
 
     conn
@@ -57,7 +57,7 @@ defmodule McpWeb.HealthController do
       status: "healthy",
       timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
       service: "mcp-gdpr",
-      version: version_to_string(Application.spec(:mcp, :vsn)) || "unknown",
+      version: version_to_string(Application.spec(:mcp, :vsn)),
       uptime: get_uptime(),
       environment: config_env(),
       readiness: check_readiness(),
@@ -189,11 +189,13 @@ defmodule McpWeb.HealthController do
   end
 
   defp check_gdpr_health do
+    gdpr_config = Application.get_env(:mcp, :gdpr, []) || []
+
     %{
-      audit_trail_enabled: Application.get_env(:mcp, :gdpr)[:audit_trail_enabled] || false,
-      rate_limiting_enabled: Application.get_env(:mcp, :gdpr)[:rate_limiting_enabled] || false,
-      encryption_enabled: Application.get_env(:mcp, :gdpr)[:encryption_enabled] || false,
-      compliance_monitoring: Application.get_env(:mcp, :gdpr)[:compliance_monitoring] || false
+      audit_trail_enabled: Keyword.get(gdpr_config, :audit_trail_enabled, false),
+      rate_limiting_enabled: Keyword.get(gdpr_config, :rate_limiting_enabled, false),
+      encryption_enabled: Keyword.get(gdpr_config, :encryption_enabled, false),
+      compliance_monitoring: Keyword.get(gdpr_config, :compliance_monitoring, false)
     }
   end
 

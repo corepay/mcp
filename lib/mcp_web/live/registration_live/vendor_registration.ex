@@ -17,7 +17,6 @@ defmodule McpWeb.RegistrationLive.VendorRegistration do
   use McpWeb, :live_view
   import Phoenix.Component
 
-  alias Mcp.Accounts.RegistrationSettings
   alias Mcp.Registration.RegistrationService
 
   # Extended form structure for vendor registration
@@ -355,23 +354,6 @@ defmodule McpWeb.RegistrationLive.VendorRegistration do
         settings = get_default_tenant_settings()
         socket = assign(socket, :tenant_settings, settings)
         check_registration_enabled(socket, settings)
-
-      id ->
-        case RegistrationSettings.get_current_settings(id) do
-          {:ok, settings} ->
-            socket
-            |> assign(:tenant_settings, settings)
-            |> assign(
-              :captcha_required,
-              settings.require_captcha or settings.business_verification_required
-            )
-            |> check_registration_enabled(settings)
-
-          {:error, _} ->
-            settings = get_default_tenant_settings()
-            socket = assign(socket, :tenant_settings, settings)
-            check_registration_enabled(socket, settings)
-        end
     end
   end
 
@@ -832,9 +814,6 @@ defmodule McpWeb.RegistrationLive.VendorRegistration do
 
       :website ->
         validate_website_field(value, field, errors)
-
-      _ ->
-        errors
     end
   end
 
@@ -934,8 +913,6 @@ defmodule McpWeb.RegistrationLive.VendorRegistration do
 
     %{score: score, requirements: requirements}
   end
-
-  defp calculate_password_strength(_), do: %{score: 0, requirements: []}
 
   defp mark_touched_fields(socket, vendor_params) do
     touched_fields = Map.keys(vendor_params) |> Enum.map(&String.to_atom/1) |> MapSet.new()
@@ -1062,23 +1039,6 @@ defmodule McpWeb.RegistrationLive.VendorRegistration do
   end
 
   defp translate_submission_error({:validation_failed, _field, message}), do: message
-
-  defp translate_submission_error(:rate_limited),
-    do: "Too many registration attempts. Please try again later."
-
-  defp translate_submission_error(:vendor_registration_disabled),
-    do: "Vendor registration is currently disabled."
-
-  defp translate_submission_error(:email_domain_not_allowed), do: "Email domain is not allowed."
-
-  defp translate_submission_error(:country_not_allowed),
-    do: "Registration from your country is not allowed."
-
-  defp translate_submission_error(:password_too_weak),
-    do: "Password does not meet security requirements."
-
-  defp translate_submission_error(:business_documents_required),
-    do: "Business verification documents are required."
 
   defp translate_submission_error(reason), do: "Registration failed: #{inspect(reason)}"
 end

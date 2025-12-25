@@ -464,13 +464,13 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
       {:ok, session} = Auth.create_user_session(user, "127.0.0.1")
 
       # Verify session includes IP information
-      {:ok, claims} = Auth.verify_jwt_access_token(session.access_token)
+      {:ok, _claims} = Auth.verify_jwt_access_token(session.access_token)
       # Claims should include device info with IP
       # TODO: Include device_id in JWT claims
       # assert claims["device_id"] != nil
     end
 
-    test "binds session to user agent", %{conn: conn} do
+    test "binds session to user agent", %{conn: _conn} do
       {:ok, user} = create_test_user()
 
       # Create session

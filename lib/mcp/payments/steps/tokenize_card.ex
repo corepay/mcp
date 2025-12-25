@@ -62,8 +62,6 @@ defmodule Mcp.Payments.Steps.TokenizeCard do
     }
   end
 
-  defp extract_metadata(_result, _input_params), do: %{}
-
   defp get_value(map, key) when is_atom(key) do
     Map.get(map, key) || Map.get(map, Atom.to_string(key))
   end

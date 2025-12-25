@@ -593,11 +593,6 @@ defmodule McpWeb.GdprController do
           accessed_at: DateTime.utc_now()
         })
 
-      {:error, :user_not_found} ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "User not found"})
-
       {:error, reason} ->
         Logger.error(
           "Admin #{admin_user.id} failed to access user #{user_id} data: #{inspect(reason)}"
@@ -829,7 +824,7 @@ defmodule McpWeb.GdprController do
   def export_data(conn, params) do
     # GREEN: Handle dangerous content detection
     case InputValidation.validate_export_params(params) do
-      :ok ->
+      {:ok, _} ->
         export_data(conn, params)
 
       {:error, :potentially_dangerous_content} ->

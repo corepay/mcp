@@ -7,6 +7,8 @@ defmodule McpWeb.ChannelCase do
   """
 
   use ExUnit.CaseTemplate
+  import Phoenix.ChannelTest
+  @endpoint McpWeb.Endpoint
 
   alias Ecto.Adapters.SQL.Sandbox
   alias Mcp.Repo
@@ -25,6 +27,6 @@ defmodule McpWeb.ChannelCase do
 
   setup _tags do
     :ok = Sandbox.checkout(Repo)
-    {:ok, socket: Phoenix.ChannelTest.__socket__(UserSocket, "", %{}, %{}, %{})}
+    {:ok, socket: socket(UserSocket, nil, %{})}
   end
 end

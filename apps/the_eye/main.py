@@ -4,8 +4,41 @@ import uvicorn
 import os
 import tempfile
 import shutil
+import logging
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions, TableStructureOptions
 
-app = FastAPI(title="The Eye - Document Intelligence Service")
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("the_eye")
+
+app = FastAPI(title="The Eye - Document Intelligence Service (Docling)")
+
+# Global converter instance to avoid reloading models on every request
+# docling handles thread safety internally usually, but for simple use case global is fine
+converter = None
+
+@app.on_event("startup")
+async def startup_event():
+    global converter
+    logger.info("Initializing Docling DocumentConverter with Advanced Finance Options...")
+    try:
+        # Configure pipeline for high-fidelity table extraction (Underwriting use case)
+        pipeline_options = PdfPipelineOptions()
+        pipeline_options.do_ocr = True
+        pipeline_options.do_table_structure = True
+        pipeline_options.table_structure_options.do_cell_matching = True
+        
+        converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+            }
+        )
+        logger.info("Docling DocumentConverter initialized successfully.")
+    except Exception as e:
+        logger.error(f"Failed to initialize Docling: {e}")
+        raise e
 
 class AnalysisResponse(BaseModel):
     status: str
@@ -15,36 +48,54 @@ class AnalysisResponse(BaseModel):
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy"}
+    if converter:
+        return {"status": "healthy", "provider": "docling"}
+    else:
+        raise HTTPException(status_code=503, detail="Docling not initialized")
 
 @app.post("/analyze/document", response_model=AnalysisResponse)
 async def analyze_document(file: UploadFile = File(...)):
+    if not converter:
+        raise HTTPException(status_code=503, detail="Service not ready")
+
     # Create a temporary file to save the uploaded content
-    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp_file:
+    # Docling detects format by extension, so preserve it
+    suffix = os.path.splitext(file.filename)[1]
+    if not suffix:
+        # Default to pdf if no extension? Or raise error?
+        # Let's assume binary stream might be identifiable, but file extension is safest
+        suffix = ""
+    
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
         shutil.copyfileobj(file.file, tmp_file)
         tmp_path = tmp_file.name
 
     try:
-        # TODO: Implement actual Marker/Chandra logic here
-        # For now, we will return a mock response to verify connectivity
+        logger.info(f"Processing file: {file.filename} ({tmp_path})")
         
-        # Mock logic:
-        # If it's a PDF, pretend we used Marker
-        if file.filename.lower().endswith(".pdf"):
-            return AnalysisResponse(
-                status="success",
-                markdown_content="# Bank Statement\n\n| Date | Description | Amount |\n|---|---|---|\n| 2023-10-01 | Deposit | $5000.00 |",
-                provider="marker"
-            )
-        # If it's an image, pretend we used Chandra
-        else:
-             return AnalysisResponse(
-                status="success",
-                structured_data={"form_type": "check", "amount": 100.00},
-                provider="chandra"
-            )
+        # Run Docling Conversion
+        # This is CPU/GPU intensive and synchronous. In a real heavy load, 
+        # this should be in a background thread/process or use async features if available.
+        # For this sidecar implementation, we'll run it directly (FastAPI handles it in threadpool).
+        
+        result = converter.convert(tmp_path)
+        
+        # Export content
+        markdown_text = result.document.export_to_markdown()
+        
+        # Serialize structured data
+        # Docling's internal structure is complex. exporting to dict gives a representation.
+        structured_dict = result.document.export_to_dict()
+
+        return AnalysisResponse(
+            status="success",
+            markdown_content=markdown_text,
+            structured_data=structured_dict,
+            provider="docling"
+        )
 
     except Exception as e:
+        logger.error(f"Error processing document: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         # Clean up the temporary file

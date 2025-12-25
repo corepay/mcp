@@ -117,7 +117,7 @@ defmodule Mcp.Accounts.AuthComprehensiveTest do
 
   describe "session management" do
     test "creates valid session tokens" do
-      {:ok, user} =
+      {:ok, _user} =
         User.register(%{
           first_name: "Session",
           last_name: "User",

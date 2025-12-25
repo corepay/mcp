@@ -59,10 +59,7 @@ defmodule McpWeb.Auth.GdprAuthPlug do
   end
 
   defp generate_unique_request_id do
-    ("gdpr_" <>
-       (:crypto.strong_rand_bytes(16) |> Base.encode64(case: :lower)))
-    |> String.replace("/", "_")
-    |> String.replace("+", "-")
+    "gdpr_" <> (:crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower))
   end
 
   @doc """

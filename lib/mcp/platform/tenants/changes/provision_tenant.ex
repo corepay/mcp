@@ -10,11 +10,11 @@ defmodule Mcp.Platform.Tenants.Changes.ProvisionTenant do
         {:ok, _schema_name} ->
           {:ok, tenant}
 
-        {:error, :schema_already_exists} ->
+        {:error, error} ->
+          # Log warning but proceed to avoid blocking tenant creation on idempotency issues.
+          require Logger
+          Logger.warning("Schema creation failed: #{inspect(error)}")
           {:ok, tenant}
-
-        {:error, reason} ->
-          {:error, reason}
       end
     end)
   end

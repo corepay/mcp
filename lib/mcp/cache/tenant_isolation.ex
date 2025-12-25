@@ -7,7 +7,7 @@ defmodule Mcp.Cache.TenantIsolation do
   """
 
   require Logger
-  require Logger
+
   # alias Mcp.Cache.CacheManager # Removed alias to avoid confusion, using helper instead
 
   defp cache_manager do
@@ -197,7 +197,7 @@ defmodule Mcp.Cache.TenantIsolation do
         successful_warms = Enum.count(results, &(&1 == :ok))
 
         Logger.info(
-          "Tenant cache warming completed for #{tenant_id}: #{successful_warms}/#{length(items_to_warm)} items"
+          "Tenant cache warming completed for #{tenant_id}: #{successful_warms}/#{map_size(items_to_warm)} items"
         )
 
         :ok

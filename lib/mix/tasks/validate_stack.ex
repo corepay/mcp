@@ -10,6 +10,7 @@ defmodule Mix.Tasks.Validate.Stack do
 
   @shortdoc "Validates cross-stack consistency"
 
+  @dialyzer {:nowarn_function, run: 1}
   def run(_) do
     # Ensure the app is compiled so we can find modules if needed
     Mix.Task.run("compile")

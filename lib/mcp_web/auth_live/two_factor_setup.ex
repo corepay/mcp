@@ -75,15 +75,6 @@ defmodule McpWeb.AuthLive.TwoFactorSetup do
           |> add_flash_message(:info, "Step 1: Scan the QR code with your authenticator app")
 
         {:noreply, socket}
-
-      {:error, reason} ->
-        socket =
-          socket
-          |> assign(:loading, false)
-          |> add_flash_message(:error, "Failed to setup 2FA: #{reason}")
-          |> add_announcement("2FA setup failed")
-
-        {:noreply, socket}
     end
   end
 

@@ -314,7 +314,7 @@ defmodule McpWeb.TenantSettingsLive do
 
     with {:ok, content} <- File.read(file.path),
          {:ok, import_data} <- Jason.decode(content),
-         {:ok, %{imported: true} = _result} <-
+         {:ok, _result} <-
            TenantSettingsManager.import_tenant_settings(tenant_id, import_data, current_user.id) do
       # Reload data
       {:ok, settings} = TenantSettingsManager.get_all_tenant_settings(tenant_id)

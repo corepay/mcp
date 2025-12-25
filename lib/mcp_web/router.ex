@@ -46,11 +46,19 @@ defmodule McpWeb.Router do
     plug McpWeb.Auth.SessionPlug
   end
 
-  pipeline :api do
+  pipeline :api_core do
     plug :accepts, ["json"]
     plug McpWeb.Plugs.ApiVersioning
     plug McpWeb.ApiSecurityHeaders
+  end
+
+  pipeline :api do
+    plug :api_core
     plug McpWeb.Plugs.RequireApiKey
+  end
+
+  pipeline :api_public do
+    plug :api_core
   end
 
   # Platform Admin Portal
@@ -273,7 +281,7 @@ defmodule McpWeb.Router do
   end
 
   scope "/auth", McpWeb do
-    pipe_through :api
+    pipe_through :api_public
 
     post "/register", AuthController, :register
     post "/login", AuthController, :login

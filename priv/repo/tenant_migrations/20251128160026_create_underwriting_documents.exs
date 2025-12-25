@@ -16,7 +16,7 @@ defmodule Mcp.Repo.TenantMigrations.CreateUnderwritingDocuments do
                column: :id,
                name: "underwriting_checks_document_id_fkey",
                type: :uuid,
-               prefix: "public"
+               prefix: "platform"
              )
     end
   end

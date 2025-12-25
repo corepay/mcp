@@ -56,16 +56,16 @@ defmodule Mcp.Accounts.Auth do
 
               _ ->
                 # Increment failed attempts
-                IO.inspect(user.failed_attempts, label: "Current Failed Attempts (Before Update)")
+                Logger.debug("Current Failed Attempts (Before Update): #{user.failed_attempts}")
                 {:ok, updated_user} = User.increment_failed_attempts(user)
-                IO.inspect(updated_user.failed_attempts, label: "Failed Attempts (After Update)")
+                Logger.debug("Failed Attempts (After Update): #{updated_user.failed_attempts}")
 
                 if updated_user.failed_attempts >= 5 do
-                  IO.puts("Locking account...")
+                  Logger.info("Locking account for user #{user.id}")
 
                   case User.lock_account(updated_user) do
-                    {:ok, _} -> IO.puts("Account locked successfully")
-                    {:error, err} -> IO.inspect(err, label: "Lock failed")
+                    {:ok, _} -> Logger.info("Account locked successfully")
+                    {:error, err} -> Logger.error("Lock failed: #{inspect(err)}")
                   end
 
                   {:error, :account_locked}
@@ -135,10 +135,6 @@ defmodule Mcp.Accounts.Auth do
              refresh_token: refresh_token,
              expires_at: DateTime.add(DateTime.utc_now(), 24, :hour)
            }}
-
-        error ->
-          Logger.error("Failed to store session tokens: #{inspect(error)}")
-          {:error, :session_creation_failed}
       end
     else
       {:error, reason} ->

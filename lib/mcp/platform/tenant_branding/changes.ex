@@ -25,7 +25,13 @@ defmodule Mcp.Platform.TenantBranding.Changes do
         if valid_hex_color?(color) do
           changeset
         else
-          Ash.Changeset.add_error(changeset, field, "must be a valid hex color (e.g., #FF0000)")
+          error =
+            Ash.Error.Changes.InvalidAttribute.exception(
+              field: field,
+              message: "must be a valid hex color (e.g., #FF0000)"
+            )
+
+          Ash.Changeset.add_error(changeset, error)
         end
     end
   end
@@ -40,22 +46,26 @@ defmodule Mcp.Platform.TenantBranding.Changes do
         if has_sufficient_contrast?(primary_color, background_color, 3.0) do
           changeset
         else
-          Ash.Changeset.add_error(
-            changeset,
-            :primary_color,
-            "does not have sufficient contrast with background color"
-          )
+          error =
+            Ash.Error.Changes.InvalidAttribute.exception(
+              field: :primary_color,
+              message: "does not have sufficient contrast with background color"
+            )
+
+          Ash.Changeset.add_error(changeset, error)
         end
 
       text_color && background_color ->
         if has_sufficient_contrast?(text_color, background_color, 4.5) do
           changeset
         else
-          Ash.Changeset.add_error(
-            changeset,
-            :text_color,
-            "does not have sufficient contrast with background color for accessibility"
-          )
+          error =
+            Ash.Error.Changes.InvalidAttribute.exception(
+              field: :text_color,
+              message: "does not have sufficient contrast with background color for accessibility"
+            )
+
+          Ash.Changeset.add_error(changeset, error)
         end
 
       true ->

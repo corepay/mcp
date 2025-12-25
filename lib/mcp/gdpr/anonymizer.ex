@@ -116,7 +116,6 @@ defmodule Mcp.Gdpr.Anonymizer do
 
         case anonymize_field(val, field_type, user_id, opts) do
           {:ok, anonymized_val} -> Map.put(acc, key, anonymized_val)
-          _ -> Map.put(acc, key, "[REDACTED]")
         end
       end)
 
@@ -276,7 +275,6 @@ defmodule Mcp.Gdpr.Anonymizer do
   defp anonymize_ip(ip, _strategy) when is_binary(ip) do
     case anonymize_field(ip, :ip_address, nil, []) do
       {:ok, anonymized} -> anonymized
-      _ -> "0.0.0.0"
     end
   end
 

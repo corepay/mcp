@@ -51,7 +51,6 @@ defmodule Mcp.Jobs.Gdpr.DataExportWorker do
       {:ok, export}
     else
       {:error, reason} -> {:error, reason}
-      error -> {:error, "Unexpected error: #{inspect(error)}"}
     end
   end
 

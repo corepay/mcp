@@ -62,7 +62,7 @@ defmodule McpWeb.AuthLive.ChangePassword do
   def handle_event("change_password", %{"user" => user_params}, socket) do
     current_user = socket.assigns.current_user
 
-    case Ash.update(current_user, :change_password, user_params) do
+    case Ash.Changeset.for_update(current_user, :change_password, user_params) |> Ash.update() do
       {:ok, updated_user} ->
         # Password changed successfully, create session and redirect
         case create_session_after_password_change(updated_user) do
@@ -71,12 +71,6 @@ defmodule McpWeb.AuthLive.ChangePassword do
              socket
              |> put_flash(:info, "Password changed successfully!")
              |> push_navigate(to: "/dashboard", replace: true)}
-
-          {:password_change_required, _user} ->
-            {:noreply,
-             socket
-             |> put_flash(:error, "Password change still required")
-             |> push_navigate(to: ~p"/tenant/sign-in")}
         end
 
       {:error, changeset} ->

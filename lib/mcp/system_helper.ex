@@ -208,7 +208,7 @@ defmodule Mcp.SystemHelper do
 
   defp get_scheduler_utilization do
     case :scheduler.sample_all() do
-      samples when is_list(samples) ->
+      samples ->
         # Convert scheduler utilization percentage values
         total_util = Enum.reduce(samples, 0, fn {_cpu, util}, acc -> acc + util end)
         # Convert from percentage to 0-1 range, then to percentage
@@ -216,9 +216,6 @@ defmodule Mcp.SystemHelper do
         cpu_percentage = avg_util * System.schedulers_online()
         # Cap at 100%
         {:ok, min(cpu_percentage, 100.0)}
-
-      _ ->
-        {:error, :no_samples}
     end
   end
 
@@ -246,10 +243,6 @@ defmodule Mcp.SystemHelper do
     command_result =
       case :os.type() do
         # macOS
-        {:unix, :darwin} ->
-          System.cmd("df", ["-k", path])
-
-        # Linux/Unix
         {:unix, _} ->
           System.cmd("df", ["-k", path])
 
@@ -312,7 +305,7 @@ defmodule Mcp.SystemHelper do
 
   defp calculate_load_from_scheduler do
     case :scheduler.sample_all() do
-      samples when is_list(samples) ->
+      samples ->
         # Calculate average scheduler utilization
         total_util = Enum.reduce(samples, 0, fn {_cpu, util}, acc -> acc + util end)
         avg_util = total_util / length(samples)
@@ -323,14 +316,6 @@ defmodule Mcp.SystemHelper do
           load_1min: Float.round(load_1min, 2),
           load_5min: Float.round(load_1min * 0.9, 2),
           load_15min: Float.round(load_1min * 0.8, 2)
-        }
-
-      _ ->
-        # Final fallback
-        %{
-          load_1min: 0.5,
-          load_5min: 0.45,
-          load_15min: 0.4
         }
     end
   rescue

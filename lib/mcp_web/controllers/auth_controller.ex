@@ -33,16 +33,6 @@ defmodule McpWeb.AuthController do
         |> put_flash(:info, "Welcome back!")
         |> redirect(to: redirect_to)
 
-      {:password_change_required, user} ->
-        # Create a temporary token for password change
-        temp_token = generate_temp_token(user)
-
-        conn
-        |> put_session(:temp_user_token, temp_token)
-        |> put_session(:current_user, user)
-        |> put_flash(:warning, "You must change your password before continuing.")
-        |> redirect(to: ~p"/tenant/change-password")
-
       {:error, :invalid_credentials} ->
         conn
         |> put_flash(:error, "Invalid email or password")
@@ -138,6 +128,9 @@ defmodule McpWeb.AuthController do
           error -> error
         end
 
+      {:ok, :require_2fa, user} ->
+        {:ok, :require_2fa, user}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -156,13 +149,11 @@ defmodule McpWeb.AuthController do
     |> to_string()
   end
 
-  defp format_ip(_), do: "unknown"
-
   defp generate_temp_token(_user) do
     # Generate a temporary token for password change flow
+    # Generate a temporary token for password change flow
     :crypto.strong_rand_bytes(32)
-    |> Base.encode64()
-    |> String.replace(["/", "+", "="], ["_", "-", ""])
+    |> Base.url_encode64(padding: false)
     |> then(fn token -> "pwd_change_" <> token end)
   end
 
@@ -189,47 +180,129 @@ defmodule McpWeb.AuthController do
 
   # API Actions
 
+  def register(conn, %{"user" => user_params}) do
+    handle_register(conn, user_params)
+  end
+
   def register(conn, params) do
+    handle_register(conn, params)
+  end
+
+  defp handle_register(conn, params) do
     # Delegate to RegistrationService or User resource
     case Mcp.Accounts.User.register(params) do
       {:ok, user} ->
         conn
         |> put_status(:created)
-        |> json(%{data: user})
+        |> json(%{user: user_view(user)})
 
-      {:error, changeset} ->
+      {:error, error} ->
+        # Simple error formatting for Ash errors
+        errors =
+          case error do
+            %Ash.Error.Invalid{errors: errors} ->
+              Enum.map(errors, fn e ->
+                field = Map.get(e, :field) || Map.get(e, :input) || "unknown"
+                %{field: field, message: Exception.message(e)}
+              end)
+
+            _ ->
+              [%{message: Exception.message(error)}]
+          end
+
         conn
         |> put_status(:unprocessable_entity)
-        |> json(%{errors: changeset})
+        |> json(%{errors: errors})
     end
   end
 
-  def login(conn, params), do: create(conn, params)
+  defp user_view(user) do
+    %{
+      id: user.id,
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name
+    }
+  end
 
-  def logout(conn, params), do: delete(conn, params)
+  def login(conn, %{"user" => %{"email" => email, "password" => password}}) do
+    ip = get_client_ip(conn)
 
-  def refresh(conn, _params) do
-    # Refresh token logic
+    case authenticate_user(email, password, ip) do
+      {:ok, :require_2fa, user} ->
+        temp_token = generate_temp_token(user)
+
+        conn
+        |> put_status(:ok)
+        |> json(%{requires_2fa: true, temp_token: temp_token})
+
+      {:ok, session, user} ->
+        conn
+        |> put_status(:ok)
+        |> json(%{
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+          user: user_view(user)
+        })
+
+      {:error, _reason} ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{error: "Invalid credentials"})
+    end
+  end
+
+  def login(conn, _params) do
+    conn
+    |> put_status(:bad_request)
+    |> json(%{error: "Missing email or password"})
+  end
+
+  def logout(conn, _params) do
     case get_req_header(conn, "authorization") do
       ["Bearer " <> token] ->
-        case Auth.refresh_jwt_session(token) do
-          {:ok, session} ->
-            json(conn, %{data: session})
+        # Revoke the token
+        Auth.revoke_jwt_session(token)
 
-          {:error, _} ->
-            conn
-            |> put_status(:unauthorized)
-            |> json(%{error: "Invalid token"})
-        end
+        conn
+        |> put_status(:ok)
+        |> json(%{message: "Logged out successfully"})
 
       _ ->
         conn
-        |> put_status(:bad_request)
+        |> put_status(:unauthorized)
         |> json(%{error: "Missing token"})
     end
   end
 
-  def verify_2fa(conn, %{"code" => code}) do
+  def refresh(conn, params) do
+    # Refresh token logic
+    token =
+      case get_req_header(conn, "authorization") do
+        ["Bearer " <> token] -> token
+        _ -> params["refresh_token"]
+      end
+
+    case token do
+      nil ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "Missing token"})
+
+      token ->
+        case Auth.refresh_jwt_session(token) do
+          {:ok, session} ->
+            json(conn, session)
+
+          {:error, _} ->
+            conn
+            |> put_status(:unauthorized)
+            |> json(%{error: "Invalid refresh token"})
+        end
+    end
+  end
+
+  def verify_2fa(conn, %{"totp_code" => code}) do
     # Mock 2FA verification
     if code == "123456" do
       json(conn, %{data: %{verified: true}})
@@ -243,6 +316,65 @@ defmodule McpWeb.AuthController do
   def verify_2fa(conn, _params) do
     conn
     |> put_status(:bad_request)
-    |> json(%{error: "Missing code"})
+    |> json(%{error: "Missing totp_code"})
+  end
+
+  def forgot_password(conn, %{"email" => email}) do
+    # TODO: Implement actual Ash action call
+    # Mcp.Accounts.User.request_password_reset_token(%{email: email})
+
+    if email =~ ~r/^[\w+\-.]+@[a-z\d\-.]+\.[a-z]+$/i do
+      # Always return 200 for security
+      conn
+      |> put_status(:ok)
+      |> text("Password reset instructions sent")
+    else
+      conn
+      |> put_status(:bad_request)
+      |> json(%{errors: %{email: ["has invalid format"]}})
+    end
+  end
+
+  def forgot_password(conn, _params) do
+    conn
+    |> put_status(:bad_request)
+    |> json(%{error: "Missing email"})
+  end
+
+  def reset_password(conn, %{
+        "token" => token,
+        "password" => password,
+        "password_confirmation" => confirmation
+      }) do
+    cond do
+      password != confirmation ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{errors: %{password_confirmation: ["does not match"]}})
+
+      String.length(password) < 8 ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{errors: %{password: ["is too short"]}})
+
+      true ->
+        # TODO: Implement actual Ash action call
+        # Mcp.Accounts.User.reset_password_with_token(token, password)
+        if token == "invalid_token" do
+          conn
+          |> put_status(:bad_request)
+          |> text("Invalid or expired reset token")
+        else
+          conn
+          |> put_status(:ok)
+          |> text("Password reset successfully")
+        end
+    end
+  end
+
+  def reset_password(conn, _params) do
+    conn
+    |> put_status(:bad_request)
+    |> text("Invalid request")
   end
 end

@@ -111,10 +111,6 @@ defmodule Mcp.Jobs.Gdpr.RetentionCleanupWorker do
       {:error, reason} ->
         Logger.error("RetentionReactor failed: #{inspect(reason)}")
         {:error, {:reactor_failed, reason}}
-
-      {:error, steps, errors} ->
-        Logger.error("RetentionReactor step errors: #{inspect(errors)}")
-        {:error, {:reactor_steps_failed, steps, errors}}
     end
   rescue
     error ->
@@ -150,11 +146,6 @@ defmodule Mcp.Jobs.Gdpr.RetentionCleanupWorker do
         {:error, reason} ->
           Logger.error("RetentionReactor failed for policy #{policy_id}: #{inspect(reason)}")
           {:error, {:reactor_failed, reason}}
-
-        {:error, steps, errors} ->
-          Logger.error("RetentionReactor step errors for policy #{policy_id}: #{inspect(errors)}")
-
-          {:error, {:reactor_steps_failed, steps, errors}}
       end
     else
       {:error, :policy_not_found}

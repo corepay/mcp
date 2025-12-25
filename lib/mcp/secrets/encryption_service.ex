@@ -194,9 +194,6 @@ defmodule Mcp.Secrets.EncryptionService do
       ciphertext when is_binary(ciphertext) ->
         # Return iv + ciphertext + tag (AEAD support would require additional implementation)
         <<iv::binary, ciphertext::binary>>
-
-      error ->
-        {:error, error}
     end
   catch
     _, reason -> {:error, reason}
@@ -213,9 +210,6 @@ defmodule Mcp.Secrets.EncryptionService do
     case :crypto.crypto_one_time(@algorithm, key, iv, ciphertext, false) do
       plaintext when is_binary(plaintext) ->
         {:ok, plaintext}
-
-      error ->
-        {:error, error}
     end
   catch
     _, reason -> {:error, reason}

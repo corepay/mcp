@@ -60,8 +60,8 @@ defmodule McpWeb.Plugs.TenantAuthorization do
   """
   def user_has_permission?(user, permission) do
     case get_user_permissions(user) do
-      nil -> false
-      permissions -> permission in permissions
+      permissions when is_list(permissions) -> permission in permissions
+      _ -> false
     end
   end
 
@@ -69,16 +69,16 @@ defmodule McpWeb.Plugs.TenantAuthorization do
   Check if a user has any of the specified permissions.
   """
   def user_has_any_permission?(user, permissions) when is_list(permissions) do
-    user_permissions = get_user_permissions(user)
-    Enum.any?(permissions, &(&1 in (user_permissions || [])))
+    user_permissions = get_user_permissions(user) || []
+    Enum.any?(permissions, &(&1 in user_permissions))
   end
 
   @doc """
   Check if a user has all specified permissions.
   """
   def user_has_all_permissions?(user, permissions) when is_list(permissions) do
-    user_permissions = get_user_permissions(user)
-    Enum.all?(permissions, &(&1 in (user_permissions || [])))
+    user_permissions = get_user_permissions(user) || []
+    Enum.all?(permissions, &(&1 in user_permissions))
   end
 
   @doc """

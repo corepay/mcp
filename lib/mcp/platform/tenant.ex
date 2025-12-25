@@ -190,5 +190,4 @@ defmodule Mcp.Platform.Tenant do
   # Helper for bang methods
   defp handle_bang({:ok, result}), do: result
   defp handle_bang({:error, error}), do: raise(Ash.Error.to_error_class(error))
-  defp handle_bang(result), do: result
 end

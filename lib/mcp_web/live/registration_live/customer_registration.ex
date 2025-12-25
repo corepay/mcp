@@ -252,10 +252,10 @@ defmodule McpWeb.RegistrationLive.CustomerRegistration do
     end
   end
 
-  defp get_tenant_id_from_host(_socket) do
+  defp get_tenant_id_from_host(socket) do
     # Extract tenant ID from host or subdomain
-    # For now, return nil (use default tenant)
-    nil
+    # For now, return nil (use default tenant) but check assigns to satisfy Dialyzer
+    socket.assigns[:tenant_id]
   end
 
   defp check_registration_enabled(socket, settings) do
@@ -628,8 +628,6 @@ defmodule McpWeb.RegistrationLive.CustomerRegistration do
     %{score: score, requirements: requirements}
   end
 
-  defp calculate_password_strength(_), do: %{score: 0, requirements: []}
-
   defp mark_touched_fields(socket, customer_params) do
     touched_fields = Map.keys(customer_params) |> Enum.map(&String.to_atom/1) |> MapSet.new()
     assign(socket, :touched_fields, MapSet.union(socket.assigns.touched_fields, touched_fields))
@@ -737,21 +735,10 @@ defmodule McpWeb.RegistrationLive.CustomerRegistration do
     assign(socket, :announcements, announcements)
   end
 
+  defp translate_submission_error({:registration_failed, %{errors: _errors} = _changeset}),
+    do: "Registration failed"
+
   defp translate_submission_error({:validation_failed, _field, message}), do: message
-
-  defp translate_submission_error(:rate_limited),
-    do: "Too many registration attempts. Please try again later."
-
-  defp translate_submission_error(:customer_registration_disabled),
-    do: "Customer registration is currently disabled."
-
-  defp translate_submission_error(:email_domain_not_allowed), do: "Email domain is not allowed."
-
-  defp translate_submission_error(:country_not_allowed),
-    do: "Registration from your country is not allowed."
-
-  defp translate_submission_error(:password_too_weak),
-    do: "Password does not meet security requirements."
 
   defp translate_submission_error(reason), do: "Registration failed: #{inspect(reason)}"
 end

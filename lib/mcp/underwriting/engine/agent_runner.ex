@@ -262,9 +262,6 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
           {:ok, json_result} ->
             Mcp.Ai.SemanticCache.put(cache_key_prompt, model_name, :ollama, json_result)
             {{:ok, json_result}, usage_stats}
-
-          other ->
-            {other, usage_stats}
         end
     end
   end

@@ -2,7 +2,6 @@ defmodule Mcp.Ai.LlmUsageTest do
   use Mcp.DataCase
 
   alias Mcp.Ai.LlmUsage
-  alias Mcp.Underwriting.Execution
 
   describe "llm_usages" do
     test "creates a usage record" do

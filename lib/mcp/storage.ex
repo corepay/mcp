@@ -52,8 +52,7 @@ defmodule Mcp.Storage do
   def file_url(key, opts \\ []) do
     expires_in = Keyword.get(opts, :expires_in, 3600)
 
-    S3.presigned_url(:get, @bucket_name, key, expires_in: expires_in)
-    |> ExAws.request()
+    ExAws.S3.presigned_url(ExAws.Config.new(:s3), :get, @bucket_name, key, expires_in: expires_in)
   end
 
   def create_bucket do

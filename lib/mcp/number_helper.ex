@@ -37,7 +37,9 @@ defmodule Mcp.NumberHelper do
   defp delimit_integer_part(str) do
     str
     |> String.reverse()
-    |> String.chunk(3)
+    |> String.graphemes()
+    |> Enum.chunk_every(3)
+    |> Enum.map(&Enum.join/1)
     |> Enum.intersperse(",")
     |> Enum.join()
     |> String.reverse()

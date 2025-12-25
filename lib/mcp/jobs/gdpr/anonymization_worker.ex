@@ -72,25 +72,23 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
 
     with :ok <- verify_anonymization_allowed(user_id),
          {:ok, user} <- get_user_for_anonymization(user_id),
-         {:ok, _} <- apply_anonymization_config(user, anonymization_config),
+         :ok <- apply_anonymization_config(user, anonymization_config),
          :ok <- update_anonymization_metadata(user_id, "full") do
       {:ok, %{user_id: user_id, mode: "full", anonymized_at: DateTime.utc_now()}}
     else
       {:error, reason} -> {:error, reason}
-      error -> {:error, "Unexpected error: #{inspect(error)}"}
     end
   end
 
   defp perform_partial_anonymization(user_id, fields) when is_list(fields) do
     with :ok <- verify_anonymization_allowed(user_id),
          {:ok, user} <- get_user_for_anonymization(user_id),
-         {:ok, _} <- apply_field_anonymization(user, fields),
+         :ok <- apply_field_anonymization(user, fields),
          :ok <- update_anonymization_metadata(user_id, "partial") do
       {:ok,
        %{user_id: user_id, mode: "partial", fields: fields, anonymized_at: DateTime.utc_now()}}
     else
       {:error, reason} -> {:error, reason}
-      error -> {:error, "Unexpected error: #{inspect(error)}"}
     end
   end
 
@@ -106,7 +104,6 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
       {:ok, %{table: table, mode: mode, total: length(records), anonymized: anonymized_count}}
     else
       {:error, reason} -> {:error, reason}
-      error -> {:error, "Unexpected error: #{inspect(error)}"}
     end
   end
 

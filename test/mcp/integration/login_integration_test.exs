@@ -5,7 +5,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
 
   import Mox
 
-  alias Mcp.Accounts.{Auth, OAuth, User}
+  alias Mcp.Accounts.{Auth, User}
   alias Mcp.Cache.SessionStore
 
   @endpoint McpWeb.Endpoint
@@ -33,7 +33,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       # Step 1: Create test user and tenant
       {:ok, user} = create_test_user()
 
-      {:ok, tenant} =
+      {:ok, _tenant} =
         Mcp.Platform.Tenant.create(%{
           name: "Test Tenant",
           slug: "test-tenant-#{System.unique_integer([:positive])}",
@@ -255,7 +255,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       # Create session
       {:ok, _user} = create_test_session(user)
       {:ok, session} = Auth.create_user_session(user, "127.0.0.1")
-      {:ok, claims} = Auth.verify_jwt_access_token(session.access_token)
+      {:ok, _claims} = Auth.verify_jwt_access_token(session.access_token)
 
       # Manually expire session (simulate)
       conn =

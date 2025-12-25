@@ -28,11 +28,7 @@ defmodule Mcp.Finance.Seeder do
         Logger.info("Account #{name} already exists.")
         account
 
-      {:error, error} ->
-        Logger.error("Error checking account #{name}: #{inspect(error)}")
-        nil
-
-      nil ->
+      {:error, %Ash.Error.Query.NotFound{}} ->
         Logger.info("Creating Account #{name}...")
 
         Mcp.Finance.Account.create!(
@@ -44,6 +40,10 @@ defmodule Mcp.Finance.Seeder do
           },
           authorize?: false
         )
+
+      {:error, error} ->
+        Logger.error("Error checking account #{name}: #{inspect(error)}")
+        nil
     end
   end
 end

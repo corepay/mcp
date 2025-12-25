@@ -84,7 +84,7 @@ defmodule Mix.Tasks.TestAshAuth do
         password_confirmation: "TestPass123!"
       }
 
-      case Ash.create(Mcp.Accounts.User, :register, user_attrs) do
+      case Ash.Changeset.for_create(Mcp.Accounts.User, :register, user_attrs) |> Ash.create() do
         {:ok, user} ->
           IO.puts("✓ User registration successful: #{user.email}")
           IO.puts("  User ID: #{user.id}")

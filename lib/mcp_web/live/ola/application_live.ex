@@ -13,7 +13,8 @@ defmodule McpWeb.Ola.ApplicationLive do
       socket
       |> assign(:page_title, "Merchant Application")
       |> assign(:tenant_id, tenant_id)
-      |> assign(:mode, :selection) # :selection, :chat, :form
+      # :selection, :chat, :form
+      |> assign(:mode, :selection)
       |> assign(:step, 1)
       |> assign(:form, to_form(%{}, as: :application))
       |> allow_upload(:documents, accept: ~w(.jpg .jpeg .png .pdf), max_entries: 5)
@@ -33,7 +34,10 @@ defmodule McpWeb.Ola.ApplicationLive do
           conversation
         else
           Mcp.Chat.Conversation
-          |> Ash.Changeset.for_create(:create_for_user, %{title: "Application Support", user_id: current_user.id})
+          |> Ash.Changeset.for_create(:create_for_user, %{
+            title: "Application Support",
+            user_id: current_user.id
+          })
           |> Ash.create!()
         end
 
@@ -47,10 +51,10 @@ defmodule McpWeb.Ola.ApplicationLive do
       if connected?(socket) do
         Phoenix.PubSub.subscribe(Mcp.PubSub, "chat:messages:#{conversation.id}")
       end
-      
+
       # Try to find existing application
       tenant_schema = Mcp.Platform.Tenant.get_by_id!(tenant_id).company_schema
-      
+
       # We need to use a fragment or map access for jsonb
       # Ash doesn't support map access in filter easily without calculation or fragment
       # But basic map access might work if supported by data layer.
@@ -58,7 +62,7 @@ defmodule McpWeb.Ola.ApplicationLive do
       # But let's try to be safe.
       # Wait, application_data is a map attribute.
       # Ash query: filter(application_data["contact_email"] == ^current_user.email)
-      
+
       existing_application =
         UnderwritingApplication
         |> Ash.Query.filter(application_data["contact_email"] == ^current_user.email)
@@ -77,27 +81,29 @@ defmodule McpWeb.Ola.ApplicationLive do
     else
       # Real implementation using AgentRunner
       execution_id = socket.assigns[:execution_id] || create_execution(socket)
-      
+
       # We don't run the agent here yet, as we wait for user input.
       # Unless we want a welcome message, which we can trigger via a separate task or just wait.
-      
+
       socket
       |> assign(:execution_id, execution_id)
-      |> assign(:conversation_id, nil) # Or create one?
+      # Or create one?
+      |> assign(:conversation_id, nil)
       |> assign(:messages, [])
       |> assign(:existing_application, nil)
     end
+
     {:ok, socket}
   end
 
   @impl true
   def handle_event("select_mode", %{"mode" => mode}, socket) do
     mode = String.to_existing_atom(mode)
-    
+
     # If switching to chat and we have a conversation, ensure we have the welcome message if empty
     messages = socket.assigns.messages
-    
-    updated_messages = 
+
+    updated_messages =
       if mode == :chat && Enum.empty?(messages) && socket.assigns[:conversation_id] do
         # We could auto-send a welcome message here if we wanted to persist it
         # For now, just relying on the view to show empty state or initial prompt
@@ -106,8 +112,8 @@ defmodule McpWeb.Ola.ApplicationLive do
         messages
       end
 
-    {:noreply, 
-     socket 
+    {:noreply,
+     socket
      |> assign(:mode, mode)
      |> assign(:messages, updated_messages)}
   end
@@ -133,9 +139,9 @@ defmodule McpWeb.Ola.ApplicationLive do
   def handle_event("simulate_mobile_upload", _params, socket) do
     # Mock: Simulate a file arriving from the mobile handoff
     # In reality, this would be a PubSub subscription receiving a message
-    
-    {:noreply, 
-     socket 
+
+    {:noreply,
+     socket
      |> put_flash(:info, "Document received from mobile device!")}
   end
 
@@ -144,60 +150,69 @@ defmodule McpWeb.Ola.ApplicationLive do
     # Create the application record
     # For now, we assume we have a merchant_id in the session or create a placeholder one
     # In a real flow, the merchant would be created during registration
-    
+
     # Use accumulated params from the form assign, merged with current submission
     # This ensures data from previous steps (not in DOM) is preserved
     accumulated_params = socket.assigns.form.params || %{}
     final_params = Map.merge(accumulated_params, params)
-    
+
     tenant = Mcp.Platform.Tenant.get_by_id!(socket.assigns.tenant_id)
-    
+
     # HACK: For demo purposes, finding ANY merchant to attach to.
     # In production, `socket.assigns.current_user.merchant_id` would be used.
     merchant = Mcp.Platform.Merchant.read!(tenant: tenant.company_schema) |> List.first()
-    
+
     if merchant do
-      case UnderwritingApplication.create(%{
-        subject_id: merchant.id,
-        subject_type: :merchant,
-        status: :submitted,
-        application_data: final_params
-      }, tenant: tenant.company_schema) do
+      case UnderwritingApplication.create(
+             %{
+               subject_id: merchant.id,
+               subject_type: :merchant,
+               status: :submitted,
+               application_data: final_params
+             },
+             tenant: tenant.company_schema
+           ) do
         {:ok, application} ->
           # Consume uploaded files
           consume_uploaded_entries(socket, :documents, fn %{path: path}, entry ->
             file_name = entry.client_name
             mime_type = entry.client_type
-            
+
             # Upload to S3/MinIO
             bucket = Application.get_env(:mcp, :uploads)[:bucket]
             s3_path = "applications/#{application.id}/#{file_name}"
-            
+
             ExAws.S3.put_object(bucket, s3_path, File.read!(path))
             |> ExAws.request!()
-            
+
             # Create Document record
-            Mcp.Underwriting.Document.create!(%{
-              application_id: application.id,
-              file_path: s3_path,
-              file_name: file_name,
-              mime_type: mime_type,
-              document_type: :other # Default for now, could be mapped from input name if we used separate uploads
-            }, tenant: tenant.company_schema)
-            
+            Mcp.Underwriting.Document.create!(
+              %{
+                application_id: application.id,
+                file_path: s3_path,
+                file_name: file_name,
+                mime_type: mime_type,
+                # Default for now, could be mapped from input name if we used separate uploads
+                document_type: :other
+              },
+              tenant: tenant.company_schema
+            )
+
             {:ok, s3_path}
           end)
-        
+
           # Trigger Async Screening
-          Task.start(fn -> 
-            Mcp.Underwriting.Gateway.screen_application(application.id, tenant: tenant.company_schema) 
+          Task.start(fn ->
+            Mcp.Underwriting.Gateway.screen_application(application.id,
+              tenant: tenant.company_schema
+            )
           end)
-          
-          {:noreply, 
+
+          {:noreply,
            socket
            |> put_flash(:info, "Application submitted successfully!")
            |> push_navigate(to: ~p"/online-application/login")}
-           
+
         {:error, changeset} ->
           {:noreply, assign(socket, :form, to_form(changeset))}
       end
@@ -220,38 +235,41 @@ defmodule McpWeb.Ola.ApplicationLive do
           file_name = entry.client_name
           mime_type = entry.client_type
           bucket = Application.get_env(:mcp, :uploads)[:bucket] || "underwriting-documents"
-          
+
           # For now, let's assume we can find the application or just store it.
-          
+
           # Try to find application for this user/tenant
           tenant = Mcp.Platform.Tenant.get_by_id!(socket.assigns.tenant_id)
-          
+
           application = socket.assigns[:existing_application]
-          
+
           if application do
-             s3_path = "applications/#{application.id}/chat/#{file_name}"
-             
-             unless Application.get_env(:mcp, :env) == :test do
-               ExAws.S3.put_object(bucket, s3_path, File.read!(path)) |> ExAws.request!()
-             end
-             
-             Mcp.Underwriting.Document.create!(%{
+            s3_path = "applications/#{application.id}/chat/#{file_name}"
+
+            unless Application.get_env(:mcp, :env) == :test do
+              ExAws.S3.put_object(bucket, s3_path, File.read!(path)) |> ExAws.request!()
+            end
+
+            Mcp.Underwriting.Document.create!(
+              %{
                 application_id: application.id,
                 file_path: s3_path,
                 file_name: file_name,
                 mime_type: mime_type,
                 document_type: :other
-             }, tenant: tenant.company_schema)
-             
-             {:ok, file_name}
+              },
+              tenant: tenant.company_schema
+            )
+
+            {:ok, file_name}
           else
-             # If no application, we can't create a Document (FK constraint).
-             # Fallback: Just upload to S3 and mention it in chat.
-             # We could create a "Lead" or "Draft" here if we wanted.
-             {:ok, file_name}
+            # If no application, we can't create a Document (FK constraint).
+            # Fallback: Just upload to S3 and mention it in chat.
+            # We could create a "Lead" or "Draft" here if we wanted.
+            {:ok, file_name}
           end
         end)
-      
+
       # 2. Send Text Message
       if text != "" do
         Mcp.Chat.Message
@@ -261,9 +279,9 @@ defmodule McpWeb.Ola.ApplicationLive do
         })
         |> Ash.create!()
       end
-      
+
       # 3. Send System Messages for Uploads
-      Enum.each(uploaded_files, fn 
+      Enum.each(uploaded_files, fn
         {:ok, file_name} ->
           Mcp.Chat.Message
           |> Ash.Changeset.for_create(:create, %{
@@ -271,7 +289,7 @@ defmodule McpWeb.Ola.ApplicationLive do
             conversation_id: socket.assigns.conversation_id
           })
           |> Ash.create!()
-        
+
         file_name when is_binary(file_name) ->
           Mcp.Chat.Message
           |> Ash.Changeset.for_create(:create, %{
@@ -279,41 +297,66 @@ defmodule McpWeb.Ola.ApplicationLive do
             conversation_id: socket.assigns.conversation_id
           })
           |> Ash.create!()
-          
-        _ -> :ok
+
+        _ ->
+          :ok
       end)
-      
+
       {:noreply, socket}
     else
-    # Real implementation using AgentRunner
-    # We need to construct a proper message history or context
-    # For now, we'll just send the current message to the "OLA" agent
-    
-    # Assuming we have a blueprint named "OLA" or similar, or we use a default
-    # We need to find or create an execution for this session
-    
-    # TODO: Manage Execution ID in socket assigns
-    execution_id = socket.assigns[:execution_id] || create_execution(socket)
-    
-    # Run the agent
-    case Mcp.Underwriting.Engine.AgentRunner.run(
-      %{id: execution_id, tenant_id: socket.assigns.current_tenant.id}, 
-      [%{role: :user, content: text}], 
-      [] # No tools for now, or add tools as needed
-    ) do
-      {:ok, response_text} ->
-         messages = socket.assigns.messages ++ [%{id: "ai-#{System.unique_integer()}", sender: :ai, source: :agent, text: response_text}]
-         {:noreply, assign(socket, messages: messages, execution_id: execution_id)}
-      
-      # AgentRunner.run returns a dynamic result, usually {:ok, map} or {:error, reason}
-      # The compiler warns that {:error, reason} might not match if it thinks it always returns {:ok, ...}
-      # But AgentRunner.run spec says it returns result.
-      # Let's match on anything else as error to be safe and satisfy compiler.
-      result ->
-         put_flash(socket, :error, "AI Error: #{inspect(result)}")
-         {:noreply, socket}
+      # Real implementation using AgentRunner
+      # We need to construct a proper message history or context
+      # For now, we'll just send the current message to the "OLA" agent
+
+      # Assuming we have a blueprint named "OLA" or similar, or we use a default
+      # We need to find or create an execution for this session
+
+      # TODO: Manage Execution ID in socket assigns
+      execution_id = socket.assigns[:execution_id] || create_execution(socket)
+
+      # Run the agent
+      blueprint = %Mcp.Underwriting.AgentBlueprint{
+        name: "OlaAssistant",
+        description: "Application Helper",
+        base_prompt: "You are Ola, a helpful underwriting assistant.",
+        routing_config: %{primary_provider: :ollama, mode: :single}
+      }
+
+      instructions = %Mcp.Underwriting.InstructionSet{
+        instructions: "Assist the user with their application."
+      }
+
+      context = %{
+        execution_id: execution_id,
+        tenant_id: socket.assigns.current_tenant.id
+      }
+
+      # Run the agent
+      case Mcp.Underwriting.Engine.AgentRunner.run(blueprint, instructions, context) do
+        {:ok, response_result} ->
+          response_text =
+            Map.get(response_result, "decision") || Map.get(response_result, "result") ||
+              "I processed your request."
+
+          messages =
+            socket.assigns.messages ++
+              [
+                %{
+                  id: "ai-#{System.unique_integer()}",
+                  sender: :ai,
+                  source: :agent,
+                  text: response_text
+                }
+              ]
+
+          {:noreply, assign(socket, messages: messages, execution_id: execution_id)}
+
+        result ->
+          put_flash(socket, :error, "AI Error: #{inspect(result)}")
+          {:noreply, socket}
+      end
     end
-  end
+
     {:noreply, socket}
   end
 
@@ -323,28 +366,28 @@ defmodule McpWeb.Ola.ApplicationLive do
     # For now, we stub it by creating a dummy execution or just returning a UUID if AgentRunner supports it
     # But AgentRunner expects a real Execution struct or at least an ID that exists if it tries to update it.
     # Let's assume we create a transient execution.
-    
+
     # For this refactor, we'll just return a UUID and ensure AgentRunner handles it or we create a real one.
     # Since we don't have the full context here, let's create a real Execution if possible.
-    
-    {:ok, execution} = Mcp.Underwriting.Execution.create(%{
-      tenant_id: socket.assigns.current_tenant.id,
-      status: :running,
-      trigger: "ola_chat"
-    })
+
+    {:ok, execution} =
+      Mcp.Underwriting.Execution.create(%{
+        tenant_id: socket.assigns.current_tenant.id,
+        status: :running,
+        trigger: "ola_chat"
+      })
+
     execution.id
   end
-
-
 
   @impl true
   def handle_info(%Phoenix.Socket.Broadcast{payload: message}, socket) do
     # Handle both create and update (upsert)
     # The payload contains the transformed message: %{id: ..., text: ..., source: ...}
-    
-    messages = 
+
+    messages =
       if Enum.any?(socket.assigns.messages, &(&1.id == message.id)) do
-        Enum.map(socket.assigns.messages, fn msg -> 
+        Enum.map(socket.assigns.messages, fn msg ->
           if msg.id == message.id, do: message, else: msg
         end)
       else

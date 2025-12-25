@@ -8,7 +8,7 @@ defmodule Mcp.Repo.Migrations.AddClientToDocuments do
   use Ecto.Migration
 
   def up do
-    alter table(:underwriting_documents) do
+    alter table(:underwriting_documents, prefix: "platform") do
       add :client_id, :uuid
     end
   end
@@ -16,7 +16,7 @@ defmodule Mcp.Repo.Migrations.AddClientToDocuments do
   def down do
     drop constraint(:underwriting_documents, "underwriting_documents_client_id_fkey")
 
-    alter table(:underwriting_documents) do
+    alter table(:underwriting_documents, prefix: "platform") do
       remove :client_id
     end
   end

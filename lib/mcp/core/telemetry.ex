@@ -21,15 +21,15 @@ defmodule Mcp.Core.Telemetry do
            # Phoenix.Telemetry.metrics(),  # Commented out - Phoenix.Telemetry not available
            # Custom metrics for AI-powered MSP
            # Database performance metrics
-           Mcp.Core.Telemetry.RepoMetrics,
+           # Mcp.Core.Telemetry.RepoMetrics,
            # Cache hit rates
-           Mcp.Cache.Telemetry.RedisMetrics,
+           # Mcp.Cache.Telemetry.RedisMetrics,
            # AI model inference time
-           Mcp.Core.Telemetry.AIMetrics,
+           # Mcp.Core.Telemetry.AIMetrics,
            # Payment processing latency
-           Mcp.Core.Telemetry.PaymentMetrics,
+           # Mcp.Core.Telemetry.PaymentMetrics,
            # Multi-tenant performance
-           Mcp.Core.Telemetry.TenantMetrics
+           # Mcp.Core.Telemetry.TenantMetrics
          ]
        ], name: Mcp.Core.Telemetry.Prometheus},
 
@@ -38,13 +38,13 @@ defmodule Mcp.Core.Telemetry do
        [
          metrics: [
            # Geographic query performance
-           Mcp.Core.Telemetry.PostGISMetrics,
+           # Mcp.Core.Telemetry.PostGISMetrics,
            # Vector similarity search performance
-           Mcp.Core.Telemetry.PGVectorMetrics,
+           # Mcp.Core.Telemetry.PGVectorMetrics,
            # Time-series query performance
-           Mcp.Core.Telemetry.TimescaleDBMetrics,
+           # Mcp.Core.Telemetry.TimescaleDBMetrics,
            # Graph query performance
-           Mcp.Core.Telemetry.AGEMetrics
+           # Mcp.Core.Telemetry.AGEMetrics
          ]
        ], name: Mcp.Core.Telemetry.Extensions},
 
@@ -53,20 +53,6 @@ defmodule Mcp.Core.Telemetry do
        resource: [
          service_name: "mcp-platform",
          service_version: version()
-       ]},
-
-      # Performance logger
-      {Logger, :console,
-       [
-         format: "$time $metadata[$level] $message\n",
-         metadata: [
-           :request_id,
-           :tenant_id,
-           :trace_id,
-           :span_id,
-           :domain,
-           :operation
-         ]
        ]}
     ]
 
