@@ -1,4 +1,7 @@
 defmodule Mcp.Finance.Transfer do
+  @moduledoc """
+  Represents a financial transfer between accounts.
+  """
   use Ash.Resource,
     domain: Mcp.Finance,
     data_layer: AshPostgres.DataLayer,
@@ -17,6 +20,7 @@ defmodule Mcp.Finance.Transfer do
 
   actions do
     defaults [:read, :destroy]
+
     create :create do
       primary? true
       accept [:amount, :from_account_id, :to_account_id, :description]
@@ -38,6 +42,7 @@ defmodule Mcp.Finance.Transfer do
       match_other_defaults? true
     end
   end
+
   code_interface do
     define :create
   end

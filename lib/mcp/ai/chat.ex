@@ -1,7 +1,12 @@
 defmodule Mcp.Ai.Chat do
+  @moduledoc """
+  Chat domain for AI interactions.
+  """
   use Ash.Resource,
     domain: Mcp.Ai,
     extensions: [AshAi]
+
+  alias LangChain.ChatModels.ChatOllamaAI
 
   actions do
     action :chat, :string do
@@ -14,7 +19,7 @@ defmodule Mcp.Ai.Chat do
       run {AshAi.Actions.Prompt,
            prompt: "You are a helpful assistant. User says: <%= message %>",
            model:
-             LangChain.ChatModels.ChatOllamaAI.new!(%{
+             ChatOllamaAI.new!(%{
                model: "llama3",
                base_url: Application.compile_env(:mcp, :ollama)[:base_url]
              })}

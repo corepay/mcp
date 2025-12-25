@@ -1,4 +1,7 @@
 defmodule Mcp.Platform.Tenants.Changes.ProvisionTenant do
+  @moduledoc """
+  Provisioning logic for new tenants.
+  """
   use Ash.Resource.Change
 
   def change(changeset, _opts, _context) do

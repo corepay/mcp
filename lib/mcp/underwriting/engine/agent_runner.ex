@@ -4,8 +4,10 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
   Executes a single Agent Blueprint with a given Context and Instruction Set.
   """
 
-  alias Mcp.Underwriting.AgentBlueprint
-  alias Mcp.Underwriting.InstructionSet
+  alias Mcp.Ai.{Document, EmbeddingService, LlmUsage, SemanticCache}
+  alias Mcp.Telemetry
+  alias Mcp.Underwriting.{AgentBlueprint, InstructionSet}
+  alias Mcp.Utils.{CircuitBreaker, RateLimiter}
 
   @doc """
   Runs the agent.
@@ -47,47 +49,19 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
     requested_provider =
       Keyword.get(opts, :provider, routing_config[:primary_provider] || :ollama)
 
-    execution_id = Keyword.get(opts, :execution_id)
     tenant_id = Keyword.get(opts, :tenant_id, "default")
 
     # Rate Limit Check
-    case Mcp.Utils.RateLimiter.check_limit("tenant:#{tenant_id}", 100) do
+    case RateLimiter.check_limit("tenant:#{tenant_id}", 100) do
       :ok ->
-        start_time = System.monotonic_time(:millisecond)
-
-        {result, usage_stats} =
-          execute_with_fallback(
-            blueprint,
-            instructions,
-            context,
-            requested_provider,
-            routing_config
-          )
-
-        latency = System.monotonic_time(:millisecond) - start_time
-
-        # Emit Telemetry
-        Mcp.Telemetry.execute(
-          [:ai, :agent, :completion],
-          %{
-            latency: latency,
-            total_tokens: usage_stats[:total_tokens] || 0,
-            cost: usage_stats[:cost] || 0
-          },
-          %{
-            blueprint: blueprint.name,
-            provider: usage_stats[:provider],
-            model: usage_stats[:model],
-            cached: Map.get(usage_stats, :cached, false),
-            tenant_id: context[:tenant_id]
-          }
+        execute_agent_run(
+          blueprint,
+          instructions,
+          context,
+          opts,
+          requested_provider,
+          routing_config
         )
-
-        if execution_id do
-          track_usage(execution_id, usage_stats[:provider], usage_stats, latency, opts)
-        end
-
-        result
 
       {:error, :rate_limit_exceeded} ->
         IO.warn("Rate limit exceeded for tenant #{tenant_id}")
@@ -95,53 +69,107 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
     end
   end
 
+  defp execute_agent_run(blueprint, instructions, context, opts, provider, config) do
+    start_time = System.monotonic_time(:millisecond)
+
+    {result, usage_stats} =
+      execute_with_fallback(
+        blueprint,
+        instructions,
+        context,
+        provider,
+        config
+      )
+
+    latency = System.monotonic_time(:millisecond) - start_time
+
+    # Emit Telemetry
+    Telemetry.execute(
+      [:ai, :agent, :completion],
+      %{
+        latency: latency,
+        total_tokens: usage_stats[:total_tokens] || 0,
+        cost: usage_stats[:cost] || 0
+      },
+      %{
+        blueprint: blueprint.name,
+        provider: usage_stats[:provider],
+        model: usage_stats[:model],
+        cached: Map.get(usage_stats, :cached, false),
+        tenant_id: context[:tenant_id]
+      }
+    )
+
+    if execution_id = Keyword.get(opts, :execution_id) do
+      track_usage(execution_id, usage_stats[:provider], usage_stats, latency, opts)
+    end
+
+    result
+  end
+
   defp execute_with_fallback(blueprint, instructions, context, provider, config) do
     # Wrap execution with Circuit Breaker
+    {result, stats} = execute_with_circuit_breaker(provider, blueprint, instructions, context)
+
+    if should_fallback?(result, provider, config) do
+      execute_fallback(
+        blueprint,
+        instructions,
+        context,
+        config[:fallback_provider],
+        result,
+        stats
+      )
+    else
+      {result, stats}
+    end
+  end
+
+  defp execute_with_circuit_breaker(provider, blueprint, instructions, context) do
     result_tuple =
-      Mcp.Utils.CircuitBreaker.execute(provider, fn ->
+      CircuitBreaker.execute(provider, fn ->
         execute_provider(provider, blueprint, instructions, context)
       end)
 
-    {result, stats} =
-      case result_tuple do
-        {:ok, {res, st}} ->
-          {res, st}
+    case result_tuple do
+      {:ok, {res, st}} ->
+        {res, st}
 
-        {:error, :circuit_open} ->
-          {{:ok, %{"error" => "Circuit open for provider #{provider}"}},
-           %{provider: provider, model: "unknown", cost: 0}}
+      {:error, :circuit_open} ->
+        {{:ok, %{"error" => "Circuit open for provider #{provider}"}},
+         %{provider: provider, model: "unknown", cost: 0}}
 
-        {:error, reason} ->
-          {{:ok, %{"error" => "Provider error: #{inspect(reason)}"}},
-           %{provider: provider, model: "unknown", cost: 0}}
-      end
+      {:error, reason} ->
+        {{:ok, %{"error" => "Provider error: #{inspect(reason)}"}},
+         %{provider: provider, model: "unknown", cost: 0}}
+    end
+  end
 
-    # Check if we need fallback
-    should_fallback? =
-      config[:mode] == :fallback &&
-        provider == config[:primary_provider] &&
-        (is_low_confidence?(result, config[:min_confidence] || 0.8) || is_error?(result))
+  defp should_fallback?(result, provider, config) do
+    config[:mode] == :fallback &&
+      provider == config[:primary_provider] &&
+      (low_confidence?(result, config[:min_confidence] || 0.8) || error?(result))
+  end
 
-    if should_fallback? do
-      fallback_provider = config[:fallback_provider] || :openrouter
+  defp execute_fallback(
+         blueprint,
+         instructions,
+         context,
+         fallback_provider,
+         _original_result,
+         _original_stats
+       ) do
+    fallback_provider = fallback_provider || :openrouter
 
-      IO.puts(
-        "⚠️ Low confidence or error with #{provider}. Falling back to #{fallback_provider}..."
-      )
+    IO.puts("⚠️ Low confidence or error. Falling back to #{fallback_provider}...")
 
-      # Also wrap fallback in Circuit Breaker
-      fallback_tuple =
-        Mcp.Utils.CircuitBreaker.execute(fallback_provider, fn ->
-          execute_provider(fallback_provider, blueprint, instructions, context)
-        end)
+    case execute_with_circuit_breaker(fallback_provider, blueprint, instructions, context) do
+      {fb_res, fb_st} ->
+        {fb_res, fb_st}
 
-      case fallback_tuple do
-        {:ok, {fb_res, fb_st}} -> {fb_res, fb_st}
-        # Return original failure if fallback also fails
-        _ -> {result, stats}
-      end
-    else
-      {result, stats}
+        # If fallback fails too (e.g. circuit open), we get a result from execute_with_circuit_breaker anyway,
+        # but if we wanted to revert to original error we could check here.
+        # For now, relying on the return value of execute_with_circuit_breaker is safe.
     end
   end
 
@@ -155,18 +183,18 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
   defp execute_provider("ollama", b, i, c), do: run_ollama(b, i, c)
   defp execute_provider("openrouter", b, i, c), do: run_openrouter(b, i, c)
 
-  defp is_low_confidence?({:ok, result}, threshold) when is_map(result) do
+  defp low_confidence?({:ok, result}, threshold) when is_map(result) do
     confidence = Map.get(result, "confidence", 1.0)
     # If confidence is missing, assume 1.0 (high) unless we want strict enforcement
     # But here we want to fallback if explicitly low
     is_number(confidence) && confidence < threshold
   end
 
-  defp is_low_confidence?(_, _), do: false
+  defp low_confidence?(_, _), do: false
 
-  defp is_error?({:ok, %{"error" => _}}), do: true
-  # defp is_error?({:error, _}), do: true # Unused
-  defp is_error?(_), do: false
+  defp error?({:ok, %{"error" => _}}), do: true
+  # defp error?({:error, _}), do: true # Unused
+  defp error?(_), do: false
 
   defp run_ollama(blueprint, instructions, context) do
     IO.puts("🤖 Agent [#{blueprint.name}] is running via Ollama...")
@@ -212,7 +240,7 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
     # Check Semantic Cache
     cache_key_prompt = system_prompt <> user_message
 
-    case Mcp.Ai.SemanticCache.get(cache_key_prompt, model_name, :ollama) do
+    case SemanticCache.get(cache_key_prompt, model_name, :ollama) do
       {:ok, cached_response} ->
         IO.puts("⚡️ Cache Hit for Agent [#{blueprint.name}]")
 
@@ -260,7 +288,7 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
         # Cache the successful result
         case result do
           {:ok, json_result} ->
-            Mcp.Ai.SemanticCache.put(cache_key_prompt, model_name, :ollama, json_result)
+            SemanticCache.put(cache_key_prompt, model_name, :ollama, json_result)
             {{:ok, json_result}, usage_stats}
         end
     end
@@ -325,7 +353,7 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
     merchant_id = Keyword.get(opts, :merchant_id)
     reseller_id = Keyword.get(opts, :reseller_id)
 
-    Mcp.Ai.LlmUsage
+    LlmUsage
     |> Ash.Changeset.for_create(:create, %{
       execution_id: execution_id,
       provider: provider,
@@ -383,48 +411,24 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
     last_message = List.last(messages)
 
     if last_message.role == :user do
-      query = last_message.content
+      context = retrieve_rag_context(last_message.content, tenant_id)
 
-      # Generate embedding for the query
-      case Mcp.Ai.EmbeddingService.generate_embedding(query) do
-        {:ok, embedding} ->
-          # Search for relevant documents
-          # We need to search across all KBs in the list.
-          # For now, we'll just search generally and filter by tenant if needed.
-          # Ideally, we filter by knowledge_base_id IN list.
-          # But our search action currently filters by tenant_id.
-          # We should update the search action to support knowledge_base_id filtering.
-          # For this iteration, we'll assume the tenant filter is sufficient or we'll skip strict KB filtering
-          # and rely on the embedding similarity.
-
-          # Actually, let's just use the search action we defined.
-          # We need to call it via the code interface.
-
-          # TODO: Update Document resource to support filtering by list of KB IDs.
-          # For now, we search by tenant.
-
-          case Mcp.Ai.Document.search(embedding, tenant_id: tenant_id) do
-            {:ok, documents} ->
-              context =
-                documents
-                |> Enum.map(fn doc -> doc.content end)
-                |> Enum.join("\n---\n")
-
-              if context != "" do
-                system_prompt <> "\n\nRelevant Context from Knowledge Base:\n" <> context
-              else
-                system_prompt
-              end
-
-            _ ->
-              system_prompt
-          end
-
-        _ ->
-          system_prompt
+      if context != "" do
+        system_prompt <> "\n\nRelevant Context from Knowledge Base:\n" <> context
+      else
+        system_prompt
       end
     else
       system_prompt
+    end
+  end
+
+  defp retrieve_rag_context(query, tenant_id) do
+    with {:ok, embedding} <- EmbeddingService.generate_embedding(query),
+         {:ok, documents} <- Document.search(embedding, tenant_id: tenant_id) do
+      Enum.map_join(documents, "\n---\n", & &1.content)
+    else
+      _ -> ""
     end
   end
 
@@ -434,19 +438,17 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
         {:ok, json_result}
 
       {:error, _} ->
-        case Regex.run(~r/\{.*\}/s, content) do
-          [json_match] ->
-            case Jason.decode(json_match) do
-              {:ok, json_result} ->
-                {:ok, json_result}
+        extract_json_from_text(content)
+    end
+  end
 
-              {:error, _} ->
-                {:ok, %{"raw_response" => content, "error" => "Failed to parse JSON"}}
-            end
-
-          nil ->
-            {:ok, %{"raw_response" => content, "error" => "Failed to parse JSON"}}
-        end
+  defp extract_json_from_text(content) do
+    with [json_match] <- Regex.run(~r/\{.*\}/s, content),
+         {:ok, json_result} <- Jason.decode(json_match) do
+      {:ok, json_result}
+    else
+      _ ->
+        {:ok, %{"raw_response" => content, "error" => "Failed to parse JSON"}}
     end
   end
 end

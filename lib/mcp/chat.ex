@@ -1,4 +1,7 @@
 defmodule Mcp.Chat do
+  @moduledoc """
+  Chat domain definition.
+  """
   use Ash.Domain, otp_app: :mcp, extensions: [AshPhoenix]
 
   resources do

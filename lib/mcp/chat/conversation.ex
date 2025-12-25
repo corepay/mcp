@@ -1,4 +1,7 @@
 defmodule Mcp.Chat.Conversation do
+  @moduledoc """
+  Represents a chat conversation thread.
+  """
   use Ash.Resource,
     otp_app: :mcp,
     domain: Mcp.Chat,

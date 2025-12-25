@@ -8,7 +8,9 @@ defmodule Mcp.Repo.Migrations.CheckOverrideFix do
   use Ecto.Migration
 
   def up do
-    execute("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'money_with_currency') THEN CREATE TYPE money_with_currency AS (amount numeric, currency varchar(3)); END IF; END $$;")
+    execute(
+      "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'money_with_currency') THEN CREATE TYPE money_with_currency AS (amount numeric, currency varchar(3)); END IF; END $$;"
+    )
 
     alter table(:balances, prefix: "finance") do
       add :balance, :money_with_currency, null: false

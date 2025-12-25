@@ -15,7 +15,8 @@ defmodule Mcp.Ai.OpenRouter do
       headers = [
         {"Authorization", "Bearer #{api_key}"},
         {"Content-Type", "application/json"},
-        {"HTTP-Referer", "https://mcp.com"}, # Required by OpenRouter
+        # Required by OpenRouter
+        {"HTTP-Referer", "https://mcp.com"},
         {"X-Title", "MCP Underwriting Agent"}
       ]
 

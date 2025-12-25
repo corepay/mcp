@@ -71,43 +71,41 @@ defmodule Mcp.Registration.PolicyValidator do
   end
 
   def validate_registration_enabled(settings, type) do
-    enabled =
-      case type do
-        :customer ->
-          Map.get(settings, "customer_registration_enabled") ||
-            Map.get(settings, :customer_registration_enabled)
-
-        :vendor ->
-          Map.get(settings, "vendor_registration_enabled") ||
-            Map.get(settings, :vendor_registration_enabled)
-
-        _ ->
-          false
-      end
-
-    if enabled do
+    if registration_enabled?(settings, type) do
       :ok
     else
-      message =
-        case type do
-          :customer ->
-            "Customer self-registration is currently disabled. Please contact the merchant for an invitation."
-
-          :vendor ->
-            "Vendor self-registration is currently disabled. Please contact the merchant for an invitation."
-
-          _ ->
-            "This entity type can only register via invitation (invitation-only)"
-        end
-
-      reason =
-        case type do
-          :customer -> :customer_registration_disabled
-          :vendor -> :vendor_registration_disabled
-          _ -> :invitation_only_registration
-        end
-
-      {:error, {:validation_failed, reason, message}}
+      generate_disabled_error(type)
     end
+  end
+
+  defp registration_enabled?(settings, :customer) do
+    Map.get(settings, "customer_registration_enabled") ||
+      Map.get(settings, :customer_registration_enabled)
+  end
+
+  defp registration_enabled?(settings, :vendor) do
+    Map.get(settings, "vendor_registration_enabled") ||
+      Map.get(settings, :vendor_registration_enabled)
+  end
+
+  defp registration_enabled?(_changeset, _opts), do: false
+
+  defp generate_disabled_error(type) do
+    {reason, message} =
+      case type do
+        :customer ->
+          {:customer_registration_disabled,
+           "Customer self-registration is currently disabled. Please contact the merchant for an invitation."}
+
+        :vendor ->
+          {:vendor_registration_disabled,
+           "Vendor self-registration is currently disabled. Please contact the merchant for an invitation."}
+
+        _ ->
+          {:invitation_only_registration,
+           "This entity type can only register via invitation (invitation-only)"}
+      end
+
+    {:error, {:validation_failed, reason, message}}
   end
 end

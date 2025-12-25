@@ -1,11 +1,14 @@
 defmodule Mcp.Ai.KnowledgeBase do
+  @moduledoc """
+  Resource representing a knowledge base for RAG.
+  """
   use Ash.Resource,
     domain: Mcp.Ai,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "knowledge_bases"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   actions do
@@ -44,7 +47,8 @@ defmodule Mcp.Ai.KnowledgeBase do
     has_many :documents, Mcp.Ai.Document
 
     belongs_to :tenant, Mcp.Platform.Tenant do
-      allow_nil? true # Nil for Platform-level
+      # Nil for Platform-level
+      allow_nil? true
     end
 
     belongs_to :merchant, Mcp.Platform.Merchant do
@@ -52,4 +56,3 @@ defmodule Mcp.Ai.KnowledgeBase do
     end
   end
 end
-

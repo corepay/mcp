@@ -2,6 +2,7 @@ defmodule McpWeb.Api.AssessmentController do
   use McpWeb, :controller
 
   alias Mcp.Underwriting.Execution
+  alias Mcp.Underwriting.Jobs.RunPipeline
 
   action_fallback McpWeb.FallbackController
 
@@ -9,7 +10,14 @@ defmodule McpWeb.Api.AssessmentController do
   POST /api/assessments
   Triggers a new Assessment Execution.
   """
-  def create(conn, %{"pipeline_id" => pipeline_id, "subject_id" => subject_id, "subject_type" => subject_type} = params) do
+  def create(
+        conn,
+        %{
+          "pipeline_id" => pipeline_id,
+          "subject_id" => subject_id,
+          "subject_type" => subject_type
+        } = params
+      ) do
     # 1. Create the Execution record
     create_params = %{
       pipeline_id: pipeline_id,
@@ -22,7 +30,7 @@ defmodule McpWeb.Api.AssessmentController do
     with {:ok, execution} <- Ash.create(Execution, create_params) do
       # 2. Trigger the Orchestrator via Oban
       %{execution_id: execution.id}
-      |> Mcp.Underwriting.Jobs.RunPipeline.new()
+      |> RunPipeline.new()
       |> Oban.insert!()
 
       conn

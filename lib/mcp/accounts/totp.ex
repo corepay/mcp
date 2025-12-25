@@ -32,23 +32,14 @@ defmodule Mcp.Accounts.TOTP do
   def verify_code(nil, _code), do: {:error, :totp_not_enabled}
 
   def verify_code(user, code) when is_binary(code) do
-    case user.totp_secret do
-      nil ->
-        {:error, :totp_not_enabled}
-
-      secret ->
-        # Secret is stored as Base32 string, decode it for NimbleTOTP
-        case Base.decode32(secret, padding: false) do
-          {:ok, decoded_secret} ->
-            if NimbleTOTP.valid?(decoded_secret, code) do
-              :ok
-            else
-              {:error, :invalid_code}
-            end
-
-          _ ->
-            {:error, :invalid_secret_format}
-        end
+    with %{totp_secret: secret} when not is_nil(secret) <- user,
+         {:ok, decoded_secret} <- Base.decode32(secret, padding: false),
+         true <- NimbleTOTP.valid?(decoded_secret, code) do
+      :ok
+    else
+      %{totp_secret: nil} -> {:error, :totp_not_enabled}
+      :error -> {:error, :invalid_secret_format}
+      false -> {:error, :invalid_code}
     end
   end
 

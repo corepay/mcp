@@ -19,7 +19,7 @@ defmodule Mcp.Underwriting.RiskEngineTest do
     }
 
     result = RiskEngine.evaluate(application, vendor_data)
-    
+
     # Base 50 + 20 (Credit) + 20 (Docs) = 90
     assert result.score == 90
     assert "Good Credit Score" in result.reasons
@@ -32,7 +32,7 @@ defmodule Mcp.Underwriting.RiskEngineTest do
     }
 
     result_bad = RiskEngine.evaluate(application, vendor_data_bad)
-    
+
     # Base 50 - 20 (Credit) - 50 (Docs) = -20 -> clamped to 0
     assert result_bad.score == 0
     assert "Poor Credit Score" in result_bad.reasons

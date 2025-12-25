@@ -1,11 +1,14 @@
 defmodule Mcp.Underwriting.Client do
+  @moduledoc """
+  Represents a client or applicant in the underwriting process.
+  """
   use Ash.Resource,
     domain: Mcp.Underwriting,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "underwriting_clients"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   multitenancy do
@@ -38,7 +41,8 @@ defmodule Mcp.Underwriting.Client do
 
     attribute :email, :string
     attribute :phone, :string
-    attribute :external_id, :string # ComplyCube Client ID
+    # ComplyCube Client ID
+    attribute :external_id, :string
 
     attribute :person_details, :map do
       default %{}

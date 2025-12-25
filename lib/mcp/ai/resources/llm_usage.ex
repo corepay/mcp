@@ -1,8 +1,14 @@
 defmodule Mcp.Ai.LlmUsage do
+  @moduledoc """
+  Tracks LLM token usage and cost.
+  """
   use Ash.Resource,
     domain: Mcp.Ai,
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer]
+
+  alias Mcp.Cache.SpendingCache
+  alias Mcp.Repo
 
   policies do
     policy action_type(:read) do
@@ -24,7 +30,7 @@ defmodule Mcp.Ai.LlmUsage do
 
   postgres do
     table "llm_usages"
-    repo(Mcp.Repo)
+    repo(Repo)
   end
 
   attributes do
@@ -74,6 +80,15 @@ defmodule Mcp.Ai.LlmUsage do
         :reseller_id,
         :api_key_id
       ]
+
+      change after_action(fn changeset, record, _context ->
+               # Invalidate spending cache when new usage is recorded
+               if record.api_key_id do
+                 SpendingCache.invalidate(record.api_key_id)
+               end
+
+               {:ok, record}
+             end)
     end
 
     update :update_transfer do

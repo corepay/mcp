@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
     <.live_title suffix=" · MCP OLA">
-      <%= assigns[:page_title] || "Merchant Application" %>
+      {assigns[:page_title] || "Merchant Application"}
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
@@ -22,8 +22,10 @@
       </div>
       <div class="flex items-center gap-4">
         <%= if @current_user do %>
-          <span class="text-sm text-base-content/70"><%= @current_user.email %></span>
-          <.link href={~p"/sign-out"} method="delete" class="btn btn-sm btn-ghost">Sign Out</.link>
+          <span class="text-sm text-base-content/70">{@current_user.email}</span>
+          <.link href={~p"/sign-out"} method="delete" class="btn btn-sm btn-ghost">
+            Sign Out
+          </.link>
         <% else %>
           <.link href={~p"/online-application/login"} class="btn btn-sm btn-ghost">Sign In</.link>
         <% end %>
@@ -35,11 +37,11 @@
       <main class="flex-1 overflow-y-auto p-6 md:p-12 scroll-smooth">
         <div class="max-w-3xl mx-auto w-full">
           <.flash_group flash={@flash} />
-          <%= @inner_content %>
+          {@inner_content}
         </div>
       </main>
-
-      <!-- Atlas Sidebar (AI Assistant) -->
+      
+<!-- Atlas Sidebar (AI Assistant) -->
       <aside class="w-96 bg-base-100 border-l border-base-300 flex flex-col shadow-xl shrink-0 hidden lg:flex">
         <!-- Atlas Header -->
         <div class="p-4 border-b border-base-300 flex items-center gap-3 bg-base-100/50 backdrop-blur">
@@ -55,8 +57,8 @@
             <p class="text-xs text-base-content/60">AI Onboarding Concierge</p>
           </div>
         </div>
-
-        <!-- Chat Area -->
+        
+<!-- Chat Area -->
         <div class="flex-1 overflow-y-auto p-4 space-y-4" id="atlas-chat-container">
           <!-- Welcome Message -->
           <div class="chat chat-start">
@@ -69,29 +71,32 @@
               Hi there! I'm Atlas. I'm here to help you get your merchant account approved as quickly as possible.
             </div>
           </div>
-          
+
           <%= if assigns[:atlas_messages] do %>
             <%= for msg <- @atlas_messages do %>
               <div class={"chat #{if msg.sender == :user, do: "chat-end", else: "chat-start"}"}>
                 <div class={"chat-bubble text-sm #{if msg.sender == :user, do: "chat-bubble-neutral", else: "chat-bubble-primary"}"}>
-                  <%= msg.content %>
+                  {msg.content}
                 </div>
               </div>
             <% end %>
           <% end %>
         </div>
-
-        <!-- Input Area -->
+        
+<!-- Input Area -->
         <div class="p-4 border-t border-base-300 bg-base-100">
           <form phx-submit="send_chat" class="relative">
-            <input 
-              type="text" 
-              name="message" 
-              placeholder="Ask Atlas a question..." 
+            <input
+              type="text"
+              name="message"
+              placeholder="Ask Atlas a question..."
               class="input input-bordered w-full pr-10 text-sm"
               autocomplete="off"
             />
-            <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs btn-circle text-primary">
+            <button
+              type="submit"
+              class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs btn-circle text-primary"
+            >
               <.icon name="hero-paper-airplane" class="w-4 h-4" />
             </button>
           </form>

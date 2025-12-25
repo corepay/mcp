@@ -1,4 +1,7 @@
 defmodule Mcp.Webhooks.Delivery do
+  @moduledoc """
+  Represents a webhook delivery attempt.
+  """
   use Ash.Resource,
     domain: Mcp.Webhooks,
     data_layer: AshPostgres.DataLayer,

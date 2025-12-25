@@ -1,8 +1,8 @@
 defmodule McpWeb.CustomersControllerTest do
   use McpWeb.ConnCase
 
-  alias Mcp.Payments.Customer
   alias Mcp.Accounts.ApiKey
+  alias Mcp.Payments.Customer
 
   setup %{conn: conn} do
     # Create API Key

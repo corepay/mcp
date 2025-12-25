@@ -79,8 +79,6 @@ defmodule Mcp.Repo.Migrations.AddPlatformMigrationTables do
           null: false
     end
 
-
-
     execute("CREATE SCHEMA IF NOT EXISTS platform")
 
     create table(:data_migration_logs, primary_key: false, prefix: "platform") do

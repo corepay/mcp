@@ -9,7 +9,14 @@ defmodule Mcp.Repo.Migrations.AddRoutingConfigToBlueprint do
 
   def up do
     alter table(:agent_blueprints) do
-      add :routing_config, :map, null: false, default: %{mode: "single", primary_provider: "ollama", fallback_provider: "openrouter", min_confidence: 0.8}
+      add :routing_config, :map,
+        null: false,
+        default: %{
+          mode: "single",
+          primary_provider: "ollama",
+          fallback_provider: "openrouter",
+          min_confidence: 0.8
+        }
     end
   end
 

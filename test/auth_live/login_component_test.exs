@@ -1,9 +1,6 @@
 defmodule McpWeb.AuthLive.LoginComponentTest do
   use ExUnit.Case, async: true
 
-
-
-
   alias McpWeb.AuthLive.Login
 
   # Basic test to ensure the LiveView component can be started

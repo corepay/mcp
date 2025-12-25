@@ -1,4 +1,7 @@
 defmodule Mcp.Finance.Balance do
+  @moduledoc """
+  Represents a financial balance.
+  """
   use Ash.Resource,
     domain: Mcp.Finance,
     data_layer: AshPostgres.DataLayer,

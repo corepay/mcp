@@ -1,11 +1,14 @@
 defmodule Mcp.Underwriting.AgentBlueprint do
+  @moduledoc """
+  Blueprint definition for an AI underwriting agent.
+  """
   use Ash.Resource,
     domain: Mcp.Underwriting,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "agent_blueprints"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   actions do
@@ -26,7 +29,7 @@ defmodule Mcp.Underwriting.AgentBlueprint do
 
     attribute :name, :string do
       allow_nil? false
-      constraints [min_length: 3]
+      constraints min_length: 3
     end
 
     attribute :description, :string do

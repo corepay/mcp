@@ -1,11 +1,14 @@
 defmodule Mcp.Underwriting.InstructionSet do
+  @moduledoc """
+  Set of instructions for an underwriting agent.
+  """
   use Ash.Resource,
     domain: Mcp.Underwriting,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "instruction_sets"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   actions do
@@ -47,7 +50,7 @@ defmodule Mcp.Underwriting.InstructionSet do
       # In a real multi-tenant app, this is crucial.
       # For now, we'll make it optional or assume it's handled by the actor context,
       # but explicit relationship is better for DB constraints.
-      allow_nil? true 
+      allow_nil? true
       attribute_type :uuid
     end
   end

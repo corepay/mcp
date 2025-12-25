@@ -1,11 +1,14 @@
 defmodule Mcp.Accounts.ApiKey do
+  @moduledoc """
+  Resource for managing API Keys.
+  """
   use Ash.Resource,
     domain: Mcp.Accounts,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "api_keys"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   actions do
@@ -13,16 +16,27 @@ defmodule Mcp.Accounts.ApiKey do
 
     create :create do
       primary? true
-      accept [:name, :tenant_id, :merchant_id, :reseller_id, :rate_limit, :spending_limit, :permissions, :scopes]
+
+      accept [
+        :name,
+        :tenant_id,
+        :merchant_id,
+        :reseller_id,
+        :rate_limit,
+        :spending_limit,
+        :permissions,
+        :scopes
+      ]
+
       argument :key, :string, allow_nil?: false, sensitive?: true
 
       change fn changeset, _ ->
         key = Ash.Changeset.get_argument(changeset, :key)
-        
+
         # Store hash and prefix
         hashed_key = Bcrypt.hash_pwd_salt(key)
         prefix = String.slice(key, 0, 7)
-        
+
         changeset
         |> Ash.Changeset.change_attribute(:key_hash, hashed_key)
         |> Ash.Changeset.change_attribute(:prefix, prefix)

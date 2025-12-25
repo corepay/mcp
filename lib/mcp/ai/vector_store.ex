@@ -3,8 +3,8 @@ defmodule Mcp.AI.VectorStore do
   Manages AI vector operations (pgvector) for similarity search and recommendations.
   """
 
-  alias Mcp.Repo
   alias Mcp.Infrastructure.Context
+  alias Mcp.Repo
 
   @tenant_schema_prefix "acq_"
 

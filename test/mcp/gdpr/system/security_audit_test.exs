@@ -5,6 +5,9 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
   @moduletag :system
   @moduletag :security
 
+  alias Mcp.Accounts.{ApiKey, Auth, User}
+  alias Mcp.Repo
+
   # Add host header for all API tests to bypass tenant routing
   setup %{conn: conn} do
     conn =
@@ -51,7 +54,7 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
 
     final_attrs = Map.merge(default_attrs, attrs)
 
-    user = %Mcp.Accounts.User{
+    user = %User{
       id: Ecto.UUID.generate(),
       email: final_attrs.email,
       role: final_attrs.role,
@@ -61,7 +64,7 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
       tenant_id: Ecto.UUID.generate()
     }
 
-    {:ok, user} = Mcp.Repo.insert(user)
+    {:ok, user} = Repo.insert(user)
 
     [user: user]
   end
@@ -86,7 +89,7 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
 
   defp auth_conn(conn, user) do
     key = "mcp_test_#{Ecto.UUID.generate()}"
-    Mcp.Accounts.ApiKey.create!(%{name: "Test Key", key: key})
+    ApiKey.create!(%{name: "Test Key", key: key})
 
     # Generate tokens
     _access_token = "mock.jwt.token.#{user.id}"
@@ -107,7 +110,7 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
     # This means they are using VALID tokens.
     # So I should generate VALID tokens.
 
-    {:ok, session} = Mcp.Accounts.Auth.create_user_session(user)
+    {:ok, session} = Auth.create_user_session(user)
 
     conn
     |> init_test_session(%{})
@@ -142,7 +145,7 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
                      html_response(request_conn, request_conn.status) =~ "Unauthorized"
           else
             response = json_response(request_conn, request_conn.status)
-            IO.inspect(response, label: "JSON Response")
+            # IO.inspect(response, label: "JSON Response")
 
             assert response["error"] =~ "Authentication required" or
                      response["error"] =~ "Unauthorized" or
@@ -169,8 +172,8 @@ defmodule Mcp.Gdpr.System.SecurityAuditTest do
       for request_conn <- admin_endpoints do
         # Regular user should get 403 Forbidden for admin endpoints
         if request_conn.status != 403 do
-          IO.inspect(request_conn.status, label: "Status")
-          IO.inspect(response(request_conn, request_conn.status), label: "Response Body")
+          # IO.inspect(request_conn.status, label: "Status")
+          # IO.inspect(response(request_conn, request_conn.status), label: "Response Body")
         end
 
         assert request_conn.status == 403

@@ -33,7 +33,7 @@ defmodule Mcp.Services.BackupService do
         backup_type: Map.get(backup_options, "type", "full"),
         backup_options: backup_options
       }
-      
+
       # Ensure backup directory exists
       path = get_backup_path(backup_id)
       Logger.info("Creating backup directory: #{path}")
@@ -159,7 +159,13 @@ defmodule Mcp.Services.BackupService do
     end
   rescue
     error ->
-      path = try do get_backup_storage_path(tenant_id) rescue _ -> "unknown" end
+      path =
+        try do
+          get_backup_storage_path(tenant_id)
+        rescue
+          _ -> "unknown"
+        end
+
       Logger.error("Failed to list backups", tenant_id: tenant_id, error: error)
       {:error, "Failed to list backups at #{path}: #{inspect(error)}"}
   end
@@ -239,49 +245,15 @@ defmodule Mcp.Services.BackupService do
   end
 
   defp backup_full_database(backup_result, tenant) do
-    # Create database dump using pg_dump
     timestamp = DateTime.to_iso8601(DateTime.utc_now())
     backup_filename = "database_full_#{timestamp}.sql"
     backup_path = Path.join(get_backup_path(backup_result.backup_id), backup_filename)
 
-    # Use MultiTenant context to get proper schema
     MultiTenant.with_tenant_context(tenant.company_schema, fn ->
-      # Create database dump
       if Application.get_env(:mcp, :env) == :test do
-        # Simulate backup in test environment
-        File.write!(backup_path, "DUMMY BACKUP CONTENT")
-        backup_size = File.stat!(backup_path).size
-        Logger.info("Database backup simulated (test)", path: backup_path, size: backup_size)
-
-        Map.put(backup_result, :database_backup, %{
-          type: "full",
-          filename: backup_filename,
-          path: backup_path,
-          size_bytes: backup_size,
-          table_count: count_tenant_tables(tenant.company_schema),
-          timestamp: timestamp
-        })
+        simulate_database_backup(backup_result, backup_filename, backup_path, tenant, timestamp)
       else
-        dump_command = build_pg_dump_command(tenant.company_schema, backup_path)
-
-        case System.cmd("sh", ["-c", dump_command], stderr_to_stdout: true) do
-          {_output, 0} ->
-            backup_size = File.stat!(backup_path).size
-            Logger.info("Database backup completed", path: backup_path, size: backup_size)
-
-            Map.put(backup_result, :database_backup, %{
-              type: "full",
-              filename: backup_filename,
-              path: backup_path,
-              size_bytes: backup_size,
-              table_count: count_tenant_tables(tenant.company_schema),
-              timestamp: timestamp
-            })
-
-          {output, exit_code} ->
-            Logger.error("Database backup failed", exit_code: exit_code, output: output)
-            Map.put(backup_result, :database_backup, {:error, "pg_dump failed: #{output}"})
-        end
+        execute_database_dump(backup_result, backup_filename, backup_path, tenant, timestamp)
       end
     end)
   rescue
@@ -293,6 +265,44 @@ defmodule Mcp.Services.BackupService do
         :database_backup,
         {:error, "Database backup failed: #{inspect(error)}"}
       )
+  end
+
+  defp simulate_database_backup(backup_result, filename, path, tenant, timestamp) do
+    File.write!(path, "DUMMY BACKUP CONTENT")
+    backup_size = File.stat!(path).size
+    Logger.info("Database backup simulated (test)", path: path, size: backup_size)
+
+    Map.put(backup_result, :database_backup, %{
+      type: "full",
+      filename: filename,
+      path: path,
+      size_bytes: backup_size,
+      table_count: count_tenant_tables(tenant.company_schema),
+      timestamp: timestamp
+    })
+  end
+
+  defp execute_database_dump(backup_result, filename, path, tenant, timestamp) do
+    dump_command = build_pg_dump_command(tenant.company_schema, path)
+
+    case System.cmd("sh", ["-c", dump_command], stderr_to_stdout: true) do
+      {_output, 0} ->
+        backup_size = File.stat!(path).size
+        Logger.info("Database backup completed", path: path, size: backup_size)
+
+        Map.put(backup_result, :database_backup, %{
+          type: "full",
+          filename: filename,
+          path: path,
+          size_bytes: backup_size,
+          table_count: count_tenant_tables(tenant.company_schema),
+          timestamp: timestamp
+        })
+
+      {output, exit_code} ->
+        Logger.error("Database backup failed", exit_code: exit_code, output: output)
+        Map.put(backup_result, :database_backup, {:error, "pg_dump failed: #{output}"})
+    end
   end
 
   defp backup_incremental_database(backup_result, tenant, changes) do
@@ -379,22 +389,24 @@ defmodule Mcp.Services.BackupService do
     config_path = Path.join(get_backup_path(backup_result.backup_id), config_filename)
 
     # Gather tenant configuration
-    configuration = %{
-      tenant: %{
-        id: tenant.id,
-        company_name: tenant.name,
-        company_schema: tenant.company_schema,
-        subdomain: tenant.subdomain,
-        custom_domain: tenant.custom_domain,
-        plan: tenant.plan,
-        status: tenant.status,
-        settings: tenant.settings,
-        branding: if(match?(%Ash.NotLoaded{}, tenant.branding), do: nil, else: tenant.branding)
-      },
-      backup_timestamp: timestamp,
-      platform_version: get_platform_version(),
-      schema_version: "1.0"
-    } |> sanitize_for_json()
+    configuration =
+      %{
+        tenant: %{
+          id: tenant.id,
+          company_name: tenant.name,
+          company_schema: tenant.company_schema,
+          subdomain: tenant.subdomain,
+          custom_domain: tenant.custom_domain,
+          plan: tenant.plan,
+          status: tenant.status,
+          settings: tenant.settings,
+          branding: if(match?(%Ash.NotLoaded{}, tenant.branding), do: nil, else: tenant.branding)
+        },
+        backup_timestamp: timestamp,
+        platform_version: get_platform_version(),
+        schema_version: "1.0"
+      }
+      |> sanitize_for_json()
 
     case Jason.encode(configuration, pretty: true) do
       {:ok, json_data} ->
@@ -490,40 +502,15 @@ defmodule Mcp.Services.BackupService do
     tenant = get_tenant_from_restore(restore_result)
     backup_path = database_backup["path"]
 
-    # Restore database using psql
     MultiTenant.with_tenant_context(tenant.company_schema, fn ->
-      # Clear existing data if requested
       if Map.get(restore_options, "clear_existing", false) do
         clear_tenant_data(tenant.company_schema)
       end
 
-      # Restore from backup
       if Application.get_env(:mcp, :env) == :test do
-        # Simulate restore in test environment
-        Logger.info("Database restore simulated (test)", path: backup_path)
-
-        Map.put(restore_result, :database_restore, %{
-          type: "full",
-          restored: true,
-          timestamp: DateTime.utc_now()
-        })
+        simulate_database_restore(restore_result, backup_path)
       else
-        restore_command = build_psql_restore_command(tenant.company_schema, backup_path)
-
-        case System.cmd("sh", ["-c", restore_command], stderr_to_stdout: true) do
-          {_output, 0} ->
-            Logger.info("Database restore completed", path: backup_path)
-
-            Map.put(restore_result, :database_restore, %{
-              type: "full",
-              restored: true,
-              timestamp: DateTime.utc_now()
-            })
-
-          {output, exit_code} ->
-            Logger.error("Database restore failed", exit_code: exit_code, output: output)
-            Map.put(restore_result, :database_restore, {:error, "psql restore failed: #{output}"})
-        end
+        execute_database_restore(restore_result, tenant.company_schema, backup_path)
       end
     end)
   rescue
@@ -535,6 +522,35 @@ defmodule Mcp.Services.BackupService do
         :database_restore,
         {:error, "Database restore failed: #{inspect(error)}"}
       )
+  end
+
+  defp simulate_database_restore(restore_result, path) do
+    Logger.info("Database restore simulated (test)", path: path)
+
+    Map.put(restore_result, :database_restore, %{
+      type: "full",
+      restored: true,
+      timestamp: DateTime.utc_now()
+    })
+  end
+
+  defp execute_database_restore(restore_result, schema, path) do
+    restore_command = build_psql_restore_command(schema, path)
+
+    case System.cmd("sh", ["-c", restore_command], stderr_to_stdout: true) do
+      {_output, 0} ->
+        Logger.info("Database restore completed", path: path)
+
+        Map.put(restore_result, :database_restore, %{
+          type: "full",
+          restored: true,
+          timestamp: DateTime.utc_now()
+        })
+
+      {output, exit_code} ->
+        Logger.error("Database restore failed", exit_code: exit_code, output: output)
+        Map.put(restore_result, :database_restore, {:error, "psql restore failed: #{output}"})
+    end
   end
 
   defp restore_incremental_database(restore_result, database_backup, _restore_options) do
@@ -796,11 +812,11 @@ defmodule Mcp.Services.BackupService do
 
   defp get_backup_path(backup_id) do
     base_path = Application.get_env(:mcp, :backup_storage_path, "backups")
-    
+
     # Extract tenant_id from backup_id
     # Format: backup_TENANT-ID_TIMESTAMP_RANDOM
     parts = String.split(backup_id, "_")
-    
+
     if length(parts) >= 4 do
       tenant_id = Enum.at(parts, 1)
       Path.join([base_path, "tenant_#{tenant_id}", backup_id])
@@ -821,10 +837,10 @@ defmodule Mcp.Services.BackupService do
     username = config[:username] || "postgres"
     hostname = config[:hostname] || "localhost"
     port = config[:port] || 5432
-    
-    # Use PGPASSWORD env var if password exists? 
+
+    # Use PGPASSWORD env var if password exists?
     # For now assume .pgpass or trust auth as per original code assumption
-    
+
     "pg_dump --host=#{hostname} --port=#{port} --username=#{username} --schema=#{schema} --format=custom --file=#{output_path} #{database}"
   end
 
@@ -864,12 +880,15 @@ defmodule Mcp.Services.BackupService do
 
   defp sanitize_for_json(value) when is_struct(value, Ash.NotLoaded), do: nil
   defp sanitize_for_json({:error, reason}), do: %{error: reason}
+
   defp sanitize_for_json(value) when is_map(value) do
     Map.new(value, fn {k, v} -> {k, sanitize_for_json(v)} end)
   end
+
   defp sanitize_for_json(value) when is_list(value) do
     Enum.map(value, &sanitize_for_json/1)
   end
+
   defp sanitize_for_json(value), do: value
 
   defp sanitize_component({:error, reason}), do: %{error: reason}

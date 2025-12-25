@@ -6,7 +6,10 @@ defmodule Mcp.Integration.LoginIntegrationTest do
   import Mox
 
   alias Mcp.Accounts.{Auth, User}
+  alias Mcp.Accounts.{Auth, AuthToken, OAuthMock, User}
   alias Mcp.Cache.SessionStore
+  alias Mcp.Gdpr
+  alias Mcp.Platform.Tenant
 
   @endpoint McpWeb.Endpoint
 
@@ -34,7 +37,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       {:ok, user} = create_test_user()
 
       {:ok, _tenant} =
-        Mcp.Platform.Tenant.create(%{
+        Tenant.create(%{
           name: "Test Tenant",
           slug: "test-tenant-#{System.unique_integer([:positive])}",
           subdomain: "test-#{System.unique_integer([:positive])}"
@@ -140,7 +143,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       }
 
       # Step 1: Initiate OAuth
-      expect(Mcp.Accounts.OAuthMock, :authorize_url, fn :google, captured_state ->
+      expect(OAuthMock, :authorize_url, fn :google, captured_state ->
         assert String.starts_with?(captured_state, "oauth_")
         "https://accounts.google.com/oauth/authorize?client_id=test&state=#{captured_state}"
       end)
@@ -153,13 +156,13 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       state = get_session(conn, :oauth_state)
 
       # Step 2: OAuth callback
-      expect(Mcp.Accounts.OAuthMock, :callback, fn :google, code, captured_state ->
+      expect(OAuthMock, :callback, fn :google, code, captured_state ->
         assert captured_state == state
         assert code == "test_auth_code"
         {:ok, user_info, tokens}
       end)
 
-      expect(Mcp.Accounts.OAuthMock, :authenticate_oauth, fn oauth_user, _ip ->
+      expect(OAuthMock, :authenticate_oauth, fn oauth_user, _ip ->
         assert oauth_user.email == "google.user@example.com"
         {:ok, oauth_user}
       end)
@@ -184,13 +187,13 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       tokens = %{access_token: "access_token"}
 
       # Mock OAuth callback for existing user
-      expect(Mcp.Accounts.OAuthMock, :callback, fn :github, code, captured_state ->
+      expect(OAuthMock, :callback, fn :github, code, captured_state ->
         assert captured_state == state
         assert code == "github_code"
         {:ok, user, tokens}
       end)
 
-      expect(Mcp.Accounts.OAuthMock, :authenticate_oauth, fn oauth_user, _ip ->
+      expect(OAuthMock, :authenticate_oauth, fn oauth_user, _ip ->
         assert oauth_user.id == user.id
         create_test_session(oauth_user)
       end)
@@ -209,7 +212,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
     test "OAuth flow with error handling", %{conn: conn} do
       state = "oauth_error_state"
 
-      expect(Mcp.Accounts.OAuthMock, :callback, fn :google, nil, _state ->
+      expect(OAuthMock, :callback, fn :google, nil, _state ->
         {:error, :access_denied}
       end)
 
@@ -337,7 +340,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
       {:ok, user} = create_test_user()
 
       # Delete user (GDPR)
-      alias Mcp.Gdpr
+      # alias Mcp.Gdpr
       :ok = Gdpr.request_user_deletion(user.id, "test_deletion")
       Process.sleep(100)
 
@@ -627,7 +630,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
     test "handles production-like load", %{conn: _conn} do
       # Simulate production load with multiple user types and operations
       # Stub OAuth calls for concurrent access
-      stub(Mcp.Accounts.OAuthMock, :authorize_url, fn _provider, _state ->
+      stub(OAuthMock, :authorize_url, fn _provider, _state ->
         "http://external.url"
       end)
 

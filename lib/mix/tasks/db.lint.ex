@@ -88,43 +88,47 @@ defmodule Mix.Tasks.Db.Lint do
   end
 
   defp print_results(%Postgrex.Result{rows: rows, columns: columns}) do
-    # Map columns to indices
-    col_idx =
-      columns
-      |> Enum.with_index()
-      |> Map.new()
-
     if Enum.empty?(rows) do
       IO.puts(IO.ANSI.green() <> "✅ No database issues found." <> IO.ANSI.reset())
     else
       IO.puts(IO.ANSI.yellow() <> "⚠️  Found #{length(rows)} issues:" <> IO.ANSI.reset())
       IO.puts("")
 
+      # Map columns to indices
+      col_idx =
+        columns
+        |> Enum.with_index()
+        |> Map.new()
+
       Enum.each(rows, fn row ->
-        name = Enum.at(row, col_idx["name"])
-        title = Enum.at(row, col_idx["title"])
-        level = Enum.at(row, col_idx["level"])
-        description = Enum.at(row, col_idx["description"])
-        detail = Enum.at(row, col_idx["detail"])
-        remediation = Enum.at(row, col_idx["remediation"])
-
-        color =
-          case level do
-            "ERROR" -> IO.ANSI.red()
-            "WARN" -> IO.ANSI.yellow()
-            _ -> IO.ANSI.cyan()
-          end
-
-        IO.puts("#{color}[#{level}] #{title} (#{name})#{IO.ANSI.reset()}")
-        IO.puts("    #{detail}")
-        IO.puts("    #{IO.ANSI.light_black()}#{description}#{IO.ANSI.reset()}")
-
-        if remediation do
-          IO.puts("    👉 Fix: #{remediation}")
-        end
-
-        IO.puts("")
+        print_issue(row, col_idx)
       end)
     end
+  end
+
+  defp print_issue(row, col_idx) do
+    name = Enum.at(row, col_idx["name"])
+    title = Enum.at(row, col_idx["title"])
+    level = Enum.at(row, col_idx["level"])
+    description = Enum.at(row, col_idx["description"])
+    detail = Enum.at(row, col_idx["detail"])
+    remediation = Enum.at(row, col_idx["remediation"])
+
+    color =
+      case level do
+        "ERROR" -> IO.ANSI.red()
+        "WARN" -> IO.ANSI.yellow()
+        _ -> IO.ANSI.cyan()
+      end
+
+    IO.puts("#{color}[#{level}] #{title} (#{name})#{IO.ANSI.reset()}")
+    IO.puts("    #{detail}")
+    IO.puts("    #{IO.ANSI.light_black()}#{description}#{IO.ANSI.reset()}")
+
+    if remediation do
+      IO.puts("    👉 Fix: #{remediation}")
+    end
+
+    IO.puts("")
   end
 end

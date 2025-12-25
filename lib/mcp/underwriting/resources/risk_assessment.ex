@@ -1,11 +1,14 @@
 defmodule Mcp.Underwriting.RiskAssessment do
+  @moduledoc """
+  Represents a risk assessment of an application.
+  """
   use Ash.Resource,
     domain: Mcp.Underwriting,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "risk_assessments"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   multitenancy do

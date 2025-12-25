@@ -23,7 +23,8 @@ defmodule Mcp.Secrets.VaultClient do
     tenant_id = Keyword.get(opts, :tenant_id)
     full_path = build_tenant_path(path, tenant_id)
 
-    # vault.create_secret(new_secret text, new_name text, new_description text DEFAULT NULL::text, new_key_id uuid DEFAULT NULL::uuid)
+    # vault.create_secret(new_secret text, new_name text, new_description text DEFAULT NULL::text,
+    #   new_key_id uuid DEFAULT NULL::uuid)
     # We use upsert-like logic by deleting first (simple approach) or handling conflict if vault supports it.
     # Supabase vault doesn't support upsert easily on name, so we delete first.
 

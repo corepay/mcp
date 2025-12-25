@@ -4,7 +4,7 @@ defmodule Mcp.Accounts.Token do
   Wraps AuthToken resource or provides mock implementation.
   """
 
-  alias Mcp.Accounts.AuthToken
+  alias Mcp.Accounts.{AuthToken, JWT}
 
   def revoke_user_tokens(user) do
     AuthToken.revoke_all_for_user(user)
@@ -22,7 +22,7 @@ defmodule Mcp.Accounts.Token do
 
     attrs = %{
       user_id: user.id,
-      token: Mcp.Accounts.JWT.generate_random_token(),
+      token: JWT.generate_random_token(),
       expires_at: expires_at,
       jti: jti,
       context: %{},
@@ -41,7 +41,7 @@ defmodule Mcp.Accounts.Token do
         :second -> amount
         :minute -> amount * 60
         :hour -> amount * 3600
-        :day -> amount * 86400
+        :day -> amount * 86_400
       end
 
     DateTime.utc_now() |> DateTime.add(seconds, :second)
@@ -63,7 +63,7 @@ defmodule Mcp.Accounts.Token do
     # Map params to what AuthToken expects
     attrs = %{
       user_id: params[:user_id],
-      token: params[:token] || Mcp.Accounts.JWT.generate_random_token(),
+      token: params[:token] || JWT.generate_random_token(),
       expires_at: params[:expires_at],
       session_id: params[:session_id],
       device_id: params[:device_id],
@@ -73,7 +73,7 @@ defmodule Mcp.Accounts.Token do
     }
 
     # Use Ash to create the token
-    Mcp.Accounts.AuthToken
+    AuthToken
     |> Ash.Changeset.for_create(action, attrs)
     |> Ash.create()
   end

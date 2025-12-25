@@ -13,7 +13,7 @@ defmodule Mcp.Core.Telemetry.AIMetrics do
         unit: {:native, :millisecond},
         tags: [:blueprint, :provider, :model, :cached, :tenant_id],
         reporter_options: [
-          buckets: [100, 500, 1000, 2000, 5000, 10000, 30000]
+          buckets: [100, 500, 1_000, 2_000, 5_000, 10_000, 30_000]
         ]
       ),
 
@@ -30,7 +30,7 @@ defmodule Mcp.Core.Telemetry.AIMetrics do
         measurement: :cost,
         tags: [:blueprint, :provider, :model, :cached, :tenant_id]
       ),
-      
+
       # Cache Hits (derived from tags, but explicit counter is nice)
       counter("mcp.ai.agent.completion.count",
         event_name: [:mcp, :ai, :agent, :completion],

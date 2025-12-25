@@ -15,7 +15,8 @@ defmodule Mcp.Accounts.AuthErrors do
     %{
       error: true,
       error_type: type,
-      error_code: "JWT_002", # Simplified for now
+      # Simplified for now
+      error_code: "JWT_002",
       message: format_user_error(type),
       recovery: get_recovery_instructions(type),
       context: context

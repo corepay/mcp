@@ -1,7 +1,7 @@
 defmodule McpWeb.Controllers.AuthControllerTest do
   use McpWeb.ConnCase
 
-  alias Mcp.Accounts.User
+  alias Mcp.Accounts.{ApiKey, User}
 
   describe "POST /auth/login" do
     test "authenticates with valid credentials", %{conn: conn} do
@@ -381,8 +381,19 @@ defmodule McpWeb.Controllers.AuthControllerTest do
 
   describe "POST /auth/reset-password" do
     test "resets password with valid token", %{conn: conn} do
-      # This would require a valid reset token from the forgot-password flow
-      reset_token = "valid_reset_token_123"
+      # Create a user and generate a real reset token
+      {:ok, user} =
+        User.register(%{
+          first_name: "Reset",
+          last_name: "Password",
+          email: "reset.valid@example.com",
+          password: "OldPassword123!",
+          password_confirmation: "OldPassword123!"
+        })
+
+      # Generate reset token
+      {:ok, user_with_token} = User.request_password_reset(user)
+      reset_token = user_with_token.reset_password_token
 
       conn =
         post(conn, ~p"/auth/reset-password", %{
@@ -391,8 +402,7 @@ defmodule McpWeb.Controllers.AuthControllerTest do
           "password_confirmation" => "NewPassword456!"
         })
 
-      # In a real implementation, this would validate the token
-      assert response(conn, 200) == "Password reset successfully" or response(conn, 400)
+      assert response(conn, 200) == "Password reset successfully"
     end
 
     test "rejects invalid reset token", %{conn: conn} do
@@ -608,7 +618,7 @@ defmodule McpWeb.Controllers.AuthControllerTest do
       %{"access_token" => access_token} = json_response(login_conn, 200)
 
       # Seed API Key
-      Mcp.Accounts.ApiKey.create!(%{
+      ApiKey.create!(%{
         key: "mcp_acc_ess_key_1",
         name: "Access Key",
         tenant_id: nil
@@ -625,7 +635,7 @@ defmodule McpWeb.Controllers.AuthControllerTest do
     end
 
     test "handles expired tokens", %{conn: conn} do
-      Mcp.Accounts.ApiKey.create!(%{key: "mcp_exp_ired_key", name: "Expired Key", tenant_id: nil})
+      ApiKey.create!(%{key: "mcp_exp_ired_key", name: "Expired Key", tenant_id: nil})
       expired_token = "expired_token_123"
 
       conn =
@@ -649,7 +659,7 @@ defmodule McpWeb.Controllers.AuthControllerTest do
         "abc123"
       ]
 
-      Mcp.Accounts.ApiKey.create!(%{
+      ApiKey.create!(%{
         key: "mcp_sk_malform_",
         name: "Malformed Key",
         tenant_id: nil

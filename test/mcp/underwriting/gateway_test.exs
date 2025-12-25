@@ -1,14 +1,15 @@
 defmodule Mcp.Underwriting.GatewayTest do
   use Mcp.DataCase
 
-  alias Mcp.Underwriting.Gateway
+  alias Mcp.Platform.Tenant
   alias Mcp.Underwriting.Application
+  alias Mcp.Underwriting.Gateway
   alias Mcp.Underwriting.RiskAssessment
 
   setup do
     # Create Tenant
     tenant =
-      Mcp.Platform.Tenant
+      Tenant
       |> Ash.Changeset.for_create(:create, %{
         name: "Test Tenant",
         slug: "test-tenant",
@@ -99,9 +100,15 @@ defmodule Mcp.Underwriting.GatewayTest do
       updated_at timestamp(6)
     )")
 
-    Mcp.Repo.query!(
-      "CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_activities (id uuid PRIMARY KEY, type text, metadata jsonb, actor_id uuid, application_id uuid, inserted_at timestamp(6), updated_at timestamp(6))"
-    )
+    Mcp.Repo.query!("CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_activities (
+      id uuid PRIMARY KEY,
+      type text,
+      metadata jsonb,
+      actor_id uuid,
+      application_id uuid,
+      inserted_at timestamp(6),
+      updated_at timestamp(6)
+    )")
 
     # Configure Mock Adapter for tests
     Elixir.Application.put_env(:mcp, :underwriting_adapter, :mock)
@@ -141,7 +148,8 @@ defmodule Mcp.Underwriting.GatewayTest do
 
       # To make Gateway work without changing it yet, we can try setting the tenant in the process if Ash supports it.
       # But Ash usually requires passing it explicitly.
-      # Let's try passing it as a second argument if we modify Gateway, but for now let's just update the test code around it.
+      # Let's try passing it as a second argument if we modify Gateway,
+      # but for now let's just update the test code around it.
 
       assert {:ok, score} = Gateway.screen_application(application.id, tenant: tenant)
 

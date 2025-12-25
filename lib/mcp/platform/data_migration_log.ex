@@ -9,8 +9,8 @@ defmodule Mcp.Platform.DataMigrationLog do
 
   postgres do
     table "data_migration_logs"
-    schema "platform"
-    repo Mcp.Repo
+    schema("platform")
+    repo(Mcp.Repo)
   end
 
   attributes do
@@ -19,17 +19,17 @@ defmodule Mcp.Platform.DataMigrationLog do
     attribute :message, :string do
       allow_nil? false
     end
-    
+
     attribute :level, :atom do
       constraints one_of: [:info, :warning, :error]
       default :info
     end
-    
+
     attribute :details, :map
 
     timestamps()
   end
-  
+
   relationships do
     belongs_to :migration, Mcp.Platform.DataMigration do
       allow_nil? false
@@ -42,7 +42,7 @@ defmodule Mcp.Platform.DataMigrationLog do
     create :create do
       accept [:migration_id, :message, :level, :details]
     end
-    
+
     read :by_migration do
       argument :migration_id, :uuid, allow_nil?: false
       filter expr(migration_id == ^arg(:migration_id))

@@ -12,13 +12,14 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
   alias Mcp.MultiTenant
   alias Mcp.Platform.{DataMigration, DataMigrationLog, DataMigrationRecord, Tenant}
   alias Mcp.Repo
+
   alias Mcp.Services.{
     BackupService,
     DataMigrationEngine,
     DataTransformer
   }
-  alias Mcp.Services.DataValidator
 
+  alias Mcp.Services.DataValidator
 
   @moduletag :integration
 
@@ -41,7 +42,9 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
     {:ok, _} = MultiTenant.create_tenant_schema(tenant.company_schema)
 
     # Setup temp backup directory
-    temp_backup_dir = Path.join(System.tmp_dir!(), "mcp_backups_#{:erlang.unique_integer([:positive])}")
+    temp_backup_dir =
+      Path.join(System.tmp_dir!(), "mcp_backups_#{:erlang.unique_integer([:positive])}")
+
     Application.put_env(:mcp, :backup_storage_path, temp_backup_dir)
     File.mkdir_p!(temp_backup_dir)
 
@@ -480,8 +483,9 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
 
   defp get_backup_path(backup_id) do
     base_path = Application.get_env(:mcp, :backup_storage_path, "backups")
-    
+
     parts = String.split(backup_id, "_")
+
     if length(parts) >= 4 do
       tenant_id = Enum.at(parts, 1)
       Path.join([base_path, "tenant_#{tenant_id}", backup_id])

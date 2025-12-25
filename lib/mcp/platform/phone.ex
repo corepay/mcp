@@ -1,4 +1,7 @@
 defmodule Mcp.Platform.Phone do
+  @moduledoc """
+  Represents a phone number.
+  """
   use Ash.Resource,
     domain: Mcp.Platform,
     data_layer: AshPostgres.DataLayer,

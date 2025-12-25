@@ -1,9 +1,12 @@
 defmodule Mcp.Underwriting.Rules.KYBRule do
+  @moduledoc """
+  Rule for Know Your Business (KYB) checks.
+  """
   @behaviour Mcp.Underwriting.RiskEngine.RiskRule
 
   def evaluate(_application, vendor_data) do
     kyb = Map.get(vendor_data, :kyb, %{})
-    
+
     case kyb[:status] do
       :clear -> {:ok, 40, ["KYB Clear"]}
       :flagged -> {:ok, -50, ["KYB Flagged"]}

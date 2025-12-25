@@ -12,11 +12,13 @@ defmodule Mcp.MultiTenant do
   > - `Mcp.AI.VectorStore` (Vector search)
   """
 
-  alias Mcp.Repo
-  alias Mcp.Infrastructure.TenantManager
-  alias Mcp.Infrastructure.Context
-  alias Mcp.Platform.Graph
   alias Mcp.AI.VectorStore
+  alias Mcp.Analytics.TimeSeries
+  alias Mcp.Infrastructure.Context
+  alias Mcp.Infrastructure.TenantManager
+  alias Mcp.Platform.Geo
+  alias Mcp.Platform.Graph
+  alias Mcp.Repo
 
   @tenant_schema_prefix "acq_"
 
@@ -68,194 +70,63 @@ defmodule Mcp.MultiTenant do
     to: VectorStore
 
   # Complete Time-series operations (TimescaleDB)
-  # TODO: Move to Mcp.Analytics.TimeSeries
 
-  def create_hypertable(
-        tenant_schema_name,
-        table_name,
-        time_column,
-        chunk_time_interval \\ "1 day"
-      ) do
-    _schema_name = @tenant_schema_prefix <> tenant_schema_name
+  defdelegate create_hypertable(
+                tenant_schema_name,
+                table_name,
+                time_column,
+                chunk_time_interval \\ "1 day"
+              ),
+              to: TimeSeries
 
-    Context.with_tenant_context(tenant_schema_name, fn ->
-      query = """
-      SELECT create_hypertable('#{table_name}', '#{time_column}',
-        chunk_time_interval => INTERVAL '#{chunk_time_interval}')
-      """
+  defdelegate create_continuous_aggregate(
+                tenant_schema_name,
+                aggregate_name,
+                source_table,
+                time_bucket \\ "1 hour"
+              ),
+              to: TimeSeries
 
-      Repo.query(query)
-    end)
-  end
+  defdelegate time_series_analytics(
+                tenant_schema_name,
+                table_name,
+                merchant_id,
+                days \\ 30
+              ),
+              to: TimeSeries
 
-  def create_continuous_aggregate(
-        tenant_schema_name,
-        aggregate_name,
-        source_table,
-        time_bucket \\ "1 hour"
-      ) do
-    _schema_name = @tenant_schema_prefix <> tenant_schema_name
-
-    Context.with_tenant_context(tenant_schema_name, fn ->
-      query = """
-      CREATE MATERIALIZED VIEW #{aggregate_name}
-      WITH (timescaledb.continuous) AS
-      SELECT
-        time_bucket('#{time_bucket}', time) AS bucket,
-        merchant_id,
-        SUM(transaction_volume) as total_volume,
-        COUNT(*) as transaction_count,
-        AVG(average_transaction_amount) as avg_amount,
-        STDDEV(average_transaction_amount) as amount_stddev
-      FROM #{source_table}
-      GROUP BY bucket, merchant_id
-      """
-
-      Repo.query(query)
-    end)
-  end
-
-  def time_series_analytics(tenant_schema_name, table_name, merchant_id, days \\ 30) do
-    _schema_name = @tenant_schema_prefix <> tenant_schema_name
-
-    Context.with_tenant_context(tenant_schema_name, fn ->
-      query = """
-      SELECT
-        time_bucket('1 day', time) as date,
-        SUM(transaction_volume) as daily_volume,
-        COUNT(*) as daily_count,
-        AVG(average_transaction_amount) as daily_avg,
-        MIN(average_transaction_amount) as daily_min,
-        MAX(average_transaction_amount) as daily_max,
-        STDDEV(average_transaction_amount) as daily_stddev
-      FROM #{table_name}
-      WHERE merchant_id = $1
-      AND time >= NOW() - INTERVAL '#{days} days'
-      GROUP BY time_bucket('1 day', time)
-      ORDER BY date DESC
-      """
-
-      Repo.query(query, [merchant_id])
-    end)
-  end
-
-  def real_time_metrics(tenant_schema_name, table_name, merchant_id) do
-    _schema_name = @tenant_schema_prefix <> tenant_schema_name
-
-    Context.with_tenant_context(tenant_schema_name, fn ->
-      query = """
-      SELECT
-        time_bucket('5 minutes', time) as five_min_bucket,
-        merchant_id,
-        COUNT(*) as transaction_count,
-        SUM(transaction_volume) as total_volume,
-        AVG(response_time_ms) as avg_response_time
-      FROM #{table_name}
-      WHERE merchant_id = $1
-      AND time >= NOW() - INTERVAL '1 hour'
-      GROUP BY five_min_bucket, merchant_id
-      ORDER BY five_min_bucket DESC
-      """
-
-      Repo.query(query, [merchant_id])
-    end)
-  end
+  defdelegate real_time_metrics(tenant_schema_name, table_name, merchant_id), to: TimeSeries
 
   # Complete Geographic operations (PostGIS)
-  # TODO: Move to Mcp.Platform.Geo
 
-  def add_geometry_column(
-        tenant_schema_name,
-        table_name,
-        column_name,
-        geometry_type,
-        srid \\ 4326
-      ) do
-    _schema_name = @tenant_schema_prefix <> tenant_schema_name
+  defdelegate add_geometry_column(
+                tenant_schema_name,
+                table_name,
+                column_name,
+                geometry_type,
+                srid \\ 4326
+              ),
+              to: Geo
 
-    Context.with_tenant_context(tenant_schema_name, fn ->
-      query = """
-      SELECT AddGeometryColumn('#{table_name}', '#{column_name}', #{srid}, '#{geometry_type}', 2)
-      """
+  defdelegate find_nearby_merchants(
+                tenant_schema_name,
+                longitude,
+                latitude,
+                radius_km \\ 10
+              ),
+              to: Geo
 
-      Repo.query(query)
-    end)
-  end
+  defdelegate create_geographic_index(
+                tenant_schema_name,
+                table_name,
+                column_name,
+                index_name \\ nil
+              ),
+              to: Geo
 
-  def find_nearby_merchants(tenant_schema_name, longitude, latitude, radius_km \\ 10) do
-    _schema_name = @tenant_schema_prefix <> tenant_schema_name
+  defdelegate merchant_coverage_area(tenant_schema_name, merchant_id), to: Geo
 
-    Context.with_tenant_context(tenant_schema_name, fn ->
-      query = """
-      SELECT *,
-        ST_Distance(location, ST_SetSRID(ST_MakePoint($1, $2), 4326)) * 111.32 as distance_km
-      FROM merchants
-      WHERE ST_DWithin(
-        location,
-        ST_SetSRID(ST_MakePoint($1, $2), 4326),
-        $3 * 1000  -- Convert km to meters
-      )
-      ORDER BY distance_km
-      """
-
-      Repo.query(query, [longitude, latitude, radius_km])
-    end)
-  end
-
-  def create_geographic_index(tenant_schema_name, table_name, column_name, index_name \\ nil) do
-    _schema_name = @tenant_schema_prefix <> tenant_schema_name
-    index_name = index_name || "#{table_name}_#{column_name}_geo_idx"
-
-    Context.with_tenant_context(tenant_schema_name, fn ->
-      query = """
-      CREATE INDEX #{index_name}
-      ON #{table_name}
-      USING GIST (#{column_name})
-      """
-
-      Repo.query(query)
-    end)
-  end
-
-  def merchant_coverage_area(tenant_schema_name, merchant_id) do
-    _schema_name = @tenant_schema_prefix <> tenant_schema_name
-
-    Context.with_tenant_context(tenant_schema_name, fn ->
-      query = """
-      SELECT
-        ST_ConvexHull(
-          ST_Collect(
-            ST_SetSRID(ST_MakePoint(ST_X(location), ST_Y(location)), 4326)
-          )
-        ) as coverage_area
-      FROM merchants
-      WHERE id = $1
-      """
-
-      Repo.query(query, [merchant_id])
-    end)
-  end
-
-  def analyze_geographic_distribution(tenant_schema_name) do
-    _schema_name = @tenant_schema_prefix <> tenant_schema_name
-
-    Context.with_tenant_context(tenant_schema_name, fn ->
-      query = """
-      SELECT
-        ST_Centroid(ST_Collect(location)) as center_point,
-        ST_Extent(ST_Collect(location)) as bounding_box,
-        COUNT(*) as merchant_count,
-        AVG(ST_X(location)) as avg_longitude,
-        AVG(ST_Y(location)) as avg_latitude,
-        STDDEV(ST_X(location)) as longitude_stddev,
-        STDDEV(ST_Y(location)) as latitude_stddev
-      FROM merchants
-      WHERE location IS NOT NULL
-      """
-
-      Repo.query(query)
-    end)
-  end
+  defdelegate analyze_geographic_distribution(tenant_schema_name), to: Geo
 
   # Data isolation helpers
 

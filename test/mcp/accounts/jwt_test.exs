@@ -132,8 +132,9 @@ defmodule Mcp.Accounts.JWTTest do
       assert Map.has_key?(session_data, :access_token)
       assert Map.has_key?(session_data, :refresh_token)
       assert Map.has_key?(session_data, :session_id)
-      # assert Map.has_key?(session_data, :current_context) # create_user_session result might not have this key directly
-      # assert Map.has_key?(session_data, :authorized_contexts) # create_user_session result might not have this key directly
+
+      # assert Map.has_key?(session_data, :current_context)
+      # assert Map.has_key?(session_data, :authorized_contexts)
 
       # Verify access token is valid
       assert {:ok, _claims} = JWT.verify_token(session_data.access_token)

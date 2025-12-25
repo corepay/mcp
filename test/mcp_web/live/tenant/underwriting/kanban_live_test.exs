@@ -2,12 +2,15 @@ defmodule McpWeb.Tenant.Underwriting.KanbanLiveTest do
   use McpWeb.ConnCase
   import Phoenix.LiveViewTest
 
+  alias Mcp.Accounts.{Auth, User}
+  alias Mcp.Platform.{Merchant, Tenant}
+  alias Mcp.Repo
   alias Mcp.Underwriting.Application
 
   setup do
     # Create Tenant
-    tenant = 
-      Mcp.Platform.Tenant
+    tenant =
+      Tenant
       |> Ash.Changeset.for_create(:create, %{
         name: "Test Tenant",
         slug: "test-tenant-kanban",
@@ -17,13 +20,22 @@ defmodule McpWeb.Tenant.Underwriting.KanbanLiveTest do
 
     # WORKAROUND: Manually add columns because Ecto.Migrator fails in Sandbox
     schema = tenant.company_schema
-    Mcp.Repo.query!("CREATE TABLE IF NOT EXISTS \"#{schema}\".merchants (id uuid PRIMARY KEY, business_name text, slug text, subdomain text, status text, country text, plan text, risk_level text, verification_status text, kyc_status text, timezone text, default_currency text, risk_profile text, settings jsonb, branding jsonb, max_stores integer, processing_limits jsonb, kyc_documents jsonb, operating_hours jsonb, inserted_at timestamp(6), updated_at timestamp(6))")
-    Mcp.Repo.query!("CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_applications (id uuid PRIMARY KEY, merchant_id uuid, status text, application_data jsonb, risk_score integer, submitted_at timestamp(6), sla_due_at timestamp(6), inserted_at timestamp(6), updated_at timestamp(6))")
-    Mcp.Repo.query!("CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_activities (id uuid PRIMARY KEY, type text, metadata jsonb, actor_id uuid, application_id uuid, inserted_at timestamp(6), updated_at timestamp(6))")
+
+    Repo.query!(
+      "CREATE TABLE IF NOT EXISTS \"#{schema}\".merchants (id uuid PRIMARY KEY, business_name text, slug text, subdomain text, status text, country text, plan text, risk_level text, verification_status text, kyc_status text, timezone text, default_currency text, risk_profile text, settings jsonb, branding jsonb, max_stores integer, processing_limits jsonb, kyc_documents jsonb, operating_hours jsonb, inserted_at timestamp(6), updated_at timestamp(6))"
+    )
+
+    Repo.query!(
+      "CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_applications (id uuid PRIMARY KEY, merchant_id uuid, status text, application_data jsonb, risk_score integer, submitted_at timestamp(6), sla_due_at timestamp(6), inserted_at timestamp(6), updated_at timestamp(6))"
+    )
+
+    Repo.query!(
+      "CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_activities (id uuid PRIMARY KEY, type text, metadata jsonb, actor_id uuid, application_id uuid, inserted_at timestamp(6), updated_at timestamp(6))"
+    )
 
     # Create a merchant for the application
-    merchant = 
-      Mcp.Platform.Merchant
+    merchant =
+      Merchant
       |> Ash.Changeset.for_create(:create, %{
         business_name: "Test Merchant",
         slug: "test-merchant-kanban",
@@ -33,8 +45,8 @@ defmodule McpWeb.Tenant.Underwriting.KanbanLiveTest do
       |> Ash.create!(tenant: tenant.company_schema)
 
     # Create Application
-    application = 
-      Mcp.Underwriting.Application
+    application =
+      Application
       |> Ash.Changeset.for_create(:create, %{
         merchant_id: merchant.id,
         status: :submitted,
@@ -51,12 +63,14 @@ defmodule McpWeb.Tenant.Underwriting.KanbanLiveTest do
     {:ok, tenant: tenant, application: application}
   end
 
-
-
-  test "renders kanban board and updates status", %{conn: conn, tenant: tenant, application: application} do
+  test "renders kanban board and updates status", %{
+    conn: conn,
+    tenant: tenant,
+    application: application
+  } do
     # 1. Create Admin User
-    admin_user = 
-      Mcp.Accounts.User
+    admin_user =
+      User
       |> Ash.Changeset.for_create(:register, %{
         email: "kanban_admin_#{System.unique_integer()}@platform.local",
         password: "Password123!",
@@ -67,10 +81,10 @@ defmodule McpWeb.Tenant.Underwriting.KanbanLiveTest do
       |> Ash.create!()
 
     # 2. Generate session
-    {:ok, session_data} = Mcp.Accounts.Auth.create_user_session(admin_user, "127.0.0.1")
+    {:ok, session_data} = Auth.create_user_session(admin_user, "127.0.0.1")
 
     # 3. Setup connection with cookies
-    conn = 
+    conn =
       conn
       |> init_test_session(%{"tenant_id" => tenant.id})
       |> put_req_cookie("_mcp_access_token", session_data.access_token)
@@ -93,7 +107,5 @@ defmodule McpWeb.Tenant.Underwriting.KanbanLiveTest do
     # 7. Verify Status Update
     updated_app = Application.get_by_id!(application.id, tenant: tenant.company_schema)
     assert updated_app.status == :under_review
-    
-
   end
 end

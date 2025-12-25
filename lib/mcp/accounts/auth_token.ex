@@ -11,10 +11,13 @@ defmodule Mcp.Accounts.AuthToken do
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource]
 
+  alias Mcp.Accounts.{JWT, User}
+  alias Mcp.Repo
+
   postgres do
     table "auth_tokens"
     schema("platform")
-    repo(Mcp.Repo)
+    repo(Repo)
 
     custom_indexes do
       index([:token], unique: true)
@@ -65,7 +68,7 @@ defmodule Mcp.Accounts.AuthToken do
   end
 
   relationships do
-    belongs_to :user, Mcp.Accounts.User do
+    belongs_to :user, User do
       allow_nil? false
     end
   end
@@ -94,7 +97,7 @@ defmodule Mcp.Accounts.AuthToken do
           Ash.Changeset.change_attribute(
             changeset,
             :token,
-            Mcp.Accounts.JWT.generate_random_token()
+            JWT.generate_random_token()
           )
         end
       end
@@ -121,7 +124,7 @@ defmodule Mcp.Accounts.AuthToken do
           Ash.Changeset.change_attribute(
             changeset,
             :token,
-            Mcp.Accounts.JWT.generate_random_token()
+            JWT.generate_random_token()
           )
         end
       end
@@ -217,7 +220,7 @@ defmodule Mcp.Accounts.AuthToken do
 
     create_access_token(%{
       user_id: user_id,
-      token: Mcp.Accounts.JWT.generate_random_token(),
+      token: JWT.generate_random_token(),
       expires_at: expires_at,
       context: context || %{},
       device_info: device_info || %{}
@@ -229,7 +232,7 @@ defmodule Mcp.Accounts.AuthToken do
 
     create_refresh_token(%{
       user_id: user_id,
-      token: Mcp.Accounts.JWT.generate_random_token(),
+      token: JWT.generate_random_token(),
       expires_at: expires_at,
       context: context || %{},
       device_info: device_info || %{}
@@ -256,7 +259,7 @@ defmodule Mcp.Accounts.AuthToken do
     with {:ok, access_token} <-
            create_access_token(%{
              user_id: user_id,
-             token: Mcp.Accounts.JWT.generate_random_token(),
+             token: JWT.generate_random_token(),
              expires_at: expires_at,
              context: context,
              device_info: device_info
@@ -264,7 +267,7 @@ defmodule Mcp.Accounts.AuthToken do
          {:ok, refresh_token} <-
            create_refresh_token(%{
              user_id: user_id,
-             token: Mcp.Accounts.JWT.generate_random_token(),
+             token: JWT.generate_random_token(),
              expires_at: DateTime.add(expires_at, 30, :day),
              context: context,
              device_info: device_info

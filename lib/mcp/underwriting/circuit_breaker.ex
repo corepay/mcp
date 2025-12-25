@@ -9,7 +9,8 @@ defmodule Mcp.Underwriting.CircuitBreaker do
 
   # Configuration
   @failure_threshold 5
-  @reset_timeout_ms 60_000 # 1 minute
+  # 1 minute
+  @reset_timeout_ms 60_000
 
   # Client API
 
@@ -58,14 +59,15 @@ defmodule Mcp.Underwriting.CircuitBreaker do
   @impl true
   def handle_cast({:report_failure, service_name}, state) do
     current_service_state = Map.get(state, service_name, %{status: :closed, failures: 0})
-    
+
     new_failures = current_service_state.failures + 1
-    
-    new_service_state = 
+
+    new_service_state =
       if new_failures >= @failure_threshold do
         Logger.warning("Circuit breaker opening for service: #{service_name}")
+
         %{
-          status: :open, 
+          status: :open,
           failures: new_failures,
           open_until: DateTime.add(DateTime.utc_now(), @reset_timeout_ms, :millisecond)
         }

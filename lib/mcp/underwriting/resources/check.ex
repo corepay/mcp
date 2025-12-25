@@ -1,11 +1,14 @@
 defmodule Mcp.Underwriting.Check do
+  @moduledoc """
+  Represents a specific check (KYC, KYB, Credit) performed during underwriting.
+  """
   use Ash.Resource,
     domain: Mcp.Underwriting,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "underwriting_checks"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   multitenancy do
@@ -35,14 +38,15 @@ defmodule Mcp.Underwriting.Check do
 
     attribute :type, :atom do
       constraints one_of: [
-        :standard_screening_check,
-        :extensive_screening_check,
-        :document_check,
-        :identity_check,
-        :proof_of_address_check,
-        :multi_bureau_check,
-        :face_authentication_check
-      ]
+                    :standard_screening_check,
+                    :extensive_screening_check,
+                    :document_check,
+                    :identity_check,
+                    :proof_of_address_check,
+                    :multi_bureau_check,
+                    :face_authentication_check
+                  ]
+
       allow_nil? false
     end
 
@@ -56,8 +60,10 @@ defmodule Mcp.Underwriting.Check do
       default :none
     end
 
-    attribute :external_id, :string # ComplyCube Check ID
-    attribute :raw_result, :map # Store full provider response
+    # ComplyCube Check ID
+    attribute :external_id, :string
+    # Store full provider response
+    attribute :raw_result, :map
 
     timestamps()
   end

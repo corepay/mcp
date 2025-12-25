@@ -1,11 +1,14 @@
 defmodule Mcp.Underwriting.Address do
+  @moduledoc """
+  Physical address resource for underwriting.
+  """
   use Ash.Resource,
     domain: Mcp.Underwriting,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "underwriting_addresses"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   multitenancy do
@@ -31,8 +34,10 @@ defmodule Mcp.Underwriting.Address do
     attribute :city, :string
     attribute :state, :string
     attribute :postal_code, :string
-    attribute :country, :string # ISO 2
-    attribute :type, :string # main, billing, etc.
+    # ISO 2
+    attribute :country, :string
+    # main, billing, etc.
+    attribute :type, :string
 
     timestamps()
   end

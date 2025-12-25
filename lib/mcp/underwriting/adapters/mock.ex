@@ -6,15 +6,16 @@ defmodule Mcp.Underwriting.Adapters.Mock do
 
   @impl true
   def verify_identity(_applicant_data, _context) do
-    {:ok, %{
-      status: :clear,
-      score: 95,
-      details: %{
-        "first_name" => "MATCH",
-        "last_name" => "MATCH",
-        "dob" => "MATCH"
-      }
-    }}
+    {:ok,
+     %{
+       status: :clear,
+       score: 95,
+       details: %{
+         "first_name" => "MATCH",
+         "last_name" => "MATCH",
+         "dob" => "MATCH"
+       }
+     }}
   end
 
   @impl true
@@ -23,8 +24,10 @@ defmodule Mcp.Underwriting.Adapters.Mock do
     case business_data["business_name"] do
       "Fraud Corp" ->
         {:ok, %{status: :flagged, reason: "Sanctions Match"}}
+
       "Risky Business" ->
         {:ok, %{status: :review, reason: "Adverse Media"}}
+
       _ ->
         {:ok, %{status: :clear, reason: "No flags found"}}
     end
@@ -41,12 +44,13 @@ defmodule Mcp.Underwriting.Adapters.Mock do
 
   @impl true
   def document_check(_document_image, _type, _context) do
-    {:ok, %{
-      status: :valid,
-      extracted_data: %{
-        "name" => "John Doe",
-        "dob" => "1980-01-01"
-      }
-    }}
+    {:ok,
+     %{
+       status: :valid,
+       extracted_data: %{
+         "name" => "John Doe",
+         "dob" => "1980-01-01"
+       }
+     }}
   end
 end

@@ -33,6 +33,7 @@ defmodule Mcp.Gdpr.Config do
     Application.put_env(:mcp, :gdpr, new_config)
     :ok
   end
+
   @doc """
   Gets configuration value (alias for get).
   """
@@ -100,7 +101,8 @@ defmodule Mcp.Gdpr.Config do
 
   def retention_periods do
     %{
-      "authentication_data" => 0, # Immediate
+      # Immediate
+      "authentication_data" => 0,
       "financial_data" => 7 * 365,
       "core_identity" => 90,
       "activity_data" => 365,
@@ -158,15 +160,18 @@ defmodule Mcp.Gdpr.Config do
   end
 
   def get_retention_period(category) do
-    Map.get(retention_periods(), category, 90) # Default 90 days
+    # Default 90 days
+    Map.get(retention_periods(), category, 90)
   end
 
   def valid_legal_basis?(basis, category) do
     legal_bases()
     |> Enum.find(fn %{code: code} -> code == basis end)
     |> case do
-      nil -> false
-      %{valid_for: valid_categories} -> 
+      nil ->
+        false
+
+      %{valid_for: valid_categories} ->
         # Convert category to atom if it's a string for comparison
         category_atom = if is_binary(category), do: String.to_atom(category), else: category
         category_atom in valid_categories

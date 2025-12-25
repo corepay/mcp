@@ -5,8 +5,9 @@ defmodule Mcp.Seeder do
 
   require Ash.Query
   alias Mcp.Accounts.User
-  alias Mcp.Platform.{Tenant, Merchant, Store}
+  alias Mcp.Platform.{Merchant, Store, Tenant}
   alias Mcp.Platform.TenantUserManager
+  alias Mcp.Repo
   alias Mcp.Underwriting.AgentBlueprint
 
   @password "Password123!"
@@ -81,7 +82,7 @@ defmodule Mcp.Seeder do
           if features["underwriting"] != true do
             IO.puts("  - Enabling underwriting for #{name}...")
 
-            Mcp.Platform.Tenant.update!(tenant, %{
+            Tenant.update!(tenant, %{
               features: Map.put(features, "underwriting", true)
             })
           else
@@ -100,7 +101,7 @@ defmodule Mcp.Seeder do
 
     IO.puts("  - Running migrations for #{tenant.company_schema}...")
 
-    Ecto.Migrator.run(Mcp.Repo, "priv/repo/tenant_migrations", :up,
+    Ecto.Migrator.run(Repo, "priv/repo/tenant_migrations", :up,
       all: true,
       prefix: tenant.company_schema
     )
@@ -231,7 +232,7 @@ defmodule Mcp.Seeder do
         }
       end)
 
-    Mcp.Repo.insert_all("role_permissions", entries,
+    Repo.insert_all("role_permissions", entries,
       prefix: tenant.company_schema,
       on_conflict: :nothing,
       conflict_target: [:role, :permission]

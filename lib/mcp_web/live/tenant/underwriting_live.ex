@@ -1,6 +1,7 @@
 defmodule McpWeb.Tenant.UnderwritingLive do
   use McpWeb, :live_view
 
+  alias Mcp.Platform.Tenant
   alias Mcp.Underwriting.Application
 
   @impl true
@@ -8,25 +9,25 @@ defmodule McpWeb.Tenant.UnderwritingLive do
     # In a real app, we would filter by status (e.g., submitted, manual_review)
     # For now, we list all for visibility
     # We need to load the merchant relationship to display names
-    
+
     # NOTE: Admin view needs to see ALL tenants' applications.
     # Ash multitenancy usually requires a specific tenant.
     # For a "Super Admin" view, we might need to iterate tenants or use a specific "admin" context.
-    # For this iteration, we will assume the admin is viewing within a specific tenant context 
+    # For this iteration, we will assume the admin is viewing within a specific tenant context
     # OR we need to bypass tenant checks (which is dangerous/complex in Ash).
-    
+
     # SIMPLIFICATION: We will fetch applications for the "current tenant" of the admin.
     # In a real multi-tenant platform, the "Platform Admin" is a special case.
-    
+
     # Assuming the admin is logged in and has a tenant_id in their session/user
     tenant_id = session["tenant_id"] || socket.assigns.current_user.tenant_id
-    tenant = Mcp.Platform.Tenant.get_by_id!(tenant_id)
+    tenant = Tenant.get_by_id!(tenant_id)
 
-    applications = 
+    applications =
       Application.read!(load: [:merchant], tenant: tenant.company_schema)
-      |> Enum.sort_by(&(&1.inserted_at), {:desc, Date})
+      |> Enum.sort_by(& &1.inserted_at, {:desc, Date})
 
-    {:ok, 
+    {:ok,
      socket
      |> assign(:page_title, "Underwriting Dashboard")
      |> assign(:tenant, tenant)
@@ -40,7 +41,9 @@ defmodule McpWeb.Tenant.UnderwritingLive do
       <header class="flex justify-between items-center mb-6">
         <div>
           <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Underwriting Queue</h1>
-          <p class="text-sm text-zinc-500 dark:text-zinc-400">Review and manage merchant applications.</p>
+          <p class="text-sm text-zinc-500 dark:text-zinc-400">
+            Review and manage merchant applications.
+          </p>
         </div>
         <div class="flex gap-2">
           <button class="btn btn-outline btn-sm">Filter</button>
@@ -66,20 +69,22 @@ defmodule McpWeb.Tenant.UnderwritingLive do
                   <div class="flex items-center gap-3">
                     <div class="avatar placeholder">
                       <div class="bg-neutral-focus text-neutral-content rounded-full w-10">
-                        <span class="text-xs"><%= String.at(app.application_data["business_name"] || "?", 0) %></span>
+                        <span class="text-xs">
+                          {String.at(app.application_data["business_name"] || "?", 0)}
+                        </span>
                       </div>
                     </div>
                     <div>
-                      <div class="font-bold"><%= app.application_data["business_name"] %></div>
-                      <div class="text-xs opacity-50"><%= app.merchant_id %></div>
+                      <div class="font-bold">{app.application_data["business_name"]}</div>
+                      <div class="text-xs opacity-50">{app.merchant_id}</div>
                     </div>
                   </div>
                 </td>
-                <td><%= Calendar.strftime(app.inserted_at, "%b %d, %H:%M") %></td>
+                <td>{Calendar.strftime(app.inserted_at, "%b %d, %H:%M")}</td>
                 <td>
                   <%= if app.risk_score do %>
                     <div class={"badge #{risk_score_color(app.risk_score)} gap-2"}>
-                      <%= app.risk_score %>
+                      {app.risk_score}
                     </div>
                   <% else %>
                     <span class="text-zinc-400">-</span>
@@ -87,7 +92,7 @@ defmodule McpWeb.Tenant.UnderwritingLive do
                 </td>
                 <td>
                   <div class={"badge #{status_badge_color(app.status)}"}>
-                    <%= Phoenix.Naming.humanize(app.status) %>
+                    {Phoenix.Naming.humanize(app.status)}
                   </div>
                 </td>
                 <td>

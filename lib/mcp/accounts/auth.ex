@@ -3,7 +3,7 @@ defmodule Mcp.Accounts.Auth do
   Authentication context for user management.
   """
 
-  alias Mcp.Accounts.{AuthToken, JWT, User}
+  alias Mcp.Accounts.{AuthToken, JWT, TOTP, User}
   alias Mcp.Cache.SessionStore
   require Logger
 
@@ -13,74 +13,89 @@ defmodule Mcp.Accounts.Auth do
   def authenticate(email, password, ip_address \\ nil, opts \\ [])
 
   def authenticate(email, password, _ip_address, _opts) do
-    # Use AshAuthentication's generated sign_in_with_password action
     # Find user first to check status/lockout
-    user =
-      User
-      |> Ash.Query.for_read(:by_email, %{email: email})
-      |> Ash.Query.set_context(%{
-        ash_archival: %{include_archived?: true},
-        private: %{ash_archival: %{include_archived?: true}}
-      })
-      |> Ash.read_one()
+    with {:ok, user} when not is_nil(user) <- find_user_by_email(email),
+         :ok <- check_user_status(user),
+         {:ok, authenticated_user} <- verify_password(user, password) do
+      handle_successful_login(authenticated_user)
+    else
+      {:error, reason} -> {:error, reason}
+      nil -> handle_invalid_credentials()
+      _ -> handle_invalid_credentials()
+    end
+  end
 
-    case user do
-      {:ok, user} when not is_nil(user) ->
-        cond do
-          user.status == :suspended ->
-            {:error, :account_suspended}
+  defp find_user_by_email(email) do
+    User
+    |> Ash.Query.for_read(:by_email, %{email: email})
+    |> Ash.Query.set_context(%{
+      ash_archival: %{include_archived?: true},
+      private: %{ash_archival: %{include_archived?: true}}
+    })
+    |> Ash.read_one()
+  end
 
-          user.status == :deleted or not is_nil(user.deleted_at) or
-              (Map.has_key?(user, :archived_at) and not is_nil(user.archived_at)) ->
-            {:error, :account_deleted}
+  defp check_user_status(user) do
+    cond do
+      user.status == :suspended ->
+        {:error, :account_suspended}
 
-          user.locked_at != nil ->
-            # Check if lock expired (e.g. 15 minutes)
-            # For now, assume manual unlock or email unlock
-            {:error, :account_locked}
+      user.status == :deleted or not is_nil(user.deleted_at) or
+          (Map.has_key?(user, :archived_at) and not is_nil(user.archived_at)) ->
+        {:error, :account_deleted}
 
-          true ->
-            # Attempt authentication
-            case User
-                 |> Ash.Query.for_read(:sign_in_with_password, %{email: email, password: password})
-                 |> Ash.read_one() do
-              {:ok, authenticated_user} ->
-                # Reset failed attempts on success
-                User.reset_failed_attempts(authenticated_user)
+      user.locked_at != nil ->
+        {:error, :account_locked}
 
-                if Mcp.Accounts.TOTP.totp_enabled?(authenticated_user) do
-                  {:ok, :require_2fa, authenticated_user}
-                else
-                  {:ok, authenticated_user}
-                end
+      true ->
+        :ok
+    end
+  end
 
-              _ ->
-                # Increment failed attempts
-                Logger.debug("Current Failed Attempts (Before Update): #{user.failed_attempts}")
-                {:ok, updated_user} = User.increment_failed_attempts(user)
-                Logger.debug("Failed Attempts (After Update): #{updated_user.failed_attempts}")
-
-                if updated_user.failed_attempts >= 5 do
-                  Logger.info("Locking account for user #{user.id}")
-
-                  case User.lock_account(updated_user) do
-                    {:ok, _} -> Logger.info("Account locked successfully")
-                    {:error, err} -> Logger.error("Lock failed: #{inspect(err)}")
-                  end
-
-                  {:error, :account_locked}
-                else
-                  {:error, :invalid_credentials}
-                end
-            end
-        end
+  defp verify_password(user, password) do
+    case User
+         |> Ash.Query.for_read(:sign_in_with_password, %{email: user.email, password: password})
+         |> Ash.read_one() do
+      {:ok, authenticated_user} ->
+        {:ok, authenticated_user}
 
       _ ->
-        # User not found
-        # AshAuthentication handles timing attacks internally, but here we might need to simulate work
-        Bcrypt.no_user_verify()
-        {:error, :invalid_credentials}
+        handle_failed_login(user)
     end
+  end
+
+  defp handle_successful_login(user) do
+    User.reset_failed_attempts(user)
+
+    if TOTP.totp_enabled?(user) do
+      {:ok, :require_2fa, user}
+    else
+      {:ok, user}
+    end
+  end
+
+  defp handle_failed_login(user) do
+    Logger.debug("Current Failed Attempts (Before Update): #{user.failed_attempts}")
+    {:ok, updated_user} = User.increment_failed_attempts(user)
+    Logger.debug("Failed Attempts (After Update): #{updated_user.failed_attempts}")
+
+    if updated_user.failed_attempts >= 5 do
+      Logger.info("Locking account for user #{user.id}")
+
+      case User.lock_account(updated_user) do
+        {:ok, _} -> Logger.info("Account locked successfully")
+        {:error, err} -> Logger.error("Lock failed: #{inspect(err)}")
+      end
+
+      {:error, :account_locked}
+    else
+      {:error, :invalid_credentials}
+    end
+  end
+
+  defp handle_invalid_credentials do
+    Bcrypt.no_user_verify()
+    {:error, :invalid_credentials}
   end
 
   @doc """
@@ -341,30 +356,26 @@ defmodule Mcp.Accounts.Auth do
   end
 
   def verify_session(token) do
-    case verify_jwt_access_token(token) do
-      {:ok, claims} ->
-        user_id = claims["sub"]
-        iat = claims["iat"]
+    with {:ok, claims} <- verify_jwt_access_token(token) do
+      check_token_revocation(claims)
+    end
+  end
 
-        # Check if sessions have been revoked
-        revocation_key = "revocation:#{user_id}"
+  defp check_token_revocation(claims) do
+    user_id = claims["sub"]
+    iat = claims["iat"]
+    revocation_key = "revocation:#{user_id}"
 
-        case SessionStore.get_session(revocation_key) do
-          {:ok, %{data: %{revoked_at: revoked_at}}} ->
-            # Check if token was issued before revocation
-            if iat < DateTime.to_unix(revoked_at) do
-              {:error, :token_revoked}
-            else
-              {:ok, claims}
-            end
-
-          _ ->
-            # No revocation record or error reading it
-            {:ok, claims}
+    case SessionStore.get_session(revocation_key) do
+      {:ok, %{data: %{revoked_at: revoked_at}}} ->
+        if iat < DateTime.to_unix(revoked_at) do
+          {:error, :token_revoked}
+        else
+          {:ok, claims}
         end
 
-      error ->
-        error
+      _ ->
+        {:ok, claims}
     end
   end
 

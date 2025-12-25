@@ -1,4 +1,7 @@
 defmodule McpWeb.Layouts.PortalLayouts do
+  @moduledoc """
+  Layouts for the portal.
+  """
   use McpWeb, :html
 
   @doc """

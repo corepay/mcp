@@ -3,7 +3,7 @@ defmodule Mcp.Platform.TenantSettingsManager do
   Tenant settings management backed by Mcp.Platform.TenantSettings resource.
   """
 
-  alias Mcp.Platform.{Tenant, TenantSettings, FeatureToggle, TenantBranding}
+  alias Mcp.Platform.{FeatureToggle, Tenant, TenantBranding, TenantSettings}
   require Ash.Query
 
   @doc """
@@ -97,7 +97,7 @@ defmodule Mcp.Platform.TenantSettingsManager do
   Disables a feature for a tenant.
   """
   def disable_feature(tenant_id, feature, _user_id \\ nil) do
-    case FeatureToggle.is_enabled(tenant_id, feature) do
+    case FeatureToggle.enabled?(tenant_id, feature) do
       {:ok, feature_toggle} ->
         FeatureToggle.disable_feature(feature_toggle)
 
@@ -184,7 +184,7 @@ defmodule Mcp.Platform.TenantSettingsManager do
   Checks if a feature is enabled for a tenant.
   """
   def feature_enabled?(tenant_id, feature) do
-    case FeatureToggle.is_enabled(tenant_id, feature) do
+    case FeatureToggle.enabled?(tenant_id, feature) do
       {:ok, _} -> true
       _ -> false
     end

@@ -18,7 +18,11 @@ defmodule McpWeb.Reseller.DashboardLive do
           <h3 class="font-bold text-lg">Portfolio</h3>
           <p class="py-4">View your managed merchants.</p>
           <div class="card-actions justify-end">
-            <McpWeb.Core.CoreComponents.button variant="primary" size="sm" navigate={~p"/partners/applications"}>
+            <McpWeb.Core.CoreComponents.button
+              variant="primary"
+              size="sm"
+              navigate={~p"/partners/applications"}
+            >
               View Portfolio
             </McpWeb.Core.CoreComponents.button>
           </div>

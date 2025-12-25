@@ -64,24 +64,29 @@ defmodule Mcp.Platform.SchemaProvisioner do
   end
 
   def provision_tenant_schema(schema_name, opts \\ []) do
-    if is_nil(schema_name) or String.trim(schema_name) == "" do
-      {:error, :invalid_slug}
-    else
-      if schema_exists?(schema_name) do
+    cond do
+      is_nil(schema_name) or String.trim(schema_name) == "" ->
+        {:error, :invalid_slug}
+
+      schema_exists?(schema_name) ->
         {:error, :schema_already_exists}
-      else
-        case TenantManager.create_tenant_schema(schema_name) do
-          {:ok, _} ->
-            unless opts[:skip_tables] do
-              ensure_tables_exist(schema_name)
-            end
 
-            {:ok, :provisioned}
+      true ->
+        do_provision_schema(schema_name, opts)
+    end
+  end
 
-          {:error, reason} ->
-            {:error, reason}
+  defp do_provision_schema(schema_name, opts) do
+    case TenantManager.create_tenant_schema(schema_name) do
+      {:ok, _} ->
+        unless opts[:skip_tables] do
+          ensure_tables_exist(schema_name)
         end
-      end
+
+        {:ok, :provisioned}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 

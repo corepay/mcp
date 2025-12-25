@@ -3,8 +3,8 @@ defmodule Mcp.Platform.Graph do
   Manages Graph operations (Apache AGE) for relationship analysis.
   """
 
-  alias Mcp.Repo
   alias Mcp.Infrastructure.Context
+  alias Mcp.Repo
 
   @tenant_schema_prefix "acq_"
 

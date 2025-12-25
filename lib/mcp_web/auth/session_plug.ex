@@ -8,6 +8,8 @@ defmodule McpWeb.Auth.SessionPlug do
 
   import Plug.Conn
 
+  alias Mcp.Accounts.Auth
+
   # Cookie names
   @access_token_cookie "_mcp_access_token"
   @refresh_token_cookie "_mcp_refresh_token"
@@ -120,11 +122,11 @@ defmodule McpWeb.Auth.SessionPlug do
     refresh_token = conn.cookies[@refresh_token_cookie]
     session_id = conn.cookies[@session_id_cookie]
 
-    IO.inspect(get_req_header(conn, "cookie"),
-      label: "SessionPlug Cookie Header (#{conn.request_path})"
-    )
+    # IO.inspect(get_req_header(conn, "cookie"),
+    #   label: "SessionPlug Cookie Header (#{conn.request_path})"
+    # )
 
-    IO.inspect(conn.cookies, label: "SessionPlug Cookies (#{conn.request_path})")
+    # IO.inspect(conn.cookies, label: "SessionPlug Cookies (#{conn.request_path})")
 
     if access_token && refresh_token && session_id do
       case decrypt_tokens(access_token, refresh_token) do
@@ -140,9 +142,9 @@ defmodule McpWeb.Auth.SessionPlug do
   end
 
   defp handle_existing_session(conn, access_token, refresh_token, session_id, opts) do
-    case Mcp.Accounts.Auth.verify_jwt_access_token(access_token) do
+    case Auth.verify_jwt_access_token(access_token) do
       {:ok, claims} ->
-        IO.puts("SessionPlug: Access token verified")
+        # IO.puts("SessionPlug: Access token verified")
         # Set current user and session data
         user_data = extract_user_data_from_claims(claims)
 
@@ -151,8 +153,8 @@ defmodule McpWeb.Auth.SessionPlug do
           refresh_token: refresh_token,
           session_id: session_id,
           user: user_data,
-          current_context: Mcp.Accounts.Auth.get_current_context(claims),
-          authorized_contexts: Mcp.Accounts.Auth.get_authorized_contexts(claims),
+          current_context: Auth.get_current_context(claims),
+          authorized_contexts: Auth.get_authorized_contexts(claims),
           expires_at: DateTime.from_unix!(claims["exp"])
         }
 
@@ -162,12 +164,12 @@ defmodule McpWeb.Auth.SessionPlug do
         |> put_session("user_token", access_token)
         |> maybe_refresh_session(opts)
 
-      {:error, reason} ->
-        IO.puts("SessionPlug: Access token invalid: #{inspect(reason)}")
+      {:error, _reason} ->
+        # IO.puts("SessionPlug: Access token invalid: #{inspect(reason)}")
         # Access token invalid, try refresh
-        case Mcp.Accounts.Auth.refresh_jwt_session(refresh_token, get_session_opts(conn)) do
+        case Auth.refresh_jwt_session(refresh_token, get_session_opts(conn)) do
           {:ok, new_session_data} ->
-            IO.puts("SessionPlug: Session refreshed")
+            # IO.puts("SessionPlug: Session refreshed")
 
             conn
             |> set_jwt_session(new_session_data)
@@ -175,15 +177,15 @@ defmodule McpWeb.Auth.SessionPlug do
             |> assign(:current_user, new_session_data.user)
             |> put_session("user_token", new_session_data.access_token)
 
-          {:error, refresh_reason} ->
-            IO.puts("SessionPlug: Refresh failed: #{inspect(refresh_reason)}")
+          {:error, _refresh_reason} ->
+            # IO.puts("SessionPlug: Refresh failed: #{inspect(refresh_reason)}")
             handle_invalid_session(conn, :invalid_token, opts)
         end
     end
   end
 
   defp handle_no_session(conn, _opts) do
-    IO.puts("SessionPlug: handle_no_session called")
+    # IO.puts("SessionPlug: handle_no_session called")
 
     if api_request?(conn) do
       conn
@@ -201,8 +203,8 @@ defmodule McpWeb.Auth.SessionPlug do
     end
   end
 
-  defp handle_invalid_session(conn, reason, _opts) do
-    IO.puts("SessionPlug: handle_invalid_session called: #{inspect(reason)}")
+  defp handle_invalid_session(conn, _reason, _opts) do
+    # IO.puts("SessionPlug: handle_invalid_session called: #{inspect(reason)}")
 
     if api_request?(conn) do
       conn

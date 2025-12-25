@@ -9,11 +9,29 @@
 
     <div class="bg-base-100 shadow-xl rounded-xl p-8 border border-base-200">
       <.form for={@form} phx-change="validate" phx-submit="save" class="space-y-6">
-        <.input field={@form[:email]} type="email" label="Email address" required placeholder="you@company.com" />
-        
-        <.input field={@form[:password]} type="password" label="Password" required placeholder="••••••••" />
-        
-        <.input field={@form[:password_confirmation]} type="password" label="Confirm Password" required placeholder="••••••••" />
+        <.input
+          field={@form[:email]}
+          type="email"
+          label="Email address"
+          required
+          placeholder="you@company.com"
+        />
+
+        <.input
+          field={@form[:password]}
+          type="password"
+          label="Password"
+          required
+          placeholder="••••••••"
+        />
+
+        <.input
+          field={@form[:password_confirmation]}
+          type="password"
+          label="Confirm Password"
+          required
+          placeholder="••••••••"
+        />
 
         <div class="pt-2">
           <.button type="submit" class="btn-primary w-full" phx-disable-with="Creating account...">
@@ -24,7 +42,10 @@
 
       <div class="mt-6 text-center text-sm">
         <span class="text-base-content/60">Already have an account?</span>
-        <.link href={~p"/online-application/login"} class="font-medium text-primary hover:text-primary-focus ml-1">
+        <.link
+          href={~p"/online-application/login"}
+          class="font-medium text-primary hover:text-primary-focus ml-1"
+        >
           Sign in
         </.link>
       </div>

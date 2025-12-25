@@ -8,7 +8,9 @@ defmodule McpWeb.AuthController do
 
   use McpWeb, :controller
 
-  alias Mcp.Accounts.Auth
+  alias Mcp.Accounts.{Auth, User}
+  alias Mcp.Communication.EmailService
+  alias McpWeb.Auth.SessionPlug
 
   def create(conn, %{"login" => login_params}) do
     create(conn, login_params)
@@ -27,7 +29,7 @@ defmodule McpWeb.AuthController do
         redirect_to = get_session(conn, :return_to) || get_redirect_path(conn, user)
 
         conn
-        |> McpWeb.Auth.SessionPlug.set_jwt_session(session)
+        |> SessionPlug.set_jwt_session(session)
         |> put_session("user_token", session.access_token)
         |> put_session(:current_user, user)
         |> put_flash(:info, "Welcome back!")
@@ -80,7 +82,7 @@ defmodule McpWeb.AuthController do
 
     conn
     |> clear_session()
-    |> McpWeb.Auth.SessionPlug.clear_jwt_session()
+    |> SessionPlug.clear_jwt_session()
     |> put_flash(:info, "You have been signed out successfully.")
     |> redirect(to: sign_in_path)
   end
@@ -92,32 +94,55 @@ defmodule McpWeb.AuthController do
   defp get_sign_in_path_from_referer(referer) do
     uri = URI.parse(referer)
     path = uri.path || ""
-
-    cond do
-      String.starts_with?(path, "/admin") -> ~p"/admin/sign-in"
-      String.starts_with?(path, "/app") -> ~p"/app/sign-in"
-      String.starts_with?(path, "/developers") -> ~p"/developers/sign-in"
-      String.starts_with?(path, "/partners") -> ~p"/partners/sign-in"
-      String.starts_with?(path, "/store/account") -> ~p"/store/account/sign-in"
-      String.starts_with?(path, "/vendors") -> ~p"/vendors/sign-in"
-      String.starts_with?(path, "/online-application") -> ~p"/online-application/login"
-      true -> ~p"/tenant/sign-in"
-    end
+    resolve_portal_signin_path(path)
   end
 
   defp get_sign_in_path_from_conn(conn) do
-    path = conn.request_path
+    resolve_portal_signin_path(conn.request_path)
+  end
 
-    cond do
-      String.starts_with?(path, "/admin") -> ~p"/admin/sign-in"
-      String.starts_with?(path, "/app") -> ~p"/app/sign-in"
-      String.starts_with?(path, "/developers") -> ~p"/developers/sign-in"
-      String.starts_with?(path, "/partners") -> ~p"/partners/sign-in"
-      String.starts_with?(path, "/store/account") -> ~p"/store/account/sign-in"
-      String.starts_with?(path, "/vendors") -> ~p"/vendors/sign-in"
-      String.starts_with?(path, "/online-application") -> ~p"/online-application/login"
-      true -> ~p"/tenant/sign-in"
+  defp resolve_portal_signin_path(path) do
+    path_prefix = get_portal_prefix(path)
+
+    case path_prefix do
+      "/admin" -> ~p"/admin/sign-in"
+      "/app" -> ~p"/app/sign-in"
+      "/developers" -> ~p"/developers/sign-in"
+      "/partners" -> ~p"/partners/sign-in"
+      "/store/account" -> ~p"/store/account/sign-in"
+      "/vendors" -> ~p"/vendors/sign-in"
+      "/online-application" -> ~p"/online-application/login"
+      _ -> ~p"/tenant/sign-in"
     end
+  end
+
+  defp get_redirect_path(conn, _user) do
+    # Determine redirect path based on referer to keep user in the same portal
+    referer = get_req_header(conn, "referer") |> List.first()
+    uri = if referer, do: URI.parse(referer), else: nil
+    path = if uri, do: uri.path || "", else: ""
+    path_prefix = get_portal_prefix(path)
+
+    portal_dashboard_map()[path_prefix] || ~p"/"
+  end
+
+  defp portal_dashboard_map do
+    %{
+      "/admin" => ~p"/admin/dashboard",
+      "/app" => ~p"/app/dashboard",
+      "/developers" => ~p"/developers/dashboard",
+      "/partners" => ~p"/partners/dashboard",
+      "/store/account" => ~p"/store/account/dashboard",
+      "/vendors" => ~p"/vendors/dashboard",
+      "/tenant" => ~p"/tenant/dashboard",
+      "/online-application" => ~p"/online-application/application"
+    }
+  end
+
+  @portal_prefixes ~w(/admin /app /developers /partners /store/account /vendors /tenant /online-application)
+
+  defp get_portal_prefix(path) do
+    Enum.find(@portal_prefixes, fn prefix -> String.starts_with?(path, prefix) end)
   end
 
   defp authenticate_user(email, password, ip_address) do
@@ -151,31 +176,69 @@ defmodule McpWeb.AuthController do
 
   defp generate_temp_token(_user) do
     # Generate a temporary token for password change flow
-    # Generate a temporary token for password change flow
     :crypto.strong_rand_bytes(32)
     |> Base.url_encode64(padding: false)
     |> then(fn token -> "pwd_change_" <> token end)
   end
 
-  defp get_redirect_path(conn, _user) do
-    # Determine redirect path based on referer to keep user in the same portal
-    referer = get_req_header(conn, "referer") |> List.first()
-    uri = if referer, do: URI.parse(referer), else: nil
-    path = if uri, do: uri.path || "", else: ""
-
-    cond do
-      String.starts_with?(path, "/admin") -> ~p"/admin/dashboard"
-      String.starts_with?(path, "/app") -> ~p"/app/dashboard"
-      String.starts_with?(path, "/developers") -> ~p"/developers/dashboard"
-      String.starts_with?(path, "/partners") -> ~p"/partners/dashboard"
-      String.starts_with?(path, "/store/account") -> ~p"/store/account/dashboard"
-      String.starts_with?(path, "/vendors") -> ~p"/vendors/dashboard"
-      String.starts_with?(path, "/tenant") -> ~p"/tenant/dashboard"
-      String.starts_with?(path, "/online-application") -> ~p"/online-application/application"
-      # Fallback to context-based or default
-      conn.assigns[:current_tenant] -> ~p"/tenant/dashboard"
-      true -> ~p"/admin/dashboard"
+  @doc false
+  def find_user_by_reset_token(token) when is_binary(token) do
+    require Ash.Query
+    # Query users by reset token
+    User
+    |> Ash.Query.filter(reset_password_token == ^token)
+    |> Ash.Query.limit(1)
+    |> Ash.read()
+    |> case do
+      {:ok, [user]} -> {:ok, user}
+      {:ok, []} -> {:error, :not_found}
+      {:error, _reason} -> {:error, :not_found}
     end
+  end
+
+  @doc false
+  def send_password_reset_email(user) do
+    # Get the reset token from the user
+    reset_token = user.reset_password_token
+
+    # Build reset URL - in production this would be from config
+    reset_url = build_reset_url(reset_token)
+
+    # Send email with reset link
+    email_body = """
+    <html>
+      <body>
+        <h2>Password Reset Request</h2>
+        <p>Hello #{user.first_name || user.email},</p>
+        <p>You requested a password reset. Click the link below to reset your password:</p>
+        <p><a href="#{reset_url}">Reset Password</a></p>
+        <p>This link will expire in 1 hour.</p>
+        <p>If you didn't request this, please ignore this email.</p>
+      </body>
+    </html>
+    """
+
+    case EmailService.send_email(
+           user.email,
+           "Password Reset Request",
+           email_body,
+           from: "noreply@mcp.local"
+         ) do
+      {:ok, _} ->
+        require Logger
+        Logger.info("Password reset email sent to #{user.email}")
+
+      {:error, reason} ->
+        require Logger
+        Logger.error("Failed to send password reset email: #{inspect(reason)}")
+    end
+  end
+
+  defp build_reset_url(token) do
+    # In production, this would come from application config
+    # For now, use a simple tenant reset path
+    base_url = System.get_env("APP_URL", "http://localhost:4000")
+    "#{base_url}/tenant/reset-password?token=#{token}"
   end
 
   # API Actions
@@ -190,30 +253,28 @@ defmodule McpWeb.AuthController do
 
   defp handle_register(conn, params) do
     # Delegate to RegistrationService or User resource
-    case Mcp.Accounts.User.register(params) do
+    case User.register(params) do
       {:ok, user} ->
         conn
         |> put_status(:created)
         |> json(%{user: user_view(user)})
 
       {:error, error} ->
-        # Simple error formatting for Ash errors
-        errors =
-          case error do
-            %Ash.Error.Invalid{errors: errors} ->
-              Enum.map(errors, fn e ->
-                field = Map.get(e, :field) || Map.get(e, :input) || "unknown"
-                %{field: field, message: Exception.message(e)}
-              end)
-
-            _ ->
-              [%{message: Exception.message(error)}]
-          end
-
         conn
         |> put_status(:unprocessable_entity)
-        |> json(%{errors: errors})
+        |> json(%{errors: format_register_errors(error)})
     end
+  end
+
+  defp format_register_errors(%Ash.Error.Invalid{errors: errors}) do
+    Enum.map(errors, fn e ->
+      field = Map.get(e, :field) || Map.get(e, :input) || "unknown"
+      %{field: field, message: Exception.message(e)}
+    end)
+  end
+
+  defp format_register_errors(error) do
+    [%{message: Exception.message(error)}]
   end
 
   defp user_view(user) do
@@ -302,6 +363,21 @@ defmodule McpWeb.AuthController do
     end
   end
 
+  def profile(conn, _params) do
+    # If we reached here, we are authenticated via the API pipeline
+    # The current user/tenant should be in assigns
+    user = conn.assigns[:current_user]
+
+    if user do
+      json(conn, %{data: user_view(user)})
+    else
+      # If for some reason we missed authentication check (should be caught by plug)
+      conn
+      |> put_status(:unauthorized)
+      |> json(%{error: "Unauthorized"})
+    end
+  end
+
   def verify_2fa(conn, %{"totp_code" => code}) do
     # Mock 2FA verification
     if code == "123456" do
@@ -320,11 +396,13 @@ defmodule McpWeb.AuthController do
   end
 
   def forgot_password(conn, %{"email" => email}) do
-    # TODO: Implement actual Ash action call
-    # Mcp.Accounts.User.request_password_reset_token(%{email: email})
-
+    # Validate email format
     if email =~ ~r/^[\w+\-.]+@[a-z\d\-.]+\.[a-z]+$/i do
-      # Always return 200 for security
+      # Attempt to find user and request password reset
+      # Use Task.async to send email asynchronously (fire and forget)
+      Task.start(fn -> process_password_reset_request(email) end)
+
+      # Always return 200 for security (prevent email enumeration)
       conn
       |> put_status(:ok)
       |> text("Password reset instructions sent")
@@ -358,17 +436,7 @@ defmodule McpWeb.AuthController do
         |> json(%{errors: %{password: ["is too short"]}})
 
       true ->
-        # TODO: Implement actual Ash action call
-        # Mcp.Accounts.User.reset_password_with_token(token, password)
-        if token == "invalid_token" do
-          conn
-          |> put_status(:bad_request)
-          |> text("Invalid or expired reset token")
-        else
-          conn
-          |> put_status(:ok)
-          |> text("Password reset successfully")
-        end
+        attempt_password_reset(conn, token, password, confirmation)
     end
   end
 
@@ -376,5 +444,56 @@ defmodule McpWeb.AuthController do
     conn
     |> put_status(:bad_request)
     |> text("Invalid request")
+  end
+
+  defp process_password_reset_request(email) do
+    with {:ok, user} when not is_nil(user) <- User.by_email(email),
+         true <- user.status in [:active, :locked] do
+      case User.request_password_reset(user) do
+        {:ok, updated_user} ->
+          send_password_reset_email(updated_user)
+
+        {:error, reason} ->
+          require Logger
+          Logger.warning("Failed to generate reset token: #{inspect(reason)}")
+      end
+    else
+      _ -> :ok
+    end
+  end
+
+  defp attempt_password_reset(conn, token, password, confirmation) do
+    with {:ok, user} <- find_user_by_reset_token(token),
+         {:ok, _updated_user} <-
+           User.reset_password_with_token(user, token, password, confirmation) do
+      Auth.revoke_user_sessions(user.id)
+
+      conn
+      |> put_status(:ok)
+      |> text("Password reset successfully")
+    else
+      {:error, %Ash.Error.Invalid{errors: errors}} ->
+        error_map =
+          Enum.reduce(errors, %{}, fn error, acc ->
+            field = Map.get(error, :field, :base)
+            message = Exception.message(error)
+            Map.put(acc, field, [message])
+          end)
+
+        conn
+        |> put_status(:bad_request)
+        |> json(%{errors: error_map})
+
+      {:error, _reason} ->
+        conn
+        |> put_status(:bad_request)
+        |> text("Invalid or expired reset token")
+
+      # Handle find_user_by_reset_token fallback
+      {:error, :not_found} ->
+        conn
+        |> put_status(:bad_request)
+        |> text("Invalid or expired reset token")
+    end
   end
 end

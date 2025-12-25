@@ -55,9 +55,7 @@ defmodule Mcp.Cache.TenantIsolationTest do
 
   describe "tenant_set/3" do
     test "sets value with explicit tenant_id" do
-      expect(CacheManagerMock, :set, fn "test_key",
-                                        "test_value",
-                                        [tenant_id: "tenant-123"] ->
+      expect(CacheManagerMock, :set, fn "test_key", "test_value", [tenant_id: "tenant-123"] ->
         :ok
       end)
 

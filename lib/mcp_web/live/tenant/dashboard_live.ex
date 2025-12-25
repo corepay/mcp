@@ -1,20 +1,23 @@
 defmodule McpWeb.Tenant.DashboardLive do
   use McpWeb, :live_view
+  alias Mcp.Platform.Tenant
 
   def mount(_params, session, socket) do
     case session["tenant_id"] do
       nil ->
         # Fetch all tenants for selection
-        tenants = Mcp.Platform.Tenant.read!()
-        {:ok, 
+        tenants = Tenant.read!()
+
+        {:ok,
          socket
          |> assign(:page_title, "Select Tenant")
          |> assign(:tenants, tenants)
          |> assign(:mode, :select_tenant)}
-         
+
       tenant_id ->
-        tenant = Mcp.Platform.Tenant.get_by_id!(tenant_id)
-        {:ok, 
+        tenant = Tenant.get_by_id!(tenant_id)
+
+        {:ok,
          socket
          |> assign(:features, tenant.features || %{})
          |> assign(:mode, :dashboard)}
@@ -29,14 +32,14 @@ defmodule McpWeb.Tenant.DashboardLive do
           Select Tenant
           <:subtitle>Choose a tenant workspace to access.</:subtitle>
         </McpWeb.Core.CoreComponents.header>
-        
+
         <div class="grid gap-4 mt-6">
           <%= for tenant <- @tenants do %>
             <div class="card bg-base-100 shadow-sm border border-base-200 hover:border-primary cursor-pointer transition-colors">
               <div class="card-body flex-row items-center justify-between p-4">
                 <div>
-                  <h3 class="font-bold"><%= tenant.name %></h3>
-                  <p class="text-sm text-base-content/60"><%= tenant.slug %></p>
+                  <h3 class="font-bold">{tenant.name}</h3>
+                  <p class="text-sm text-base-content/60">{tenant.slug}</p>
                 </div>
                 <.form :let={_f} for={%{}} action={~p"/tenant/select"} method="post">
                   <input type="hidden" name="tenant_id" value={tenant.id} />

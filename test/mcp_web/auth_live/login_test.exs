@@ -157,7 +157,7 @@ defmodule McpWeb.AuthLive.LoginTest do
 
       # This should be handled by the template, not the LiveView
       # Only valid providers should be in the template
-      refute view |> element("button[phx-value-provider=\"invalid\"]") |> has_element?()
+      refute view |> element(~s|button[phx-value-provider="invalid"]|) |> has_element?()
     end
   end
 
@@ -166,7 +166,7 @@ defmodule McpWeb.AuthLive.LoginTest do
       {:ok, view, _html} = live(conn, "/tenant/sign-in")
 
       view
-      |> element("a[phx-click=\"show_recovery\"]")
+      |> element(~s|a[phx-click="show_recovery"]|)
       |> render_click()
 
       assert view |> element("#recovery_modal.modal-open") |> has_element?()
@@ -180,12 +180,12 @@ defmodule McpWeb.AuthLive.LoginTest do
 
       # Show modal first
       view
-      |> element("a[phx-click=\"show_recovery\"]")
+      |> element(~s|a[phx-click="show_recovery"]|)
       |> render_click()
 
       # Then hide it
       view
-      |> element("form[phx-submit=\"request_recovery\"] button[phx-click=\"hide_recovery\"]")
+      |> element(~s|form[phx-submit="request_recovery"] button[phx-click="hide_recovery"]|)
       |> render_click()
 
       refute view |> element("#recovery_modal.modal-open") |> has_element?()
@@ -198,7 +198,7 @@ defmodule McpWeb.AuthLive.LoginTest do
 
       # Show modal
       view
-      |> element("a[phx-click=\"show_recovery\"]")
+      |> element(~s|a[phx-click="show_recovery"]|)
       |> render_click()
 
       # Submit recovery form
@@ -216,7 +216,7 @@ defmodule McpWeb.AuthLive.LoginTest do
 
       # Show modal
       view
-      |> element("a[phx-click=\"show_recovery\"]")
+      |> element(~s|a[phx-click="show_recovery"]|)
       |> render_click()
 
       # Submit with invalid email
@@ -250,7 +250,7 @@ defmodule McpWeb.AuthLive.LoginTest do
 
       # Toggle password visibility
       view
-      |> element("button[phx-click=\"toggle_password\"]")
+      |> element(~s|button[phx-click="toggle_password"]|)
       |> render_click()
 
       assert render(view) =~ ~s(aria-label="Hide password")
@@ -262,7 +262,7 @@ defmodule McpWeb.AuthLive.LoginTest do
       {:ok, view, _html} = live(conn, "/tenant/sign-in")
 
       view
-      |> element("button[phx-click=\"toggle_password\"]")
+      |> element(~s|button[phx-click="toggle_password"]|)
       |> render_click()
 
       # Should have announcement for screen readers

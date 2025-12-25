@@ -165,7 +165,7 @@ defmodule Mcp.Platform.FeatureToggle do
   @doc """
   Checks if a feature is enabled.
   """
-  def is_enabled(tenant_id, feature_name) do
+  def enabled?(tenant_id, feature_name) do
     case TenantSettings.get_setting(tenant_id, :feature, to_string(feature_name)) do
       {:ok, setting} ->
         {:ok,

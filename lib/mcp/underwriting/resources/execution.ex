@@ -1,11 +1,14 @@
 defmodule Mcp.Underwriting.Execution do
+  @moduledoc """
+  Tracks the execution of an underwriting agent run.
+  """
   use Ash.Resource,
     domain: Mcp.Underwriting,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "executions"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   actions do
@@ -38,7 +41,7 @@ defmodule Mcp.Underwriting.Execution do
     end
 
     attribute :status, :atom do
-      constraints [one_of: [:pending, :processing, :completed, :failed]]
+      constraints one_of: [:pending, :processing, :completed, :failed]
       default :pending
       allow_nil? false
     end
@@ -63,6 +66,5 @@ defmodule Mcp.Underwriting.Execution do
     belongs_to :pipeline, Mcp.Underwriting.Pipeline do
       allow_nil? false
     end
-
   end
 end

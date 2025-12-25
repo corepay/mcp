@@ -1,9 +1,6 @@
 defmodule McpWeb.Ola.RegistrationLive do
   use McpWeb, :live_view
 
-
-
-
   @impl true
   def mount(_params, _session, socket) do
     if socket.assigns.current_user do
@@ -20,7 +17,11 @@ defmodule McpWeb.Ola.RegistrationLive do
        |> assign(:form, form)
        |> assign(:trigger_submit, false)
        |> assign(:atlas_messages, [
-         %{sender: :ai, content: "To get started, I just need to create a secure account for you. This lets you save your progress and come back later if you need to gather documents."}
+         %{
+           sender: :ai,
+           content:
+             "To get started, I just need to create a secure account for you. This lets you save your progress and come back later if you need to gather documents."
+         }
        ])}
     end
   end

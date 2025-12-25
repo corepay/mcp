@@ -19,7 +19,7 @@ defmodule McpWeb.Auth.LiveAuth do
       redirect: 2
     ]
 
-  alias Mcp.Accounts.Auth
+  alias Mcp.Accounts.{Auth, User}
 
   @doc """
   on_mount hook for requiring authenticated user.
@@ -45,8 +45,6 @@ defmodule McpWeb.Auth.LiveAuth do
         {:halt, socket}
     end
   end
-
-
 
   def on_mount(:optional_auth, _params, session, socket) do
     case authenticate_from_session(session) do
@@ -198,14 +196,12 @@ defmodule McpWeb.Auth.LiveAuth do
     "admin" in authorized_contexts or "super_admin" in authorized_contexts
   end
 
-
-
   # Private helper functions
 
   defp authenticate_from_session(session) do
     with token when is_binary(token) <- session["user_token"] || session["_mcp_access_token"],
          {:ok, claims} <- Auth.verify_jwt_access_token(token),
-         {:ok, user} <- Mcp.Accounts.User.by_id(claims["sub"]) do
+         {:ok, user} <- User.by_id(claims["sub"]) do
       {:ok, user, claims}
     else
       _ -> {:error, :unauthorized}

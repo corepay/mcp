@@ -10,15 +10,19 @@ defmodule Mcp.Ai.SemanticCache do
   """
   def get(prompt, model, provider) do
     key = cache_key(prompt, model, provider)
-    
+
     case Redis.get(key) do
-      {:ok, nil} -> nil
-      {:ok, json_string} -> 
+      {:ok, nil} ->
+        nil
+
+      {:ok, json_string} ->
         case Jason.decode(json_string) do
           {:ok, decoded} -> {:ok, decoded}
           _ -> nil
         end
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 
@@ -28,10 +32,11 @@ defmodule Mcp.Ai.SemanticCache do
   """
   def put(prompt, model, provider, response) do
     key = cache_key(prompt, model, provider)
-    
+
     case Jason.encode(response) do
       {:ok, json_string} ->
-        Redis.set(key, json_string, 86400)
+        Redis.set(key, json_string, 86_400)
+
       _ ->
         :error
     end

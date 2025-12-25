@@ -1,4 +1,7 @@
 defmodule Mcp.Ai do
+  @moduledoc """
+  AI Domain definition.
+  """
   use Ash.Domain,
     otp_app: :mcp
 

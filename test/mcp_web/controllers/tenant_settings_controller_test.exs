@@ -1,7 +1,9 @@
 defmodule McpWeb.TenantSettingsControllerTest do
   use McpWeb.ConnCase
 
-  alias Mcp.Platform.TenantSettingsManager
+  alias Mcp.Accounts.User
+  alias Mcp.Platform.{Tenant, TenantSettingsManager}
+  alias Mcp.Repo
 
   @moduletag :capture_log
 
@@ -463,11 +465,11 @@ defmodule McpWeb.TenantSettingsControllerTest do
     # In a real app, we would set up roles via TeamMember or similar
     valid_attrs = Map.drop(attrs, [:role])
 
-    Mcp.Accounts.User.register!(Map.merge(default_attrs, valid_attrs))
+    User.register!(Map.merge(default_attrs, valid_attrs))
   end
 
   defp tenant_fixture do
-    %Mcp.Platform.Tenant{}
+    %Tenant{}
     |> Ecto.Changeset.change(%{
       name: "Test ISP",
       company_schema: "test_isp_#{System.unique_integer([:positive])}",
@@ -476,6 +478,6 @@ defmodule McpWeb.TenantSettingsControllerTest do
       plan: :starter,
       status: :active
     })
-    |> Mcp.Repo.insert!()
+    |> Repo.insert!()
   end
 end

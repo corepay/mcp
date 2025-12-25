@@ -12,13 +12,17 @@ defmodule Mcp.Types.Inet do
 
   def cast_input(value, _) do
     case value do
-      %Postgrex.INET{} = inet -> {:ok, inet}
+      %Postgrex.INET{} = inet ->
+        {:ok, inet}
+
       binary when is_binary(binary) ->
         case :inet.parse_address(String.to_charlist(binary)) do
           {:ok, tuple} -> {:ok, %Postgrex.INET{address: tuple}}
           _ -> :error
         end
-      _ -> :error
+
+      _ ->
+        :error
     end
   end
 

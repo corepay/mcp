@@ -130,8 +130,7 @@ config :ex_aws, :s3,
   port: {:system, "MINIO_PORT", "9000"},
   region: "local"
 
-config :mcp, :uploads,
-  bucket: "underwriting-documents"
+config :mcp, :uploads, bucket: "underwriting-documents"
 
 config :mcp, McpWeb.Endpoint,
   url: [host: "localhost"],

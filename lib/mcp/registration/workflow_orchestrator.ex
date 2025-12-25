@@ -25,15 +25,15 @@ defmodule Mcp.Registration.WorkflowOrchestrator do
     case RegistrationService.register_user(registration_data, opts) do
       {:ok, %Mcp.Accounts.User{} = user} ->
         {:ok, %{status: :completed, user: user}}
-      
+
       {:ok, %Mcp.Accounts.RegistrationRequest{} = request} ->
-         {:ok, %{status: :pending_approval, request: request}}
+        {:ok, %{status: :pending_approval, request: request}}
 
       {:error, reason} ->
         {:error, reason}
     end
   end
-  
+
   def execute_registration_workflow(_) do
     {:error, :invalid_data}
   end

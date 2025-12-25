@@ -5,16 +5,18 @@ defmodule Mcp.Performance.LoginPerformanceTest do
 
   import Phoenix.ConnTest
 
+  alias Ecto.Adapters.SQL.Sandbox
   alias Mcp.Accounts.{Auth, User}
   alias Mcp.Cache.SessionStore
+  alias Mcp.Repo
 
   alias Mcp.Performance.LoginPerformanceTest.Statistics
 
   @endpoint McpWeb.Endpoint
 
   setup do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Mcp.Repo)
-    Ecto.Adapters.SQL.Sandbox.mode(Mcp.Repo, {:shared, self()})
+    :ok = Sandbox.checkout(Repo)
+    Sandbox.mode(Repo, {:shared, self()})
     # Clean up sessions before each test
     SessionStore.flush_all()
     {:ok, conn: build_conn()}

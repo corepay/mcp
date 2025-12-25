@@ -3,6 +3,8 @@ defmodule Mcp.Platform.TenantSettings.Changes do
   Changes module for tenant settings validation and transformations.
   """
 
+  alias Ash.Error.Changes.InvalidAttribute
+
   @doc """
   Validates the setting value based on validation rules and value type.
   """
@@ -20,7 +22,7 @@ defmodule Mcp.Platform.TenantSettings.Changes do
 
         {:error, message} ->
           error =
-            Ash.Error.Changes.InvalidAttribute.exception(
+            InvalidAttribute.exception(
               field: :value,
               message: message,
               value: value

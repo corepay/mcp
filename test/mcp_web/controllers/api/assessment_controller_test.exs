@@ -2,7 +2,9 @@ defmodule McpWeb.Api.AssessmentControllerTest do
   use McpWeb.ConnCase
 
   alias Mcp.Accounts.ApiKey
-  alias Mcp.Underwriting.{AgentBlueprint, Pipeline, InstructionSet}
+  alias Mcp.Underwriting.AgentBlueprint
+  alias Mcp.Underwriting.InstructionSet
+  alias Mcp.Underwriting.Pipeline
 
   setup do
     # 1. Create a Blueprint
@@ -53,7 +55,7 @@ defmodule McpWeb.Api.AssessmentControllerTest do
         "subject_id" => Ecto.UUID.generate(),
         "subject_type" => "individual",
         "context" => %{
-          "income" => 10000,
+          "annual_volume" => 10_000,
           "debt" => 3000
         }
       }

@@ -29,24 +29,26 @@ defmodule Mix.Tasks.Mcp.ListUsers do
 
     tenants = Tenant.read!()
 
-    Enum.each(tenants, fn tenant ->
-      IO.puts("  #{tenant.name} (#{tenant.slug})")
-      IO.puts("  URL: http://#{tenant.subdomain}")
+    Enum.each(tenants, &print_tenant_info/1)
+  end
 
-      # Get tenant users
-      {:ok, users} = TenantUserManager.get_tenant_users(tenant.id)
+  defp print_tenant_info(tenant) do
+    IO.puts("  #{tenant.name} (#{tenant.slug})")
+    IO.puts("  URL: http://#{tenant.subdomain}")
 
-      if Enum.empty?(users) do
-        IO.puts("    (No users)")
-      else
-        Enum.each(users, fn u ->
-          IO.puts("    - #{u["email"]} (#{u["role"]})")
-          IO.puts("      Password: Password123!")
-        end)
-      end
+    # Get tenant users
+    {:ok, users} = TenantUserManager.get_tenant_users(tenant.id)
 
-      IO.puts("")
-    end)
+    if Enum.empty?(users) do
+      IO.puts("    (No users)")
+    else
+      Enum.each(users, fn u ->
+        IO.puts("    - #{u["email"]} (#{u["role"]})")
+        IO.puts("      Password: Password123!")
+      end)
+    end
+
+    IO.puts("")
 
     IO.puts("==========================\n")
   end

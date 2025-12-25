@@ -164,8 +164,6 @@ defmodule Mcp.Cache.SessionStore do
     end
   end
 
-
-
   @impl true
   def handle_call({:get_session, session_id, opts}, _from, state) do
     tenant_id = Keyword.get(opts, :tenant_id, "global")
@@ -182,8 +180,6 @@ defmodule Mcp.Cache.SessionStore do
         {:reply, error, state}
     end
   end
-
-
 
   @impl true
   def handle_call({:update_session, session_id, user_data, opts}, _from, state) do
@@ -207,8 +203,6 @@ defmodule Mcp.Cache.SessionStore do
         {:reply, error, state}
     end
   end
-
-
 
   @impl true
   def handle_call({:delete_session, session_id, opts}, _from, state) do
@@ -238,8 +232,6 @@ defmodule Mcp.Cache.SessionStore do
     end
   end
 
-
-
   @impl true
   def handle_call({:session_exists, session_id, opts}, _from, state) do
     tenant_id = Keyword.get(opts, :tenant_id, "global")
@@ -249,8 +241,6 @@ defmodule Mcp.Cache.SessionStore do
       exists -> {:reply, exists, state}
     end
   end
-
-
 
   @impl true
   def handle_call({:refresh_session, session_id, opts}, _from, state) do
@@ -268,8 +258,6 @@ defmodule Mcp.Cache.SessionStore do
         {:reply, error, state}
     end
   end
-
-
 
   @impl true
   def handle_call({:list_user_sessions, user_id, opts}, _from, state) do
@@ -290,16 +278,12 @@ defmodule Mcp.Cache.SessionStore do
     end
   end
 
-
-
   defp get_session_data(session_id, cache_opts) do
     case RedisClient.get("session:#{session_id}", cache_opts) do
       {:ok, session_data} -> session_data
       {:error, :not_found} -> nil
     end
   end
-
-
 
   defp update_user_sessions_cache(key, sessions, cache_opts) do
     if sessions == [] do
@@ -308,8 +292,4 @@ defmodule Mcp.Cache.SessionStore do
       RedisClient.set(key, sessions, cache_opts)
     end
   end
-
-
-
-
 end

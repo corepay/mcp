@@ -1,4 +1,7 @@
 defmodule Mcp.Finance.Jobs.ReconciliationWorker do
+  @moduledoc """
+  Worker for reconciling financial accounts.
+  """
   use Oban.Worker, queue: :finance
 
   require Logger
@@ -11,12 +14,13 @@ defmodule Mcp.Finance.Jobs.ReconciliationWorker do
     # 1. Fetch recent transactions from Payment Gateway (e.g. Stripe/QorPay)
     # 2. Compare with internal Ledger entries
     # 3. Flag discrepancies
-    
+
     # For now, we'll just simulate a check
     case check_discrepancies() do
-      :ok -> 
+      :ok ->
         Logger.info("Reconciliation completed. No discrepancies found.")
         :ok
+
       {:error, count} ->
         Logger.warning("Reconciliation found #{count} discrepancies.")
         # Alerting logic here

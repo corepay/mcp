@@ -83,7 +83,7 @@ defmodule Mcp.Platform.Developer do
     attribute :payout_settings, :map, default: %{}, sensitive?: true
 
     attribute :api_quota_daily, :integer, default: 1000
-    attribute :api_quota_monthly, :integer, default: 10000
+    attribute :api_quota_monthly, :integer, default: 10_000
 
     attribute :status, :atom do
       constraints one_of: [:active, :suspended, :pending]

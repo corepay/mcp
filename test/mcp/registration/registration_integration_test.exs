@@ -9,16 +9,19 @@ defmodule Mcp.Registration.RegistrationIntegrationTest do
     WorkflowOrchestrator
   }
 
+  alias Mcp.Accounts.RegistrationSettings
+  alias Mcp.Platform.Tenant
+
   setup do
     {:ok, tenant} =
-      Mcp.Platform.Tenant.create(%{
+      Tenant.create(%{
         name: "Test Tenant",
         slug: "test-tenant-#{System.unique_integer([:positive])}",
         subdomain: "test-#{System.unique_integer([:positive])}",
         company_schema: "test_schema_#{System.unique_integer([:positive])}"
       })
 
-    Mcp.Accounts.RegistrationSettings.update_settings(tenant.id, %{
+    RegistrationSettings.update_settings(tenant.id, %{
       "customer_registration_enabled" => true,
       "allow_self_registration" => true
     })

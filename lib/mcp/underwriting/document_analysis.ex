@@ -1,11 +1,14 @@
 defmodule Mcp.Underwriting.DocumentAnalysis do
+  @moduledoc """
+  Service for analyzing underwriting documents.
+  """
   use Ash.Resource,
     domain: Mcp.Underwriting,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "document_analyses"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   actions do
@@ -25,7 +28,7 @@ defmodule Mcp.Underwriting.DocumentAnalysis do
     uuid_primary_key :id
 
     attribute :status, :atom do
-      constraints [one_of: [:pending, :processing, :completed, :failed]]
+      constraints one_of: [:pending, :processing, :completed, :failed]
       default :pending
       allow_nil? false
     end
@@ -39,7 +42,7 @@ defmodule Mcp.Underwriting.DocumentAnalysis do
     end
 
     attribute :provider, :atom do
-      constraints [one_of: [:marker, :chandra]]
+      constraints one_of: [:marker, :chandra]
       allow_nil? false
     end
 

@@ -1,11 +1,14 @@
 defmodule Mcp.Underwriting.Pipeline do
+  @moduledoc """
+  Pipeline definition for underwriting steps.
+  """
   use Ash.Resource,
     domain: Mcp.Underwriting,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "pipelines"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   actions do

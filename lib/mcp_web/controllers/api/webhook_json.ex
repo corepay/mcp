@@ -13,7 +13,8 @@ defmodule McpWeb.Api.WebhookJSON do
     %{
       id: endpoint.id,
       url: endpoint.url,
-      secret: endpoint.secret, # In real app, might want to mask this
+      # In real app, might want to mask this
+      secret: endpoint.secret,
       events: endpoint.events,
       enabled: endpoint.enabled,
       inserted_at: endpoint.inserted_at,

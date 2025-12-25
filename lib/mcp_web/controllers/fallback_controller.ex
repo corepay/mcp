@@ -23,7 +23,10 @@ defmodule McpWeb.FallbackController do
       error: %{
         code: "invalid_request",
         message: "Invalid request parameters",
-        details: Ash.Error.to_ash_error(error) |> Map.get(:errors, []) |> Enum.map(&Map.take(&1, [:field, :message, :code]))
+        details:
+          Ash.Error.to_ash_error(error)
+          |> Map.get(:errors, [])
+          |> Enum.map(&Map.take(&1, [:field, :message, :code]))
       }
     })
   end

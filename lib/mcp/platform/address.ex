@@ -1,4 +1,7 @@
 defmodule Mcp.Platform.Address do
+  @moduledoc """
+  Represents a physical address in the platform domain.
+  """
   use Ash.Resource,
     domain: Mcp.Platform,
     data_layer: AshPostgres.DataLayer,

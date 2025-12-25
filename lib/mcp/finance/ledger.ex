@@ -1,11 +1,14 @@
 defmodule Mcp.Finance.Ledger do
+  @moduledoc """
+  Immutable ledger for financial transactions.
+  """
   use Ash.Resource,
     domain: Mcp.Finance,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "ledgers"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   attributes do
@@ -13,12 +16,16 @@ defmodule Mcp.Finance.Ledger do
     attribute :account_id, :uuid, allow_nil?: false
     attribute :amount, :decimal, allow_nil?: false
     attribute :currency, :string, allow_nil?: false, default: "USD"
+
     attribute :type, :atom do
       constraints one_of: [:credit, :debit]
       allow_nil? false
     end
+
     attribute :description, :string
-    attribute :reference_id, :string # External reference (e.g. Stripe ID)
+    # External reference (e.g. Stripe ID)
+    attribute :reference_id, :string
+
     attribute :status, :atom do
       constraints one_of: [:pending, :cleared, :failed]
       default :pending

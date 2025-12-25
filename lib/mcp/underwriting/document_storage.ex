@@ -11,9 +11,11 @@ defmodule Mcp.Underwriting.DocumentStorage do
   """
   def upload_signature(tenant_id, applicant_id, data_url) do
     with {:ok, binary, content_type} <- decode_data_url(data_url) do
-      filename = "signature_#{DateTime.utc_now() |> DateTime.to_unix()}.#{extension_from_type(content_type)}"
+      filename =
+        "signature_#{DateTime.utc_now() |> DateTime.to_unix()}.#{extension_from_type(content_type)}"
+
       key = build_key(tenant_id, applicant_id, filename)
-      
+
       case Storage.upload_binary(key, binary, content_type: content_type) do
         {:ok, _} -> {:ok, key}
         error -> error
@@ -24,9 +26,13 @@ defmodule Mcp.Underwriting.DocumentStorage do
   @doc """
   Uploads a document file (e.g. from a file input).
   """
-  def upload_document(tenant_id, applicant_id, %{path: path, filename: filename, content_type: content_type}) do
+  def upload_document(tenant_id, applicant_id, %{
+        path: path,
+        filename: filename,
+        content_type: content_type
+      }) do
     key = build_key(tenant_id, applicant_id, filename)
-    
+
     case Storage.upload_file(key, path, content_type: content_type) do
       {:ok, _} -> {:ok, key}
       error -> error
@@ -40,12 +46,13 @@ defmodule Mcp.Underwriting.DocumentStorage do
   defp decode_data_url("data:" <> rest) do
     [meta, base64_data] = String.split(rest, ";base64,")
     content_type = meta
-    
+
     case Base.decode64(base64_data) do
       {:ok, binary} -> {:ok, binary, content_type}
       :error -> {:error, :invalid_base64}
     end
   end
+
   defp decode_data_url(_), do: {:error, :invalid_data_url}
 
   defp extension_from_type("image/png"), do: "png"

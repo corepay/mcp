@@ -7,8 +7,8 @@ defmodule Mcp.Underwriting.Engine.Orchestrator do
   require Ash.Query
 
   alias Mcp.Underwriting.AgentBlueprint
+  alias Mcp.Underwriting.Engine.{AgentRunner, InstructionLookup}
   alias Mcp.Underwriting.InstructionSet
-  alias Mcp.Underwriting.Engine.AgentRunner
 
   def run_pipeline(execution_id) do
     execution =
@@ -24,24 +24,13 @@ defmodule Mcp.Underwriting.Engine.Orchestrator do
       |> Ash.Changeset.for_update(:update, %{status: :processing})
       |> Ash.update!()
 
-    # Fetch Instruction Sets for this Tenant (Mocking this lookup for now)
-    # In reality, we'd look up InstructionSet where tenant_id == pipeline.tenant_id
-
     results =
       Enum.reduce(pipeline.stages, %{}, fn stage_config, acc_results ->
         blueprint_id = stage_config["blueprint_id"]
         blueprint = Ash.get!(AgentBlueprint, blueprint_id)
 
-        # TODO: Find the actual instruction set for this blueprint + tenant
-        # For now, we just grab the first one we find for this blueprint
-        instructions =
-          InstructionSet
-          |> Ash.Query.filter(blueprint_id == ^blueprint_id)
-          |> Ash.read!()
-          |> List.first()
-
-        # If no instructions found, create a dummy one
-        instructions = instructions || %InstructionSet{instructions: "Default policy."}
+        # Find instruction set with proper tenant scoping
+        instructions = InstructionLookup.find(blueprint_id, pipeline.tenant_id)
 
         # Merge previous results into context
         current_context = Map.merge(execution.context, acc_results)

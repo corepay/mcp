@@ -1,4 +1,7 @@
 defmodule Mcp.AiAgentActorPersister do
+  @moduledoc """
+  Persists AI Agent Actor state.
+  """
   use AshOban.ActorPersister
 
   def store(%Mcp.Accounts.User{id: id}), do: %{"type" => "user", "id" => id}

@@ -130,14 +130,7 @@ defmodule McpWeb.Plugs.TenantAnalytics do
 
   defp public_analytics_request?(conn) do
     # Check if this is a request for a public dashboard or report
-    path = conn.request_path
-
-    cond do
-      String.starts_with?(path, "/analytics/public") -> true
-      # Placeholder for future public dashboard check
-      # String.contains?(path, "/dashboards/") && public_dashboard_request?(conn) -> true
-      true -> false
-    end
+    String.starts_with?(conn.request_path, "/analytics/public")
   end
 
   # defp public_dashboard_request?(conn) do

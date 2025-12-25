@@ -1,11 +1,14 @@
 defmodule Mcp.Underwriting.Document do
+  @moduledoc """
+  Represents a document submitted for underwriting.
+  """
   use Ash.Resource,
     domain: Mcp.Underwriting,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "underwriting_documents"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   actions do
@@ -37,12 +40,12 @@ defmodule Mcp.Underwriting.Document do
     end
 
     attribute :document_type, :atom do
-      constraints [one_of: [:identity, :address, :incorporation, :other]]
+      constraints one_of: [:identity, :address, :incorporation, :other]
       default :other
     end
 
     attribute :status, :atom do
-      constraints [one_of: [:pending, :verified, :rejected]]
+      constraints one_of: [:pending, :verified, :rejected]
       default :pending
     end
 

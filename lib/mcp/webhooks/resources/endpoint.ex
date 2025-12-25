@@ -5,7 +5,7 @@ defmodule Mcp.Webhooks.Endpoint do
 
   postgres do
     table "webhook_endpoints"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   actions do

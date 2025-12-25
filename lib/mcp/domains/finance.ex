@@ -1,4 +1,7 @@
 defmodule Mcp.Finance do
+  @moduledoc """
+  Finance domain definition.
+  """
   use Ash.Domain,
     extensions: [AshJsonApi.Domain]
 

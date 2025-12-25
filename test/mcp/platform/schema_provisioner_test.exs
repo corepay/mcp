@@ -1,6 +1,7 @@
 defmodule Mcp.Platform.SchemaProvisionerTest do
   use ExUnit.Case, async: false
 
+  alias Ecto.Adapters.SQL.Sandbox
   alias Mcp.MultiTenant
   alias Mcp.Platform.SchemaProvisioner
   alias Mcp.Platform.Tenant
@@ -14,7 +15,7 @@ defmodule Mcp.Platform.SchemaProvisionerTest do
     Application.put_env(:mcp, :run_tenant_migrations, true)
 
     # Checkout a real connection, bypassing sandbox for migrations
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo, sandbox: false)
+    :ok = Sandbox.checkout(Repo, sandbox: false)
 
     # Clean up any existing test tenant
     cleanup_test_tenant()

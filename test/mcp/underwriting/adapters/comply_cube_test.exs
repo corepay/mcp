@@ -5,10 +5,11 @@ defmodule Mcp.Underwriting.Adapters.ComplyCubeTest do
 
   setup do
     bypass = Bypass.open()
-    
+
     # Configure the adapter to use the bypass URL
     Application.put_env(:mcp, :comply_cube_base_url, "http://localhost:#{bypass.port}")
-    Application.put_env(:mcp, :comply_cube, 
+
+    Application.put_env(:mcp, :comply_cube,
       base_url: "http://localhost:#{bypass.port}",
       api_key: "test_api_key"
     )
@@ -22,7 +23,7 @@ defmodule Mcp.Underwriting.Adapters.ComplyCubeTest do
         {:ok, body, _conn} = Plug.Conn.read_body(conn)
         assert body =~ "person"
         assert body =~ "John"
-        
+
         conn
         |> Plug.Conn.put_resp_header("content-type", "application/json")
         |> Plug.Conn.resp(200, Jason.encode!(%{id: "client_123"}))
@@ -32,7 +33,7 @@ defmodule Mcp.Underwriting.Adapters.ComplyCubeTest do
         {:ok, body, _conn} = Plug.Conn.read_body(conn)
         assert body =~ "client_123"
         assert body =~ "standard_screening_check"
-        
+
         conn
         |> Plug.Conn.put_resp_header("content-type", "application/json")
         |> Plug.Conn.resp(200, Jason.encode!(%{id: "check_456"}))
@@ -70,7 +71,7 @@ defmodule Mcp.Underwriting.Adapters.ComplyCubeTest do
         {:ok, body, _conn} = Plug.Conn.read_body(conn)
         assert body =~ "corporate"
         assert body =~ "Acme Corp"
-        
+
         conn
         |> Plug.Conn.put_resp_header("content-type", "application/json")
         |> Plug.Conn.resp(200, Jason.encode!(%{id: "client_corp_123"}))
@@ -80,7 +81,7 @@ defmodule Mcp.Underwriting.Adapters.ComplyCubeTest do
         {:ok, body, _conn} = Plug.Conn.read_body(conn)
         assert body =~ "client_corp_123"
         assert body =~ "company_check"
-        
+
         conn
         |> Plug.Conn.put_resp_header("content-type", "application/json")
         |> Plug.Conn.resp(200, Jason.encode!(%{id: "check_corp_456"}))
@@ -105,7 +106,7 @@ defmodule Mcp.Underwriting.Adapters.ComplyCubeTest do
         assert body =~ "clientId"
         assert body =~ "client_123"
         assert body =~ "passport"
-        
+
         conn
         |> Plug.Conn.put_resp_header("content-type", "application/json")
         |> Plug.Conn.resp(200, Jason.encode!(%{id: "doc_789"}))
@@ -116,7 +117,7 @@ defmodule Mcp.Underwriting.Adapters.ComplyCubeTest do
         assert body =~ "client_123"
         assert body =~ "document_check"
         assert body =~ "doc_789"
-        
+
         conn
         |> Plug.Conn.put_resp_header("content-type", "application/json")
         |> Plug.Conn.resp(200, Jason.encode!(%{id: "check_doc_101"}))

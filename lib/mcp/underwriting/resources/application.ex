@@ -1,11 +1,14 @@
 defmodule Mcp.Underwriting.Application do
+  @moduledoc """
+  Represents an underwriting application.
+  """
   use Ash.Resource,
     domain: Mcp.Underwriting,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "underwriting_applications"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   multitenancy do
@@ -39,7 +42,16 @@ defmodule Mcp.Underwriting.Application do
     end
 
     attribute :status, :atom do
-      constraints one_of: [:draft, :submitted, :under_review, :manual_review, :approved, :rejected, :more_info_required]
+      constraints one_of: [
+                    :draft,
+                    :submitted,
+                    :under_review,
+                    :manual_review,
+                    :approved,
+                    :rejected,
+                    :more_info_required
+                  ]
+
       default :draft
     end
 

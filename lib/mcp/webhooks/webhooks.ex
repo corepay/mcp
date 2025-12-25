@@ -1,4 +1,7 @@
 defmodule Mcp.Webhooks do
+  @moduledoc """
+  Webhooks domain definition.
+  """
   use Ash.Domain,
     otp_app: :mcp
 

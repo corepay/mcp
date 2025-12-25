@@ -1,4 +1,7 @@
 defmodule Mcp.Finance.Account do
+  @moduledoc """
+  Represents a financial account in the double-entry system.
+  """
   use Ash.Resource,
     domain: Mcp.Finance,
     data_layer: AshPostgres.DataLayer,
@@ -13,7 +16,7 @@ defmodule Mcp.Finance.Account do
     policy action_type(:create) do
       authorize_if expr(tenant_id == ^actor(:tenant_id))
     end
-    
+
     policy action_type(:destroy) do
       authorize_if expr(tenant_id == ^actor(:tenant_id))
     end
@@ -32,6 +35,7 @@ defmodule Mcp.Finance.Account do
 
   actions do
     defaults [:read, :destroy]
+
     create :create do
       primary? true
       accept [:name, :identifier, :merchant_id, :mid_id, :currency, :type]
@@ -58,6 +62,7 @@ defmodule Mcp.Finance.Account do
       domain Mcp.Platform
     end
   end
+
   code_interface do
     define :create
   end

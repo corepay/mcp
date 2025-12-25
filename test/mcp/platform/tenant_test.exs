@@ -1,10 +1,11 @@
 defmodule Mcp.Platform.TenantTest do
   use Mcp.DataCase, async: false
 
-  alias Mcp.Platform.Tenant
+  alias Mcp.Platform.{Tenant, TenantBranding, TenantSettings}
+  alias Mcp.Repo
 
   setup do
-    Mcp.Repo.query!("SET search_path TO public, platform")
+    Repo.query!("SET search_path TO public, platform")
     :ok
   end
 
@@ -261,7 +262,7 @@ defmodule Mcp.Platform.TenantTest do
     test "stores complex settings", %{tenant: tenant} do
       # Create settings
       {:ok, _} =
-        Mcp.Platform.TenantSettings.create_setting(%{
+        TenantSettings.create_setting(%{
           tenant_id: tenant.id,
           category: :general,
           key: "feature_flags",
@@ -273,7 +274,7 @@ defmodule Mcp.Platform.TenantTest do
         })
 
       {:ok, _} =
-        Mcp.Platform.TenantSettings.create_setting(%{
+        TenantSettings.create_setting(%{
           tenant_id: tenant.id,
           category: :notifications,
           key: "preferences",
@@ -300,19 +301,19 @@ defmodule Mcp.Platform.TenantTest do
       # Let's query settings directly.
 
       assert {:ok, setting1} =
-               Mcp.Platform.TenantSettings.get_setting(tenant.id, :general, "feature_flags")
+               TenantSettings.get_setting(tenant.id, :general, "feature_flags")
 
       assert setting1.value["advanced_analytics"] == true
 
       assert {:ok, setting2} =
-               Mcp.Platform.TenantSettings.get_setting(tenant.id, :notifications, "preferences")
+               TenantSettings.get_setting(tenant.id, :notifications, "preferences")
 
       assert setting2.value["email_alerts"] == true
     end
 
     test "stores branding configuration", %{tenant: tenant} do
       {:ok, branding} =
-        Mcp.Platform.TenantBranding.create_branding(%{
+        TenantBranding.create_branding(%{
           tenant_id: tenant.id,
           name: "My Brand",
           primary_color: "#0066cc",

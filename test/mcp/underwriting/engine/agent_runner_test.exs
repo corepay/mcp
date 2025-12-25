@@ -1,9 +1,9 @@
 defmodule Mcp.Underwriting.Engine.AgentRunnerTest do
   use Mcp.DataCase
 
-  alias Mcp.Underwriting.Engine.AgentRunner
-  alias Mcp.Underwriting.{AgentBlueprint, InstructionSet, Execution, Pipeline}
   alias Mcp.Ai.LlmUsage
+  alias Mcp.Underwriting.{AgentBlueprint, Execution, InstructionSet, Pipeline}
+  alias Mcp.Underwriting.Engine.AgentRunner
 
   require Ash.Query
 
@@ -78,12 +78,13 @@ defmodule Mcp.Underwriting.Engine.AgentRunnerTest do
       }
 
       # Mocking the fallback behavior would require mocking the HTTP requests or the internal functions.
-      # Since we can't easily mock private functions or external APIs in this integration test without Mox setup for Req,
+      # Since we can't easily mock private functions or external APIs in this integration test without Mox,
       # we will verify that the logic *attempts* the fallback by checking the logs or return value if possible.
       # However, for now, let's just assert that the code runs without error and returns a result.
       # In a real scenario, we'd use Mox to mock the OpenRouter call.
 
-      # For this test, we expect it to try OpenRouter and fail (since no API key/mock), returning an error or the fallback attempt result.
+      # For this test, we expect it to try OpenRouter and fail (since no API key/mock),
+      # returning an error or the fallback attempt result.
       # But since we don't have OpenRouter configured, it might fail.
       # Let's just verify the routing config is respected in the blueprint.
 

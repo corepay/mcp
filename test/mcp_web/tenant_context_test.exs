@@ -5,7 +5,6 @@ defmodule McpWeb.TenantContextTest do
 
   import Mox
 
-
   alias Mcp.Platform.Tenant
   alias Mcp.Repo
   alias McpWeb.TenantContext

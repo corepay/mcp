@@ -43,37 +43,39 @@ defmodule Mix.Tasks.Db.Analyze do
           Enum.zip(columns, row) |> Enum.into(%{})
         end)
 
-      Enum.each(results, fn row ->
-        startup_cost_before = row["startup_cost_before"]
-        total_cost_before = row["total_cost_before"]
-        total_cost_after = row["total_cost_after"]
-        index_statements = row["index_statements"]
-        errors = row["errors"]
+      Enum.each(results, &print_row/1)
+    end
+  end
 
-        improvement = calculate_improvement(total_cost_before, total_cost_after)
+  defp print_row(row) do
+    startup_cost_before = row["startup_cost_before"]
+    total_cost_before = row["total_cost_before"]
+    total_cost_after = row["total_cost_after"]
+    index_statements = row["index_statements"]
+    errors = row["errors"]
 
-        IO.puts("---------------------------------------------------")
-        IO.puts("📊 Cost Analysis:")
-        IO.puts("   Before: #{total_cost_before} (Startup: #{startup_cost_before})")
-        IO.puts("   After:  #{total_cost_after}")
-        IO.puts("   Improvement: #{improvement}%")
+    improvement = calculate_improvement(total_cost_before, total_cost_after)
 
-        if errors && errors != [] do
-          IO.puts("\n⚠️ Errors:")
-          Enum.each(errors, &IO.puts("   - #{&1}"))
-        end
+    IO.puts("---------------------------------------------------")
+    IO.puts("📊 Cost Analysis:")
+    IO.puts("   Before: #{total_cost_before} (Startup: #{startup_cost_before})")
+    IO.puts("   After:  #{total_cost_after}")
+    IO.puts("   Improvement: #{improvement}%")
 
-        if index_statements && index_statements != [] do
-          IO.puts("\n💡 Suggested Indexes:")
+    if errors && errors != [] do
+      IO.puts("\n⚠️ Errors:")
+      Enum.each(errors, &IO.puts("   - #{&1}"))
+    end
 
-          Enum.each(index_statements, fn stmt ->
-            IO.puts("\n   #{stmt}")
-          end)
-        end
+    if index_statements && index_statements != [] do
+      IO.puts("\n💡 Suggested Indexes:")
 
-        IO.puts("---------------------------------------------------\n")
+      Enum.each(index_statements, fn stmt ->
+        IO.puts("\n   #{stmt}")
       end)
     end
+
+    IO.puts("---------------------------------------------------\n")
   end
 
   defp calculate_improvement(before_cost, after_cost) do

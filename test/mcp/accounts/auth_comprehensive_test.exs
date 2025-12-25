@@ -1,7 +1,7 @@
 defmodule Mcp.Accounts.AuthComprehensiveTest do
   use Mcp.DataCase, async: false
 
-  alias Mcp.Accounts.{Auth, User}
+  alias Mcp.Accounts.{Auth, AuthToken, User}
 
   describe "authentication flow" do
     test "authenticates user with valid credentials" do
@@ -130,7 +130,7 @@ defmodule Mcp.Accounts.AuthComprehensiveTest do
         Auth.authenticate("session.user@example.com", "Password123!", "127.0.0.1")
 
       {:ok, %{access_token: access_token, refresh_token: refresh_token}} =
-        Mcp.Accounts.AuthToken.generate_token_pair(authenticated_user.id, %{}, %{})
+        AuthToken.generate_token_pair(authenticated_user.id, %{}, %{})
 
       assert access_token != nil
       assert refresh_token != nil

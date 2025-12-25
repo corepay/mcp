@@ -3,6 +3,8 @@ defmodule Mcp.Platform.TenantBranding.Changes do
   Changes module for tenant branding validation and transformations.
   """
 
+  alias Ash.Error.Changes.InvalidAttribute
+
   @doc """
   Validates color hex codes and ensures proper formatting.
   """
@@ -26,7 +28,7 @@ defmodule Mcp.Platform.TenantBranding.Changes do
           changeset
         else
           error =
-            Ash.Error.Changes.InvalidAttribute.exception(
+            InvalidAttribute.exception(
               field: field,
               message: "must be a valid hex color (e.g., #FF0000)"
             )
@@ -47,7 +49,7 @@ defmodule Mcp.Platform.TenantBranding.Changes do
           changeset
         else
           error =
-            Ash.Error.Changes.InvalidAttribute.exception(
+            InvalidAttribute.exception(
               field: :primary_color,
               message: "does not have sufficient contrast with background color"
             )
@@ -60,7 +62,7 @@ defmodule Mcp.Platform.TenantBranding.Changes do
           changeset
         else
           error =
-            Ash.Error.Changes.InvalidAttribute.exception(
+            InvalidAttribute.exception(
               field: :text_color,
               message: "does not have sufficient contrast with background color for accessibility"
             )

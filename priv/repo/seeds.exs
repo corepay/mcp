@@ -1,5 +1,6 @@
 # Load environment variables
 {:ok, _} = Application.ensure_all_started(:dotenvy)
+
 Dotenvy.source!([".env", ".env.example"])
 |> Enum.each(fn {k, v} -> System.put_env(k, v) end)
 

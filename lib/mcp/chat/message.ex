@@ -1,4 +1,7 @@
 defmodule Mcp.Chat.Message do
+  @moduledoc """
+  Represents a single message in a chat conversation.
+  """
   use Ash.Resource,
     otp_app: :mcp,
     domain: Mcp.Chat,
@@ -107,7 +110,9 @@ defmodule Mcp.Chat.Message do
                :tool_calls,
                {:atomic,
                 expr(
-                  if not is_nil(^arg(:tool_calls)) do
+                  if is_nil(^arg(:tool_calls)) do
+                    ^atomic_ref(:tool_calls)
+                  else
                     fragment(
                       "? || ?",
                       ^atomic_ref(:tool_calls),
@@ -116,8 +121,6 @@ defmodule Mcp.Chat.Message do
                         {:array, :map}
                       )
                     )
-                  else
-                    ^atomic_ref(:tool_calls)
                   end
                 )}
              )
@@ -126,7 +129,9 @@ defmodule Mcp.Chat.Message do
                :tool_results,
                {:atomic,
                 expr(
-                  if not is_nil(^arg(:tool_results)) do
+                  if is_nil(^arg(:tool_results)) do
+                    ^atomic_ref(:tool_results)
+                  else
                     fragment(
                       "? || ?",
                       ^atomic_ref(:tool_results),
@@ -135,8 +140,6 @@ defmodule Mcp.Chat.Message do
                         {:array, :map}
                       )
                     )
-                  else
-                    ^atomic_ref(:tool_results)
                   end
                 )}
              )

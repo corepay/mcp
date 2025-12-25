@@ -11,22 +11,25 @@ defmodule Mcp.Services.DataValidator do
     field_rules = Map.get(rules, "fields", %{})
     cross_field_constraints = Map.get(rules, "cross_field_constraints", [])
 
-    with :ok <- validate_fields(record, field_rules),
-         :ok <- validate_cross_field_constraints(record, cross_field_constraints) do
-      :ok
+    with :ok <- validate_fields(record, field_rules) do
+      validate_cross_field_constraints(record, cross_field_constraints)
     end
   end
 
   def validate_records(records, rules) do
-    results = Enum.map(records, fn record ->
-      case validate_record(record, rules) do
-        :ok -> {:ok, record}
-        {:error, errors} -> {:error, %{record: record, errors: errors}}
-      end
-    end)
+    results =
+      Enum.map(records, fn record ->
+        case validate_record(record, rules) do
+          :ok -> {:ok, record}
+          {:error, errors} -> {:error, %{record: record, errors: errors}}
+        end
+      end)
 
-    valid_records = Enum.filter(results, fn {status, _} -> status == :ok end) |> Enum.map(fn {_, r} -> r end)
-    invalid_records = Enum.filter(results, fn {status, _} -> status == :error end) |> Enum.map(fn {_, r} -> r end)
+    valid_records =
+      Enum.filter(results, fn {status, _} -> status == :ok end) |> Enum.map(fn {_, r} -> r end)
+
+    invalid_records =
+      Enum.filter(results, fn {status, _} -> status == :error end) |> Enum.map(fn {_, r} -> r end)
 
     %{
       total_records: length(records),
@@ -58,25 +61,27 @@ defmodule Mcp.Services.DataValidator do
   end
 
   def validate_compliance(records, rules) do
-    gdpr_enabled = get_in(rules, ["gdpr", "enabled"])
-
-    if gdpr_enabled do
-      errors =
-        Enum.reduce(records, [], fn record, acc ->
-          if sensitive_data_exposed?(record) do
-            acc ++ [%{error: "gdpr_sensitive_data_exposed", record: record}]
-          else
-            acc
-          end
-        end)
-
-      if Enum.empty?(errors) do
-        {:ok, :compliant}
-      else
-        {:error, errors}
-      end
+    if get_in(rules, ["gdpr", "enabled"]) do
+      check_gdpr_compliance(records)
     else
       {:ok, :compliant}
+    end
+  end
+
+  defp check_gdpr_compliance(records) do
+    errors =
+      Enum.reduce(records, [], fn record, acc ->
+        if sensitive_data_exposed?(record) do
+          acc ++ [%{error: "gdpr_sensitive_data_exposed", record: record}]
+        else
+          acc
+        end
+      end)
+
+    if Enum.empty?(errors) do
+      {:ok, :compliant}
+    else
+      {:error, errors}
     end
   end
 
@@ -131,14 +136,14 @@ defmodule Mcp.Services.DataValidator do
     errors =
       Enum.reduce(rules, [], fn {field, rule}, acc ->
         value = Map.get(record, field)
-        
+
         cond do
           rule["required"] == true and (is_nil(value) or value == "") ->
             acc ++ [%{error: "required_field_missing", field: field}]
-            
+
           is_nil(value) ->
             acc
-            
+
           true ->
             acc ++ validate_value(field, value, rule)
         end
@@ -148,132 +153,145 @@ defmodule Mcp.Services.DataValidator do
   end
 
   defp validate_value(field, value, rule) do
-    errors = []
-    
-    errors = if rule["type"] == "string" and is_binary(value) do
-      errors
-      |> check_min_length(value, rule["min_length"])
-      |> check_max_length(value, rule["max_length"])
-      |> check_enum(value, rule["enum"])
-    else
-      errors
-    end
-
-    errors = if rule["type"] == "integer" and is_integer(value) do
-      errors
-      |> check_min_value(value, rule["min_value"])
-      |> check_max_value(value, rule["max_value"])
-    else
-      errors
-    end
-    
-    errors = if rule["type"] == "float" and is_number(value) do
-      errors
-      |> check_positive(value, rule["positive"])
-    else
-      errors
-    end
-    
-    errors = if rule["type"] == "email" do
-      if Regex.match?(~r/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/, value) do
-        errors
-      else
-        errors ++ [%{error: "invalid_email", field: field}]
-      end
-    else
-      errors
-    end
-    
-    errors = if rule["type"] == "phone" do
-      # Simple check for at least 7 digits
-      digits = String.replace(value, ~r/\D/, "")
-      if String.length(digits) >= 7 do
-        errors
-      else
-        errors ++ [%{error: "invalid_phone", field: field}]
-      end
-    else
-      errors
-    end
-    
-    errors = if rule["min_items"] && is_list(value) do
-      if length(value) >= rule["min_items"] do
-        errors
-      else
-        errors ++ [%{error: "min_items_violation", field: field}]
-      end
-    else
-      errors
-    end
-
-    errors
+    []
+    |> validate_string_rules(value, rule)
+    |> validate_number_rules(value, rule)
+    |> validate_format_rules(field, value, rule)
+    |> validate_list_rules(field, value, rule)
   end
+
+  defp validate_string_rules(errors, value, %{"type" => "string"} = rule) when is_binary(value) do
+    errors
+    |> check_min_length(value, rule["min_length"])
+    |> check_max_length(value, rule["max_length"])
+    |> check_enum(value, rule["enum"])
+  end
+
+  defp validate_string_rules(errors, _, _), do: errors
+
+  defp validate_number_rules(errors, value, %{"type" => "integer"} = rule)
+       when is_integer(value) do
+    errors
+    |> check_min_value(value, rule["min_value"])
+    |> check_max_value(value, rule["max_value"])
+  end
+
+  defp validate_number_rules(errors, value, %{"type" => "float"} = rule) when is_number(value) do
+    check_positive(errors, value, rule["positive"])
+  end
+
+  defp validate_number_rules(errors, _, _), do: errors
+
+  defp validate_format_rules(errors, _field, value, %{"type" => "email"}) do
+    if Regex.match?(~r/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/, value) do
+      errors
+    else
+      errors ++ [%{error: "invalid_email", field: "email"}]
+    end
+  end
+
+  defp validate_format_rules(errors, field, value, %{"type" => "phone"}) do
+    digits = String.replace(value, ~r/\D/, "")
+
+    if String.length(digits) >= 7 do
+      errors
+    else
+      errors ++ [%{error: "invalid_phone", field: field}]
+    end
+  end
+
+  defp validate_format_rules(errors, _, _, _), do: errors
+
+  defp validate_list_rules(errors, field, value, %{"min_items" => min_items})
+       when is_list(value) do
+    if length(value) >= min_items do
+      errors
+    else
+      errors ++ [%{error: "min_items_violation", field: field}]
+    end
+  end
+
+  defp validate_list_rules(errors, _, _, _), do: errors
 
   defp check_min_length(errors, value, min) when is_integer(min) do
     if String.length(value) >= min, do: errors, else: errors ++ [%{error: "min_length_violation"}]
   end
+
   defp check_min_length(errors, _, _), do: errors
 
   defp check_max_length(errors, value, max) when is_integer(max) do
     if String.length(value) <= max, do: errors, else: errors ++ [%{error: "max_length_violation"}]
   end
+
   defp check_max_length(errors, _, _), do: errors
 
   defp check_min_value(errors, value, min) when is_integer(min) do
     if value >= min, do: errors, else: errors ++ [%{error: "min_value_violation"}]
   end
+
   defp check_min_value(errors, _, _), do: errors
 
   defp check_max_value(errors, value, max) when is_integer(max) do
     if value <= max, do: errors, else: errors ++ [%{error: "max_value_violation"}]
   end
+
   defp check_max_value(errors, _, _), do: errors
-  
+
   defp check_positive(errors, value, true) do
     if value >= 0, do: errors, else: errors ++ [%{error: "negative_value"}]
   end
+
   defp check_positive(errors, _, _), do: errors
 
   defp check_enum(errors, value, enum) when is_list(enum) do
     if value in enum, do: errors, else: errors ++ [%{error: "invalid_enum_value"}]
   end
+
   defp check_enum(errors, _, _), do: errors
 
   defp validate_cross_field_constraints(record, constraints) do
     errors =
       Enum.reduce(constraints, [], fn constraint, acc ->
-        case constraint["type"] do
-          "conditional_required" ->
-            condition = constraint["condition"]
-            if Map.get(record, condition["field"]) == condition["value"] do
-              Enum.reduce(constraint["required_fields"], acc, fn field, inner_acc ->
-                if Map.get(record, field) do
-                  inner_acc
-                else
-                  inner_acc ++ [%{error: "conditional_required_violation", field: field}]
-                end
-              end)
-            else
-              acc
-            end
-            
-          "field_comparison" ->
-            val1 = Map.get(record, constraint["field1"])
-            val2 = Map.get(record, constraint["field2"])
-            
-            valid = case constraint["operator"] do
-              "greater_than" -> val1 > val2
-              "greater_equal" -> val1 >= val2
-              _ -> true
-            end
-            
-            if valid, do: acc, else: acc ++ [%{error: "field_comparison_violation"}]
-            
-          _ -> acc
-        end
+        acc ++ check_constraint(record, constraint)
       end)
 
     if Enum.empty?(errors), do: :ok, else: {:error, errors}
+  end
+
+  defp check_constraint(record, %{"type" => "conditional_required"} = constraint) do
+    condition = constraint["condition"]
+
+    if Map.get(record, condition["field"]) == condition["value"] do
+      check_required_fields(record, constraint["required_fields"])
+    else
+      []
+    end
+  end
+
+  defp check_constraint(record, %{"type" => "field_comparison"} = constraint) do
+    val1 = Map.get(record, constraint["field1"])
+    val2 = Map.get(record, constraint["field2"])
+
+    valid =
+      case constraint["operator"] do
+        "greater_than" -> val1 > val2
+        "greater_equal" -> val1 >= val2
+        _ -> true
+      end
+
+    if valid, do: [], else: [%{error: "field_comparison_violation"}]
+  end
+
+  defp check_constraint(_, _), do: []
+
+  defp check_required_fields(record, fields) do
+    Enum.reduce(fields, [], fn field, acc ->
+      if Map.get(record, field) do
+        acc
+      else
+        acc ++ [%{error: "conditional_required_violation", field: field}]
+      end
+    end)
   end
 
   defp generate_summary(invalid_records) do
@@ -285,9 +303,11 @@ defmodule Mcp.Services.DataValidator do
   end
 
   defp has_duplicates?(records, fields) do
-    values = Enum.map(records, fn r -> 
-      Enum.map(fields, &Map.get(r, &1)) 
-    end)
+    values =
+      Enum.map(records, fn r ->
+        Enum.map(fields, &Map.get(r, &1))
+      end)
+
     length(values) != length(Enum.uniq(values))
   end
 

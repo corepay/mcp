@@ -1,4 +1,7 @@
 defmodule Mcp.Platform.Email do
+  @moduledoc """
+  Represents an email address.
+  """
   use Ash.Resource,
     domain: Mcp.Platform,
     data_layer: AshPostgres.DataLayer,

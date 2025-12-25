@@ -8,8 +8,8 @@ defmodule Mcp.Underwriting.Adapters.IdenfyTest do
   end
 
   test "verify_identity/2 creates a session", %{bypass: bypass} do
-    Application.put_env(:mcp, :idenfy, 
-      api_key: "test_key", 
+    Application.put_env(:mcp, :idenfy,
+      api_key: "test_key",
       api_secret: "test_secret",
       base_url: "http://localhost:#{bypass.port}"
     )
@@ -17,7 +17,7 @@ defmodule Mcp.Underwriting.Adapters.IdenfyTest do
     Bypass.expect(bypass, "POST", "/api/v2/token", fn conn ->
       {:ok, body, _conn} = Plug.Conn.read_body(conn)
       assert body =~ "clientId"
-      
+
       conn
       |> Plug.Conn.put_resp_header("content-type", "application/json")
       |> Plug.Conn.resp(201, Jason.encode!(%{authToken: "token_123"}))
@@ -35,8 +35,8 @@ defmodule Mcp.Underwriting.Adapters.IdenfyTest do
   end
 
   test "screen_business/2 creates KYB token", %{bypass: bypass} do
-    Application.put_env(:mcp, :idenfy, 
-      api_key: "test_key", 
+    Application.put_env(:mcp, :idenfy,
+      api_key: "test_key",
       api_secret: "test_secret",
       base_url: "http://localhost:#{bypass.port}"
     )

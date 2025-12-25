@@ -167,21 +167,25 @@ defmodule Mcp.Platform.TenantBranding do
   defp deactivate_others(changeset, _context) do
     Ash.Changeset.after_action(changeset, fn _changeset, result ->
       if result.is_active do
-        tenant_id = result.tenant_id
-
-        __MODULE__
-        |> Ash.Query.filter(tenant_id == ^tenant_id and id != ^result.id)
-        |> Ash.read!()
-        |> Enum.each(fn branding ->
-          branding
-          |> Ash.Changeset.for_update(:update_branding, %{is_active: false})
-          |> Ash.update!()
-        end)
-
-        {:ok, result}
+        deactivate_other_brandings(result)
       else
         {:ok, result}
       end
     end)
+  end
+
+  defp deactivate_other_brandings(branding) do
+    tenant_id = branding.tenant_id
+
+    __MODULE__
+    |> Ash.Query.filter(tenant_id == ^tenant_id and id != ^branding.id)
+    |> Ash.read!()
+    |> Enum.each(fn other_branding ->
+      other_branding
+      |> Ash.Changeset.for_update(:update_branding, %{is_active: false})
+      |> Ash.update!()
+    end)
+
+    {:ok, branding}
   end
 end

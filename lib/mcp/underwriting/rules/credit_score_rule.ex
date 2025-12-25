@@ -1,12 +1,15 @@
 defmodule Mcp.Underwriting.Rules.CreditScoreRule do
+  @moduledoc """
+  Rule for credit score checks.
+  """
   @behaviour Mcp.Underwriting.RiskEngine.RiskRule
 
   def evaluate(_application, vendor_data) do
     # Extract credit score from vendor data (e.g., from KYB or separate check)
     # For now, assume it's in kyb_result under "credit_score" or similar
-    
+
     score = get_in(vendor_data, [:kyb, :credit_score]) || 0
-    
+
     cond do
       score >= 700 -> {:ok, 20, ["Good Credit Score"]}
       score >= 600 -> {:ok, 10, ["Average Credit Score"]}

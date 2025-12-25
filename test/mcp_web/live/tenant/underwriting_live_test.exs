@@ -3,20 +3,26 @@ defmodule McpWeb.Tenant.UnderwritingLiveTest do
 
   import Phoenix.LiveViewTest
 
+  alias Mcp.Accounts.{Auth, User}
+  alias Mcp.Infrastructure.TenantManager
+  alias Mcp.Platform.{Merchant, Tenant}
+  alias Mcp.Underwriting.{Application, RiskAssessment}
+
   describe "Admin Underwriting" do
     setup do
       # Create tenant and admin user
-      tenant = Mcp.Platform.Tenant.create!(%{
-        name: "Admin Tenant",
-        slug: "admin-tenant",
-        subdomain: "admin-tenant"
-      })
-      
-      # Ensure tenant schema exists
-      Mcp.Infrastructure.TenantManager.create_tenant_schema(tenant.company_schema)
+      tenant =
+        Tenant.create!(%{
+          name: "Admin Tenant",
+          slug: "admin-tenant",
+          subdomain: "admin-tenant"
+        })
 
-      admin_user = 
-        Mcp.Accounts.User
+      # Ensure tenant schema exists
+      TenantManager.create_tenant_schema(tenant.company_schema)
+
+      admin_user =
+        User
         |> Ash.Changeset.for_create(:register, %{
           email: "admin@example.com",
           password: "Password123!",
@@ -26,11 +32,11 @@ defmodule McpWeb.Tenant.UnderwritingLiveTest do
         |> Ash.Changeset.force_change_attribute(:role, :admin)
         |> Ash.create!()
 
-      {:ok, session_data} = Mcp.Accounts.Auth.create_user_session(admin_user, "127.0.0.1")
+      {:ok, session_data} = Auth.create_user_session(admin_user, "127.0.0.1")
 
       # Create a merchant
-      merchant = 
-        Mcp.Platform.Merchant
+      merchant =
+        Merchant
         |> Ash.Changeset.for_create(:create, %{
           business_name: "Risky Business",
           slug: "risky-business",
@@ -39,11 +45,9 @@ defmodule McpWeb.Tenant.UnderwritingLiveTest do
         })
         |> Ash.create!(tenant: tenant.company_schema)
 
-
-
       # Create a test application
-      application = 
-        Mcp.Underwriting.Application
+      application =
+        Application
         |> Ash.Changeset.for_create(:create, %{
           merchant_id: merchant.id,
           status: :manual_review,
@@ -55,20 +59,24 @@ defmodule McpWeb.Tenant.UnderwritingLiveTest do
         |> Ash.create!(tenant: tenant.company_schema)
 
       # Create a risk assessment for it
-      Mcp.Underwriting.RiskAssessment.create!(%{
-        merchant_id: application.merchant_id,
-        application_id: application.id,
-        score: 65,
-        factors: %{kyb: %{status: :review}},
-        recommendation: :manual_review
-      }, tenant: tenant.company_schema)
+      RiskAssessment.create!(
+        %{
+          merchant_id: application.merchant_id,
+          application_id: application.id,
+          score: 65,
+          factors: %{kyb: %{status: :review}},
+          recommendation: :manual_review
+        },
+        tenant: tenant.company_schema
+      )
 
       %{
-        conn: build_conn()
-              |> init_test_session(%{"tenant_id" => tenant.id})
-              |> put_req_cookie("_mcp_access_token", session_data.access_token)
-              |> put_req_cookie("_mcp_refresh_token", session_data.refresh_token)
-              |> put_req_cookie("_mcp_session_id", session_data.session_id),
+        conn:
+          build_conn()
+          |> init_test_session(%{"tenant_id" => tenant.id})
+          |> put_req_cookie("_mcp_access_token", session_data.access_token)
+          |> put_req_cookie("_mcp_refresh_token", session_data.refresh_token)
+          |> put_req_cookie("_mcp_session_id", session_data.session_id),
         application: application,
         tenant: tenant
       }
@@ -82,22 +90,28 @@ defmodule McpWeb.Tenant.UnderwritingLiveTest do
       assert render(view) =~ "Manual review"
     end
 
-    test "can approve application from review page", %{conn: conn, application: application, tenant: tenant} do
+    test "can approve application from review page", %{
+      conn: conn,
+      application: application,
+      tenant: tenant
+    } do
       {:ok, view, _html} = live(conn, "/admin/underwriting/#{application.id}")
 
       assert render(view) =~ "Risky Business"
       assert render(view) =~ "Risk Score"
-      
+
       # Click Approve
       view
       |> element("button", "Approve Application")
       |> render_click()
-      
+
       # Should redirect back to dashboard
       assert_redirect(view, "/admin/underwriting")
-      
+
       # Verify status update
-      updated_app = Mcp.Underwriting.Application.get_by_id!(application.id, tenant: tenant.company_schema)
+      updated_app =
+        Application.get_by_id!(application.id, tenant: tenant.company_schema)
+
       assert updated_app.status == :approved
     end
   end

@@ -50,7 +50,9 @@ defmodule Mcp.Accounts.JWT do
         else
           {:error, :invalid_token_type}
         end
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -66,7 +68,7 @@ defmodule Mcp.Accounts.JWT do
 
   def create_access_token(user, opts \\ []) do
     tenant_id = Keyword.get(opts, :tenant_id, user.tenant_id)
-    
+
     claims = %{
       "sub" => user.id,
       "email" => to_string(user.email),
@@ -79,6 +81,7 @@ defmodule Mcp.Accounts.JWT do
         "email" => to_string(user.email)
       }
     }
+
     case generate_token(claims) do
       {:ok, token, claims} -> {:ok, %{token: token, claims: claims}}
       error -> error
@@ -93,6 +96,7 @@ defmodule Mcp.Accounts.JWT do
       "session_id" => Keyword.get(opts, :session_id),
       "device_id" => Keyword.get(opts, :device_id)
     }
+
     # Refresh tokens last longer (e.g., 30 days)
     case generate_token(claims) do
       {:ok, token, claims} -> {:ok, %{token: token, claims: claims}}
@@ -115,7 +119,7 @@ defmodule Mcp.Accounts.JWT do
 
   def get_authorized_contexts(claims) do
     contexts = ["user:#{claims["sub"]}"]
-    
+
     if claims["tenant_id"] do
       contexts ++ ["tenant:#{claims["tenant_id"]}"]
     else
@@ -143,6 +147,7 @@ defmodule Mcp.Accounts.JWT do
       config :mcp, :token_signing_secret, "dev-secret-change-in-production"
       """
   end
+
   def generate_random_token do
     :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
   end

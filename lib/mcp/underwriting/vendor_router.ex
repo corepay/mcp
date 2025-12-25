@@ -6,13 +6,14 @@ defmodule Mcp.Underwriting.VendorRouter do
   alias Mcp.Underwriting.Adapters.ComplyCube
   alias Mcp.Underwriting.Adapters.Idenfy
   alias Mcp.Underwriting.Adapters.Mock
+  alias Mcp.Underwriting.CircuitBreaker
 
   def select_adapter(_context \\ %{}) do
     # 1. Determine preferred adapter based on config or env
     adapter = determine_adapter()
 
     # 2. Check circuit breaker
-    case Mcp.Underwriting.CircuitBreaker.check_circuit(service_name(adapter)) do
+    case CircuitBreaker.check_circuit(service_name(adapter)) do
       :ok ->
         adapter
 
@@ -20,7 +21,7 @@ defmodule Mcp.Underwriting.VendorRouter do
         # Fallback logic
         fallback = get_fallback_adapter(adapter)
 
-        case Mcp.Underwriting.CircuitBreaker.check_circuit(service_name(fallback)) do
+        case CircuitBreaker.check_circuit(service_name(fallback)) do
           :ok ->
             fallback
 
@@ -44,9 +45,10 @@ defmodule Mcp.Underwriting.VendorRouter do
 
       _ ->
         # Auto-detect based on API keys
-        cond do
-          System.get_env("COMPLY_CUBE_API_KEY") -> ComplyCube
-          true -> Mock
+        if System.get_env("COMPLY_CUBE_API_KEY") do
+          ComplyCube
+        else
+          Mock
         end
     end
   end

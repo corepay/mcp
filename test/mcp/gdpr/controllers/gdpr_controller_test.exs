@@ -1,6 +1,11 @@
 defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
   use McpWeb.ConnCase, async: false
   import Mox
+
+  alias Mcp.Accounts.{ApiKey, Auth}
+  alias Mcp.Platform.Tenant
+  alias Mcp.Repo
+
   setup :verify_on_exit!
 
   @moduletag :gdpr
@@ -30,7 +35,7 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
     tenant_id = Ecto.UUID.generate()
 
     # Create a tenant to satisfy FK constraints
-    Mcp.Repo.insert!(%Mcp.Platform.Tenant{
+    Repo.insert!(%Tenant{
       id: tenant_id,
       name: "Test Tenant",
       slug: "test-tenant-#{tenant_id}",
@@ -218,14 +223,14 @@ defmodule Mcp.Gdpr.Controllers.GdprControllerTest do
   end
 
   defp auth_conn(conn, user) do
-    {:ok, session_data} = Mcp.Accounts.Auth.create_user_session(user, "127.0.0.1")
-    IO.inspect(session_data, label: "Session Data")
+    {:ok, session_data} = Auth.create_user_session(user, "127.0.0.1")
+    # IO.inspect(session_data, label: "Session Data")
 
     # Create API key for the user's tenant
     api_key_string = "mcp_test_#{Ecto.UUID.generate()}"
 
     {:ok, _api_key} =
-      Mcp.Accounts.ApiKey.create(%{
+      ApiKey.create(%{
         name: "Test Key",
         key: api_key_string,
         tenant_id: user.tenant_id,

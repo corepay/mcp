@@ -96,6 +96,13 @@ defmodule Mcp.Accounts.User do
     attribute :locked_at, :utc_datetime
     attribute :unlock_token, :string
 
+    # Password reset fields
+    attribute :reset_password_token, :string do
+      sensitive? true
+    end
+
+    attribute :reset_password_sent_at, :utc_datetime
+
     # Account status
     attribute :status, :atom do
       constraints one_of: [:active, :suspended, :deleted, :anonymized, :locked]
@@ -298,6 +305,68 @@ defmodule Mcp.Accounts.User do
       require_atomic? false
       change set_attribute(:failed_attempts, 0)
     end
+
+    update :request_password_reset do
+      accept []
+      require_atomic? false
+
+      change fn changeset, _ ->
+        # Generate secure reset token
+        token =
+          :crypto.strong_rand_bytes(32)
+          |> Base.url_encode64(padding: false)
+
+        changeset
+        |> Ash.Changeset.change_attribute(:reset_password_token, token)
+        |> Ash.Changeset.change_attribute(:reset_password_sent_at, DateTime.utc_now())
+      end
+    end
+
+    update :reset_password_with_token do
+      accept []
+      argument :token, :string, allow_nil?: false, sensitive?: true
+      argument :password, :string, allow_nil?: false, sensitive?: true
+      argument :password_confirmation, :string, allow_nil?: false, sensitive?: true
+      require_atomic? false
+
+      validate confirm(:password, :password_confirmation)
+
+      validate fn changeset, _context ->
+        token = Ash.Changeset.get_argument(changeset, :token)
+        stored_token = Ash.Changeset.get_attribute(changeset, :reset_password_token)
+        reset_sent_at = Ash.Changeset.get_attribute(changeset, :reset_password_sent_at)
+
+        cond do
+          is_nil(stored_token) or is_nil(reset_sent_at) ->
+            {:error, field: :token, message: "Invalid or expired reset token"}
+
+          token != stored_token ->
+            {:error, field: :token, message: "Invalid or expired reset token"}
+
+          # Token expires after 1 hour
+          DateTime.diff(DateTime.utc_now(), reset_sent_at, :second) > 3600 ->
+            {:error, field: :token, message: "Invalid or expired reset token"}
+
+          true ->
+            :ok
+        end
+      end
+
+      change fn changeset, _ ->
+        if changeset.valid? do
+          password = Ash.Changeset.get_argument(changeset, :password)
+          hashed = Bcrypt.hash_pwd_salt(password)
+
+          changeset
+          |> Ash.Changeset.change_attribute(:hashed_password, hashed)
+          |> Ash.Changeset.change_attribute(:reset_password_token, nil)
+          |> Ash.Changeset.change_attribute(:reset_password_sent_at, nil)
+          |> Ash.Changeset.change_attribute(:failed_attempts, 0)
+        else
+          changeset
+        end
+      end
+    end
   end
 
   validations do
@@ -324,6 +393,8 @@ defmodule Mcp.Accounts.User do
     define :unlock_account
     define :increment_failed_attempts
     define :reset_failed_attempts
+    define :request_password_reset
+    define :reset_password_with_token, args: [:token, :password, :password_confirmation]
   end
 
   # Compatibility wrappers for existing code

@@ -16,6 +16,7 @@ defmodule McpWeb.Plugs.ApiVersioning do
           # Default to v1 for now, or error out if strict
           assign(conn, :api_version, "v1")
         end
+
       _ ->
         assign(conn, :api_version, "v1")
     end

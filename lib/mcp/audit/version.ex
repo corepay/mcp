@@ -1,4 +1,7 @@
 defmodule Mcp.Audit.Version do
+  @moduledoc """
+  Keeps track of resource versions for audit trails (PaperTrail).
+  """
   use Ash.Resource,
     domain: Mcp.Audit,
     data_layer: AshPostgres.DataLayer,

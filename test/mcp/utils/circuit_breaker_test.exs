@@ -22,15 +22,16 @@ defmodule Mcp.Utils.CircuitBreakerTest do
     end
 
     assert true == CircuitBreaker.open?(service)
-    
+
     # Next call should fail fast
-    assert {:error, :circuit_open} == CircuitBreaker.execute(service, fn -> {:ok, :should_not_run} end)
+    assert {:error, :circuit_open} ==
+             CircuitBreaker.execute(service, fn -> {:ok, :should_not_run} end)
   end
 
   test "execute/2 recovers after success", %{service: service} do
     CircuitBreaker.record_failure(service)
     assert false == CircuitBreaker.open?(service)
-    
+
     CircuitBreaker.record_success(service)
     assert false == CircuitBreaker.open?(service)
   end

@@ -1,5 +1,12 @@
 defmodule Mcp.Finance.Jobs.PostLlmCosts do
+  @moduledoc """
+  Worker to aggregate and post LLM usage costs to the ledger.
+  """
   use Oban.Worker, queue: :finance
+
+  alias Mcp.Ai.LlmUsage
+  alias Mcp.Finance.{Account, Transfer}
+  alias Mcp.Repo
 
   require Ash.Query
   require Logger
@@ -9,15 +16,15 @@ defmodule Mcp.Finance.Jobs.PostLlmCosts do
     Logger.info("Starting LLM Cost Posting...")
 
     # 1. Find unposted usage
-    unposted_query = 
-      Mcp.Ai.LlmUsage
+    unposted_query =
+      LlmUsage
       |> Ash.Query.filter(is_nil(transfer_id))
-    
-    # We need to sum the cost. 
-    # Ash.read!(query) would load all records. 
-    # Let's use an aggregate if possible, or just read and sum in memory for simplicity (assuming volume isn't massive per 10 mins)
+
+    # We need to sum the cost.
+    # Ash.read!(query) would load all records.
+    # Let's use an aggregate if possible, or just read and sum in memory for simplicity
     # Better: Use Ash.sum aggregate query.
-    
+
     case Ash.sum(unposted_query, :cost) do
       {:ok, total_cost} when not is_nil(total_cost) ->
         if Decimal.gt?(total_cost, 0) do
@@ -26,7 +33,8 @@ defmodule Mcp.Finance.Jobs.PostLlmCosts do
           Logger.info("No LLM costs to post.")
           :ok
         end
-      _ -> 
+
+      _ ->
         Logger.info("No LLM costs to post.")
         :ok
     end
@@ -40,33 +48,34 @@ defmodule Mcp.Finance.Jobs.PostLlmCosts do
     if expense_account && liability_account do
       # 3. Create Transfer (Credit Liability, Debit Expense)
       # Using AshDoubleEntry transfer logic if available, or creating a Transfer resource
-      
+
       # Assuming Mcp.Finance.Transfer is the resource
       transfer_params = %{
         amount: amount,
-        from_account_id: liability_account.id, # Credit Liability (Source) - Wait, Double Entry usually: From Asset/Expense -> To Liability/Equity?
+        # Credit Liability (Source) - Wait, Double Entry usually: From Asset/Expense -> To Liability/Equity?
+        from_account_id: liability_account.id,
         # Standard: Debit Expense (Increase), Credit Liability (Increase)
         # In AshDoubleEntry:
-        # Transfer from Liability to Expense? 
+        # Transfer from Liability to Expense?
         # No, usually "From" is the source of funds (Credit), "To" is the destination (Debit).
         # So From Liability Account -> To Expense Account.
         to_account_id: expense_account.id,
         description: "LLM Usage Posting - #{DateTime.utc_now()}"
       }
-      
-      Mcp.Repo.transaction(fn ->
-        transfer = Mcp.Finance.Transfer.create!(transfer_params)
-        
+
+      Repo.transaction(fn ->
+        transfer = Transfer.create!(transfer_params)
+
         # 4. Mark usages as posted
         # We need to update all records in the query with the new transfer_id
         # Ash.bulk_update is perfect here.
-        
+
         query
         |> Ash.bulk_update!(:update_transfer, %{transfer_id: transfer.id}, strategy: :atomic)
-        
+
         Logger.info("Posted #{amount} to Ledger. Transfer ID: #{transfer.id}")
       end)
-      
+
       :ok
     else
       Logger.error("System accounts not found. Run Mcp.Finance.Seeder.seed/0")
@@ -75,7 +84,7 @@ defmodule Mcp.Finance.Jobs.PostLlmCosts do
   end
 
   defp get_account(identifier) do
-    Mcp.Finance.Account
+    Account
     |> Ash.Query.filter(identifier == ^identifier)
     |> Ash.read_one!()
   end

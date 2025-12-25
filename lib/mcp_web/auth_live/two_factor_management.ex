@@ -191,6 +191,7 @@ defmodule McpWeb.AuthLive.TwoFactorManagement do
   defp translate_totp_error(reason), do: "Verification failed: #{inspect(reason)}"
 
   def format_otp_date(nil), do: "Unknown"
+
   def format_otp_date(date) do
     Calendar.strftime(date, "%B %d, %Y")
   end

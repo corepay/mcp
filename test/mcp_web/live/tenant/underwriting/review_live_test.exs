@@ -2,14 +2,18 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
   use McpWeb.ConnCase
   import Phoenix.LiveViewTest
 
+  alias Mcp.Accounts.{Auth, User}
+  alias Mcp.Chat.{Conversation, Message}
+  alias Mcp.Platform.{Merchant, Tenant}
+  alias Mcp.Repo
+  alias Mcp.Underwriting.{Activity, Application, Document}
 
-  alias Mcp.Underwriting.Activity
   require Ash.Query
 
   setup do
     # Create Tenant
-    tenant = 
-      Mcp.Platform.Tenant
+    tenant =
+      Tenant
       |> Ash.Changeset.for_create(:create, %{
         name: "Test Tenant Review",
         slug: "test-tenant-review",
@@ -18,8 +22,8 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
       |> Ash.create!()
 
     # Create a merchant for the application
-    merchant = 
-      Mcp.Platform.Merchant
+    merchant =
+      Merchant
       |> Ash.Changeset.for_create(:create, %{
         business_name: "Test Merchant Review",
         slug: "test-merchant-review",
@@ -30,14 +34,23 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
 
     # WORKAROUND: Manually add columns because Ecto.Migrator fails in Sandbox
     schema = tenant.company_schema
-    Mcp.Repo.query!("ALTER TABLE \"#{schema}\".underwriting_applications ADD COLUMN IF NOT EXISTS submitted_at timestamp(6)")
-    Mcp.Repo.query!("ALTER TABLE \"#{schema}\".underwriting_applications ADD COLUMN IF NOT EXISTS sla_due_at timestamp(6)")
-    Mcp.Repo.query!("CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_activities (id uuid PRIMARY KEY, type text, metadata jsonb, actor_id uuid, application_id uuid, inserted_at timestamp(6), updated_at timestamp(6))")
+
+    Repo.query!(
+      "ALTER TABLE \"#{schema}\".underwriting_applications ADD COLUMN IF NOT EXISTS submitted_at timestamp(6)"
+    )
+
+    Repo.query!(
+      "ALTER TABLE \"#{schema}\".underwriting_applications ADD COLUMN IF NOT EXISTS sla_due_at timestamp(6)"
+    )
+
+    Repo.query!(
+      "CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_activities (id uuid PRIMARY KEY, type text, metadata jsonb, actor_id uuid, application_id uuid, inserted_at timestamp(6), updated_at timestamp(6))"
+    )
 
     # Create Application
     # Create Applicant User for Chat Integration
-    applicant_user = 
-      Mcp.Accounts.User
+    applicant_user =
+      User
       |> Ash.Changeset.for_create(:register, %{
         email: "contact@example.com",
         password: "Password123!",
@@ -46,8 +59,8 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
       |> Ash.Changeset.force_change_attribute(:tenant_id, tenant.id)
       |> Ash.create!()
 
-    application = 
-      Mcp.Underwriting.Application
+    application =
+      Application
       |> Ash.Changeset.for_create(:create, %{
         merchant_id: merchant.id,
         status: :submitted,
@@ -64,10 +77,15 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
     {:ok, tenant: tenant, application: application, applicant_user: applicant_user}
   end
 
-  test "request info flow updates status and logs activity", %{conn: conn, tenant: tenant, application: application, applicant_user: applicant_user} do
+  test "request info flow updates status and logs activity", %{
+    conn: conn,
+    tenant: tenant,
+    application: application,
+    applicant_user: applicant_user
+  } do
     # 1. Create Admin User
-    admin_user = 
-      Mcp.Accounts.User
+    admin_user =
+      User
       |> Ash.Changeset.for_create(:register, %{
         email: "review_admin_#{System.unique_integer()}@platform.local",
         password: "Password123!",
@@ -78,10 +96,10 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
       |> Ash.create!()
 
     # 2. Generate session
-    {:ok, session_data} = Mcp.Accounts.Auth.create_user_session(admin_user, "127.0.0.1")
+    {:ok, session_data} = Auth.create_user_session(admin_user, "127.0.0.1")
 
     # 3. Setup connection with cookies
-    conn = 
+    conn =
       conn
       |> init_test_session(%{"tenant_id" => tenant.id})
       |> put_req_cookie("_mcp_access_token", session_data.access_token)
@@ -100,10 +118,6 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
     assert has_element?(view, "p", "llc")
     assert has_element?(view, "p", "100000")
 
-
-    
-
-
     # 6. Click Request Info
     view
     |> element("button", "Request More Info")
@@ -121,33 +135,37 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
       "document_type" => "identity"
     })
     |> render_submit()
-    
+
     # 9. Verify Redirect and Flash
     flash = assert_redirect(view, "/admin/underwriting")
     assert flash["info"] =~ "Requested more information"
 
     # 10. Verify Status Change and Chat Message
-    updated_app = Mcp.Underwriting.Application.get_by_id!(application.id, tenant: tenant.company_schema)
+    updated_app =
+      Application.get_by_id!(application.id, tenant: tenant.company_schema)
+
     assert updated_app.status == :more_info_required
-    
+
     # Verify Chat Message
-    conversation = 
-      Mcp.Chat.Conversation
+    conversation =
+      Conversation
       |> Ash.Query.filter(user_id == ^applicant_user.id)
       |> Ash.read_one!(tenant: tenant.company_schema)
-      
+
     assert conversation
-    
-    message = 
-      Mcp.Chat.Message
+
+    message =
+      Message
       |> Ash.Query.filter(conversation_id == ^conversation.id)
       |> Ash.read_one!(tenant: tenant.company_schema)
-      
-    assert message.text == "SYSTEM NOTIFICATION: Please upload your **Identity**. Reason: Need clearer ID"
+
+    assert message.text ==
+             "SYSTEM NOTIFICATION: Please upload your **Identity**. Reason: Need clearer ID"
+
     assert message.source == :agent
 
     # 11. Verify Activity Log
-    activity = 
+    activity =
       Activity
       |> Ash.Query.filter(application_id == ^application.id)
       |> Ash.read_one!(tenant: tenant.company_schema)
@@ -158,8 +176,8 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
 
   test "can verify and reject documents", %{conn: conn, tenant: tenant, application: application} do
     # 1. Create a document
-    document = 
-      Mcp.Underwriting.Document
+    document =
+      Document
       |> Ash.Changeset.for_create(:create, %{
         file_path: "apps/#{application.id}/doc.pdf",
         file_name: "doc.pdf",
@@ -170,8 +188,8 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
       |> Ash.create!(tenant: tenant.company_schema)
 
     # 2. Setup Admin Session
-    admin_user = 
-      Mcp.Accounts.User
+    admin_user =
+      User
       |> Ash.Changeset.for_create(:register, %{
         email: "doc_admin_#{System.unique_integer()}@platform.local",
         password: "Password123!",
@@ -181,9 +199,9 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
       |> Ash.Changeset.force_change_attribute(:role, :admin)
       |> Ash.create!()
 
-    {:ok, session_data} = Mcp.Accounts.Auth.create_user_session(admin_user, "127.0.0.1")
+    {:ok, session_data} = Auth.create_user_session(admin_user, "127.0.0.1")
 
-    conn = 
+    conn =
       conn
       |> init_test_session(%{"tenant_id" => tenant.id})
       |> put_req_cookie("_mcp_access_token", session_data.access_token)
@@ -203,8 +221,12 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
 
     # 6. Verify Status Change
     assert has_element?(view, "span.text-success", "verified")
-    
-    updated_doc = Ash.read_one!(Ash.Query.filter(Mcp.Underwriting.Document, id == ^document.id), tenant: tenant.company_schema)
+
+    updated_doc =
+      Ash.read_one!(Ash.Query.filter(Document, id == ^document.id),
+        tenant: tenant.company_schema
+      )
+
     assert updated_doc.status == :verified
 
     # 7. Click Reject
@@ -215,14 +237,18 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
     # 8. Verify Status Change
     assert has_element?(view, "span.text-error", "rejected")
 
-    updated_doc = Ash.read_one!(Ash.Query.filter(Mcp.Underwriting.Document, id == ^document.id), tenant: tenant.company_schema)
+    updated_doc =
+      Ash.read_one!(Ash.Query.filter(Document, id == ^document.id),
+        tenant: tenant.company_schema
+      )
+
     assert updated_doc.status == :rejected
   end
 
   test "can add internal notes", %{conn: conn, tenant: tenant, application: application} do
     # Setup Admin Session
-    admin_user = 
-      Mcp.Accounts.User
+    admin_user =
+      User
       |> Ash.Changeset.for_create(:register, %{
         email: "note_admin_#{System.unique_integer()}@platform.local",
         password: "Password123!",
@@ -232,9 +258,9 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
       |> Ash.Changeset.force_change_attribute(:role, :admin)
       |> Ash.create!()
 
-    {:ok, session_data} = Mcp.Accounts.Auth.create_user_session(admin_user, "127.0.0.1")
+    {:ok, session_data} = Auth.create_user_session(admin_user, "127.0.0.1")
 
-    conn = 
+    conn =
       conn
       |> init_test_session(%{"tenant_id" => tenant.id})
       |> put_req_cookie("_mcp_access_token", session_data.access_token)
@@ -252,10 +278,10 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
     # 3. Verify Note in Timeline
     assert has_element?(view, "p", "Internal Note")
     assert has_element?(view, "div", "This is a test note")
-    
+
     # 4. Verify Activity Log
-    activity = 
-      Mcp.Underwriting.Activity
+    activity =
+      Activity
       |> Ash.Query.filter(application_id == ^application.id)
       |> Ash.Query.filter(type == :internal_note)
       |> Ash.read_one!(tenant: tenant.company_schema)

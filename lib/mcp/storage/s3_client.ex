@@ -114,6 +114,22 @@ defmodule Mcp.Storage.S3Client do
     end
   end
 
+  @doc """
+  Gets the object content directly from S3/MinIO.
+  Returns {:ok, binary} on success, {:error, reason} on failure.
+  """
+  def get_object(bucket, key, opts \\ []) do
+    Logger.info("Getting object from S3: #{bucket}/#{key}")
+
+    S3.get_object(bucket, key, opts)
+    |> ExAws.request()
+    |> case do
+      {:ok, %{body: body}} -> {:ok, body}
+      {:error, {:http_error, 404, _}} -> {:error, :not_found}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
   defp public_url(bucket, key) do
     # Construct public URL based on configuration
     # This assumes a standard S3-style URL or MinIO URL

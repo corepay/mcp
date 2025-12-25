@@ -3,8 +3,6 @@ defmodule Mcp.Services.DataImporter do
   Service for importing data.
   """
 
-
-
   def read_data(:json, %{"file_path" => path}) do
     if File.exists?(path) do
       case File.read(path) do
@@ -40,24 +38,30 @@ defmodule Mcp.Services.DataImporter do
   def read_and_detect_format(path) do
     if File.exists?(path) do
       ext = Path.extname(path) |> String.downcase()
+
       case ext do
         ".json" -> read_data(:json, %{"file_path" => path})
         ".csv" -> read_data(:csv, %{"file_path" => path})
-        _ -> 
-          # Try to detect by content
-          case File.read(path) do
-            {:ok, content} ->
-              if String.starts_with?(String.trim(content), "[") or String.starts_with?(String.trim(content), "{") do
-                read_data(:json, %{"content" => content})
-              else
-                # Default to CSV if not JSON-like
-                read_data(:csv, %{"content" => content})
-              end
-            {:error, reason} -> {:error, "File read error: #{inspect(reason)}"}
-          end
+        _ -> detect_and_read_by_content(path)
       end
     else
       {:error, "File not found: #{path}"}
+    end
+  end
+
+  defp detect_and_read_by_content(path) do
+    case File.read(path) do
+      {:ok, content} ->
+        trimmed = String.trim(content)
+
+        if String.starts_with?(trimmed, "[") or String.starts_with?(trimmed, "{") do
+          read_data(:json, %{"content" => content})
+        else
+          read_data(:csv, %{"content" => content})
+        end
+
+      {:error, reason} ->
+        {:error, "File read error: #{inspect(reason)}"}
     end
   end
 
@@ -65,36 +69,41 @@ defmodule Mcp.Services.DataImporter do
     # Sample first 10 records
     sample = Enum.take(data, 10)
     keys = get_fields(sample)
-    
+
     Enum.reduce(keys, %{}, fn key, acc ->
-      types = Enum.map(sample, fn record -> 
-        val = Map.get(record, key)
-        infer_type(val)
-      end) 
-      |> Enum.filter(&(&1 != "empty")) # Ignore empty values
-      |> Enum.uniq()
-      
+      types =
+        Enum.map(sample, fn record ->
+          val = Map.get(record, key)
+          infer_type(val)
+        end)
+        # Ignore empty values
+        |> Enum.filter(&(&1 != "empty"))
+        |> Enum.uniq()
+
       final_type = if length(types) == 1, do: hd(types), else: "string"
       # If mixed, fallback to string unless it's nil + type
       final_type = if "string" in types, do: "string", else: final_type
       # If all were empty, default to string
       final_type = if types == [], do: "string", else: final_type
-      
+
       Map.put(acc, key, final_type)
     end)
   end
+
   def infer_data_types(_), do: %{}
 
   def validate_required_keys(data, keys) do
-    missing = Enum.reduce(data, MapSet.new(), fn record, acc ->
-      record_keys = Map.keys(record) |> MapSet.new()
-      required = MapSet.new(keys)
-      if MapSet.subset?(required, record_keys) do
-        acc
-      else
-        MapSet.union(acc, MapSet.difference(required, record_keys))
-      end
-    end)
+    missing =
+      Enum.reduce(data, MapSet.new(), fn record, acc ->
+        record_keys = Map.keys(record) |> MapSet.new()
+        required = MapSet.new(keys)
+
+        if MapSet.subset?(required, record_keys) do
+          acc
+        else
+          MapSet.union(acc, MapSet.difference(required, record_keys))
+        end
+      end)
 
     if MapSet.size(missing) == 0 do
       :ok
@@ -105,6 +114,7 @@ defmodule Mcp.Services.DataImporter do
 
   def validate_data_size(data, max_records) do
     count = length(data)
+
     if count <= max_records do
       :ok
     else
@@ -121,11 +131,20 @@ defmodule Mcp.Services.DataImporter do
       sample_record: List.first(data)
     }
   end
-  def get_data_metadata(_), do: %{record_count: 0, fields: [], has_nil_values: false, sample_types: %{}, sample_record: nil}
+
+  def get_data_metadata(_),
+    do: %{
+      record_count: 0,
+      fields: [],
+      has_nil_values: false,
+      sample_types: %{},
+      sample_record: nil
+    }
 
   def get_sample_records(data, sample_size) when is_list(data) do
     Enum.take(data, sample_size)
   end
+
   def get_sample_records(_, _), do: []
 
   # Private Helpers
@@ -140,19 +159,22 @@ defmodule Mcp.Services.DataImporter do
 
   defp parse_csv(content, config) do
     delimiter = Map.get(config, "delimiter", ",")
-    
+
     # Simple CSV parsing for now, assuming headers
     lines = String.split(content, "\n", trim: true)
+
     if length(lines) > 0 do
       headers = hd(lines) |> String.split(delimiter) |> Enum.map(&String.trim/1)
-      
-      data = Enum.drop(lines, 1) |> Enum.map(fn line ->
-        values = String.split(line, delimiter) |> Enum.map(&String.trim/1)
-        
-        # Zip headers with values
-        Enum.zip(headers, values) |> Enum.into(%{})
-      end)
-      
+
+      data =
+        Enum.drop(lines, 1)
+        |> Enum.map(fn line ->
+          values = String.split(line, delimiter) |> Enum.map(&String.trim/1)
+
+          # Zip headers with values
+          Enum.zip(headers, values) |> Enum.into(%{})
+        end)
+
       {:ok, data}
     else
       {:ok, []}
@@ -162,6 +184,7 @@ defmodule Mcp.Services.DataImporter do
   defp infer_type(val) when is_integer(val), do: "integer"
   defp infer_type(val) when is_float(val), do: "float"
   defp infer_type(val) when is_boolean(val), do: "boolean"
+
   defp infer_type(val) when is_binary(val) do
     cond do
       val == "" -> "empty"
@@ -171,7 +194,9 @@ defmodule Mcp.Services.DataImporter do
       true -> "string"
     end
   end
-  defp infer_type(nil), do: "empty" # Treat nil as empty
+
+  # Treat nil as empty
+  defp infer_type(nil), do: "empty"
   defp infer_type(_), do: "string"
 
   defp get_fields([]), do: []

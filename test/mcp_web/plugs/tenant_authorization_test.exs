@@ -10,7 +10,6 @@ defmodule McpWeb.Plugs.TenantAuthorizationTest do
   import Plug.Test
   import Plug.Conn
 
-
   alias McpWeb.Plugs.TenantAuthorization
 
   @opts [required_permissions: [:user_management]]

@@ -36,6 +36,7 @@ defmodule McpWeb.Api.WebhookController do
 
   def delete(conn, %{"id" => id}) do
     endpoint = Ash.get!(Endpoint, id)
+
     with :ok <- Ash.destroy(endpoint) do
       send_resp(conn, :no_content, "")
     end

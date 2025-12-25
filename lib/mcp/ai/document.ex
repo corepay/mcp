@@ -1,4 +1,7 @@
 defmodule Mcp.Ai.Document do
+  @moduledoc """
+  Represents a document in the AI system.
+  """
   use Ash.Resource,
     domain: Mcp.Ai,
     data_layer: AshPostgres.DataLayer,
@@ -17,7 +20,7 @@ defmodule Mcp.Ai.Document do
     policy action_type(:update) do
       authorize_if expr(tenant_id == ^actor(:tenant_id))
     end
-    
+
     policy action_type(:destroy) do
       authorize_if expr(tenant_id == ^actor(:tenant_id))
     end
@@ -82,7 +85,16 @@ defmodule Mcp.Ai.Document do
 
     create :create do
       primary? true
-      accept [:content, :metadata, :embedding, :tenant_id, :merchant_id, :reseller_id, :knowledge_base_id]
+
+      accept [
+        :content,
+        :metadata,
+        :embedding,
+        :tenant_id,
+        :merchant_id,
+        :reseller_id,
+        :knowledge_base_id
+      ]
     end
 
     update :update do
@@ -101,7 +113,7 @@ defmodule Mcp.Ai.Document do
       argument :tenant_id, :uuid do
         allow_nil? true
       end
-      
+
       argument :merchant_id, :uuid do
         allow_nil? true
       end
@@ -113,9 +125,10 @@ defmodule Mcp.Ai.Document do
       # Filter by cosine similarity and optional scopes
       filter expr(
                cosine_similarity(embedding, ^arg(:query_embedding)) > ^arg(:similarity_threshold) and
-               (is_nil(^arg(:tenant_id)) or tenant_id == ^arg(:tenant_id)) and
-               (is_nil(^arg(:merchant_id)) or merchant_id == ^arg(:merchant_id)) and
-               (is_nil(^arg(:knowledge_base_ids)) or knowledge_base_id in ^arg(:knowledge_base_ids))
+                 (is_nil(^arg(:tenant_id)) or tenant_id == ^arg(:tenant_id)) and
+                 (is_nil(^arg(:merchant_id)) or merchant_id == ^arg(:merchant_id)) and
+                 (is_nil(^arg(:knowledge_base_ids)) or
+                    knowledge_base_id in ^arg(:knowledge_base_ids))
              )
     end
   end

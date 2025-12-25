@@ -3,17 +3,19 @@ defmodule McpWeb.GdprControllerTest do
 
   import Mox
 
-  alias Mcp.Accounts.User
+  alias Mcp.Accounts.{ApiKey, Auth, User}
+  alias Mcp.Gdpr.Resources.DataExport
+  alias Mcp.Platform.Tenant
 
   setup %{conn: conn} do
     {:ok, user} = create_test_user()
 
-    {:ok, session_data} = Mcp.Accounts.Auth.create_user_session(user, "127.0.0.1")
+    {:ok, session_data} = Auth.create_user_session(user, "127.0.0.1")
 
     key_value = "test_key_#{Ecto.UUID.generate()}"
 
     {:ok, _api_key} =
-      Mcp.Accounts.ApiKey.create(%{
+      ApiKey.create(%{
         name: "Test Key",
         key: key_value,
         tenant_id: user.tenant_id
@@ -72,7 +74,7 @@ defmodule McpWeb.GdprControllerTest do
   describe "GET /gdpr/export/:token" do
     test "downloads export file", %{conn: conn, user: user} do
       export =
-        Mcp.Gdpr.Resources.DataExport
+        DataExport
         |> Ash.Changeset.for_create(:create_export, %{
           user_id: user.id,
           format: "json",
@@ -106,7 +108,7 @@ defmodule McpWeb.GdprControllerTest do
                                                         "test_reason",
                                                         ^user_id,
                                                         _opts ->
-        {:ok, %Mcp.Accounts.User{id: user_id, status: :deleted}}
+        {:ok, %User{id: user_id, status: :deleted}}
       end)
 
       conn = post(conn, ~p"/gdpr/request-deletion", %{"reason" => "test_reason"})
@@ -129,7 +131,7 @@ defmodule McpWeb.GdprControllerTest do
       user_id = user.id
 
       expect(ComplianceMock, :cancel_user_deletion, fn ^user_id, ^user_id ->
-        {:ok, %Mcp.Accounts.User{id: user_id, status: :active}}
+        {:ok, %User{id: user_id, status: :active}}
       end)
 
       conn = post(conn, ~p"/gdpr/cancel-deletion", %{"reason" => "user_canceled"})
@@ -249,7 +251,7 @@ defmodule McpWeb.GdprControllerTest do
 
     # Create tenant in DB to satisfy foreign key constraints
     {:ok, tenant} =
-      Mcp.Platform.Tenant.create(%{
+      Tenant.create(%{
         name: "Test Tenant #{tenant_id}",
         slug: "test-tenant-#{tenant_id}",
         subdomain: "test-#{tenant_id}"
@@ -259,7 +261,7 @@ defmodule McpWeb.GdprControllerTest do
     attrs = Map.put_new(attrs, :tenant_id, tenant.id)
 
     user = User.create_for_test(Map.merge(default_attrs, attrs))
-    IO.inspect(user, label: "Created User in Test")
+    # IO.inspect(user, label: "Created User in Test")
     {:ok, user}
   end
 end

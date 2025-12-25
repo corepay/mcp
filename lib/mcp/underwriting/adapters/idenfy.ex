@@ -15,7 +15,8 @@ defmodule Mcp.Underwriting.Adapters.Idenfy do
 
     # iDenfy creates a session (token) and then redirects the user
     payload = %{
-      clientId: applicant_data["email"] || "unknown", # Using email as client ID for correlation
+      # Using email as client ID for correlation
+      clientId: applicant_data["email"] || "unknown",
       firstName: applicant_data["first_name"],
       lastName: applicant_data["last_name"],
       # Optional: success/error URLs could be configured
@@ -26,6 +27,7 @@ defmodule Mcp.Underwriting.Adapters.Idenfy do
     case Req.post(client, url: "/api/v2/token", json: payload) do
       {:ok, %{status: 201, body: body}} ->
         token = body["authToken"]
+
         {:ok,
          %{
            provider: "idenfy",
@@ -64,7 +66,7 @@ defmodule Mcp.Underwriting.Adapters.Idenfy do
            check_id: token,
            status: "pending",
            # Constructing a hypothetical KYB link, actual link format might differ
-           redirect_url: "https://kyb.idenfy.com/form/#{token}" 
+           redirect_url: "https://kyb.idenfy.com/form/#{token}"
          }}
 
       {:ok, response} ->
@@ -87,19 +89,21 @@ defmodule Mcp.Underwriting.Adapters.Idenfy do
   def document_check(document_image, type, _context) do
     # Direct processing requires a token first
     client = get_client()
-    
+
     # 1. Generate Token
     token_payload = %{clientId: "doc_check_#{System.unique_integer()}"}
-    
+
     # Map internal types to iDenfy types
-    image_key = 
+    image_key =
       case type do
         :identity -> "FRONT"
-        _ -> "FRONT" # Fallback
+        # Fallback
+        _ -> "FRONT"
       end
 
-    with {:ok, %{status: 201, body: %{"authToken" => token}}} <- Req.post(client, url: "/api/v2/token", json: token_payload),
-         
+    with {:ok, %{status: 201, body: %{"authToken" => token}}} <-
+           Req.post(client, url: "/api/v2/token", json: token_payload),
+
          # 2. Upload/Process
          process_payload = %{
            authToken: token,
@@ -107,20 +111,21 @@ defmodule Mcp.Underwriting.Adapters.Idenfy do
              image_key => Base.encode64(document_image)
            }
          },
-         
-         {:ok, %{status: 200, body: _body}} <- Req.post(client, url: "/api/v2/process", json: process_payload) do
-      
+         {:ok, %{status: 200, body: _body}} <-
+           Req.post(client, url: "/api/v2/process", json: process_payload) do
       {:ok,
        %{
          provider: "idenfy",
-         check_id: token, # ScanRef is usually associated with the token
+         # ScanRef is usually associated with the token
+         check_id: token,
          status: "pending"
        }}
     else
-      {:ok, response} -> 
+      {:ok, response} ->
         Logger.error("iDenfy document check failed: #{inspect(response.body)}")
         {:error, "API Error"}
-      {:error, reason} -> 
+
+      {:error, reason} ->
         {:error, reason}
     end
   end
@@ -130,7 +135,7 @@ defmodule Mcp.Underwriting.Adapters.Idenfy do
     api_key = config[:api_key]
     api_secret = config[:api_secret]
     base_url = config[:base_url] || @base_url
-    
+
     # Basic Auth
     auth = Base.encode64("#{api_key}:#{api_secret}")
 

@@ -1,11 +1,14 @@
 defmodule Mcp.Platform.PayfacConfiguration do
+  @moduledoc """
+  Configuration for PayFac (Payment Facilitator) settings.
+  """
   use Ash.Resource,
     domain: Mcp.Platform,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "payfac_configurations"
-    repo Mcp.Repo
+    repo(Mcp.Repo)
   end
 
   actions do

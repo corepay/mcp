@@ -3,6 +3,8 @@ defmodule Mcp.Finance.Seeder do
   Seeds initial finance accounts for system operations.
   """
 
+  alias Mcp.Finance.Account
+
   require Ash.Query
   require Logger
 
@@ -21,7 +23,7 @@ defmodule Mcp.Finance.Seeder do
 
   defp ensure_account(name, identifier, type) do
     # Check if account exists
-    case Mcp.Finance.Account
+    case Account
          |> Ash.Query.filter(identifier == ^identifier)
          |> Ash.read_one(authorize?: false) do
       {:ok, account} ->
@@ -31,7 +33,7 @@ defmodule Mcp.Finance.Seeder do
       {:error, %Ash.Error.Query.NotFound{}} ->
         Logger.info("Creating Account #{name}...")
 
-        Mcp.Finance.Account.create!(
+        Account.create!(
           %{
             name: name,
             identifier: identifier,

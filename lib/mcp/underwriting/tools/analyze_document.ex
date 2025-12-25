@@ -1,7 +1,12 @@
 defmodule Mcp.Underwriting.Tools.AnalyzeDocument do
+  @moduledoc """
+  Tool for analyzing documents.
+  """
   use Ash.Resource,
     domain: Mcp.Underwriting,
     data_layer: :embedded
+
+  alias Mcp.Underwriting.Services.DocumentIntelligence
 
   code_interface do
     define :analyze, args: [:filename, :merchant_id]
@@ -10,39 +15,47 @@ defmodule Mcp.Underwriting.Tools.AnalyzeDocument do
   actions do
     read :analyze do
       description "Analyzes a document uploaded by the user to check for validity, blurriness, or specific content."
-      argument :filename, :string, allow_nil?: false, description: "The name of the file to analyze (e.g., 'id.jpg')"
-      argument :merchant_id, :uuid, allow_nil?: false, description: "The ID of the merchant the document belongs to."
-      
+
+      argument :filename, :string,
+        allow_nil?: false,
+        description: "The name of the file to analyze (e.g., 'id.jpg')"
+
+      argument :merchant_id, :uuid,
+        allow_nil?: false,
+        description: "The ID of the merchant the document belongs to."
+
       manual fn query, _data_layer_query, _context ->
         filename = query.arguments.filename
         merchant_id = query.arguments.merchant_id
-        
+
         # Call the real Document Intelligence Service
-        case Mcp.Underwriting.Services.DocumentIntelligence.analyze(filename, merchant_id) do
+        case DocumentIntelligence.analyze(filename, merchant_id) do
           {:ok, analysis} ->
-            result = 
+            result =
               if analysis.status == :completed do
                 "Document analysis successful.\n\n**Markdown Content:**\n#{analysis.markdown_content}\n\n**Structured Data:**\n#{inspect(analysis.structured_data)}"
               else
                 "Document analysis is pending or processing."
               end
-            {:ok, [struct(Mcp.Underwriting.Tools.AnalyzeDocument, result: result)]}
-            
+
+            {:ok, [struct(__MODULE__, result: result)]}
+
           {:error, reason} ->
-             {:error, "Document analysis failed: #{inspect(reason)}"}
+            {:error, "Document analysis failed: #{inspect(reason)}"}
         end
       end
     end
   end
-  
+
   attributes do
     attribute :result, :string do
       public? true
     end
   end
+
   def analyze!(filename) do
     # Mock analysis based on filename for tests
-    result_text = 
+    result_text =
       if String.contains?(filename, "blurry") do
         "Image is too blurry"
       else
@@ -52,7 +65,7 @@ defmodule Mcp.Underwriting.Tools.AnalyzeDocument do
           "Found valid Identity Document"
         end
       end
-      
+
     [%{result: result_text}]
   end
 end

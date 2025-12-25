@@ -33,8 +33,10 @@ defmodule Mcp.Graph.TenantContext do
       sanitized_query = sanitize_cypher(cypher_query)
 
       # AGE cypher call format: SELECT * FROM cypher('graph_name', $$ ... $$) as (a agtype);
-      # However, for parameterized queries, we might need a different approach or string interpolation if AGE doesn't support params in `cypher()` function directly in all versions.
-      # For now, we'll assume we are passing the raw cypher query to be executed, but typically AGE is used via SQL wrapping.
+      # However, for parameterized queries, we might need a different approach or string interpolation
+      # if AGE doesn't support params in `cypher()` function directly in all versions.
+      # For now, we'll assume we are passing the raw cypher query to be executed,
+      # but typically AGE is used via SQL wrapping.
       # Let's wrap it in the standard AGE SQL wrapper if it's not already.
 
       # NOTE: This is a simplified implementation. Real-world usage requires careful handling of return types (agtype).
