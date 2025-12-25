@@ -5,8 +5,7 @@ defmodule Mcp.Integration.LoginIntegrationTest do
 
   import Mox
 
-  alias Mcp.Accounts.{Auth, User}
-  alias Mcp.Accounts.{Auth, AuthToken, OAuthMock, User}
+  alias Mcp.Accounts.{Auth, OAuthMock, User}
   alias Mcp.Cache.SessionStore
   alias Mcp.Gdpr
   alias Mcp.Platform.Tenant

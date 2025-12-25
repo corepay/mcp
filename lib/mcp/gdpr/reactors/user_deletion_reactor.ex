@@ -358,34 +358,19 @@ defmodule Mcp.Gdpr.UserDeletionReactor do
 
   defp cancel_anonymization_job(user_id, job_id) do
     # Cancel the job using Oban's API
-    case Oban.cancel_job(job_id) do
-      :ok ->
-        AuditTrail.log_event(
-          user_id,
-          "anonymization_job_cancelled",
-          %{
-            job_id: job_id,
-            cancelled_at: DateTime.utc_now() |> DateTime.to_iso8601()
-          },
-          "system"
-        )
+    Oban.cancel_job(job_id)
 
-        :ok
+    AuditTrail.log_event(
+      user_id,
+      "anonymization_job_cancelled",
+      %{
+        job_id: job_id,
+        cancelled_at: DateTime.utc_now() |> DateTime.to_iso8601()
+      },
+      "system"
+    )
 
-      reason ->
-        # If cancellation fails, log it
-        AuditTrail.log_event(
-          user_id,
-          "anonymization_job_cancellation_failed",
-          %{
-            job_id: job_id,
-            cancel_reason: inspect(reason)
-          },
-          "system"
-        )
-
-        :ok
-    end
+    :ok
   rescue
     error ->
       AuditTrail.log_event(

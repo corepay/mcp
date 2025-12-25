@@ -1038,7 +1038,5 @@ defmodule McpWeb.RegistrationLive.VendorRegistration do
     assign(socket, :announcements, announcements)
   end
 
-  defp translate_submission_error({:validation_failed, _field, message}), do: message
-
   defp translate_submission_error(reason), do: "Registration failed: #{inspect(reason)}"
 end

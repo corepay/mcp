@@ -8,9 +8,7 @@ defmodule Mcp.Underwriting.Jobs.RunPipeline do
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"execution_id" => execution_id}}) do
-    case Orchestrator.run_pipeline(execution_id) do
-      {:error, reason} -> {:error, reason}
-      _ -> :ok
-    end
+    Orchestrator.run_pipeline(execution_id)
+    :ok
   end
 end

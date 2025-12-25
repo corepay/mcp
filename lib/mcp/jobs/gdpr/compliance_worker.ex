@@ -429,15 +429,16 @@ defmodule Mcp.Jobs.Gdpr.ComplianceWorker do
   end
 
   defp get_export_count(since) do
-    query = from(e in "gdpr_exports", where: e.status == "completed")
-    query = if since, do: where(query, [e], e.completed_at >= ^since), else: query
-    Repo.aggregate(query, :count, :id)
+    from(e in "gdpr_exports",
+      where: e.status == "completed",
+      where: e.completed_at >= ^since
+    )
+    |> Repo.aggregate(:count, :id)
   end
 
   defp get_consent_changes_count(since) do
-    query = from(c in "gdpr_consent")
-    query = if since, do: where(query, [c], c.updated_at >= ^since), else: query
-    Repo.aggregate(query, :count, :id)
+    from(c in "gdpr_consent", where: c.updated_at >= ^since)
+    |> Repo.aggregate(:count, :id)
   end
 
   defp get_overdue_retention_count do

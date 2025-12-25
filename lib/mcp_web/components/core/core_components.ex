@@ -61,9 +61,9 @@ defmodule McpWeb.Core.CoreComponents do
   Renders an input field.
   """
   attr :id, :any, default: nil
-  attr :name, :any
+  attr :name, :any, default: nil
   attr :label, :string, default: nil
-  attr :value, :any
+  attr :value, :any, default: nil
   attr :type, :string, default: "text"
   attr :field, Phoenix.HTML.FormField
   attr :errors, :list, default: []
@@ -94,7 +94,7 @@ defmodule McpWeb.Core.CoreComponents do
         id={@id}
         name={@name}
         class={[
-          "select select-bordered w-full",
+          "select select-bordered w-full focus:outline-none",
           @errors != [] && "select-error",
           @class
         ]}
@@ -122,7 +122,7 @@ defmodule McpWeb.Core.CoreComponents do
         id={@id}
         value={@value}
         class={[
-          "input input-bordered w-full",
+          "input input-bordered w-full focus:outline-none",
           @errors != [] && "input-error",
           @class
         ]}
@@ -142,7 +142,7 @@ defmodule McpWeb.Core.CoreComponents do
   """
   attr :id, :string, required: true
   attr :show, :boolean, default: false
-  attr :on_cancel, :string, default: nil
+  attr :on_cancel, :any, default: nil
   slot :inner_block, required: true
   slot :title
   slot :confirm_text
@@ -266,7 +266,7 @@ defmodule McpWeb.Core.CoreComponents do
     ~H"""
     <header class={[@actions != [] && "flex items-center justify-between gap-6", @class]}>
       <div>
-        <h1 class="text-lg font-semibold leading-8 text-zinc-800">
+        <h1 class="text-lg font-medium leading-8 text-zinc-800">
           {render_slot(@inner_block)}
         </h1>
         <p :if={@subtitle != []} class="mt-2 text-sm leading-6 text-zinc-600">
@@ -309,6 +309,20 @@ defmodule McpWeb.Core.CoreComponents do
         {"transition-all ease-in duration-200", "opacity-100 translate-y-0 sm:scale-100",
          "opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"}
     )
+  end
+
+  @doc """
+  Shows a DaisyUI modal by adding the modal-open class.
+  """
+  def show_modal(js \\ %JS{}, id) when is_binary(id) do
+    JS.add_class(js, "modal-open", to: "##{id}")
+  end
+
+  @doc """
+  Hides a DaisyUI modal by removing the modal-open class.
+  """
+  def hide_modal(js \\ %JS{}, id) when is_binary(id) do
+    JS.remove_class(js, "modal-open", to: "##{id}")
   end
 
   def translate_error({msg, opts}) do

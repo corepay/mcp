@@ -5,11 +5,43 @@ This document outlines the architectural standards, design patterns, and impleme
 ## 1. Core Philosophy
 
 *   **Strict Separation of Concerns**: We strictly separate "Pure" UI components (visuals only) from "Business" components (logic & data).
-*   **DaisyUI & Tailwind v4**: We leverage DaisyUI for component primitives and Tailwind v4 for utility-first styling. **No custom CSS classes** should be written unless absolutely necessary; use `@apply` or Tailwind utilities.
+
+## 2. Design System: DaisyUI + Tailwind v4
+- **Framework**: [DaisyUI](https://daisyui.com) (Component Classes) + [Tailwind CSS v4](https://tailwindcss.com) (Utilities).
+- **Reference**: Use [https://daisyui.com/llms.txt](https://daisyui.com/llms.txt) for context-optimized component documentation.
+- **Theme**: "dark" (default) and "light" (optional), defined in `app.css`.
+- **Custom CSS**: No custom CSS classes should be written unless absolutely necessary; use `@apply` or Tailwind utilities.
+
 *   **Design Tokens**: All theming is driven by CSS variables defined in `app.css` and injected via `ThemePlug`. Hardcoded hex values are forbidden in components.
 *   **Multi-Tenancy First**: Every UI decision must account for the 7 distinct portal contexts (Admin, Tenant, Merchant, etc.).
+*   **Modern Aesthetics**: UI must be clean, motion-rich, and premium. **Micro-interactions** (hover states, transitions) are mandatory, not optional.
 
-## 2. Architecture & Directory Structure
+## 3. Agent & AI Guidelines
+
+> [!IMPORTANT]
+> **To all Agents and AI Assistants:** You must follow these rules strictly. Failure to do so results in broken UI and dissatisfied users.
+
+1.  **Golden Rule**: **NEVER** write raw HTML for standard elements. ALWAYS use `McpWeb.Core.CoreComponents`.
+    *   ❌ `<button class="btn btn-primary">Save</button>`
+    *   ✅ `<.button variant="primary">Save</.button>`
+2.  **No Magic Values**: Never use arbitrary pixel values like `w-[350px]` or colors like `bg-[#1a2b3c]`. ALWAYS use semantic tokens: `w-96` or `bg-primary`.
+3.  **Motion by Default**: UI elements should feel alive.
+    *   Use `phx-click-loading` on all action buttons.
+    *   Use transitions for showing/hiding elements.
+4.  **Alpine JS**: Use Alpine (`x-data`) *only* for purely client-side interactivity that does not require server roundtrips (e.g., toggling a dropdown menu, local tab switching). For everything else, use LiveView.
+
+## 3. Interaction Design
+
+*   **Loading States**: All async actions must have a visible loading state.
+    *   Buttons: `icon="hero-arrow-path" class="animate-spin"`
+    *   Containers: `<.skeleton>`
+*   **Transitions**:
+    *   Modals: Scale in/out.
+    *   Drawers: Slide in/out.
+    *   Alerts: Fade in/out.
+*   **Feedback**: Every successful action needs a `put_flash(:info, ...)` or visible UI update. Every error needs a `put_flash(:error, ...)` or inline form error.
+
+## 4. Architecture & Directory Structure
 
 We organize `lib/mcp_web` to strictly separate concerns:
 
@@ -33,6 +65,8 @@ lib/mcp_web/
 │   ├── platform/       # LiveViews for Platform Admin
 │   ├── tenant/         # LiveViews for Tenant Portal
 │   ├── merchant/       # LiveViews for Merchant Portal
+│   ├── dev/
+│   │   └── style_guide_live.ex # Reference implementation
 │   └── ...
 ```
 
@@ -45,7 +79,7 @@ lib/mcp_web/
 | **Business** | `components/portals/` | Domain logic, data formatting, specific workflows. | Core Components, Ash Resources |
 | **LiveView** | `live/` | Page lifecycle, event handling, data fetching. | Business Components, Ash Resources |
 
-## 3. Design System & Theming
+## 5. Design System & Theming
 
 We use a 3-tier inheritance model for theming:
 1.  **Platform Default**: Defined in `assets/css/app.css` using Tailwind v4 `@theme`.
@@ -60,16 +94,11 @@ We use semantic names for colors and properties. Use these Tailwind utilities:
 *   **Spacing**: Standard Tailwind spacing (`p-4`, `m-2`, `gap-6`).
 *   **Typography**: `font-sans`, `text-xl`, `font-bold`.
 
-### Example: Theming in `app.css`
-```css
-@theme {
-  --color-primary: oklch(55% 0.2 260);
-  --color-secondary: oklch(65% 0.15 200);
-  /* ... */
-}
-```
+### Live Style Guide
+You can view the current design system in action at:
+`http://localhost:4000/dev/style-guide`
 
-## 4. Implementation Patterns
+## 6. Implementation Patterns
 
 ### A. Creating a New UI Element
 1.  **Check Core**: Does a generic version exist in `CoreComponents`?
@@ -84,7 +113,7 @@ We use semantic names for colors and properties. Use these Tailwind utilities:
 Routes are strictly segregated by scope and pipeline in `router.ex`.
 
 *   **Platform Admin**: `scope "/admin", ... pipe_through [:browser, :platform_layout]`
-*   **Tenant Portal**: `scope "/portal", ... pipe_through [:browser, :tenant_layout]`
+*   **Tenant Portal**: `scope "/tenant", ... pipe_through [:browser, :tenant_layout]`
 *   **Merchant Portal**: `scope "/app", ... pipe_through [:browser, :merchant_layout]`
 
 ### C. Data Access
@@ -92,11 +121,12 @@ Routes are strictly segregated by scope and pipeline in `router.ex`.
 *   **Business Components** accept data structs (e.g., `%User{}`) as attributes.
 *   **Core Components** accept primitive types (strings, lists, booleans) or generic slots.
 
-## 5. Requirements Checklist
+## 7. Requirements Checklist
 
 Before submitting a PR, ensure:
 - [ ] All UI components use `CoreComponents` (DaisyUI).
 - [ ] No hardcoded colors (hex/rgb) are used; use semantic tokens.
 - [ ] The component is placed in the correct directory (`core` vs `portals`).
 - [ ] It works across all themes (light/dark/tenant-custom).
+- [ ] It has loading states for async actions.
 - [ ] It is responsive (mobile-first).

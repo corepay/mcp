@@ -25,8 +25,8 @@ An AI-powered MSP (Managed Service Provider) platform built with:
 - **CLAUDE.md**: This file - Primary project guidelines and architecture
 - **AGENTS.md**: Phoenix/LiveView/Elixir/Ash Framework specific patterns
 - **.rules**: Critical usage rules for specific packages (e.g., ash_typescript)
-- **docs/DESIGN_GUIDE.md**: UI Component architecture, Design Tokens, and Folder
-  Structure standards
+- **docs/DESIGN_GUIDE.md**: **CRITICAL**. You must read and follow this guide for ALL UI tasks.
+  It defines strict rules (e.g., No Raw HTML, Semantic Tokens). Failure to follow it is a violation of project standards.
 - **docs/guides/README.md**: Index of all available developer guides
 
 ## Common Development Commands

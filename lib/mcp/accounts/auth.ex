@@ -19,8 +19,9 @@ defmodule Mcp.Accounts.Auth do
          {:ok, authenticated_user} <- verify_password(user, password) do
       handle_successful_login(authenticated_user)
     else
+      {:error, %Ash.Error.Invalid{}} -> handle_invalid_credentials()
       {:error, reason} -> {:error, reason}
-      nil -> handle_invalid_credentials()
+      {:ok, nil} -> handle_invalid_credentials()
       _ -> handle_invalid_credentials()
     end
   end

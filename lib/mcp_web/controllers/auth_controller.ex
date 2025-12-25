@@ -48,9 +48,9 @@ defmodule McpWeb.AuthController do
         )
         |> redirect(to: sign_in_path)
 
-      {:error, reason} ->
+      {:error, _reason} ->
         conn
-        |> put_flash(:error, "Authentication failed: #{inspect(reason)}")
+        |> put_flash(:error, "Invalid email or password")
         |> redirect(to: sign_in_path)
     end
   end

@@ -66,12 +66,6 @@ defmodule Mcp.Payments.Steps.TokenizeCard do
     Map.get(map, key) || Map.get(map, Atom.to_string(key))
   end
 
-  defp get_value(map, key) when is_binary(key) do
-    Map.get(map, key) || Map.get(map, String.to_existing_atom(key))
-  rescue
-    _ -> nil
-  end
-
   defp detect_brand(nil), do: "unknown"
 
   defp detect_brand(number) do

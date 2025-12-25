@@ -33,11 +33,17 @@ defmodule McpWeb.OAuthController do
     state = get_session(conn, :oauth_state)
     session_provider = get_session(conn, :oauth_provider)
 
-    if valid_oauth_state?(state, params["state"], session_provider, provider) do
+    if valid_oauth_state?(state, params["state"], session_provider, provider) &&
+         valid_code_format?(params["code"]) do
       handle_oauth_callback(conn, provider_atom, params["code"], state, provider)
     else
-      redirect_with_error(conn, "Invalid OAuth state")
+      redirect_with_error(conn, "Invalid OAuth state or code")
     end
+  end
+
+  defp valid_code_format?(code) do
+    # Reject codes with common injection characters or path traversal
+    is_binary(code) and not String.match?(code, ~r/[;'"><]|\.\./)
   end
 
   defp valid_oauth_state?(state, param_state, session_provider, provider) do
@@ -58,13 +64,6 @@ defmodule McpWeb.OAuthController do
             |> put_flash(:info, "Successfully signed in with #{String.capitalize(provider)}")
             |> redirect(to: ~p"/tenant/dashboard")
 
-          {:password_change_required, _user} ->
-            conn
-            |> clean_oauth_session()
-            |> put_session(:temp_user_token, "temp_token")
-            |> put_flash(:warning, "Please change your password")
-            |> redirect(to: ~p"/tenant/change-password")
-
           {:error, reason} ->
             handle_oauth_error(conn, reason)
         end
@@ -72,20 +71,6 @@ defmodule McpWeb.OAuthController do
       {:error, reason} ->
         handle_oauth_error(conn, reason)
     end
-  end
-
-  defp handle_oauth_error(conn, {:error, reason}), do: handle_oauth_error(conn, reason)
-
-  defp handle_oauth_error(conn, :user_creation_failed) do
-    redirect_with_error(conn, "Failed to create user account")
-  end
-
-  defp handle_oauth_error(conn, {:token_exchange_failed, status}) do
-    redirect_with_error(conn, "Failed to exchange authorization code (#{status})")
-  end
-
-  defp handle_oauth_error(conn, {:user_info_failed, status}) do
-    redirect_with_error(conn, "Failed to fetch user information (#{status})")
   end
 
   defp handle_oauth_error(conn, reason) do

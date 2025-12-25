@@ -257,6 +257,9 @@ defmodule McpWeb.Router do
     # Routes for tests
     live "/register", Ola.RegistrationLive, :index
     live "/password-reset", AuthLive.ChangePassword, :index
+
+    # Developer Routes
+    live "/dev/style-guide", Dev.StyleGuideLive, :index
   end
 
   # API Routes

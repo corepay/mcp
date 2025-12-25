@@ -18,8 +18,13 @@ defmodule McpWeb.Endpoint do
   ]
 
   # Override with environment-specific settings if available
-  @session_options Application.compile_env(:mcp, McpWeb.Endpoint, [])
-                   |> Keyword.get(:session_options, @session_options)
+  # NOTE: We use a specific key path to avoid capturing live_reload Regex patterns
+  # that can't be serialized to the .app file
+  @session_options Application.compile_env(
+                     :mcp,
+                     [McpWeb.Endpoint, :session_options],
+                     @session_options
+                   )
 
   socket "/live", Phoenix.LiveView.Socket,
     websocket: [connect_info: [session: @session_options]],

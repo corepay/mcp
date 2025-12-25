@@ -69,7 +69,7 @@ defmodule McpWeb.Plugs.TenantAuthorization do
   Check if a user has any of the specified permissions.
   """
   def user_has_any_permission?(user, permissions) when is_list(permissions) do
-    user_permissions = get_user_permissions(user) || []
+    user_permissions = get_user_permissions(user)
     Enum.any?(permissions, &(&1 in user_permissions))
   end
 
@@ -77,7 +77,7 @@ defmodule McpWeb.Plugs.TenantAuthorization do
   Check if a user has all specified permissions.
   """
   def user_has_all_permissions?(user, permissions) when is_list(permissions) do
-    user_permissions = get_user_permissions(user) || []
+    user_permissions = get_user_permissions(user)
     Enum.all?(permissions, &(&1 in user_permissions))
   end
 
@@ -256,6 +256,4 @@ defmodule McpWeb.Plugs.TenantAuthorization do
 
   defp format_error_message(:insufficient_permissions),
     do: "You don't have permission to access this resource"
-
-  defp format_error_message(_), do: "Access denied"
 end

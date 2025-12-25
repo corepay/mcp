@@ -215,4 +215,18 @@ This project follows strict linting rules:
 - Use module attributes or comment them out
 - Document mock behavior patterns
 
+## User Interface Patterns
+
+### Strict Design Compliance
+**CRITICAL**: All UI development must strictly adhere to `docs/DESIGN_GUIDE.md`.
+
+1.  **No Raw HTML**: Never use standard HTML tags for interactive elements.
+    - BAD: `<button class="btn">...</button>`
+    - GOOD: `<McpWeb.Core.CoreComponents.button>...</McpWeb.Core.CoreComponents.button>`
+2.  **Semantic Tokens Only**: Never use hardcoded colors or arbitrary values.
+    - BAD: `text-[#333]`, `w-[200px]`
+    - GOOD: `text-base-content`, `w-48`
+3.  **Motion by Default**: Ensure `phx-click-loading` and transitions are used.
+4.  **DaisyUI Reference**: Consult `https://daisyui.com/llms.txt` for optimal component structure.
+
 These patterns ensure consistent, maintainable code across all MCP services.

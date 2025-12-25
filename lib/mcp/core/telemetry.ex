@@ -13,56 +13,9 @@ defmodule Mcp.Core.Telemetry do
 
   @impl true
   def init(_init_arg) do
-    children = [
-      # Phoenix LiveDashboard metrics
-      {TelemetryMetrics.Prometheus,
-       [
-         metrics: [
-           # Phoenix.Telemetry.metrics(),  # Commented out - Phoenix.Telemetry not available
-           # Custom metrics for AI-powered MSP
-           # Database performance metrics
-           # Mcp.Core.Telemetry.RepoMetrics,
-           # Cache hit rates
-           # Mcp.Cache.Telemetry.RedisMetrics,
-           # AI model inference time
-           # Mcp.Core.Telemetry.AIMetrics,
-           # Payment processing latency
-           # Mcp.Core.Telemetry.PaymentMetrics,
-           # Multi-tenant performance
-           # Mcp.Core.Telemetry.TenantMetrics
-         ]
-       ], name: Mcp.Core.Telemetry.Prometheus},
-
-      # Metrics for PostGIS, pgvector, TimescaleDB operations
-      {TelemetryMetrics.Prometheus,
-       [
-         metrics: [
-           # Geographic query performance
-           # Mcp.Core.Telemetry.PostGISMetrics,
-           # Vector similarity search performance
-           # Mcp.Core.Telemetry.PGVectorMetrics,
-           # Time-series query performance
-           # Mcp.Core.Telemetry.TimescaleDBMetrics,
-           # Graph query performance
-           # Mcp.Core.Telemetry.AGEMetrics
-         ]
-       ], name: Mcp.Core.Telemetry.Extensions},
-
-      # Distributed tracing with OpenTelemetry
-      {OpenTelemetry,
-       resource: [
-         service_name: "mcp-platform",
-         service_version: version()
-       ]}
-    ]
-
+    # Note: TelemetryMetrics.Prometheus and OpenTelemetry dependencies are not yet added
+    # This is a placeholder for future telemetry configuration
+    children = []
     Supervisor.init(children, strategy: :one_for_one)
-  end
-
-  defp version do
-    case :application.get_key(:mcp, :vsn) do
-      {:ok, version} -> to_string(version)
-      :undefined -> "0.1.0"
-    end
   end
 end

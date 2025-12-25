@@ -199,7 +199,6 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
       {:ok, Map.get(record, String.to_atom(field))}
     else
       {:error, reason} -> {:error, reason}
-      :error -> {:error, :query_failed}
     end
   end
 
@@ -237,7 +236,6 @@ defmodule Mcp.Jobs.Gdpr.AnonymizationWorker do
       :ok
     else
       {:error, reason} -> {:error, reason}
-      :error -> {:error, :update_failed}
     end
   end
 

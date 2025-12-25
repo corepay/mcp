@@ -231,7 +231,7 @@ defmodule Mcp.Platform.TenantSettingsTest do
       assert feature.configuration["max_customers"] == 1000
 
       # Check if feature is enabled
-      assert {:ok, found_feature} = FeatureToggle.is_enabled(tenant.id, :customer_portal)
+      assert {:ok, found_feature} = FeatureToggle.enabled?(tenant.id, :customer_portal)
       assert found_feature.enabled == true
 
       # Disable feature

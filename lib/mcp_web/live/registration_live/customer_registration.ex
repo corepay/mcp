@@ -738,7 +738,5 @@ defmodule McpWeb.RegistrationLive.CustomerRegistration do
   defp translate_submission_error({:registration_failed, %{errors: _errors} = _changeset}),
     do: "Registration failed"
 
-  defp translate_submission_error({:validation_failed, _field, message}), do: message
-
   defp translate_submission_error(reason), do: "Registration failed: #{inspect(reason)}"
 end

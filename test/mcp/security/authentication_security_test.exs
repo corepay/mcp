@@ -70,7 +70,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
       conn = get(conn, "/auth/google/callback?code=test&state=manipulated_state")
 
       assert redirected_to(conn) == "/tenant/sign-in"
-      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid OAuth state"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid OAuth state or code"
     end
   end
 
@@ -406,7 +406,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
       conn = get(conn, "/auth/google/callback?code=test")
 
       assert redirected_to(conn) == "/tenant/sign-in"
-      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid OAuth state"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid OAuth state or code"
     end
 
     test "prevents OAuth code injection", %{conn: conn} do
