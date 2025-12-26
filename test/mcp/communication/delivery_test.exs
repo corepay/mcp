@@ -1,4 +1,5 @@
 defmodule Mcp.Communication.DeliveryTest do
+  @moduledoc false
   use Mcp.DataCase
 
   alias Mcp.Accounts.User

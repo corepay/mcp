@@ -16,6 +16,7 @@ defmodule Mcp.Security.AuthenticationSecurityTest do
 
     conn =
       build_conn()
+      |> Map.put(:host, "platform.localhost")
       |> Map.put(:remote_ip, {127, 0, 0, 1})
       |> put_req_header("user-agent", "Security Test Browser")
 

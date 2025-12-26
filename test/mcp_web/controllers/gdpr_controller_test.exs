@@ -9,6 +9,7 @@ defmodule McpWeb.GdprControllerTest do
 
   setup %{conn: conn} do
     {:ok, user} = create_test_user()
+    tenant = Ash.get!(Tenant, user.tenant_id)
 
     {:ok, session_data} = Auth.create_user_session(user, "127.0.0.1")
 
@@ -23,6 +24,7 @@ defmodule McpWeb.GdprControllerTest do
 
     auth_conn =
       conn
+      |> Map.put(:host, "#{tenant.subdomain}.localhost")
       |> init_test_session(%{})
       |> put_req_header("x-api-key", key_value)
       |> put_req_cookie("_mcp_access_token", session_data.access_token)

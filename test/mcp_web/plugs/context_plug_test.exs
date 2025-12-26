@@ -1,4 +1,5 @@
 defmodule McpWeb.Plugs.ContextPlugTest do
+  @moduledoc false
   use McpWeb.ConnCase, async: true
   alias McpWeb.Plugs.ContextPlug
 
@@ -27,6 +28,7 @@ defmodule McpWeb.Plugs.ContextPlugTest do
     end
 
     defmodule MockTenant do
+      @moduledoc false
       defstruct [:id, :slug, :company_schema]
 
       def by_subdomain("acme"),
@@ -36,6 +38,7 @@ defmodule McpWeb.Plugs.ContextPlugTest do
     end
 
     defmodule MockMerchant do
+      @moduledoc false
       defstruct [:id, :slug]
 
       def by_slug("bobs-burgers", opts) do

@@ -1,4 +1,5 @@
 defmodule Mcp.Platform.CustomDomainTest do
+  @moduledoc false
   use Mcp.DataCase, async: true
   import Mox
 

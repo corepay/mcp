@@ -1,4 +1,5 @@
 defmodule McpWeb.Settings.ApiKeysLiveTest do
+  @moduledoc false
   use McpWeb.ConnCase
   import Phoenix.LiveViewTest
   alias Mcp.Platform.ApiKey

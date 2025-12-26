@@ -1,4 +1,5 @@
 defmodule Mcp.Communication.WebhookEndpointTest do
+  @moduledoc false
   use Mcp.DataCase
 
   alias Mcp.Accounts.User

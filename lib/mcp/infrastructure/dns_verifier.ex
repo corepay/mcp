@@ -33,10 +33,6 @@ defmodule Mcp.Infrastructure.DnsVerifier do
           end)
 
         {:ok, found?}
-
-      _error ->
-        # In case of timeout or other errors, we treat it as not found or error
-        {:ok, false}
     end
   rescue
     e -> {:error, e}

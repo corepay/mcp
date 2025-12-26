@@ -14,16 +14,28 @@ defmodule McpWeb.AuthLive.LoginTest do
   # Setup Mox for test isolation
   setup :verify_on_exit!
 
+  alias Mcp.Platform.Tenant
+  require Ash.Query
+
   setup %{conn: conn} do
-    # Clean up any existing sessions
-    # Clean up any existing sessions
-    # SessionStore.flush_all()
+    # Create a tenant for the test
+    tenant =
+      Tenant.create!(
+        %{
+          name: "Test Tenant",
+          slug: "test-tenant",
+          subdomain: "test-tenant"
+        },
+        authorize?: false
+      )
 
     {:ok,
      conn:
        conn
+       |> Map.put(:host, "#{tenant.subdomain}.localhost")
        |> Map.put(:remote_ip, {127, 0, 0, 1})
-       |> put_req_header("user-agent", "Test Browser")}
+       |> put_req_header("user-agent", "Test Browser"),
+     tenant: tenant}
   end
 
   describe "LiveView Login Page Mount" do

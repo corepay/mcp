@@ -1,4 +1,5 @@
 defmodule Mcp.Billing.ApiUsageTest do
+  @moduledoc false
   use Mcp.DataCase
 
   alias Mcp.Billing.ApiUsage

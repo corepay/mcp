@@ -23,6 +23,7 @@ defmodule Mcp.Repo.TenantMigrations.AddFeaturesToTenant do
         default: fragment("(now() AT TIME ZONE 'utc')")
 
       add :application_id, :uuid
+      add :reviewer_id, :uuid, null: false
     end
 
     create table(:underwriting_documents, primary_key: false, prefix: prefix()) do
@@ -121,7 +122,17 @@ defmodule Mcp.Repo.TenantMigrations.AddFeaturesToTenant do
                type: :uuid,
                prefix: prefix()
              )
+
+      modify :reviewer_id,
+             references(:users,
+               column: :id,
+               name: "underwriting_reviews_reviewer_id_fkey",
+               type: :uuid,
+               prefix: "platform"
+             )
     end
+
+    create_if_not_exists index(:underwriting_reviews, [:reviewer_id], prefix: prefix())
 
     alter table(:underwriting_clients, prefix: prefix()) do
       modify :application_id,
@@ -236,6 +247,7 @@ defmodule Mcp.Repo.TenantMigrations.AddFeaturesToTenant do
 
     alter table(:underwriting_reviews, prefix: prefix()) do
       modify :application_id, :uuid
+      modify :reviewer_id, :uuid
     end
 
     drop table(:underwriting_applications, prefix: prefix())
