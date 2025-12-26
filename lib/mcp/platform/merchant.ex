@@ -89,6 +89,12 @@ defmodule Mcp.Platform.Merchant do
         :risk_level
       ]
     end
+
+    read :by_slug do
+      argument :slug, :string, allow_nil?: false
+      get? true
+      filter expr(slug == ^arg(:slug))
+    end
   end
 
   attributes do
@@ -236,5 +242,6 @@ defmodule Mcp.Platform.Merchant do
     define :update
     define :destroy
     define :get_by_id, action: :read, get_by: [:id]
+    define :by_slug, args: [:slug]
   end
 end

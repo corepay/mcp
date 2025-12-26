@@ -28,5 +28,10 @@ defmodule Mcp.Platform do
     resource Mcp.Platform.DataMigration
     resource Mcp.Platform.DataMigrationRecord
     resource Mcp.Platform.DataMigrationLog
+
+    resource Mcp.Platform.Team
+    resource Mcp.Platform.TeamMember
+    resource Mcp.Platform.TeamScope
+    resource Mcp.Platform.Invitation
   end
 end

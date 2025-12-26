@@ -230,3 +230,30 @@ This project follows strict linting rules:
 4.  **DaisyUI Reference**: Consult `https://daisyui.com/llms.txt` for optimal component structure.
 
 These patterns ensure consistent, maintainable code across all MCP services.
+
+## Architectural Decision: Redis vs ETS for Routing Context
+
+### Context
+When implementing `ContextPlug` to resolve multi-tenant routing (e.g., `tenant.platform.com`), we need to cache the results to avoid database hits on every request. We must choose between **Redis** (distributed) and **ETS** (local in-memory).
+
+### Decision: Use Redis
+We choose **Redis** for the following reasons:
+
+1.  **Cluster-Wide Consistency (The Deciding Factor):**
+    *   In a clustered environment (e.g., 3 nodes behind a load balancer), routing changes must be propagated immediately to all nodes.
+    *   **With Redis:** Deleting a key (e.g., `routing:acme.localhost`) invalidates the cache for *all* nodes instantly.
+    *   **With ETS:** Invalidation is local. Other nodes would continue to serve stale routing data until their local TTL expires (e.g., 5 minutes), leading to "split-brain" routing where a user hits Node A (updated) then Node B (stale).
+
+2.  **Single Source of Truth:**
+    *   Redis acts as the authority for active routes, simplifying debugging and state management.
+
+### When to use ETS?
+Use ETS only when:
+*   The data is **immutable** or changes extremely rarely (e.g., Country Codes).
+*   **Performance** is critical (microseconds vs milliseconds) *and* slight inconsistency across nodes is acceptable.
+*   You are implementing an **L1/L2 Cache** strategy (L1=ETS, L2=Redis) for extreme scale, but complexity is higher.
+
+### Implementation Pattern
+*   **Key:** `routing:{hostname}`
+*   **Value:** Erlang binary term `{:ok, {context_type, entity, custom_assigns}}` (serialized via `:erlang.term_to_binary/1`).
+*   **TTL:** Standard 300 seconds (5 minutes).

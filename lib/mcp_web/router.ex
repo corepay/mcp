@@ -8,7 +8,7 @@ defmodule McpWeb.Router do
     plug :put_root_layout, html: {McpWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
-    plug McpWeb.TenantRouting
+    plug McpWeb.Plugs.ContextPlug
     plug McpWeb.Plugs.PutTenantInSession
     plug McpWeb.Plugs.ThemePlug
   end

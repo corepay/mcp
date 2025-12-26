@@ -98,6 +98,8 @@ defmodule Mcp.MixProject do
       {:ash_json_api, "~> 1.0"},
       {:ash_graphql, "~> 1.0"},
       {:ash_phoenix, "~> 2.0"},
+      {:ash_geo, "~> 0.1"},
+      {:geo_postgis, "~> 3.4"},
       {:ash, "~> 3.0"},
       {:igniter, "~> 0.6", only: [:dev, :test]},
       {:phoenix, "~> 1.8.1"},
