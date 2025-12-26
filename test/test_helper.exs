@@ -16,7 +16,7 @@ end
 ExUnit.configure(exclude: [:slow, :integration])
 
 # Test utilities
-# Code.require_file("test/support/mocks.ex")
+Code.require_file("test/support/mocks.ex")
 
 # Configure test database
 Application.put_env(:mcp, Mcp.Repo,
@@ -41,8 +41,12 @@ Application.put_env(:mcp, McpWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   server: false,
   live_view: [signing_salt: "test_signing_salt"],
+  live_view: [signing_salt: "test_signing_salt"],
   secret_key_base: "test_secret_key_base_for_testing_purposes_only"
 )
+
+# Configure mocks
+Application.put_env(:mcp, :dns_verifier, Mcp.Infrastructure.DnsVerifierMock)
 
 # Configure email testing
 Application.put_env(:mcp, Mcp.Mailer, adapter: Swoosh.Adapters.Test)

@@ -100,6 +100,8 @@ defmodule McpWeb.Router do
     live "/gdpr", GdprLive
     live "/change-password", AuthLive.ChangePassword
     live "/settings/api-keys", Settings.ApiKeysLive
+    live "/settings/custom-domains", Settings.CustomDomainsLive
+    live "/settings/webhooks", Settings.WebhooksLive
 
     live_session :tenant_underwriting,
       on_mount: [{McpWeb.Auth.LiveAuth, :require_authenticated}] do

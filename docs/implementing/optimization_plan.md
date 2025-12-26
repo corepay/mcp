@@ -51,8 +51,17 @@
 - [x] **UI:** Create LiveViews for Key Management.
 
 #### 5. Custom Domains (Epic 11)
-- [ ] **Resource:** Create `Mcp.Platform.CustomDomain`.
-- [ ] **Automation:** Implement `ProvisionReactor` (DNS Check -> Cert -> Routing).
+- [x] **Resource:** Create `Mcp.Platform.CustomDomain`.
+- [x] **Automation:** Implement `DnsVerifier` service.
+- [x] **UI:** Domain Management LiveView.
+
+### Phase 5: Webhooks (Epic 12)
+
+#### 6. Event System & Webhooks
+- [x] **Domain:** `Mcp.Communication`.
+- [x] **Resources:** `WebhookEndpoint`, `WebhookDelivery`.
+- [x] **Infrastructure:** `DeliveryWorker` (Oban) with HMAC-SHA256 signing.
+- [x] **UI:** `WebhooksLive` management interface.
 
 ### Phase 4: Billing Integration (New)
 

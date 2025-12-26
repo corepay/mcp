@@ -51,7 +51,8 @@ config :mcp,
     Mcp.Ai,
     Mcp.Underwriting,
     Mcp.Billing,
-    Mcp.Webhooks
+    Mcp.Webhooks,
+    Mcp.Communication
   ],
   base_domain: "localhost"
 

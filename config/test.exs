@@ -32,6 +32,7 @@ config :mcp, :qorpay,
   mid: "test_mid"
 
 config :mcp, :req_options, plug: {Req.Test, Mcp.Payments.Gateways.QorPay}
+config :mcp, :webhook_req_opts, plug: {Req.Test, Mcp.Communication.DeliveryWorker}
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.

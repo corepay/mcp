@@ -8,29 +8,26 @@ defmodule Mcp.Platform.CustomDomain do
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer]
 
-  alias Mcp.Infrastructure.DnsVerifier
-
   postgres do
     table "custom_domains"
     repo(Mcp.Repo)
   end
 
   policies do
-    # Strict policies for Tenant ownership
     policy action_type(:create) do
-      authorize_if Mcp.Platform.Checks.TenantMemberForCreate
+      authorize_if Mcp.Platform.Checks.TenantIdAccessForCreate
     end
 
     policy action_type(:read) do
-      authorize_if Mcp.Platform.Checks.TenantMember
+      authorize_if Mcp.Platform.Checks.TenantIdAccess
     end
 
     policy action_type(:update) do
-      authorize_if Mcp.Platform.Checks.TenantMember
+      authorize_if Mcp.Platform.Checks.TenantIdAccess
     end
 
     policy action_type(:destroy) do
-      authorize_if Mcp.Platform.Checks.TenantMember
+      authorize_if Mcp.Platform.Checks.TenantIdAccess
     end
   end
 
@@ -85,21 +82,24 @@ defmodule Mcp.Platform.CustomDomain do
       change set_attribute(:state, :pending_verification)
     end
 
-    action :verify do
+    update :verify do
       # Custom action to trigger verification
       transaction? true
+      require_atomic? false
 
-      run fn input, context ->
-        domain = input.data.domain
-        expected_value = input.data.verification_record_value
-        # Record name is assumed to be a subdomain prefix: _mcp_challenge.example.com
-        # Or just checking TXT on the domain itself?
-        # Plan said: `_mcp_challenge.<domain>`.
-        full_record_name = "#{input.data.verification_record_name}.#{domain}"
+      manual fn changeset, context ->
+        domain = changeset.data.domain
+        expected_value = changeset.data.verification_record_value
+        full_record_name = "#{changeset.data.verification_record_name}.#{domain}"
+        dns_verifier = Application.get_env(:mcp, :dns_verifier, Mcp.Infrastructure.DnsVerifier)
 
-        case DnsVerifier.verify_txt(full_record_name, expected_value) do
+        case dns_verifier.verify_txt(full_record_name, expected_value) do
           {:ok, true} ->
-            {:ok, Ash.Changeset.for_update(input.data, :set_verified) |> Ash.update!()}
+            # We are inside a manual action, so we can just update the record directly or call another action
+            # Calling another action is fine.
+            {:ok,
+             Ash.Changeset.for_update(changeset.data, :set_verified)
+             |> Ash.update!(actor: context.actor)}
 
           {:ok, false} ->
             {:error, Ash.Error.to_error_class("DNS Verification failed: Record not found")}
