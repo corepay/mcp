@@ -4,7 +4,7 @@ defmodule Mcp.Merchants.UnderwritingTest do
   alias Ecto.Adapters.SQL.Sandbox
   alias Ecto.Migrator
   alias Mcp.Accounts.User
-  alias Mcp.MultiTenant
+  alias Mcp.Infrastructure.TenantManager
   alias Mcp.Platform
   alias Mcp.Platform.{Merchant, Tenant}
   alias Mcp.Repo
@@ -18,7 +18,7 @@ defmodule Mcp.Merchants.UnderwritingTest do
 
     # Create tenant schema and run migrations outside of the test transaction
     Sandbox.unboxed_run(Repo, fn ->
-      {:ok, _} = MultiTenant.create_tenant_schema(schema_name)
+      {:ok, _} = TenantManager.create_tenant_schema(schema_name)
 
       # Manually run migrations since config is false in test
       path = Application.app_dir(:mcp, "priv/repo/tenant_migrations")

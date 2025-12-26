@@ -18,7 +18,7 @@ config :mcp, Mcp.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 20,
   queue_target: 5000,
-  parameters: [search_path: "public,platform"]
+  parameters: [search_path: "public,platform,ag_catalog"]
 
 config :mcp, :async_api_key_updates, false
 config :mcp, :compliance_impl, ComplianceMock
@@ -47,7 +47,7 @@ config :mcp, Mcp.Mailer, adapter: Swoosh.Adapters.Test
 config :swoosh, :api_client, false
 
 # Print only warnings and errors during test
-config :logger, level: :warning
+config :logger, level: :debug
 
 # Mock OAuth module
 config :mcp, :oauth_module, Mcp.Accounts.OAuthMock

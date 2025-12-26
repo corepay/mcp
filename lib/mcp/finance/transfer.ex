@@ -28,7 +28,15 @@ defmodule Mcp.Finance.Transfer do
   end
 
   attributes do
-    uuid_primary_key :id
+    attribute :id, AshDoubleEntry.ULID do
+      primary_key? true
+      allow_nil? false
+      default &AshDoubleEntry.ULID.generate/0
+    end
+
+    attribute :amount, AshMoney.Types.Money do
+      allow_nil? false
+    end
 
     attribute :inserted_at, :utc_datetime_usec do
       allow_nil? false

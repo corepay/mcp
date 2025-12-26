@@ -9,6 +9,8 @@ defmodule McpWeb.InvitationController do
   use McpWeb, :controller
   require Logger
 
+  alias Mcp.Infrastructure.Context
+
   def accept(conn, %{"token" => token}) do
     # Try to find the tenant for this invitation
     case find_tenant_for_invitation(token) do
@@ -172,7 +174,7 @@ defmodule McpWeb.InvitationController do
     }
 
     # Check if invitation exists in this tenant
-    Mcp.MultiTenant.with_tenant_context(tenant.company_schema, fn ->
+    Context.with_tenant_context(tenant.company_schema, fn ->
       query =
         "SELECT COUNT(*) FROM tenant_invitations WHERE invitation_token = $1 AND status IN ('pending', 'sent', 'delivered')"
 
@@ -188,7 +190,7 @@ defmodule McpWeb.InvitationController do
   end
 
   defp find_invitation_details(token, tenant_schema) do
-    Mcp.MultiTenant.with_tenant_context(tenant_schema, fn ->
+    Context.with_tenant_context(tenant_schema, fn ->
       query = """
       SELECT ti.*, tu.first_name, tu.last_name, tu.email as user_email, tu.role
       FROM tenant_invitations ti

@@ -2,7 +2,8 @@ defmodule Mcp.Platform.SchemaProvisionerTest do
   use ExUnit.Case, async: false
 
   alias Ecto.Adapters.SQL.Sandbox
-  alias Mcp.MultiTenant
+  alias Mcp.Infrastructure.Context
+  alias Mcp.Infrastructure.TenantManager
   alias Mcp.Platform.SchemaProvisioner
   alias Mcp.Platform.Tenant
   alias Mcp.Repo
@@ -33,10 +34,10 @@ defmodule Mcp.Platform.SchemaProvisionerTest do
       assert {:ok, :provisioned} = SchemaProvisioner.provision_tenant_schema(@test_tenant_slug)
 
       # Verify schema exists
-      assert MultiTenant.tenant_schema_exists?(@test_tenant_slug)
+      assert TenantManager.tenant_schema_exists?(@test_tenant_slug)
 
       # Verify tables were created
-      MultiTenant.with_tenant_context(@test_tenant_slug, fn ->
+      Context.with_tenant_context(@test_tenant_slug, fn ->
         # Check that expected tables exist
         tables_result =
           Repo.query(
@@ -81,7 +82,7 @@ defmodule Mcp.Platform.SchemaProvisionerTest do
       assert {:ok, :initialized} = SchemaProvisioner.initialize_tenant_schema(@test_tenant_slug)
 
       # Verify tables were created
-      MultiTenant.with_tenant_context(@test_tenant_slug, fn ->
+      Context.with_tenant_context(@test_tenant_slug, fn ->
         tables_result =
           Repo.query(
             "SELECT table_name FROM information_schema.tables WHERE table_schema = current_schema()"
@@ -101,7 +102,7 @@ defmodule Mcp.Platform.SchemaProvisionerTest do
       assert {:ok, :provisioned} = SchemaProvisioner.provision_tenant_schema(@test_tenant_slug)
 
       # Add some test data
-      MultiTenant.with_tenant_context(@test_tenant_slug, fn ->
+      Context.with_tenant_context(@test_tenant_slug, fn ->
         Repo.query("""
         INSERT INTO merchants (id, slug, business_name, subdomain, status, plan, inserted_at, updated_at)
         VALUES (gen_random_uuid(), 'test-merchant', 'Test Business', 'test', 'active', 'starter', NOW(), NOW())
@@ -118,16 +119,16 @@ defmodule Mcp.Platform.SchemaProvisionerTest do
                  backup_path: Path.dirname(backup_file)
                )
 
-      refute MultiTenant.tenant_schema_exists?(@test_tenant_slug)
+      refute TenantManager.tenant_schema_exists?(@test_tenant_slug)
 
       # Restore from backup
       assert {:ok, :restored} =
                SchemaProvisioner.restore_tenant_schema(@test_tenant_slug, backup_file)
 
-      assert MultiTenant.tenant_schema_exists?(@test_tenant_slug)
+      assert TenantManager.tenant_schema_exists?(@test_tenant_slug)
 
       # Verify data was restored
-      MultiTenant.with_tenant_context(@test_tenant_slug, fn ->
+      Context.with_tenant_context(@test_tenant_slug, fn ->
         result = Repo.query("SELECT COUNT(*) FROM merchants")
         assert {:ok, %{rows: [[count]]}} = result
         assert count == 1
@@ -152,7 +153,7 @@ defmodule Mcp.Platform.SchemaProvisionerTest do
       Process.sleep(2000)
 
       # Verify schema was created
-      assert MultiTenant.tenant_schema_exists?(@test_tenant_slug)
+      assert TenantManager.tenant_schema_exists?(@test_tenant_slug)
 
       # Clean up
       Tenant.destroy!(tenant)
@@ -173,7 +174,7 @@ defmodule Mcp.Platform.SchemaProvisionerTest do
     end
 
     # Drop schema if it exists
-    if MultiTenant.tenant_schema_exists?(@test_tenant_slug) do
+    if TenantManager.tenant_schema_exists?(@test_tenant_slug) do
       SchemaProvisioner.deprovision_tenant_schema(@test_tenant_slug, force: true)
     end
   end

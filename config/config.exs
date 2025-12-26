@@ -50,11 +50,14 @@ config :mcp,
     Mcp.Audit,
     Mcp.Ai,
     Mcp.Underwriting,
+    Mcp.Billing,
     Mcp.Webhooks
   ],
   base_domain: "localhost"
 
-config :mcp, Mcp.Repo, types: Mcp.PostgresTypes
+config :mcp, Mcp.Repo,
+  types: Mcp.PostgresTypes,
+  parameters: [search_path: "public,ag_catalog"]
 
 config :ash_typescript,
   output_file: "assets/js/ash_generated.ts"

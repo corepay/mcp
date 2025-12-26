@@ -3,6 +3,7 @@ defmodule Mcp.Platform.SchemaProvisioner do
   Schema provisioner service.
   """
 
+  alias Mcp.Infrastructure.Context
   alias Mcp.Infrastructure.TenantManager
   alias Mcp.Repo
 
@@ -53,7 +54,7 @@ defmodule Mcp.Platform.SchemaProvisioner do
     # INSERT INTO merchants (id, slug, business_name, subdomain, status, plan)
     # VALUES (gen_random_uuid(), 'test-merchant', 'Test Business', 'test', 'active', 'starter')
 
-    Mcp.MultiTenant.with_tenant_context(schema_name, fn ->
+    Context.with_tenant_context(schema_name, fn ->
       Repo.query("""
       INSERT INTO merchants (id, slug, business_name, subdomain, status, plan, inserted_at, updated_at)
       VALUES (gen_random_uuid(), 'test-merchant', 'Test Business', 'test', 'active', 'starter', NOW(), NOW())
@@ -101,7 +102,7 @@ defmodule Mcp.Platform.SchemaProvisioner do
   defp ensure_tables_exist(schema_name) do
     # Fallback for test environment where Ecto.Migrator might fail due to sandbox
     if Mix.env() == :test do
-      Mcp.MultiTenant.with_tenant_context(schema_name, fn ->
+      Context.with_tenant_context(schema_name, fn ->
         Repo.query("""
           CREATE TABLE IF NOT EXISTS merchants (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

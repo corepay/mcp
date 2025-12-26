@@ -24,6 +24,7 @@ defmodule Mcp.Finance.Balance do
     end
 
     belongs_to :transfer, Mcp.Finance.Transfer do
+      attribute_type AshDoubleEntry.ULID
       domain Mcp.Finance
     end
   end

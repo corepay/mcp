@@ -8,7 +8,7 @@ defmodule Mcp.Services.BackupService do
   """
 
   require Logger
-  alias Mcp.MultiTenant
+  alias Mcp.Infrastructure.Context
   alias Mcp.Platform.Tenant
   alias Mcp.Repo
 
@@ -249,7 +249,7 @@ defmodule Mcp.Services.BackupService do
     backup_filename = "database_full_#{timestamp}.sql"
     backup_path = Path.join(get_backup_path(backup_result.backup_id), backup_filename)
 
-    MultiTenant.with_tenant_context(tenant.company_schema, fn ->
+    Context.with_tenant_context(tenant.company_schema, fn ->
       if Application.get_env(:mcp, :env) == :test do
         simulate_database_backup(backup_result, backup_filename, backup_path, tenant, timestamp)
       else
@@ -502,7 +502,7 @@ defmodule Mcp.Services.BackupService do
     tenant = get_tenant_from_restore(restore_result)
     backup_path = database_backup["path"]
 
-    MultiTenant.with_tenant_context(tenant.company_schema, fn ->
+    Context.with_tenant_context(tenant.company_schema, fn ->
       if Map.get(restore_options, "clear_existing", false) do
         clear_tenant_data(tenant.company_schema)
       end
@@ -561,7 +561,7 @@ defmodule Mcp.Services.BackupService do
     with {:ok, json_data} <- File.read(backup_path),
          {:ok, changes} <- Jason.decode(json_data) do
       # Apply incremental changes
-      MultiTenant.with_tenant_context(tenant.company_schema, fn ->
+      Context.with_tenant_context(tenant.company_schema, fn ->
         apply_incremental_changes(tenant.company_schema, changes)
       end)
 
@@ -855,7 +855,7 @@ defmodule Mcp.Services.BackupService do
   end
 
   defp count_tenant_tables(schema) do
-    MultiTenant.with_tenant_context(schema, fn ->
+    Context.with_tenant_context(schema, fn ->
       query =
         "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA()"
 
@@ -984,7 +984,7 @@ defmodule Mcp.Services.BackupService do
 
   defp extract_incremental_changes(schema, changes) do
     # Extract actual data changes for incremental backup
-    MultiTenant.with_tenant_context(schema, fn ->
+    Context.with_tenant_context(schema, fn ->
       # Implementation would extract changed records
       %{
         tables: %{},
@@ -995,7 +995,7 @@ defmodule Mcp.Services.BackupService do
 
   defp apply_incremental_changes(schema, _changes) do
     # Apply incremental changes to restore data
-    MultiTenant.with_tenant_context(schema, fn ->
+    Context.with_tenant_context(schema, fn ->
       # Implementation would apply changes
       :ok
     end)
@@ -1003,7 +1003,7 @@ defmodule Mcp.Services.BackupService do
 
   defp clear_tenant_data(schema) do
     # Clear existing tenant data before restore
-    MultiTenant.with_tenant_context(schema, fn ->
+    Context.with_tenant_context(schema, fn ->
       # Implementation would clear all data
       :ok
     end)
@@ -1022,7 +1022,7 @@ defmodule Mcp.Services.BackupService do
 
   defp validate_database_integrity(schema) do
     # Validate database integrity after restore
-    MultiTenant.with_tenant_context(schema, fn ->
+    Context.with_tenant_context(schema, fn ->
       # Implementation would check constraints, counts, etc.
       :ok
     end)

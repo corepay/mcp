@@ -13,54 +13,65 @@
 ### Phase 1: Critical Optimizations (Performance & Security)
 
 #### 1. ContextPlug Redis Caching (Epic 8)
-- [ ] **Infrastructure:** Ensure `Redix` is configured for caching.
-- [ ] **Feature:** Update `McpWeb.Plugs.ContextPlug` to check Redis before DB.
+- [x] **Infrastructure:** Ensure `Redix` is configured for caching.
+- [x] **Feature:** Update `McpWeb.Plugs.ContextPlug` to check Redis before DB.
   - Key: `routing:{hostname}`
   - TTL: 300 seconds (5 mins)
   - Value: `{:ok, context_type, entity_slug}`
-- [ ] **Test:** Verify cache hits/misses in `ContextPlugTest`.
+- [x] **Test:** Verify cache hits/misses in `ContextPlugTest`.
 
 #### 2. Shared Entities Remediation (Epic 9)
 **Goal:** Fix insecure `policy always()` and implement true polymorphism.
-- [ ] **Database:** Create RLS Helper Function `platform.can_access_owner(user, type, id)`.
-- [ ] **Resource:** Refactor `Mcp.Platform.Address`:
+- [x] **Database:** Create RLS Helper Function `platform.can_access_owner(user, type, id)`.
+- [x] **Resource:** Refactor `Mcp.Platform.Address`:
   - Enforce `owner_type` enum (user, tenant, merchant, etc.).
   - Remove `allow_nil?: false` from non-critical fields if needed.
   - **Security:** Replace `policy always()` with proper actor checks.
   - **Feature:** Implement `AshGeo` or PostGIS logic for `location`.
-- [ ] **Resource:** Refactor `Mcp.Platform.Email` & `Mcp.Platform.Phone`:
+- [x] **Resource:** Refactor `Mcp.Platform.Email` & `Mcp.Platform.Phone`:
   - Secure policies.
   - Implement `primary` toggle logic (atomic updates).
 
 ### Phase 2: Architectural Refactoring
 
 #### 3. Decompose `Mcp.MultiTenant` God Object
-- [ ] **New Module:** `Mcp.Infrastructure.TenantManager`
+- [x] **New Module:** `Mcp.Infrastructure.TenantManager`
   - Handle Schema creation, migrations, and specialized tenant lifecycle tasks.
-- [ ] **New Module:** `Mcp.Infrastructure.Context`
+- [x] **New Module:** `Mcp.Infrastructure.Context`
   - Handle process-dictionary logic for `put_tenant`, `get_tenant`.
-- [ ] **Refactor:** Find and replace all `Mcp.MultiTenant` usages.
+- [x] **Refactor:** Find and replace all `Mcp.MultiTenant` usages.
 
 ### Phase 3: Missing Feature Infrastructure
 
 #### 4. API Keys (Epic 10)
-- [ ] **Resource:** Create `Mcp.Platform.ApiKey` (3-tier model: Developer, Merchant, Reseller).
-- [ ] **Security:** Implement `McpWeb.Plugs.ApiAuthPlug`.
+- [x] **Resource:** Create `Mcp.Platform.ApiKey` (3-tier model: Developer, Merchant, Reseller).
+- [x] **Security:** Implement `McpWeb.Plugs.ApiAuthPlug`.
   - Header: `API-Key`.
   - Scope validation.
-- [ ] **UI:** Create LiveViews for Key Management.
+- [x] **UI:** Create LiveViews for Key Management.
 
 #### 5. Custom Domains (Epic 11)
 - [ ] **Resource:** Create `Mcp.Platform.CustomDomain`.
 - [ ] **Automation:** Implement `ProvisionReactor` (DNS Check -> Cert -> Routing).
 
+### Phase 4: Billing Integration (New)
+
+#### 6. M2M Billing Integration
+- [x] **Service:** `Mcp.Billing.ApiUsage` (calculate and charge).
+- [x] **Integration:** `ApiAuthPlug` triggers billing on success.
+- [x] **Fix:** Resolve `Jason.Encoder` Tuple Error.
+  - **Root Cause:** Missing Postgrex operators (`+`, `-`, `SUM`) for `money_with_currency` composite type.
+  - **Resolution:** Implemented idempotent migration `20251226032956_add_money_with_currency_type_to_postgres.exs`.
+
 ## Verification Plan
 
 ### Automated Tests
-- `mix test test/mcp_web/plugs/context_plug_test.exs` (Cache verification)
-- `mix test test/mcp/domains/shared` (New shared entity tests)
-- `mix check` (Ensure no regressions from refactoring)
+- [x] `mix test test/mcp_web/plugs/context_plug_test.exs` (Cache verification)
+- [x] `mix test test/mcp/platform/shared_entities_test.exs` (Shared entities policies)
+- [x] `mix check` (Zero Defects verified: No Credo/Dialyzer issues)
+- [x] `mix test test/mcp/billing` (Billing transfer verification)
 
 ### Manual Verification
-- Verify Redis keys are created on portal access.
-- Verify RLS policies prevent cross-tenant access in `iex`.
+- [x] Verify Redis keys are created on portal access.
+- [x] Verify RLS policies prevent cross-tenant access in `iex`.
+

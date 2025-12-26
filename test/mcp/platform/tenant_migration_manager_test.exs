@@ -2,7 +2,7 @@ defmodule Mcp.Platform.TenantMigrationManagerTest do
   use Mcp.DataCase
 
   alias Ecto.Adapters.SQL.Sandbox
-  alias Mcp.MultiTenant
+  alias Mcp.Infrastructure.TenantManager
   alias Mcp.Platform.SchemaProvisioner
   alias Mcp.Platform.TenantMigrationManager
 
@@ -123,9 +123,9 @@ defmodule Mcp.Platform.TenantMigrationManagerTest do
 
   defp cleanup_test_tenant do
     # Drop schema if it exists
-    require Mcp.MultiTenant
+    # Removed require Mcp.MultiTenant
 
-    if MultiTenant.tenant_schema_exists?(@test_tenant_slug) do
+    if TenantManager.tenant_schema_exists?(@test_tenant_slug) do
       SchemaProvisioner.deprovision_tenant_schema(@test_tenant_slug, force: true)
     end
 
@@ -133,11 +133,11 @@ defmodule Mcp.Platform.TenantMigrationManagerTest do
     tenant_1 = @test_tenant_slug <> "_1"
     tenant_2 = @test_tenant_slug <> "_2"
 
-    if MultiTenant.tenant_schema_exists?(tenant_1) do
+    if TenantManager.tenant_schema_exists?(tenant_1) do
       SchemaProvisioner.deprovision_tenant_schema(tenant_1, force: true)
     end
 
-    if MultiTenant.tenant_schema_exists?(tenant_2) do
+    if TenantManager.tenant_schema_exists?(tenant_2) do
       SchemaProvisioner.deprovision_tenant_schema(tenant_2, force: true)
     end
   end

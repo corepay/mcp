@@ -33,5 +33,7 @@ defmodule Mcp.Platform do
     resource Mcp.Platform.TeamMember
     resource Mcp.Platform.TeamScope
     resource Mcp.Platform.Invitation
+    resource Mcp.Platform.ApiKey
+    resource Mcp.Platform.CustomDomain
   end
 end

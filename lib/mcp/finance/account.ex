@@ -38,7 +38,12 @@ defmodule Mcp.Finance.Account do
 
     create :create do
       primary? true
-      accept [:name, :identifier, :merchant_id, :mid_id, :currency, :type]
+      accept [:name, :identifier, :merchant_id, :mid_id, :currency, :type, :tenant_id]
+    end
+
+    read :get_by_identifier do
+      argument :identifier, :string, allow_nil?: false
+      filter expr(identifier == ^arg(:identifier))
     end
   end
 
@@ -65,5 +70,7 @@ defmodule Mcp.Finance.Account do
 
   code_interface do
     define :create
+    define :read
+    define :get_by_identifier, args: [:identifier], get?: true
   end
 end

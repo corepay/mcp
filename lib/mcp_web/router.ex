@@ -99,6 +99,7 @@ defmodule McpWeb.Router do
     live "/merchants", MockDashboardLive
     live "/gdpr", GdprLive
     live "/change-password", AuthLive.ChangePassword
+    live "/settings/api-keys", Settings.ApiKeysLive
 
     live_session :tenant_underwriting,
       on_mount: [{McpWeb.Auth.LiveAuth, :require_authenticated}] do

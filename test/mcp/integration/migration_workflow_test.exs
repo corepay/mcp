@@ -9,7 +9,8 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
   # These tests may affect database state
   use ExUnit.Case, async: false
   alias Ecto.Adapters.SQL.Sandbox
-  alias Mcp.MultiTenant
+  alias Mcp.Infrastructure.Context
+  alias Mcp.Infrastructure.TenantManager
   alias Mcp.Platform.{DataMigration, DataMigrationLog, DataMigrationRecord, Tenant}
   alias Mcp.Repo
 
@@ -39,7 +40,7 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
       })
 
     # Create tenant schema
-    {:ok, _} = MultiTenant.create_tenant_schema(tenant.company_schema)
+    {:ok, _} = TenantManager.create_tenant_schema(tenant.company_schema)
 
     # Setup temp backup directory
     temp_backup_dir =
@@ -106,7 +107,7 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
 
         # Verify data was imported to tenant schema
         imported_customers =
-          MultiTenant.with_tenant_context(tenant.company_schema, fn ->
+          Context.with_tenant_context(tenant.company_schema, fn ->
             # This would query the actual customers table
             # For now, verify migration records were created
             DataMigrationRecord.by_migration(migration.id) |> elem(1) || []
@@ -467,7 +468,7 @@ defmodule Mcp.Integration.MigrationWorkflowTest do
 
   defp setup_test_data(tenant) do
     # Create test tables and data in tenant schema
-    MultiTenant.with_tenant_context(tenant.company_schema, fn ->
+    Context.with_tenant_context(tenant.company_schema, fn ->
       # This would create actual tables and insert test data
       # For now, we just verify the schema exists
       assert true
