@@ -1,0 +1,34 @@
+{
+  "title": "Core Platform Services",
+  "summary": "This Knowledge Item is the central authority for the Core Platform infrastructure. it covers multi-tenancy architecture (schema isolation), service decomposition (TenantManager, Context), high-performance routing (ContextPlug with Redis), security pipelines (ApiAuthPlug, Webhooks), and specialized integration testing patterns. It preserves the 'Zero Defects' standards for foundational platform evolution including Teams, Custom Domains, and Shared Entity security.",
+  "references": [
+    {
+      "type": "file",
+      "value": "/Users/rp/Developer/Base/mcp/lib/mcp/infrastructure/tenant_manager.ex"
+    },
+    {
+      "type": "file",
+      "value": "/Users/rp/Developer/Base/mcp/lib/mcp/infrastructure/context.ex"
+    },
+    {
+      "type": "file",
+      "value": "/Users/rp/Developer/Base/mcp/lib/mcp_web/plugs/context_plug.ex"
+    },
+    {
+      "type": "file",
+      "value": "/Users/rp/Developer/Base/mcp/lib/mcp_web/plugs/api_auth_plug.ex"
+    },
+    {
+      "type": "file",
+      "value": "/Users/rp/Developer/Base/mcp/lib/mcp/platform/tenant.ex"
+    },
+    {
+      "type": "conversation_id",
+      "value": "c6fbf03a-78a4-4472-a494-e93d7001dc14"
+    },
+    {
+      "type": "conversation_id",
+      "value": "987e11d5-d566-4dea-a1df-76f4d03c67f5"
+    }
+  ]
+}
