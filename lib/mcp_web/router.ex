@@ -243,6 +243,8 @@ defmodule McpWeb.Router do
       session: %{"portal_context" => "ola"} do
       live "/", Ola.RegistrationLive, :index
       live "/application", Ola.ApplicationLive, :index
+      live "/status/:id", Ola.StatusLive, :show
+      live "/resume/:token", Ola.ResumeLive, :resume
       live "/login", AuthLive.Login, :index
     end
   end
