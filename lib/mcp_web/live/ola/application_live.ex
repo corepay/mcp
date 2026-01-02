@@ -30,6 +30,7 @@ defmodule McpWeb.Ola.ApplicationLive do
       |> assign(:step, 1)
       |> assign(:form, to_form(%{}, as: :application))
       |> assign(:execution_id, nil)
+      |> assign(:atlas_session_state, %{idle_seconds: 0, field_focus: nil})
       |> allow_upload(:documents, accept: ~w(.jpg .jpeg .png .pdf), max_entries: 5)
       |> allow_upload(:chat_files, accept: ~w(.jpg .jpeg .png .pdf .txt .csv), max_entries: 1)
 
@@ -212,6 +213,24 @@ defmodule McpWeb.Ola.ApplicationLive do
   @impl true
   def handle_event("validate_chat", _params, socket) do
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("field_focus", %{"field" => field}, socket) do
+    session_state = Map.put(socket.assigns.atlas_session_state, :field_focus, field)
+    {:noreply, assign(socket, :atlas_session_state, session_state)}
+  end
+
+  @impl true
+  def handle_event("field_blur", %{"field" => _field}, socket) do
+    session_state = Map.put(socket.assigns.atlas_session_state, :field_focus, nil)
+    {:noreply, assign(socket, :atlas_session_state, session_state)}
+  end
+
+  @impl true
+  def handle_event("user_idle", %{"seconds" => seconds}, socket) do
+    session_state = Map.put(socket.assigns.atlas_session_state, :idle_seconds, seconds)
+    {:noreply, assign(socket, :atlas_session_state, session_state)}
   end
 
   @impl true
@@ -417,4 +436,11 @@ defmodule McpWeb.Ola.ApplicationLive do
 
     {:ok, s3_path}
   end
+
+  # Convert step number to atom for Atlas context
+  defp step_atom(1), do: :business_info
+  defp step_atom(2), do: :contact_info
+  defp step_atom(3), do: :documents
+  defp step_atom(4), do: :review
+  defp step_atom(_), do: :unknown
 end
