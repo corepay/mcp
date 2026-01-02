@@ -14,6 +14,8 @@ defmodule McpWeb.Ola.ApplicationLive do
     InstructionSet
   }
 
+  alias Mcp.Underwriting.Services.DocumentValidator
+
   require Ash.Query
 
   @impl true
@@ -31,6 +33,8 @@ defmodule McpWeb.Ola.ApplicationLive do
       |> assign(:form, to_form(%{}, as: :application))
       |> assign(:execution_id, nil)
       |> assign(:atlas_session_state, %{idle_seconds: 0, field_focus: nil})
+      |> assign(:doc_validations, %{})
+      |> assign(:validating_doc, nil)
       |> allow_upload(:documents, accept: ~w(.jpg .jpeg .png .pdf), max_entries: 5)
       |> allow_upload(:chat_files, accept: ~w(.jpg .jpeg .png .pdf .txt .csv), max_entries: 1)
 
@@ -242,6 +246,31 @@ defmodule McpWeb.Ola.ApplicationLive do
     end
   end
 
+  @impl true
+  def handle_event("validate_document", %{"ref" => ref}, socket) do
+    entry = Enum.find(socket.assigns.uploads.documents.entries, &(&1.ref == ref))
+
+    if entry && entry.done? do
+      # Read uploaded content and validate async
+      {:ok, content} =
+        consume_uploaded_entry(socket, entry, fn %{path: path} ->
+          {:ok, File.read!(path)}
+        end)
+
+      doc_type = infer_document_type(entry.client_name)
+      parent = self()
+
+      Task.start(fn ->
+        result = DocumentValidator.validate(content, entry.client_name, doc_type)
+        send(parent, {:document_validated, ref, result})
+      end)
+
+      {:noreply, assign(socket, :validating_doc, ref)}
+    else
+      {:noreply, socket}
+    end
+  end
+
   defp handle_conversation_chat(socket, text) do
     uploaded_files = process_chat_uploads(socket)
 
@@ -393,6 +422,18 @@ defmodule McpWeb.Ola.ApplicationLive do
   end
 
   @impl true
+  def handle_info({:document_validated, ref, result}, socket) do
+    validation =
+      case result do
+        {:ok, validation} -> Map.from_struct(validation)
+        {:error, validation} -> Map.from_struct(validation)
+      end
+
+    validations = Map.put(socket.assigns.doc_validations, ref, validation)
+    {:noreply, assign(socket, doc_validations: validations, validating_doc: nil)}
+  end
+
+  @impl true
   def handle_info(%Phoenix.Socket.Broadcast{payload: message}, socket) do
     # Handle both create and update (upsert)
     messages = update_message_list(socket.assigns.messages, message)
@@ -443,4 +484,23 @@ defmodule McpWeb.Ola.ApplicationLive do
   defp step_atom(3), do: :documents
   defp step_atom(4), do: :review
   defp step_atom(_), do: :unknown
+
+  # Infer document type from filename for validation
+  defp infer_document_type(filename) do
+    filename_lower = String.downcase(filename)
+
+    cond do
+      String.contains?(filename_lower, ["license", "id", "passport", "driver"]) ->
+        :government_id
+
+      String.contains?(filename_lower, ["statement", "bank"]) ->
+        :bank_statement
+
+      String.contains?(filename_lower, ["permit", "registration", "certificate"]) ->
+        :business_license
+
+      true ->
+        :other
+    end
+  end
 end
