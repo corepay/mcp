@@ -461,6 +461,13 @@ defmodule McpWeb.Tenant.ReviewLive do
     {:noreply, update(socket, :show_copilot, &(!&1))}
   end
 
+  # Handle SLA timer tick for real-time countdown updates
+  @impl true
+  def handle_info({:update_sla_timer, component_id}, socket) do
+    send_update(McpWeb.Tenant.Underwriting.Components.SlaTimer, id: component_id)
+    {:noreply, socket}
+  end
+
   @impl true
   def handle_info({:confirm_request_info, reason, document_type}, socket) do
     tenant = socket.assigns.tenant.company_schema

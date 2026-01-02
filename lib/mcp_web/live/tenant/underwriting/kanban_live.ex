@@ -26,6 +26,12 @@ defmodule McpWeb.Tenant.Underwriting.KanbanLive do
     {:ok, load_board(socket)}
   end
 
+  # Handle SLA timer tick for real-time countdown updates
+  def handle_info({:update_sla_timer, component_id}, socket) do
+    send_update(McpWeb.Tenant.Underwriting.Components.SlaTimer, id: component_id)
+    {:noreply, socket}
+  end
+
   def handle_event("update_status", %{"id" => id, "new_status" => new_status}, socket) do
     # Convert status string to atom
     status_atom = String.to_existing_atom(new_status)
