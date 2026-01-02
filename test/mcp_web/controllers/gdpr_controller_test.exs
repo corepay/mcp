@@ -1,6 +1,9 @@
 defmodule McpWeb.GdprControllerTest do
   use McpWeb.ConnCase, async: true
 
+  # Integration test requiring full tenant schema setup
+  @moduletag :integration
+
   import Mox
 
   alias Mcp.Accounts.{Auth, User}

@@ -177,7 +177,7 @@ defmodule McpWeb.TenantContext do
     </head>
     <body>
       <h1>Account Suspended</h1>
-      <p>The account for #{tenant.company_name} has been temporarily suspended.</p>
+      <p>The account for #{tenant.name} has been temporarily suspended.</p>
       <p>Please contact support to resolve any outstanding issues.</p>
       <div class="contact">
         <p>Email: support@example.com</p>
@@ -202,7 +202,7 @@ defmodule McpWeb.TenantContext do
     </head>
     <body>
       <h1>Account Canceled</h1>
-      <p>The account for #{tenant.company_name} has been canceled.</p>
+      <p>The account for #{tenant.name} has been canceled.</p>
       <p>If you believe this is an error, please contact support.</p>
       <div class="contact">
         <p>Email: support@example.com</p>
@@ -357,7 +357,7 @@ defmodule McpWeb.TenantContext do
     </head>
     <body>
       <h1>Service Temporarily Unavailable</h1>
-      <p>We're having trouble accessing the account for #{tenant.company_name}.</p>
+      <p>We're having trouble accessing the account for #{tenant.name}.</p>
       <p>Please try again in a few moments.</p>
       <div class="error">
         <p>Error ID: #{System.unique_integer([:positive])}</p>

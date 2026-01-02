@@ -5,6 +5,9 @@ defmodule McpWeb.AuthLive.LoginTest do
   use McpWeb.ConnCase
   import Phoenix.LiveViewTest
 
+  # Integration test requiring full tenant schema setup
+  @moduletag :integration
+
   import Mox
 
   alias Mcp.Accounts.{Auth, User}

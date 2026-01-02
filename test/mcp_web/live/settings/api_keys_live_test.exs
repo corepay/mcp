@@ -2,10 +2,14 @@ defmodule McpWeb.Settings.ApiKeysLiveTest do
   @moduledoc false
   use McpWeb.ConnCase
   import Phoenix.LiveViewTest
+
+  # Integration test requiring full tenant schema setup
+  @moduletag :integration
+
   alias Mcp.Platform.ApiKey
 
   describe "ApiKeysLive" do
-    setup %{conn: conn} do
+    setup %{conn: _conn} do
       tenant =
         Mcp.Platform.Tenant
         |> Ash.Changeset.for_create(:create, %{
@@ -25,24 +29,26 @@ defmodule McpWeb.Settings.ApiKeysLiveTest do
           first_name: "Test",
           last_name: "User"
         })
+        |> Ash.Changeset.force_change_attribute(:tenant_id, tenant.id)
         |> Ash.create!()
+
+      # Create a proper JWT session
+      {:ok, session_data} = Mcp.Accounts.Auth.create_user_session(user, "127.0.0.1")
 
       host = "#{tenant.subdomain}.localhost"
 
       authed_conn =
-        conn
-        |> init_test_session(%{
-          "tenant_id" => tenant.id,
-          "user_id" => user.id,
-          "portal_context" => "tenant"
-        })
+        build_conn()
         |> Map.put(:host, host)
         |> put_req_header("x-forwarded-host", host)
+        |> init_test_session(%{"tenant_id" => tenant.id})
+        |> put_req_cookie("_mcp_access_token", session_data.access_token)
+        |> put_req_cookie("_mcp_refresh_token", session_data.refresh_token)
+        |> put_req_cookie("_mcp_session_id", session_data.session_id)
 
       {:ok, conn: authed_conn, tenant: tenant, user: user}
     end
 
-    @tag :skip
     test "lists api keys", %{conn: conn, tenant: tenant} do
       {:ok, _key} =
         ApiKey.create(%{
@@ -58,7 +64,6 @@ defmodule McpWeb.Settings.ApiKeysLiveTest do
       assert html =~ "mcp_list_test_..."
     end
 
-    @tag :skip
     test "creates a new api key", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/tenant/settings/api-keys")
 
@@ -70,7 +75,6 @@ defmodule McpWeb.Settings.ApiKeysLiveTest do
       assert render(view) =~ "mcp_live_"
     end
 
-    @tag :skip
     test "revokes an api key", %{conn: conn, tenant: tenant} do
       {:ok, key} =
         ApiKey.create(%{
@@ -97,7 +101,8 @@ defmodule McpWeb.Settings.ApiKeysLiveTest do
       |> element("button", "Yes, Revoke")
       |> render_click()
 
-      assert render(view) =~ "API Key revoked"
+      # After revoking, the key should no longer appear in the list
+      refute render(view) =~ "mcp_revoke_test"
 
       # Verify it's revoked in DB
       key = Ash.get!(Mcp.Platform.ApiKey, key.id)

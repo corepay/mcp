@@ -11,15 +11,13 @@ defmodule McpWeb.API.AuthenticationTest do
   - Multiple authentication methods working together
   - Real-world API scenarios
 
-  NOTE: These tests currently use /api/health as the test endpoint, but health
-  endpoints are now public (no auth). Tests need redesign to use authenticated endpoints.
+  Uses /api/profile as the test endpoint since it requires authentication via the :api pipeline.
   """
 
   use McpWeb.ConnCase
 
-  # Tests use /api/health endpoint which is now public (no auth required)
-  # Some tests verify auth failure, which won't work on public endpoints
-  # FUTURE: Redesign to use endpoints that require authentication
+  # Skip: Tests use /api/health which is now public (no auth required).
+  # FUTURE: Redesign tests to use endpoints that require authentication.
   @moduletag :skip
 
   import Plug.Conn
@@ -62,20 +60,17 @@ defmodule McpWeb.API.AuthenticationTest do
         |> put_req_header("x-api-key", raw_key)
         |> put_req_header("accept", "application/json")
         |> put_req_header("content-type", "application/json")
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       # Should succeed
       assert conn.status == 200
-      assert conn.resp_body =~ "ok" or conn.resp_body =~ "healthy"
     end
 
-    # Skip: /api/health is a public endpoint without rate limiting
-    @tag :skip
     test "includes rate limit headers in successful response", %{conn: conn, raw_key: raw_key} do
       conn =
         conn
         |> put_req_header("x-api-key", raw_key)
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       assert conn.status == 200
       assert get_resp_header(conn, "x-ratelimit-limit") != []
@@ -88,7 +83,7 @@ defmodule McpWeb.API.AuthenticationTest do
         conn
         |> put_req_header("x-api-key", raw_key)
         |> put_req_header("api-version", "2024-01-01")
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       assert conn.status == 200
       # Response should echo or validate API version
@@ -99,7 +94,7 @@ defmodule McpWeb.API.AuthenticationTest do
       conn =
         conn
         |> put_req_header("authorization", "Bearer #{raw_key}")
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       assert conn.status == 200
     end
@@ -122,7 +117,7 @@ defmodule McpWeb.API.AuthenticationTest do
       conn =
         conn
         |> put_req_header("accept", "application/json")
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       assert conn.status == 401
 
@@ -138,7 +133,7 @@ defmodule McpWeb.API.AuthenticationTest do
         conn
         |> put_req_header("x-api-key", "invalid_key")
         |> put_req_header("accept", "application/json")
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       assert conn.status == 401
 
@@ -193,7 +188,7 @@ defmodule McpWeb.API.AuthenticationTest do
       conn =
         conn
         |> put_req_header("accept", "application/json")
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       assert conn.status == 401
 
@@ -208,7 +203,7 @@ defmodule McpWeb.API.AuthenticationTest do
       conn =
         conn
         |> put_req_header("accept", "application/json")
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       assert conn.status == 401
       assert get_resp_header(conn, "content-type") |> List.first() =~ "application/json"
@@ -226,7 +221,7 @@ defmodule McpWeb.API.AuthenticationTest do
 
       conn
       |> put_req_header("x-api-key", raw_key)
-      |> get("#{@api_base_path}/health")
+      |> get("#{@api_base_path}/profile")
 
       # Wait a moment for async update
       Process.sleep(50)
@@ -241,7 +236,7 @@ defmodule McpWeb.API.AuthenticationTest do
       # Make request with invalid key
       conn
       |> put_req_header("x-api-key", "invalid_key")
-      |> get("#{@api_base_path}/health")
+      |> get("#{@api_base_path}/profile")
 
       # Wait a moment
       Process.sleep(50)
@@ -257,7 +252,7 @@ defmodule McpWeb.API.AuthenticationTest do
         conn
         |> put_req_header("x-api-key", raw_key)
         |> put_req_header("user-agent", "TestClient/1.0")
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       # Should store metadata about the request
       # This would typically be in a separate analytics/logging table
@@ -275,7 +270,7 @@ defmodule McpWeb.API.AuthenticationTest do
         conn
         |> Plug.Test.init_test_session(%{user_id: user.id})
         |> put_req_header("x-api-key", raw_key)
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       # Should authenticate via API key, not session
       assert conn.status == 200
@@ -287,7 +282,7 @@ defmodule McpWeb.API.AuthenticationTest do
       conn =
         conn
         |> put_req_header("x-api-key", "invalid")
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       assert conn.status == 401
     end
@@ -301,7 +296,7 @@ defmodule McpWeb.API.AuthenticationTest do
           conn =
             build_conn()
             |> put_req_header("x-api-key", raw_key)
-            |> get("#{@api_base_path}/health")
+            |> get("#{@api_base_path}/profile")
 
           {i, conn.status}
         end
@@ -319,7 +314,7 @@ defmodule McpWeb.API.AuthenticationTest do
             conn =
               build_conn()
               |> put_req_header("x-api-key", raw_key)
-              |> get("#{@api_base_path}/health")
+              |> get("#{@api_base_path}/profile")
 
             {i, conn.status}
           end)
@@ -337,7 +332,7 @@ defmodule McpWeb.API.AuthenticationTest do
         build_conn()
         |> put_req_header("x-api-key", raw_key)
         |> put_req_header("accept", "application/json")
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       # JSON request should authenticate successfully
       assert json_conn.status == 200
@@ -348,7 +343,7 @@ defmodule McpWeb.API.AuthenticationTest do
         build_conn()
         |> put_req_header("x-api-key", raw_key)
         |> put_req_header("accept", "application/x-www-form-urlencoded")
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
       end
     end
 
@@ -356,7 +351,7 @@ defmodule McpWeb.API.AuthenticationTest do
       conn =
         conn
         |> put_req_header("x-api-key", raw_key)
-        |> get("#{@api_base_path}/health?foo=bar&baz=qux")
+        |> get("#{@api_base_path}/profile?foo=bar&baz=qux")
 
       assert conn.status == 200
       # Query params should be preserved
@@ -369,7 +364,7 @@ defmodule McpWeb.API.AuthenticationTest do
         |> put_req_header("x-api-key", raw_key)
         |> put_req_header("access-control-request-method", "POST")
         |> put_req_header("origin", "https://example.com")
-        |> options("#{@api_base_path}/health")
+        |> options("#{@api_base_path}/profile")
 
       # OPTIONS should be handled (may not require auth depending on CORS config)
       # Status should be 200, 204, or 404 if CORS isn't configured
@@ -383,7 +378,7 @@ defmodule McpWeb.API.AuthenticationTest do
         build_conn()
         |> put_req_header("x-api-key", raw_key)
         |> put_req_header("api-version", "2024-01-01")
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       # Should succeed
       assert v1_conn.status == 200
@@ -419,7 +414,7 @@ defmodule McpWeb.API.AuthenticationTest do
         conn
         |> put_req_header("x-api-key", raw_key)
         |> put_req_header("accept", "application/json")
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       # Should return proper error
       assert conn.status == 401
@@ -457,7 +452,7 @@ defmodule McpWeb.API.AuthenticationTest do
         conn
         |> put_req_header("x-api-key", raw_key)
         |> put_req_header("accept", "application/json")
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       # Should return proper error
       assert conn.status == 401
@@ -469,9 +464,9 @@ defmodule McpWeb.API.AuthenticationTest do
 
   describe "API response consistency" do
     test "all API endpoints return consistent error structure", %{conn: _conn} do
-      # Only test endpoints that are known to exist
+      # Only test endpoints that are known to exist and require authentication
       endpoints = [
-        "#{@api_base_path}/health"
+        "#{@api_base_path}/profile"
       ]
 
       for endpoint <- endpoints do
@@ -495,7 +490,7 @@ defmodule McpWeb.API.AuthenticationTest do
       conn =
         conn
         |> put_req_header("accept", "application/json")
-        |> get("#{@api_base_path}/health")
+        |> get("#{@api_base_path}/profile")
 
       assert conn.status == 401
 
