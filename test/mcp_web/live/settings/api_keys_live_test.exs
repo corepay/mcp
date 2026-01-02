@@ -6,12 +6,15 @@ defmodule McpWeb.Settings.ApiKeysLiveTest do
   # Integration test requiring full tenant schema setup
   @moduletag :integration
 
+  alias Mcp.Accounts.Auth
+  alias Mcp.Accounts.User
   alias Mcp.Platform.ApiKey
+  alias Mcp.Platform.Tenant
 
   describe "ApiKeysLive" do
     setup %{conn: _conn} do
       tenant =
-        Mcp.Platform.Tenant
+        Tenant
         |> Ash.Changeset.for_create(:create, %{
           name: "Test Tenant",
           slug: "test-tenant-#{System.unique_integer([:positive])}",
@@ -21,7 +24,7 @@ defmodule McpWeb.Settings.ApiKeysLiveTest do
 
       # Create a user for the tenant session context
       user =
-        Mcp.Accounts.User
+        User
         |> Ash.Changeset.for_create(:register, %{
           email: "user_#{System.unique_integer([:positive])}@example.com",
           password: "password123",
@@ -33,7 +36,7 @@ defmodule McpWeb.Settings.ApiKeysLiveTest do
         |> Ash.create!()
 
       # Create a proper JWT session
-      {:ok, session_data} = Mcp.Accounts.Auth.create_user_session(user, "127.0.0.1")
+      {:ok, session_data} = Auth.create_user_session(user, "127.0.0.1")
 
       host = "#{tenant.subdomain}.localhost"
 

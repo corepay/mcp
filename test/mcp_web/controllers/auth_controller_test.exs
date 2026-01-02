@@ -1,7 +1,10 @@
 defmodule McpWeb.Controllers.AuthControllerTest do
   use McpWeb.ConnCase
 
-  alias Mcp.Accounts.{ApiKey, User}
+  import Mcp.TestFactories
+
+  alias Mcp.Accounts.User
+  alias Mcp.Platform.ApiKey
 
   describe "POST /auth/login" do
     test "authenticates with valid credentials", %{conn: conn} do
@@ -597,7 +600,6 @@ defmodule McpWeb.Controllers.AuthControllerTest do
       assert response["error"]["message"] == "Unauthorized: Missing API Key"
     end
 
-    @tag :skip
     test "allows access with valid token", %{conn: conn} do
       # Get valid token
       {:ok, user} =
@@ -617,19 +619,12 @@ defmodule McpWeb.Controllers.AuthControllerTest do
           }
         })
 
-      %{"access_token" => access_token} = json_response(login_conn, 200)
+      response = json_response(login_conn, 200)
+      access_token = response["access_token"]
 
-      # Create API key with new schema
-      {:ok, api_key} =
-        Mcp.Platform.ApiKey.create(%{
-          prefix: "access",
-          type: :developer,
-          scopes: ["profile:read"],
-          owner_id: user.id,
-          owner_type: :user
-        })
-
-      raw_key = Ash.Resource.get_metadata(api_key, :raw_key)
+      # Create API key using factory
+      raw_key =
+        create_api_key(["profile:read"], owner_id: user.id, owner_type: :user, prefix: "access")
 
       # Access protected endpoint
       protected_conn =
@@ -638,13 +633,14 @@ defmodule McpWeb.Controllers.AuthControllerTest do
         |> put_req_header("x-api-key", raw_key)
         |> get(~p"/api/profile")
 
-      assert json_response(protected_conn, 200)
+      assert %{"data" => user_data} = json_response(protected_conn, 200)
+      assert user_data["email"] == "protected.access@example.com"
     end
 
     test "handles expired tokens", %{conn: conn} do
       # Create API key with new schema
       {:ok, api_key} =
-        Mcp.Platform.ApiKey.create(%{
+        ApiKey.create(%{
           prefix: "expired",
           type: :developer,
           scopes: ["profile:read"],
@@ -664,7 +660,7 @@ defmodule McpWeb.Controllers.AuthControllerTest do
       assert response(conn, 401)
     end
 
-    test "handles malformed authorization header", %{conn: conn} do
+    test "handles malformed authorization header", %{conn: _conn} do
       test_cases = [
         # Missing token
         "Bearer",
@@ -678,7 +674,7 @@ defmodule McpWeb.Controllers.AuthControllerTest do
 
       # Create API key with new schema - need to get raw_key from metadata
       {:ok, api_key} =
-        Mcp.Platform.ApiKey.create(%{
+        ApiKey.create(%{
           prefix: "malform",
           type: :developer,
           scopes: ["profile:read"],

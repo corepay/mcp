@@ -2,14 +2,34 @@ defmodule McpWeb.Settings.ApiKeysLive do
   use McpWeb, :live_view
 
   alias Mcp.Platform.ApiKey
+  alias Mcp.Platform.Tenant
 
-  def mount(_params, _session, socket) do
-    {:ok,
-     socket
-     |> assign(:page_title, "API Keys")
-     |> assign(:new_key, nil)
-     |> assign(:confirm_revoke, nil)
-     |> refresh_keys()}
+  def mount(_params, session, socket) do
+    # Get tenant from session (set by PutTenantInSession plug)
+    tenant =
+      case session["tenant_id"] do
+        nil ->
+          # Fallback to socket assigns if set by on_mount hook
+          socket.assigns[:current_tenant]
+
+        tenant_id ->
+          Tenant.get_by_id!(tenant_id)
+      end
+
+    if tenant do
+      {:ok,
+       socket
+       |> assign(:current_tenant, tenant)
+       |> assign(:page_title, "API Keys")
+       |> assign(:new_key, nil)
+       |> assign(:confirm_revoke, nil)
+       |> refresh_keys()}
+    else
+      {:ok,
+       socket
+       |> Phoenix.LiveView.put_flash(:error, "No tenant context found")
+       |> Phoenix.LiveView.redirect(to: "/")}
+    end
   end
 
   def handle_params(params, _url, socket) do
@@ -80,7 +100,7 @@ defmodule McpWeb.Settings.ApiKeysLive do
     {:ok, keys} =
       ApiKey
       |> Ash.Query.filter(owner_id == ^tenant_id and is_nil(revoked_at))
-      |> Ash.Query.sort(created_at: :desc)
+      |> Ash.Query.sort(inserted_at: :desc)
       |> Ash.read(domain: Mcp.Platform)
 
     assign(socket, :api_keys, keys)

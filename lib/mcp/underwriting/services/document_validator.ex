@@ -79,8 +79,8 @@ defmodule Mcp.Underwriting.Services.DocumentValidator do
        "Ensure the full name is visible and not obscured"},
       {contains_any?(content, ["DOB", "Date of Birth", "birth", "Birth", "BIRTH"]),
        "Date of birth not found", "Make sure the birth date area is clearly visible"},
-      {contains_any?(content, ["expires", "Expires", "EXP", "EXPIR"]), "Expiration date not found",
-       "Include the expiration date in the photo"},
+      {contains_any?(content, ["expires", "Expires", "EXP", "EXPIR"]),
+       "Expiration date not found", "Include the expiration date in the photo"},
       {String.length(content) > 50, "Document appears unreadable",
        "Take a new photo with better lighting"}
     ]

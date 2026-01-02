@@ -131,18 +131,27 @@ defmodule McpWeb.Plugs.ApiAuthPlug do
   end
 
   defp update_last_used_async(conn, api_key) do
-    Task.start(fn ->
-      try do
-        api_key
-        |> Ash.Changeset.for_update(:update_last_used, %{})
-        |> Ash.update()
-      rescue
-        e ->
-          Logger.warning("Failed to update last_used_at for API key #{api_key.id}: #{inspect(e)}")
-      end
-    end)
+    # In test environment, the sandbox connection cannot be shared with async tasks
+    # so we run synchronously. In production, we run async to avoid blocking.
+    if Application.get_env(:mcp, :env) == :test do
+      update_last_used_sync(api_key)
+    else
+      Task.start(fn -> update_last_used_sync(api_key) end)
+    end
 
     conn
+  end
+
+  defp update_last_used_sync(api_key) do
+    api_key
+    |> Ash.Changeset.for_update(:update_last_used, %{})
+    |> Ash.update()
+  rescue
+    e ->
+      Logger.warning("Failed to update last_used_at for API key #{api_key.id}: #{inspect(e)}")
+  catch
+    :exit, reason ->
+      Logger.debug("API key last_used update task exited: #{inspect(reason)}")
   end
 
   defp send_json_error(conn, status, code, message) do

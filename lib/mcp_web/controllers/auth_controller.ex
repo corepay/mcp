@@ -8,6 +8,8 @@ defmodule McpWeb.AuthController do
 
   use McpWeb, :controller
 
+  require Logger
+
   alias Mcp.Accounts.{Auth, User}
   alias Mcp.Communication.EmailService
   alias McpWeb.Auth.SessionPlug
@@ -225,11 +227,9 @@ defmodule McpWeb.AuthController do
            from: "noreply@mcp.local"
          ) do
       {:ok, _} ->
-        require Logger
         Logger.info("Password reset email sent to #{user.email}")
 
       {:error, reason} ->
-        require Logger
         Logger.error("Failed to send password reset email: #{inspect(reason)}")
     end
   end
@@ -365,17 +365,68 @@ defmodule McpWeb.AuthController do
 
   def profile(conn, _params) do
     # If we reached here, we are authenticated via the API pipeline
-    # The current user/tenant should be in assigns
-    user = conn.assigns[:current_user]
+    # Handle both user sessions and API key authentication
+    if conn.assigns[:api_actor] == :api_key do
+      handle_api_key_profile(conn)
+    else
+      handle_session_profile(conn)
+    end
+  end
+
+  defp handle_api_key_profile(conn) do
+    api_key = conn.assigns[:current_api_key]
+    profile_data = build_api_key_profile(api_key)
+
+    if profile_data do
+      json(conn, %{data: profile_data})
+    else
+      send_unauthorized(conn)
+    end
+  end
+
+  defp build_api_key_profile(api_key) do
+    case api_key.owner_type do
+      :tenant ->
+        %{
+          type: "api_key",
+          owner_type: "tenant",
+          owner_id: api_key.owner_id,
+          scopes: api_key.scopes
+        }
+
+      :user ->
+        case load_user_from_id(api_key.owner_id) do
+          nil -> nil
+          user -> Map.put(user_view(user), :auth_method, "api_key")
+        end
+
+      _ ->
+        %{type: "api_key", owner_type: to_string(api_key.owner_type)}
+    end
+  end
+
+  defp handle_session_profile(conn) do
+    user = conn.assigns[:current_user] || load_user_from_id(conn.assigns[:current_user_id])
 
     if user do
       json(conn, %{data: user_view(user)})
     else
-      # If for some reason we missed authentication check (should be caught by plug)
-      conn
-      |> put_status(:unauthorized)
-      |> json(%{error: "Unauthorized"})
+      send_unauthorized(conn)
     end
+  end
+
+  defp send_unauthorized(conn) do
+    conn
+    |> put_status(:unauthorized)
+    |> json(%{error: "Unauthorized"})
+  end
+
+  defp load_user_from_id(nil), do: nil
+
+  defp load_user_from_id(user_id) do
+    User.get_by_id!(user_id)
+  rescue
+    _ -> nil
   end
 
   def verify_2fa(conn, %{"totp_code" => code}) do
@@ -396,20 +447,11 @@ defmodule McpWeb.AuthController do
   end
 
   def forgot_password(conn, %{"email" => email}) do
-    # Validate email format
-    if email =~ ~r/^[\w+\-.]+@[a-z\d\-.]+\.[a-z]+$/i do
-      # Attempt to find user and request password reset
-      # Use Task.async to send email asynchronously (fire and forget)
-      Task.start(fn -> process_password_reset_request(email) end)
-
-      # Always return 200 for security (prevent email enumeration)
-      conn
-      |> put_status(:ok)
-      |> text("Password reset instructions sent")
+    if valid_email_format?(email) do
+      schedule_password_reset(email)
+      send_password_reset_response(conn)
     else
-      conn
-      |> put_status(:bad_request)
-      |> json(%{errors: %{email: ["has invalid format"]}})
+      send_invalid_email_response(conn)
     end
   end
 
@@ -417,6 +459,29 @@ defmodule McpWeb.AuthController do
     conn
     |> put_status(:bad_request)
     |> json(%{error: "Missing email"})
+  end
+
+  defp valid_email_format?(email), do: email =~ ~r/^[\w+\-.]+@[a-z\d\-.]+\.[a-z]+$/i
+
+  defp schedule_password_reset(email) do
+    # In test env, run synchronously; in prod, run async (fire and forget)
+    if Application.get_env(:mcp, :env) == :test do
+      process_password_reset_request(email)
+    else
+      Task.start(fn -> process_password_reset_request(email) end)
+    end
+  end
+
+  defp send_password_reset_response(conn) do
+    conn
+    |> put_status(:ok)
+    |> text("Password reset instructions sent")
+  end
+
+  defp send_invalid_email_response(conn) do
+    conn
+    |> put_status(:bad_request)
+    |> json(%{errors: %{email: ["has invalid format"]}})
   end
 
   def reset_password(conn, %{
@@ -451,10 +516,14 @@ defmodule McpWeb.AuthController do
          true <- user.status in [:active, :locked] do
       case User.request_password_reset(user) do
         {:ok, updated_user} ->
-          send_password_reset_email(updated_user)
+          try do
+            send_password_reset_email(updated_user)
+          catch
+            :exit, reason ->
+              Logger.warning("Failed to send password reset email: #{inspect(reason)}")
+          end
 
         {:error, reason} ->
-          require Logger
           Logger.warning("Failed to generate reset token: #{inspect(reason)}")
       end
     else

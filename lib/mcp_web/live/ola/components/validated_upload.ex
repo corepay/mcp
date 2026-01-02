@@ -99,7 +99,7 @@ defmodule McpWeb.Ola.Components.ValidatedUpload do
   def render(assigns) do
     ~H"""
     <div class="validated-upload" id={@id}>
-      <label class="block text-sm font-medium mb-2"><%= @label %></label>
+      <label class="block text-sm font-medium mb-2">{@label}</label>
 
       <div class="border-2 border-dashed border-base-300 rounded-lg p-4 text-center hover:border-primary transition-colors">
         <%= if @uploads do %>
@@ -129,7 +129,7 @@ defmodule McpWeb.Ola.Components.ValidatedUpload do
           <%= if @validation_result.valid? do %>
             <div class="flex items-center gap-2">
               <.icon name="hero-check-circle" class="w-5 h-5" />
-              <span>Document looks good! Quality score: <%= @validation_result.quality_score %>%</span>
+              <span>Document looks good! Quality score: {@validation_result.quality_score}%</span>
             </div>
           <% else %>
             <div class="space-y-2">
@@ -139,7 +139,7 @@ defmodule McpWeb.Ola.Components.ValidatedUpload do
               </div>
               <ul class="list-disc list-inside ml-2">
                 <%= for issue <- @validation_result.issues do %>
-                  <li><%= issue %></li>
+                  <li>{issue}</li>
                 <% end %>
               </ul>
               <%= if @validation_result[:suggestions] && @validation_result.suggestions != [] do %>
@@ -147,7 +147,7 @@ defmodule McpWeb.Ola.Components.ValidatedUpload do
                   <strong>Tips:</strong>
                   <ul class="list-disc list-inside ml-2">
                     <%= for suggestion <- @validation_result.suggestions do %>
-                      <li><%= suggestion %></li>
+                      <li>{suggestion}</li>
                     <% end %>
                   </ul>
                 </div>

@@ -48,7 +48,7 @@ defmodule Mcp.Underwriting.Services.DocumentAutofillTest do
 
       assert fields["bank_name"] == "First National Bank"
       assert fields["account_last4"] == "4567"
-      assert fields["monthly_volume"] == 12345.67
+      assert fields["monthly_volume"] == 12_345.67
     end
 
     test "handles full account number and extracts last 4" do
