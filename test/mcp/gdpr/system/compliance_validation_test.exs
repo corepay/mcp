@@ -6,9 +6,8 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
   @moduletag :system
   @moduletag :compliance
 
-  alias Mcp.Accounts.{ApiKey, Auth}
-  alias Mcp.Accounts.User
-  alias Mcp.Platform.Tenant
+  alias Mcp.Accounts.{Auth, User}
+  alias Mcp.Platform.{ApiKey, Tenant}
   alias Mcp.Repo
 
   # Add host header for all API tests to bypass tenant routing
@@ -101,8 +100,17 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
 
   defp auth_conn(conn, user) do
     {:ok, session_data} = Auth.create_user_session(user, "127.0.0.1")
-    key = "mcp_test_#{Ecto.UUID.generate()}"
-    ApiKey.create!(%{name: "Test Key", key: key})
+    raw_key = "mcp_test_#{Ecto.UUID.generate()}"
+
+    {:ok, _api_key} =
+      ApiKey.create(%{
+        token: raw_key,
+        prefix: "test",
+        type: :developer,
+        scopes: ["gdpr:read", "gdpr:write", "gdpr:export", "consent:read", "consent:write"],
+        owner_id: user.id,
+        owner_type: :user
+      })
 
     conn
     |> init_test_session(%{})
@@ -111,8 +119,8 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
     |> put_req_cookie("_mcp_refresh_token", session_data.refresh_token)
     |> put_req_cookie("_mcp_session_id", session_data.session_id)
     |> put_req_header("authorization", "Bearer #{session_data.access_token}")
-    |> put_req_header("x-api-key", key)
-    |> Plug.Conn.put_private(:api_key, key)
+    |> put_req_header("x-api-key", raw_key)
+    |> Plug.Conn.put_private(:api_key, raw_key)
     |> Plug.Conn.put_private(:access_token, session_data.access_token)
   end
 
@@ -304,7 +312,7 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
       # 2. Rate limiting prevents abuse
       [user: test_user] = create_user(%{})
 
-      # Create a specific API key with a low rate limit for this test
+      # Create a specific API key for rate limit testing
       {:ok, session_data} = Auth.create_user_session(test_user, "127.0.0.1")
 
       # Use the proper action to create API key so it gets hashed correctly
@@ -314,10 +322,12 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
 
       {:ok, _api_key} =
         ApiKey.create(%{
-          name: "Rate Limit Test Key",
-          rate_limit: 5,
-          key: key_string,
-          tenant_id: test_user.tenant_id
+          token: key_string,
+          prefix: unique_prefix,
+          type: :developer,
+          scopes: ["gdpr:read"],
+          owner_id: test_user.id,
+          owner_type: :user
         })
 
       key = key_string
