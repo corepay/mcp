@@ -24,5 +24,8 @@ defmodule Mcp.Underwriting do
     resource Mcp.Underwriting.InstructionSet
     resource Mcp.Underwriting.Pipeline
     resource Mcp.Underwriting.Execution
+
+    # Deal Room Resources
+    resource Mcp.Underwriting.Note
   end
 end

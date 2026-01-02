@@ -6,6 +6,7 @@ defmodule McpWeb.Tenant.ReviewLive do
   alias Mcp.Platform.Tenant
   alias Mcp.Underwriting.{Activity, Application, Document, RiskAssessment}
   alias McpWeb.Tenant.Underwriting.Components.CoPilotChat
+  alias McpWeb.Tenant.Underwriting.Components.NotesPanel
   alias McpWeb.Tenant.Underwriting.Components.RequestInfoModal
   alias McpWeb.Tenant.Underwriting.Components.TimelineComponent
   require Ash.Query
@@ -33,12 +34,16 @@ defmodule McpWeb.Tenant.ReviewLive do
           nil
       end
 
+    # Load team members for @mention functionality in notes
+    team_members = load_team_members(tenant_id)
+
     {:ok,
      socket
      |> assign(:page_title, "Review Application")
      |> assign(:tenant, tenant)
      |> assign(:application, application)
      |> assign(:risk_assessment, risk_assessment)
+     |> assign(:team_members, team_members)
      |> assign(:show_request_info_modal, false)
      |> assign(:show_copilot, false)
      |> allow_upload(:documents, accept: ~w(.pdf .jpg .jpeg .png), max_entries: 1)}
@@ -247,24 +252,15 @@ defmodule McpWeb.Tenant.ReviewLive do
                 </div>
               </div>
 
-              <div class="card bg-base-100 shadow-lg border border-base-200 mb-6">
-                <div class="card-body">
-                  <h2 class="card-title text-lg mb-4">Internal Notes</h2>
-                  <form phx-submit="add_note">
-                    <div class="form-control">
-                      <textarea
-                        name="note"
-                        class="textarea textarea-bordered h-24"
-                        placeholder="Add an internal note..."
-                        required
-                      ></textarea>
-                    </div>
-                    <div class="card-actions justify-end mt-2">
-                      <button class="btn btn-sm btn-primary">Add Note</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
+              <%!-- Notes Panel with @mention support --%>
+              <.live_component
+                module={NotesPanel}
+                id="notes-panel"
+                application_id={@application.id}
+                current_user={@current_user}
+                tenant_schema={@tenant.company_schema}
+                team_members={@team_members}
+              />
 
               <.live_component
                 module={TimelineComponent}
@@ -613,5 +609,31 @@ defmodule McpWeb.Tenant.ReviewLive do
       |> ExAws.S3.presigned_url(:get, bucket, path, expires_in: 3600)
 
     url
+  end
+
+  defp load_team_members(tenant_id) do
+    case Ash.read(Ash.Query.filter(User, tenant_id == ^tenant_id and status == :active)) do
+      {:ok, users} ->
+        Enum.map(users, fn user ->
+          %{
+            id: user.id,
+            username: user.email |> String.split("@") |> hd(),
+            display_name: build_display_name(user)
+          }
+        end)
+
+      {:error, _} ->
+        []
+    end
+  end
+
+  defp build_display_name(user) do
+    name =
+      [user.first_name, user.last_name]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.join(" ")
+      |> String.trim()
+
+    if name == "", do: user.email, else: name
   end
 end
