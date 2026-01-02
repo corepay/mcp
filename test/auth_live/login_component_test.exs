@@ -1,34 +1,22 @@
 defmodule McpWeb.AuthLive.LoginComponentTest do
   use ExUnit.Case, async: true
 
-  alias McpWeb.AuthLive.Login
+  alias McpWeb.AuthLive.{Login, LoginComponent}
 
-  # Basic test to ensure the LiveView component can be started
-  test "login LiveView mounts successfully" do
-    # Test that the LiveView module exists and has the correct structure
+  # Basic test to ensure the LiveView can be started
+  test "Login LiveView has required callbacks" do
+    # The Login LiveView delegates events to LoginComponent
     Code.ensure_loaded(Login)
     assert function_exported?(Login, :mount, 3)
-    assert function_exported?(Login, :handle_event, 3)
+    assert function_exported?(Login, :render, 1)
+    assert function_exported?(Login, :handle_params, 3)
   end
 
-  test "login LiveView has required handlers" do
-    # Test that all required event handlers are present
-    handlers = [
-      "validate",
-      "login",
-      "oauth_login",
-      "toggle_password",
-      "show_recovery",
-      "hide_recovery",
-      "request_recovery",
-      "show_verification",
-      "hide_verification",
-      "request_verification"
-    ]
-
-    for _handler <- handlers do
-      # This tests that the handle_event function can handle different event types
-      assert is_function(&Login.handle_event/3)
-    end
+  # Test that the LoginComponent (which handles events) exists
+  test "LoginComponent LiveComponent has required handlers" do
+    Code.ensure_loaded(LoginComponent)
+    assert function_exported?(LoginComponent, :mount, 1)
+    assert function_exported?(LoginComponent, :update, 2)
+    assert function_exported?(LoginComponent, :handle_event, 3)
   end
 end
