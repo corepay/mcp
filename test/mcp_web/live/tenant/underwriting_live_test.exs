@@ -3,6 +3,9 @@ defmodule McpWeb.Tenant.UnderwritingLiveTest do
 
   import Phoenix.LiveViewTest
 
+  # Integration test requiring full tenant schema setup
+  @moduletag :integration
+
   alias Mcp.Accounts.{Auth, User}
   alias Mcp.Infrastructure.TenantManager
   alias Mcp.Platform.{Merchant, Tenant}

@@ -592,13 +592,15 @@ defmodule McpWeb.Controllers.AuthControllerTest do
       conn = get(conn, ~p"/api/profile")
 
       # API Key failure happens before Auth failure in pipeline
-      assert json_response(conn, 401) == %{"error" => "Invalid or missing API Key"}
+      response = json_response(conn, 401)
+      assert response["error"]["code"] == "missing_api_key"
+      assert response["error"]["message"] == "Unauthorized: Missing API Key"
     end
 
     @tag :skip
     test "allows access with valid token", %{conn: conn} do
       # Get valid token
-      {:ok, _user} =
+      {:ok, user} =
         User.register(%{
           first_name: "Protected",
           last_name: "Access",
@@ -617,31 +619,46 @@ defmodule McpWeb.Controllers.AuthControllerTest do
 
       %{"access_token" => access_token} = json_response(login_conn, 200)
 
-      # Seed API Key
-      ApiKey.create!(%{
-        key: "mcp_acc_ess_key_1",
-        name: "Access Key",
-        tenant_id: nil
-      })
+      # Create API key with new schema
+      {:ok, api_key} =
+        Mcp.Platform.ApiKey.create(%{
+          prefix: "access",
+          type: :developer,
+          scopes: ["profile:read"],
+          owner_id: user.id,
+          owner_type: :user
+        })
+
+      raw_key = Ash.Resource.get_metadata(api_key, :raw_key)
 
       # Access protected endpoint
       protected_conn =
         conn
         |> put_req_header("authorization", "Bearer " <> access_token)
-        |> put_req_header("x-api-key", "mcp_acc_ess_key_1")
+        |> put_req_header("x-api-key", raw_key)
         |> get(~p"/api/profile")
 
       assert json_response(protected_conn, 200)
     end
 
     test "handles expired tokens", %{conn: conn} do
-      ApiKey.create!(%{key: "mcp_exp_ired_key", name: "Expired Key", tenant_id: nil})
+      # Create API key with new schema
+      {:ok, api_key} =
+        Mcp.Platform.ApiKey.create(%{
+          prefix: "expired",
+          type: :developer,
+          scopes: ["profile:read"],
+          owner_id: Ecto.UUID.generate(),
+          owner_type: :user
+        })
+
+      raw_key = Ash.Resource.get_metadata(api_key, :raw_key)
       expired_token = "expired_token_123"
 
       conn =
         conn
         |> put_req_header("authorization", "Bearer " <> expired_token)
-        |> put_req_header("x-api-key", "mcp_exp_ired_key")
+        |> put_req_header("x-api-key", raw_key)
         |> get(~p"/api/profile")
 
       assert response(conn, 401)
@@ -659,20 +676,27 @@ defmodule McpWeb.Controllers.AuthControllerTest do
         "abc123"
       ]
 
-      ApiKey.create!(%{
-        key: "mcp_sk_malform_",
-        name: "Malformed Key",
-        tenant_id: nil
-      })
+      # Create API key with new schema - need to get raw_key from metadata
+      {:ok, api_key} =
+        Mcp.Platform.ApiKey.create(%{
+          prefix: "malform",
+          type: :developer,
+          scopes: ["profile:read"],
+          owner_id: Ecto.UUID.generate(),
+          owner_type: :user
+        })
+
+      raw_key = Ash.Resource.get_metadata(api_key, :raw_key)
 
       Enum.each(test_cases, fn auth_header ->
-        conn =
-          conn
-          |> put_req_header("x-api-key", "mcp_sk_malform_")
+        test_conn =
+          build_conn()
+          |> put_req_header("x-api-key", raw_key)
           |> put_req_header("authorization", auth_header)
           |> get(~p"/api/profile")
 
-        assert response(conn, 401) == "Unauthorized"
+        # Should get 401 Unauthorized response
+        assert test_conn.status == 401
       end)
     end
   end

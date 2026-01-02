@@ -71,12 +71,6 @@ defmodule McpWeb.AuthLive.Login do
     {:noreply, socket}
   end
 
-  # Handle OAuth redirect from component
-  @impl true
-  def handle_event("oauth-redirect", %{"url" => url}, socket) do
-    {:noreply, redirect(socket, external: url)}
-  end
-
   # Private helper functions
 
   defp portal_title(:admin), do: "Platform Admin"

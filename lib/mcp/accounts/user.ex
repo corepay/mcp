@@ -34,6 +34,54 @@ defmodule Mcp.Accounts.User do
         # Disable sign-in tokens
         sign_in_tokens_enabled?(false)
       end
+
+      google :google do
+        client_id(fn _, _ ->
+          Application.get_env(:mcp, :google_oauth)[:client_id] ||
+            System.get_env("GOOGLE_CLIENT_ID") ||
+            "test-google-client-id"
+        end)
+
+        client_secret(fn _, _ ->
+          Application.get_env(:mcp, :google_oauth)[:client_secret] ||
+            System.get_env("GOOGLE_CLIENT_SECRET") ||
+            "test-google-client-secret"
+        end)
+
+        redirect_uri(fn _, _ ->
+          base_url = Application.get_env(:mcp, McpWeb.Endpoint)[:url][:host] || "localhost"
+          port = Application.get_env(:mcp, McpWeb.Endpoint)[:http][:port] || 4000
+          scheme = if port == 443, do: "https", else: "http"
+          {:ok, "#{scheme}://#{base_url}:#{port}/auth/google/callback"}
+        end)
+
+        # Disable hijacking prevention until confirmation add-on is implemented
+        prevent_hijacking?(false)
+      end
+
+      github :github do
+        client_id(fn _, _ ->
+          Application.get_env(:mcp, :github_oauth)[:client_id] ||
+            System.get_env("GITHUB_CLIENT_ID") ||
+            "test-github-client-id"
+        end)
+
+        client_secret(fn _, _ ->
+          Application.get_env(:mcp, :github_oauth)[:client_secret] ||
+            System.get_env("GITHUB_CLIENT_SECRET") ||
+            "test-github-client-secret"
+        end)
+
+        redirect_uri(fn _, _ ->
+          base_url = Application.get_env(:mcp, McpWeb.Endpoint)[:url][:host] || "localhost"
+          port = Application.get_env(:mcp, McpWeb.Endpoint)[:http][:port] || 4000
+          scheme = if port == 443, do: "https", else: "http"
+          {:ok, "#{scheme}://#{base_url}:#{port}/auth/github/callback"}
+        end)
+
+        # Disable hijacking prevention until confirmation add-on is implemented
+        prevent_hijacking?(false)
+      end
     end
 
     # Tokens will be enabled in Story 1.2 when AuthToken resource is created
@@ -159,6 +207,101 @@ defmodule Mcp.Accounts.User do
       end
     end
 
+    create :register_with_google do
+      argument :user_info, :map, allow_nil?: false
+      argument :oauth_tokens, :map, allow_nil?: false
+
+      upsert? true
+      upsert_identity :unique_email
+
+      change fn changeset, _ ->
+        user_info = Ash.Changeset.get_argument(changeset, :user_info)
+        oauth_tokens = Ash.Changeset.get_argument(changeset, :oauth_tokens)
+
+        email = user_info["email"]
+        name = user_info["name"] || ""
+        [first_name | rest] = String.split(name, " ", parts: 2)
+        last_name = if rest == [], do: nil, else: hd(rest)
+
+        # Generate a random password for OAuth users
+        random_password = :crypto.strong_rand_bytes(32) |> Base.encode64()
+        hashed = Bcrypt.hash_pwd_salt(random_password)
+
+        # Store OAuth tokens
+        current_tokens = Ash.Changeset.get_attribute(changeset, :oauth_tokens) || %{}
+
+        new_tokens =
+          Map.put(current_tokens, "google", %{
+            "provider" => "google",
+            "uid" => user_info["sub"],
+            "access_token" => oauth_tokens["access_token"],
+            "refresh_token" => oauth_tokens["refresh_token"],
+            "expires_at" => oauth_tokens["expires_at"],
+            "linked_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+            "user_info" => %{
+              "name" => name,
+              "email" => email,
+              "image" => user_info["picture"]
+            }
+          })
+
+        changeset
+        |> Ash.Changeset.change_attribute(:email, email)
+        |> Ash.Changeset.change_attribute(:first_name, first_name)
+        |> Ash.Changeset.change_attribute(:last_name, last_name)
+        |> Ash.Changeset.change_attribute(:hashed_password, hashed)
+        |> Ash.Changeset.change_attribute(:oauth_tokens, new_tokens)
+      end
+    end
+
+    create :register_with_github do
+      argument :user_info, :map, allow_nil?: false
+      argument :oauth_tokens, :map, allow_nil?: false
+
+      upsert? true
+      upsert_identity :unique_email
+
+      change fn changeset, _ ->
+        user_info = Ash.Changeset.get_argument(changeset, :user_info)
+        oauth_tokens = Ash.Changeset.get_argument(changeset, :oauth_tokens)
+
+        email = user_info["email"]
+        name = user_info["name"] || user_info["login"] || ""
+        [first_name | rest] = String.split(name, " ", parts: 2)
+        last_name = if rest == [], do: nil, else: hd(rest)
+
+        # Generate a random password for OAuth users
+        random_password = :crypto.strong_rand_bytes(32) |> Base.encode64()
+        hashed = Bcrypt.hash_pwd_salt(random_password)
+
+        # Store OAuth tokens
+        current_tokens = Ash.Changeset.get_attribute(changeset, :oauth_tokens) || %{}
+
+        new_tokens =
+          Map.put(current_tokens, "github", %{
+            "provider" => "github",
+            "uid" => to_string(user_info["id"]),
+            "access_token" => oauth_tokens["access_token"],
+            "refresh_token" => oauth_tokens["refresh_token"],
+            "expires_at" => oauth_tokens["expires_at"],
+            "linked_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+            "user_info" => %{
+              "name" => name,
+              "email" => email,
+              "image" => user_info["avatar_url"],
+              "login" => user_info["login"]
+            }
+          })
+
+        changeset
+        |> Ash.Changeset.change_attribute(:email, email)
+        |> Ash.Changeset.change_attribute(:first_name, first_name)
+        |> Ash.Changeset.change_attribute(:last_name, last_name)
+        |> Ash.Changeset.change_attribute(:hashed_password, hashed)
+        |> Ash.Changeset.change_attribute(:oauth_tokens, new_tokens)
+      end
+    end
+
     read :by_email do
       argument :email, :ci_string, allow_nil?: false
       get? true
@@ -177,7 +320,7 @@ defmodule Mcp.Accounts.User do
 
     update :update do
       primary? true
-      accept [:email, :status]
+      accept [:email, :status, :oauth_tokens]
       require_atomic? false
     end
 
@@ -189,13 +332,20 @@ defmodule Mcp.Accounts.User do
       change fn changeset, _ ->
         ip = Ash.Changeset.get_argument(changeset, :ip_address)
 
-        changeset
-        |> Ash.Changeset.change_attribute(:last_sign_in_at, DateTime.utc_now())
-        |> Ash.Changeset.change_attribute(:last_sign_in_ip, ip)
-        |> Ash.Changeset.change_attribute(
-          :sign_in_count,
-          (Ash.Changeset.get_attribute(changeset, :sign_in_count) || 0) + 1
-        )
+        changeset =
+          changeset
+          |> Ash.Changeset.change_attribute(:last_sign_in_at, DateTime.utc_now())
+          |> Ash.Changeset.change_attribute(
+            :sign_in_count,
+            (Ash.Changeset.get_attribute(changeset, :sign_in_count) || 0) + 1
+          )
+
+        # Only set IP if it's provided
+        if ip do
+          Ash.Changeset.change_attribute(changeset, :last_sign_in_ip, ip)
+        else
+          changeset
+        end
       end
     end
 

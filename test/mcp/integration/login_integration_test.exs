@@ -1,7 +1,8 @@
 defmodule Mcp.Integration.LoginIntegrationTest do
   # Not async due to shared infrastructure
-  # Not async due to shared infrastructure
   use McpWeb.ConnCase, async: false
+
+  @moduletag :integration
 
   import Mox
 
@@ -632,6 +633,8 @@ defmodule Mcp.Integration.LoginIntegrationTest do
   end
 
   describe "Production Environment Simulation" do
+    # This test simulates production load and may have variable timing
+    @tag :performance
     test "handles production-like load", %{conn: _conn, tenant: tenant} do
       # Simulate production load with multiple user types and operations
       # Stub OAuth calls for concurrent access

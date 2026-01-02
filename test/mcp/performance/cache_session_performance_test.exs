@@ -1,6 +1,8 @@
 defmodule Mcp.Performance.CacheSessionPerformanceTest do
   use Mcp.DataCase, async: false
 
+  @moduletag :performance
+
   alias Mcp.Accounts.{Token, User}
   alias Mcp.Cache.CacheManager
 

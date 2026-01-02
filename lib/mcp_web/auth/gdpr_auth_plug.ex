@@ -435,8 +435,14 @@ defmodule McpWeb.Auth.GdprAuthPlug do
   defp ensure_rate_limit_table do
     case :ets.whereis(:gdpr_rate_limits) do
       :undefined ->
-        :ets.new(:gdpr_rate_limits, [:set, :named_table, :public])
-        {:ok, :gdpr_rate_limits}
+        try do
+          :ets.new(:gdpr_rate_limits, [:set, :named_table, :public])
+          {:ok, :gdpr_rate_limits}
+        rescue
+          ArgumentError ->
+            # Table was created by another process in the meantime
+            {:ok, :gdpr_rate_limits}
+        end
 
       table ->
         {:ok, table}
@@ -447,13 +453,19 @@ defmodule McpWeb.Auth.GdprAuthPlug do
     now = DateTime.utc_now() |> DateTime.to_unix()
     window_start = now - @gdpr_rate_limit_window
 
-    case :ets.lookup(:gdpr_rate_limits, key) do
-      [{^key, requests}] ->
-        recent_requests = Enum.filter(requests, &(&1 > window_start))
-        {:ok, recent_requests}
+    try do
+      case :ets.lookup(:gdpr_rate_limits, key) do
+        [{^key, requests}] ->
+          recent_requests = Enum.filter(requests, &(&1 > window_start))
+          {:ok, recent_requests}
 
-      [] ->
-        {:ok, []}
+        [] ->
+          {:ok, []}
+      end
+    rescue
+      ArgumentError -> {:ok, []}
+    catch
+      :error, :badarg -> {:ok, []}
     end
   end
 
@@ -463,8 +475,15 @@ defmodule McpWeb.Auth.GdprAuthPlug do
     else
       now = DateTime.utc_now() |> DateTime.to_unix()
       updated_requests = [now | recent_requests]
-      :ets.insert(:gdpr_rate_limits, {key, updated_requests})
-      :ok
+
+      try do
+        :ets.insert(:gdpr_rate_limits, {key, updated_requests})
+        :ok
+      rescue
+        ArgumentError -> :ok
+      catch
+        :error, :badarg -> :ok
+      end
     end
   end
 

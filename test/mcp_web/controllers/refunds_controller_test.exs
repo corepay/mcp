@@ -1,6 +1,9 @@
 defmodule McpWeb.RefundsControllerTest do
   use McpWeb.ConnCase
 
+  # This test hits the real QorPay gateway - requires network access
+  @moduletag :integration
+
   alias Mcp.Payments.Charge
   alias Mcp.Payments.Customer
   alias Mcp.Payments.Gateways.QorPay
@@ -69,7 +72,15 @@ defmodule McpWeb.RefundsControllerTest do
       })
       |> Ash.create!()
 
-    %{conn: Plug.Conn.put_req_header(conn, "x-forwarded-host", "localhost"), charge: charge}
+    # Create API Key using test factory
+    raw_key = Mcp.TestFactories.create_api_key(["refunds:write", "refunds:read"])
+
+    conn =
+      conn
+      |> Plug.Conn.put_req_header("x-forwarded-host", "localhost")
+      |> Plug.Conn.put_req_header("x-api-key", raw_key)
+
+    %{conn: conn, charge: charge}
   end
 
   describe "POST /api/refunds" do

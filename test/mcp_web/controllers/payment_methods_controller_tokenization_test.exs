@@ -15,6 +15,14 @@ defmodule McpWeb.PaymentMethodsControllerTokenizationTest do
       })
       |> Ash.create!()
 
+    # Create API Key using test factory
+    raw_key = Mcp.TestFactories.create_api_key(["payment_methods:write", "payment_methods:read"])
+
+    conn =
+      conn
+      |> Plug.Conn.put_req_header("x-forwarded-host", "localhost")
+      |> Plug.Conn.put_req_header("x-api-key", raw_key)
+
     %{conn: conn, customer: customer}
   end
 

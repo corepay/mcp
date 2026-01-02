@@ -28,6 +28,11 @@ defmodule Mcp.Platform.ApiKey do
       change set_attribute(:revoked_at, &DateTime.utc_now/0)
     end
 
+    update :update_last_used do
+      accept []
+      change set_attribute(:last_used_at, &DateTime.utc_now/0)
+    end
+
     read :authenticate do
       argument :token, :string, sensitive?: true, allow_nil?: false
 
@@ -35,6 +40,7 @@ defmodule Mcp.Platform.ApiKey do
         require Ash.Query
         token = Ash.Query.get_argument(query, :token)
         hashed = __MODULE__.hash_key(token)
+        # Filter by hash and exclude revoked keys
         Ash.Query.filter(query, key_hash == ^hashed and is_nil(revoked_at))
       end
     end
@@ -93,6 +99,7 @@ defmodule Mcp.Platform.ApiKey do
   code_interface do
     define :create
     define :revoke
+    define :update_last_used
     define :authenticate, args: [:token], get?: true
   end
 

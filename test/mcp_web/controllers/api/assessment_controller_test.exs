@@ -1,12 +1,11 @@
 defmodule McpWeb.Api.AssessmentControllerTest do
   use McpWeb.ConnCase
 
-  alias Mcp.Accounts.ApiKey
   alias Mcp.Underwriting.AgentBlueprint
   alias Mcp.Underwriting.InstructionSet
   alias Mcp.Underwriting.Pipeline
 
-  setup do
+  setup %{conn: conn} do
     # 1. Create a Blueprint
     blueprint =
       Ash.create!(AgentBlueprint, %{
@@ -31,24 +30,22 @@ defmodule McpWeb.Api.AssessmentControllerTest do
         blueprint_id: blueprint.id
       })
 
-    # 4. Create API Key
-    key = "mcp_sk_#{Ecto.UUID.generate()}"
+    # 4. Create API Key using test factory
+    raw_key = Mcp.TestFactories.create_api_key(["assessments:write", "assessments:read"])
 
-    ApiKey.create!(%{
-      name: "Test Key",
-      key: key,
-      permissions: ["assessments:write", "assessments:read"]
-    })
+    conn =
+      conn
+      |> Plug.Conn.put_req_header("x-forwarded-host", "localhost")
+      |> Plug.Conn.put_req_header("x-api-key", raw_key)
 
-    %{pipeline: pipeline, blueprint: blueprint, instruction_set: instruction_set, api_key: key}
+    %{pipeline: pipeline, blueprint: blueprint, instruction_set: instruction_set, conn: conn}
   end
 
   describe "POST /api/assessments" do
     @tag timeout: 120_000
     test "creates an execution and runs the pipeline synchronously", %{
       conn: conn,
-      pipeline: pipeline,
-      api_key: api_key
+      pipeline: pipeline
     } do
       payload = %{
         "pipeline_id" => pipeline.id,
@@ -63,7 +60,6 @@ defmodule McpWeb.Api.AssessmentControllerTest do
       conn =
         conn
         |> put_req_header("accept", "application/vnd.mcp.v1+json")
-        |> put_req_header("x-api-key", api_key)
         |> post(~p"/api/assessments", payload)
 
       assert %{"data" => %{"id" => id, "status" => status}} = json_response(conn, 201)
@@ -87,7 +83,7 @@ defmodule McpWeb.Api.AssessmentControllerTest do
   end
 
   describe "GET /api/assessments/:id" do
-    test "retrieves the execution", %{conn: conn, pipeline: pipeline, api_key: api_key} do
+    test "retrieves the execution", %{conn: conn, pipeline: pipeline} do
       execution =
         Ash.create!(Mcp.Underwriting.Execution, %{
           pipeline_id: pipeline.id,
@@ -106,7 +102,6 @@ defmodule McpWeb.Api.AssessmentControllerTest do
       conn =
         conn
         |> put_req_header("accept", "application/vnd.mcp.v1+json")
-        |> put_req_header("x-api-key", api_key)
         |> get(~p"/api/assessments/#{execution.id}")
 
       assert %{"data" => %{"id" => id, "status" => "completed", "results" => results}} =

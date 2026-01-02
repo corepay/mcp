@@ -1,6 +1,9 @@
 defmodule McpWeb.TenantSettingsControllerTest do
   use McpWeb.ConnCase
 
+  # Integration test requiring full tenant schema setup
+  @moduletag :integration
+
   alias Mcp.Accounts.User
   alias Mcp.Platform.{Tenant, TenantSettingsManager}
   alias Mcp.Repo

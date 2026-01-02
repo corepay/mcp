@@ -104,6 +104,8 @@ defmodule McpWeb.HealthController do
     end
   rescue
     _ -> false
+  catch
+    :exit, _ -> false
   end
 
   defp check_job_queue do
@@ -165,6 +167,9 @@ defmodule McpWeb.HealthController do
     end
   rescue
     _ ->
+      %{connected: false, version: nil}
+  catch
+    :exit, _ ->
       %{connected: false, version: nil}
   end
 

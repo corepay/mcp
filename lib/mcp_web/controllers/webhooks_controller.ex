@@ -4,8 +4,18 @@ defmodule McpWeb.WebhooksController do
 
   alias Mcp.Payments.Gateways.Factory
 
+  # QorPay-specific webhook endpoint
+  def handle_qorpay(conn, params) do
+    handle_provider_webhook(conn, :qorpay, params)
+  end
+
+  # Generic webhook handler with provider from path
   def handle_webhook(conn, %{"provider" => provider_name}) do
     provider = String.to_existing_atom(provider_name)
+    handle_provider_webhook(conn, provider, conn.body_params)
+  end
+
+  defp handle_provider_webhook(conn, provider, _params) do
     adapter = Factory.get_adapter(provider)
     secret = Application.get_env(:mcp, provider)[:webhook_secret]
 

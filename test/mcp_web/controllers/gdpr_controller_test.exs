@@ -3,9 +3,9 @@ defmodule McpWeb.GdprControllerTest do
 
   import Mox
 
-  alias Mcp.Accounts.{ApiKey, Auth, User}
+  alias Mcp.Accounts.{Auth, User}
   alias Mcp.Gdpr.Resources.DataExport
-  alias Mcp.Platform.Tenant
+  alias Mcp.Platform.{ApiKey, Tenant}
 
   setup %{conn: conn} do
     {:ok, user} = create_test_user()
@@ -13,14 +13,17 @@ defmodule McpWeb.GdprControllerTest do
 
     {:ok, session_data} = Auth.create_user_session(user, "127.0.0.1")
 
-    key_value = "test_key_#{Ecto.UUID.generate()}"
-
-    {:ok, _api_key} =
+    {:ok, api_key} =
       ApiKey.create(%{
-        name: "Test Key",
-        key: key_value,
-        tenant_id: user.tenant_id
+        prefix: "test",
+        type: :developer,
+        scopes: ["gdpr:read", "gdpr:write", "gdpr:export"],
+        owner_id: user.id,
+        owner_type: :user
       })
+
+    # The actual key is generated and stored in metadata by HashApiKey change
+    key_value = Ash.Resource.get_metadata(api_key, :raw_key)
 
     auth_conn =
       conn

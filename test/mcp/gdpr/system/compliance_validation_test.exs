@@ -100,17 +100,18 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
 
   defp auth_conn(conn, user) do
     {:ok, session_data} = Auth.create_user_session(user, "127.0.0.1")
-    raw_key = "mcp_test_#{Ecto.UUID.generate()}"
 
-    {:ok, _api_key} =
+    {:ok, api_key} =
       ApiKey.create(%{
-        token: raw_key,
         prefix: "test",
         type: :developer,
         scopes: ["gdpr:read", "gdpr:write", "gdpr:export", "consent:read", "consent:write"],
         owner_id: user.id,
         owner_type: :user
       })
+
+    # The actual key is generated and stored in metadata by HashApiKey change
+    raw_key = Ash.Resource.get_metadata(api_key, :raw_key)
 
     conn
     |> init_test_session(%{})
@@ -318,11 +319,9 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
       # Use the proper action to create API key so it gets hashed correctly
       # Use a unique prefix to avoid collisions in parallel tests
       unique_prefix = "test_#{String.slice(Ecto.UUID.generate(), 0, 8)}"
-      key_string = "#{unique_prefix}_key_#{Ecto.UUID.generate()}"
 
-      {:ok, _api_key} =
+      {:ok, api_key} =
         ApiKey.create(%{
-          token: key_string,
           prefix: unique_prefix,
           type: :developer,
           scopes: ["gdpr:read"],
@@ -330,7 +329,8 @@ defmodule Mcp.Gdpr.System.ComplianceValidationTest do
           owner_type: :user
         })
 
-      key = key_string
+      # The actual key is generated and stored in metadata by HashApiKey change
+      key = Ash.Resource.get_metadata(api_key, :raw_key)
 
       test_conn =
         conn

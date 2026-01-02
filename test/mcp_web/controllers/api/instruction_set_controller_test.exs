@@ -1,7 +1,8 @@
 defmodule McpWeb.Api.InstructionSetControllerTest do
   use McpWeb.ConnCase
 
-  alias Mcp.Accounts.ApiKey
+  alias Mcp.Platform.ApiKey
+  alias Mcp.Platform.Tenant
   alias Mcp.Underwriting.AgentBlueprint
 
   setup do
@@ -12,16 +13,35 @@ defmodule McpWeb.Api.InstructionSetControllerTest do
         tools: []
       })
 
-    # Create API Key
-    key = "mcp_sk_#{Ecto.UUID.generate()}"
+    # Create a tenant for the API key
+    tenant_id = Ecto.UUID.generate()
 
-    ApiKey.create!(%{
-      name: "Test Key",
-      key: key,
-      permissions: ["instruction_sets:write"]
+    Mcp.Repo.insert!(%Tenant{
+      id: tenant_id,
+      name: "Test Tenant",
+      slug: "test-tenant-#{tenant_id}",
+      subdomain: "test-#{tenant_id}",
+      company_schema: "acq_#{String.replace(tenant_id, "-", "_")}",
+      plan: :starter,
+      status: :active,
+      inserted_at: DateTime.utc_now(),
+      updated_at: DateTime.utc_now()
     })
 
-    %{blueprint: blueprint, api_key: key}
+    # Create API Key using Platform.ApiKey
+    {:ok, api_key} =
+      ApiKey.create(%{
+        prefix: "test",
+        type: :developer,
+        scopes: ["instruction_sets:write"],
+        owner_id: tenant_id,
+        owner_type: :tenant
+      })
+
+    # Get the actual raw key from metadata
+    raw_key = Ash.Resource.get_metadata(api_key, :raw_key)
+
+    %{blueprint: blueprint, api_key: raw_key}
   end
 
   describe "POST /api/instruction_sets" do

@@ -2,6 +2,9 @@ defmodule McpWeb.EndToEndFlowTest do
   use McpWeb.ConnCase
   import Phoenix.LiveViewTest
 
+  # Integration test requiring full tenant schema setup
+  @moduletag :integration
+
   alias Mcp.Accounts.{Auth, User}
   alias Mcp.Platform.Merchant
   alias Mcp.Platform.Tenant

@@ -20,7 +20,8 @@ defmodule McpWeb.Plugs.TenantAuthorizationTest do
         id: "user-123",
         role: :admin,
         is_tenant_owner: false,
-        permissions: [:all]
+        permissions: [:all],
+        tenant_id: "tenant-456"
       }
 
       tenant_context = %{id: "tenant-456"}
@@ -66,7 +67,8 @@ defmodule McpWeb.Plugs.TenantAuthorizationTest do
         id: "viewer-123",
         role: :viewer,
         is_tenant_owner: false,
-        permissions: [:view_only]
+        permissions: [:view_only],
+        tenant_id: "tenant-456"
       }
 
       tenant_context = %{id: "tenant-456"}
@@ -292,8 +294,19 @@ defmodule McpWeb.Plugs.TenantAuthorizationTest do
 
   describe "role-based authorization" do
     test "authorizes based on required roles" do
-      admin_user = %{role: :admin, is_tenant_owner: false, permissions: []}
-      viewer_user = %{role: :viewer, is_tenant_owner: false, permissions: []}
+      admin_user = %{
+        role: :admin,
+        is_tenant_owner: false,
+        permissions: [],
+        tenant_id: "tenant-456"
+      }
+
+      viewer_user = %{
+        role: :viewer,
+        is_tenant_owner: false,
+        permissions: [],
+        tenant_id: "tenant-456"
+      }
 
       tenant_context = %{id: "tenant-456"}
 
@@ -325,7 +338,8 @@ defmodule McpWeb.Plugs.TenantAuthorizationTest do
       billing_admin = %{
         role: :billing_admin,
         is_tenant_owner: false,
-        permissions: [:manage_billing]
+        permissions: [:manage_billing],
+        tenant_id: "tenant-456"
       }
 
       tenant_context = %{id: "tenant-456"}
@@ -353,7 +367,8 @@ defmodule McpWeb.Plugs.TenantAuthorizationTest do
         id: "viewer-123",
         role: :viewer,
         is_tenant_owner: false,
-        permissions: [:view_only]
+        permissions: [:view_only],
+        tenant_id: "tenant-456"
       }
 
       tenant_context = %{id: "tenant-456"}
@@ -371,7 +386,8 @@ defmodule McpWeb.Plugs.TenantAuthorizationTest do
 
       response_body = Jason.decode!(result_conn.resp_body)
       assert response_body["error"] == "Unauthorized"
-      assert response_body["reason"] == :insufficient_permissions
+      # JSON encoding converts atoms to strings
+      assert response_body["reason"] == "insufficient_permissions"
       assert is_binary(response_body["message"])
     end
   end

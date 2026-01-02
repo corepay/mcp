@@ -60,8 +60,12 @@ defmodule McpWeb.Plugs.TenantAuthorization do
   """
   def user_has_permission?(user, permission) do
     case get_user_permissions(user) do
-      permissions when is_list(permissions) -> permission in permissions
-      _ -> false
+      permissions when is_list(permissions) ->
+        # :all is a meta-permission that grants all other permissions
+        :all in permissions || permission in permissions
+
+      _ ->
+        false
     end
   end
 
@@ -70,7 +74,8 @@ defmodule McpWeb.Plugs.TenantAuthorization do
   """
   def user_has_any_permission?(user, permissions) when is_list(permissions) do
     user_permissions = get_user_permissions(user)
-    Enum.any?(permissions, &(&1 in user_permissions))
+    # :all is a meta-permission that grants all other permissions
+    :all in user_permissions || Enum.any?(permissions, &(&1 in user_permissions))
   end
 
   @doc """
@@ -78,7 +83,8 @@ defmodule McpWeb.Plugs.TenantAuthorization do
   """
   def user_has_all_permissions?(user, permissions) when is_list(permissions) do
     user_permissions = get_user_permissions(user)
-    Enum.all?(permissions, &(&1 in user_permissions))
+    # :all is a meta-permission that grants all other permissions
+    :all in user_permissions || Enum.all?(permissions, &(&1 in user_permissions))
   end
 
   @doc """
@@ -159,6 +165,9 @@ defmodule McpWeb.Plugs.TenantAuthorization do
       # Would typically load full user from database
       user_id -> %{id: user_id}
     end
+  rescue
+    # Session not available (not fetched or API endpoints)
+    ArgumentError -> nil
   end
 
   defp get_tenant_context(conn) do
@@ -195,9 +204,11 @@ defmodule McpWeb.Plugs.TenantAuthorization do
 
   defp get_user_permissions(user) do
     case user do
-      %{permissions: permissions} when is_list(permissions) ->
+      # If user has explicit non-empty permissions, use those
+      %{permissions: permissions} when is_list(permissions) and permissions != [] ->
         permissions
 
+      # Otherwise derive permissions from role
       %{role: role} ->
         get_role_permissions(role)
 
@@ -217,14 +228,16 @@ defmodule McpWeb.Plugs.TenantAuthorization do
   defp get_role_permissions(:admin),
     do: [:all, :user_management, :billing_management, :support_management, :system_configuration]
 
-  defp get_role_permissions(:operator), do: [:manage_customers, :view_billing, :basic_operations]
+  defp get_role_permissions(:operator),
+    do: [:manage_customers, :view_billing, :basic_operations]
+
   defp get_role_permissions(:viewer), do: [:view_only]
 
   defp get_role_permissions(:billing_admin),
-    do: [:manage_billing, :view_customers, :view_operations]
+    do: [:billing_management, :view_customers, :view_operations]
 
   defp get_role_permissions(:support_admin),
-    do: [:manage_support, :view_customers, :view_billing, :view_operations]
+    do: [:support_management, :view_customers, :view_billing, :view_operations, :view_reports]
 
   defp get_role_permissions(_), do: []
 
@@ -247,7 +260,7 @@ defmodule McpWeb.Plugs.TenantAuthorization do
   defp json_response(conn, data) do
     conn
     |> put_resp_header("content-type", "application/json")
-    |> resp(conn.status || 200, Jason.encode!(data))
+    |> send_resp(conn.status || 200, Jason.encode!(data))
   end
 
   defp format_error_message(:no_user), do: "Authentication required"

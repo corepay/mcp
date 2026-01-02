@@ -54,7 +54,8 @@ defmodule McpWeb.Router do
 
   pipeline :api do
     plug :api_core
-    plug McpWeb.Plugs.RequireApiKey
+    plug McpWeb.Plugs.ApiAuthPlug
+    plug McpWeb.Plugs.ApiRateLimitPlug
   end
 
   pipeline :api_public do
@@ -267,11 +268,14 @@ defmodule McpWeb.Router do
     live "/dev/style-guide", Dev.StyleGuideLive, :index
   end
 
-  # API Routes
+  # Health check endpoints - no authentication required
   scope "/api", McpWeb do
-    pipe_through :api
+    pipe_through :api_public
 
     get "/health", HealthController, :health
+    get "/health/live", HealthController, :live
+    get "/health/ready", HealthController, :ready
+    get "/health/detailed", HealthController, :detailed
   end
 
   scope "/api/gdpr", McpWeb do

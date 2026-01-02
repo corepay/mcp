@@ -32,6 +32,14 @@ defmodule McpWeb.PaymentsControllerCustomerSyncTest do
       })
       |> Ash.create!()
 
+    # Create API Key using test factory
+    raw_key = Mcp.TestFactories.create_api_key(["payments:write", "payments:read"])
+
+    conn =
+      conn
+      |> Plug.Conn.put_req_header("x-forwarded-host", "localhost")
+      |> Plug.Conn.put_req_header("x-api-key", raw_key)
+
     %{conn: conn, customer: customer, payment_method: payment_method}
   end
 

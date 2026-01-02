@@ -46,7 +46,7 @@ defmodule McpWeb.AuthLive.LoginTest do
       assert html =~ "Password"
       assert html =~ "Sign in"
       assert html =~ "Google"
-      assert html =~ "Github"
+      assert html =~ "GitHub"
     end
 
     test "redirects to dashboard if already authenticated", %{conn: conn} do
@@ -122,46 +122,34 @@ defmodule McpWeb.AuthLive.LoginTest do
   end
 
   describe "OAuth Integration" do
-    test "initiates Google OAuth flow", %{conn: conn} do
-      # Mock OAuth
-      expect(Mcp.Accounts.OAuthMock, :authorize_url, fn :google, state ->
-        assert String.starts_with?(state, "oauth_")
-
-        "https://accounts.google.com/o/oauth2/auth?client_id=test&redirect_uri=http://localhost:4000/auth/google/callback&state=#{state}"
-      end)
-
+    test "displays Google OAuth link", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/tenant/sign-in")
 
-      view
-      |> element(~s|button[phx-click="oauth_login"][phx-value-provider="google"]|)
-      |> render_click()
+      # Check that Google OAuth link exists
+      assert view
+             |> element(~s|a[href="/auth/google"][aria-label="Sign in with Google"]|)
+             |> has_element?()
 
-      assert render(view) =~ "Redirecting to Google..."
-      assert render(view) =~ "loading loading-spinner"
-
-      # Should push OAuth redirect event
-      assert_push_event(view, "oauth-redirect", %{provider: "google"})
+      assert render(view) =~ "Google"
     end
 
-    test "initiates GitHub OAuth flow", %{conn: conn} do
-      # Mock OAuth
-      expect(Mcp.Accounts.OAuthMock, :authorize_url, fn :github, state ->
-        assert String.starts_with?(state, "oauth_")
-
-        "https://github.com/login/oauth/authorize?client_id=test&redirect_uri=http://localhost:4000/auth/github/callback&state=#{state}"
-      end)
-
+    test "displays GitHub OAuth link", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/tenant/sign-in")
 
-      view
-      |> element(~s|button[phx-click="oauth_login"][phx-value-provider="github"]|)
-      |> render_click()
+      # Check that GitHub OAuth link exists
+      assert view
+             |> element(~s|a[href="/auth/github"][aria-label="Sign in with GitHub"]|)
+             |> has_element?()
 
-      assert render(view) =~ "Redirecting to Github..."
-      assert render(view) =~ "loading loading-spinner"
+      assert render(view) =~ "GitHub"
+    end
 
-      # Should push OAuth redirect event
-      assert_push_event(view, "oauth-redirect", %{provider: "github"})
+    test "OAuth links have correct paths", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/tenant/sign-in")
+
+      # Verify OAuth paths are correct
+      assert html =~ ~s(href="/auth/google")
+      assert html =~ ~s(href="/auth/github")
     end
 
     test "handles invalid OAuth provider", %{conn: conn} do
@@ -169,7 +157,7 @@ defmodule McpWeb.AuthLive.LoginTest do
 
       # This should be handled by the template, not the LiveView
       # Only valid providers should be in the template
-      refute view |> element(~s|button[phx-value-provider="invalid"]|) |> has_element?()
+      refute view |> element(~s|a[href="/auth/invalid"]|) |> has_element?()
     end
   end
 
@@ -267,7 +255,7 @@ defmodule McpWeb.AuthLive.LoginTest do
 
       assert render(view) =~ ~s(aria-label="Hide password")
       assert html =~ ~s(aria-label="Sign in with Google")
-      assert html =~ ~s(aria-label="Sign in with Github")
+      assert html =~ ~s(aria-label="Sign in with GitHub")
     end
 
     test "provides screen reader announcements", %{conn: conn} do
@@ -294,25 +282,13 @@ defmodule McpWeb.AuthLive.LoginTest do
       assert html =~ ~s(phx-change)
     end
 
-    test "generates secure OAuth state parameters", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/tenant/sign-in")
+    test "OAuth links use proper authentication endpoints", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/tenant/sign-in")
 
-      test_pid = self()
-      # Mock to capture state parameter
-      expect(Mcp.Accounts.OAuthMock, :authorize_url, fn :google, state ->
-        send(test_pid, {:state, state})
-        "https://accounts.google.com/oauth/authorize"
-      end)
-
-      view
-      |> element(~s|button[phx-click="oauth_login"][phx-value-provider="google"]|)
-      |> render_click()
-
-      # State should be cryptographically secure
-      assert_received {:state, state_captured}
-      refute is_nil(state_captured)
-      assert String.starts_with?(state_captured, "oauth_")
-      assert String.length(state_captured) > 20
+      # OAuth links should point to the OAuth controller
+      # State parameters are generated server-side in the controller
+      assert html =~ ~s(href="/auth/google")
+      assert html =~ ~s(href="/auth/github")
     end
   end
 

@@ -2,6 +2,7 @@ defmodule Mcp.Performance.LoginPerformanceTest do
   # Not async due to shared state
   use ExUnit.Case, async: false
   @moduletag timeout: 120_000
+  @moduletag :performance
 
   import Phoenix.ConnTest
 

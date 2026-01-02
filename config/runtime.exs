@@ -1,6 +1,23 @@
 import Config
 config :langchain, openai_key: fn -> System.fetch_env!("OPENAI_API_KEY") end
 
+# OAuth Configuration
+if config_env() in [:dev, :test, :prod] do
+  # Google OAuth Configuration
+  if google_client_id = System.get_env("GOOGLE_CLIENT_ID") do
+    config :mcp, :google_oauth,
+      client_id: google_client_id,
+      client_secret: System.get_env("GOOGLE_CLIENT_SECRET")
+  end
+
+  # GitHub OAuth Configuration
+  if github_client_id = System.get_env("GITHUB_CLIENT_ID") do
+    config :mcp, :github_oauth,
+      client_id: github_client_id,
+      client_secret: System.get_env("GITHUB_CLIENT_SECRET")
+  end
+end
+
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
 # system starts, so it is typically used to load production configuration

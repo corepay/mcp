@@ -2,6 +2,9 @@ defmodule McpWeb.Tenant.Underwriting.ReviewLiveTest do
   use McpWeb.ConnCase
   import Phoenix.LiveViewTest
 
+  # Integration test requiring full tenant schema setup
+  @moduletag :integration
+
   alias Mcp.Accounts.{Auth, User}
   alias Mcp.Chat.{Conversation, Message}
   alias Mcp.Platform.{Merchant, Tenant}

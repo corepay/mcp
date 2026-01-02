@@ -2,6 +2,9 @@ defmodule McpWeb.Ola.ApplicationLiveTest do
   use McpWeb.ConnCase
   import Phoenix.LiveViewTest
 
+  # Integration test requiring full tenant schema setup
+  @moduletag :integration
+
   require Ash.Query
 
   alias Mcp.Accounts.{Auth, User}

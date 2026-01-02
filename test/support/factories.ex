@@ -4,6 +4,7 @@ defmodule Mcp.TestFactories do
   """
 
   alias Mcp.Accounts.{RegistrationRequest, User}
+  alias Mcp.Platform.ApiKey
 
   # Main insert function that mimics ExMachina but works with Ash
   def insert(factory_name, attrs \\ %{})
@@ -122,6 +123,56 @@ defmodule Mcp.TestFactories do
       |> Ash.update()
 
     rejected
+  end
+
+  @doc """
+  Creates a Platform.ApiKey and returns {api_key, raw_key}.
+  The raw_key is needed for authentication since the key is hashed on create.
+
+  ## Options
+    * :prefix - Key prefix (default: "test")
+    * :type - Key type: :developer, :merchant, :reseller (default: :developer)
+    * :scopes - List of permission scopes (default: [])
+    * :owner_id - Owner UUID (default: generated)
+    * :owner_type - Owner type: :user, :tenant (default: :user)
+  """
+  def insert(:api_key, attrs) do
+    owner_id = Map.get(attrs, :owner_id, Ecto.UUID.generate())
+    owner_type = Map.get(attrs, :owner_type, :user)
+    prefix = Map.get(attrs, :prefix, "test")
+    type = Map.get(attrs, :type, :developer)
+    scopes = Map.get(attrs, :scopes, [])
+
+    {:ok, api_key} =
+      ApiKey.create(%{
+        prefix: prefix,
+        type: type,
+        scopes: scopes,
+        owner_id: owner_id,
+        owner_type: owner_type
+      })
+
+    # The raw key is stored in metadata by HashApiKey change
+    raw_key = Ash.Resource.get_metadata(api_key, :raw_key)
+
+    {api_key, raw_key}
+  end
+
+  @doc """
+  Creates a Platform.ApiKey and returns just the raw_key string.
+  Convenience wrapper for tests that only need the key for headers.
+  """
+  def create_api_key(scopes \\ [], opts \\ []) do
+    attrs = %{
+      scopes: scopes,
+      owner_id: Keyword.get(opts, :owner_id, Ecto.UUID.generate()),
+      owner_type: Keyword.get(opts, :owner_type, :user),
+      prefix: Keyword.get(opts, :prefix, "test"),
+      type: Keyword.get(opts, :type, :developer)
+    }
+
+    {_api_key, raw_key} = insert(:api_key, attrs)
+    raw_key
   end
 
   # Build function for creating structs without persisting

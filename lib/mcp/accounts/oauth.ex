@@ -42,17 +42,25 @@ defmodule Mcp.Accounts.OAuth do
   Returns {:ok, user} or {:error, reason}
   """
   def callback(provider, auth_info, user_info) when provider in @supported_providers do
-    email = get_email_from_auth(user_info)
+    case get_email_from_auth(user_info) do
+      {:error, :email_missing} ->
+        {:error, :oauth_email_required}
 
-    case User.by_email(email) do
-      {:ok, user} ->
-        # User exists, link OAuth
-        link_oauth(user, provider, auth_info, user_info)
+      {:ok, email} ->
+        case User.by_email(email) do
+          {:ok, user} ->
+            # User exists, link OAuth
+            link_oauth(user, provider, auth_info, user_info)
 
-      {:error, _} ->
-        # New user, create with OAuth
-        create_user_from_oauth(provider, auth_info, user_info)
+          {:error, _} ->
+            # New user, create with OAuth
+            create_user_from_oauth(provider, auth_info, user_info)
+        end
     end
+  end
+
+  def callback(provider, _auth_info, _user_info) do
+    {:error, "Unsupported OAuth provider: #{provider}"}
   end
 
   @doc """
@@ -87,6 +95,11 @@ defmodule Mcp.Accounts.OAuth do
       {:ok, updated_user} -> {:ok, updated_user}
       error -> error
     end
+  end
+
+  def unlink_oauth(user, _provider) do
+    # Unsupported provider - just return user unchanged
+    {:ok, user}
   end
 
   @doc """
@@ -178,28 +191,15 @@ defmodule Mcp.Accounts.OAuth do
         # Generate a random password for OAuth users
         random_password = :crypto.strong_rand_bytes(32) |> Base.encode64()
 
-        attrs = %{
-          email: email,
-          password: random_password,
-          password_confirmation: random_password,
-          oauth_tokens: %{
-            to_string(provider) => %{
-              "provider" => to_string(provider),
-              "uid" => user_info.uid,
-              "access_token" => auth_info.token,
-              "refresh_token" => auth_info.refresh_token,
-              "expires_at" => auth_info.expires_at,
-              "linked_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
-              "user_info" => %{
-                "name" => user_info.name,
-                "email" => user_info.email,
-                "image" => user_info.image
-              }
-            }
-          }
-        }
+        # First register the user
+        case User.register(email, random_password, random_password) do
+          {:ok, user} ->
+            # Then link OAuth to the newly created user
+            link_oauth(user, provider, auth_info, user_info)
 
-        User.register(attrs.email, attrs.password, attrs.password_confirmation)
+          error ->
+            error
+        end
     end
   end
 
