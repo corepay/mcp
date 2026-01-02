@@ -94,6 +94,10 @@ config :mcp, Oban,
     gdpr_compliance: 2,
     # Data retention processing
     gdpr_retention: 5,
+    # Underwriting pipeline
+    underwriting: 5,
+    # Email notifications and reminders
+    notifications: 5,
     chat_responses: [limit: 10],
     conversations: [limit: 10]
   ],
@@ -113,7 +117,9 @@ config :mcp, Oban,
         args: %{"action" => "weekly_compliance_report"}},
        # Daily at 4 AM
        {"0 4 * * *", Mcp.Jobs.Gdpr.RetentionCleanupWorker,
-        args: %{"action" => "cleanup_expired_exports"}}
+        args: %{"action" => "cleanup_expired_exports"}},
+       # Stalled application reminders - every hour
+       {"0 * * * *", Mcp.Underwriting.Jobs.StalledApplicationWorker}
      ]},
     # Lifeline for stuck jobs
     {Oban.Plugins.Lifeline, rescue_after: 30 * 60}
