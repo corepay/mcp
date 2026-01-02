@@ -13,6 +13,17 @@ defmodule McpWeb.Router do
     plug McpWeb.Plugs.ThemePlug
   end
 
+  # Minimal browser pipeline for public routes without tenant context
+  # Used for magic camera upload from mobile devices
+  pipeline :browser_public do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, html: {McpWeb.Layouts, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
   pipeline :platform_admin_layout do
     plug :put_layout, html: {McpWeb.Layouts.PortalLayouts, :platform_admin}
   end
@@ -100,7 +111,7 @@ defmodule McpWeb.Router do
     live "/merchants", MockDashboardLive
     live "/gdpr", GdprLive
     live "/change-password", AuthLive.ChangePassword
-    live "/settings/api-keys", Settings.ApiKeysLive
+    live "/settings/api-keys", Settings.ApiKeysLive, :index
     live "/settings/custom-domains", Settings.CustomDomainsLive
     live "/settings/webhooks", Settings.WebhooksLive
 
@@ -266,6 +277,14 @@ defmodule McpWeb.Router do
 
     # Developer Routes
     live "/dev/style-guide", Dev.StyleGuideLive, :index
+  end
+
+  # Magic Camera upload - public route accessed via QR code from phone
+  # No tenant context required since token identifies the session
+  scope "/upload", McpWeb do
+    pipe_through :browser_public
+
+    live "/camera/:token", Ola.CameraUploadLive, :upload
   end
 
   # Health check endpoints - no authentication required

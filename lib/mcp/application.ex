@@ -5,8 +5,13 @@ defmodule Mcp.Application do
 
   use Application
 
+  alias Mcp.Underwriting.Services.MagicCamera
+
   @impl true
   def start(_type, _args) do
+    # Initialize ETS tables for stateless services
+    MagicCamera.init()
+
     children = [
       # Platform-level services (shared resources)
       Mcp.Platform.Supervisor,
