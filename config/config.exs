@@ -52,7 +52,8 @@ config :mcp,
     Mcp.Underwriting,
     Mcp.Billing,
     Mcp.Webhooks,
-    Mcp.Communication
+    Mcp.Communication,
+    Mcp.Ola
   ],
   base_domain: "localhost"
 
