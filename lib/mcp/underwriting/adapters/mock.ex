@@ -5,17 +5,24 @@ defmodule Mcp.Underwriting.Adapters.Mock do
   @behaviour Mcp.Underwriting.Adapter
 
   @impl true
-  def verify_identity(_applicant_data, _context) do
-    {:ok,
-     %{
-       status: :clear,
-       score: 95,
-       details: %{
-         "first_name" => "MATCH",
-         "last_name" => "MATCH",
-         "dob" => "MATCH"
-       }
-     }}
+  def verify_identity(applicant_data, _context) do
+    # Simulate KYC failure scenario for testing error propagation
+    case applicant_data["first_name"] do
+      "KYC_FAILURE" ->
+        {:error, :kyc_verification_failed}
+
+      _ ->
+        {:ok,
+         %{
+           status: :clear,
+           score: 95,
+           details: %{
+             "first_name" => "MATCH",
+             "last_name" => "MATCH",
+             "dob" => "MATCH"
+           }
+         }}
+    end
   end
 
   @impl true

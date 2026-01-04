@@ -145,7 +145,7 @@ defmodule McpWeb.Ola.Components.AtlasChat do
       </div>
       
     <!-- Messages area -->
-      <div class="flex-1 overflow-y-auto p-3 space-y-3" id="atlas-messages">
+      <div class="flex-1 overflow-y-auto p-3 space-y-3" id={"atlas-messages-#{@myself.cid}"}>
         <%= if Enum.empty?(@messages) do %>
           <div class="text-center text-base-content/60 py-8">
             <.icon name="hero-chat-bubble-left-right" class="w-12 h-12 mx-auto mb-2 opacity-50" />

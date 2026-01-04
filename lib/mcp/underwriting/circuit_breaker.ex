@@ -30,6 +30,14 @@ defmodule Mcp.Underwriting.CircuitBreaker do
     GenServer.cast(__MODULE__, {:report_success, service_name})
   end
 
+  @doc """
+  Resets the circuit breaker state for a specific service.
+  Primarily used for testing to ensure test isolation.
+  """
+  def reset(service_name) do
+    GenServer.cast(__MODULE__, {:reset, service_name})
+  end
+
   # Server Callbacks
 
   @impl true
@@ -82,6 +90,12 @@ defmodule Mcp.Underwriting.CircuitBreaker do
   def handle_cast({:report_success, service_name}, state) do
     # Reset failures on success
     new_state = Map.put(state, service_name, %{status: :closed, failures: 0})
+    {:noreply, new_state}
+  end
+
+  @impl true
+  def handle_cast({:reset, service_name}, state) do
+    new_state = Map.delete(state, service_name)
     {:noreply, new_state}
   end
 end

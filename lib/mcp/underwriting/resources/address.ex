@@ -26,6 +26,13 @@ defmodule Mcp.Underwriting.Address do
     end
   end
 
+  code_interface do
+    define :create
+    define :read
+    define :destroy
+    define :get, action: :read, get_by: [:id]
+  end
+
   attributes do
     uuid_primary_key :id
 

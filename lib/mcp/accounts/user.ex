@@ -173,6 +173,7 @@ defmodule Mcp.Accounts.User do
     end
 
     attribute :tenant_id, :uuid
+    attribute :merchant_id, :uuid
 
     # GDPR fields
     attribute :deleted_at, :utc_datetime_usec

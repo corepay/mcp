@@ -10,11 +10,13 @@ defmodule Mcp.Underwriting.Engine.Orchestrator do
   alias Mcp.Underwriting.Engine.{AgentRunner, InstructionLookup}
   alias Mcp.Underwriting.InstructionSet
 
-  def run_pipeline(execution_id) do
+  def run_pipeline(execution_id, opts \\ []) do
+    tenant = Keyword.get(opts, :tenant)
+
     execution =
       Mcp.Underwriting.Execution
-      |> Ash.get!(execution_id)
-      |> Ash.load!(:pipeline)
+      |> Ash.get!(execution_id, tenant: tenant)
+      |> Ash.load!(:pipeline, tenant: tenant)
 
     pipeline = execution.pipeline
 
@@ -22,12 +24,12 @@ defmodule Mcp.Underwriting.Engine.Orchestrator do
     execution =
       execution
       |> Ash.Changeset.for_update(:update, %{status: :processing})
-      |> Ash.update!()
+      |> Ash.update!(tenant: tenant)
 
     results =
       Enum.reduce(pipeline.stages, %{}, fn stage_config, acc_results ->
         blueprint_id = stage_config["blueprint_id"]
-        blueprint = Ash.get!(AgentBlueprint, blueprint_id)
+        blueprint = Ash.get!(AgentBlueprint, blueprint_id, tenant: tenant)
 
         # Find instruction set with proper tenant scoping
         instructions = InstructionLookup.find(blueprint_id, pipeline.tenant_id)
@@ -58,22 +60,22 @@ defmodule Mcp.Underwriting.Engine.Orchestrator do
         status: :completed,
         results: results
       })
-      |> Ash.update!()
+      |> Ash.update!(tenant: tenant)
 
     # Check if review is required
     if pipeline.review_required do
-      review_response(execution, results, pipeline)
+      review_response(execution, results, pipeline, tenant)
     else
       execution
     end
   end
 
-  defp review_response(execution, results, pipeline) do
+  defp review_response(execution, results, pipeline, tenant) do
     # Find the Response Reviewer blueprint
     reviewer_blueprint =
       AgentBlueprint
       |> Ash.Query.filter(name == "ResponseReviewer")
-      |> Ash.read_one!()
+      |> Ash.read_one!(tenant: tenant)
 
     if reviewer_blueprint do
       IO.puts("🕵️‍♂️ Running Response Reviewer...")
@@ -108,7 +110,7 @@ defmodule Mcp.Underwriting.Engine.Orchestrator do
 
       execution
       |> Ash.Changeset.for_update(:update, %{results: updated_results})
-      |> Ash.update!()
+      |> Ash.update!(tenant: tenant)
     else
       IO.warn("Response Reviewer blueprint not found!")
       execution

@@ -1,5 +1,5 @@
 defmodule Mcp.Underwriting.VendorRouterTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
   alias Mcp.Underwriting.Adapters.ComplyCube
   alias Mcp.Underwriting.Adapters.Idenfy
   alias Mcp.Underwriting.CircuitBreaker
@@ -13,9 +13,18 @@ defmodule Mcp.Underwriting.VendorRouterTest do
     # Disable forced Mock for these tests
     Application.delete_env(:mcp, :underwriting_adapter)
 
+    # Reset circuit breakers to ensure test isolation
+    CircuitBreaker.reset("Elixir.Mcp.Underwriting.Adapters.ComplyCube")
+    CircuitBreaker.reset("Elixir.Mcp.Underwriting.Adapters.Idenfy")
+    # Small delay to ensure async cast is processed
+    Process.sleep(10)
+
     on_exit(fn ->
       if original_adapter, do: Application.put_env(:mcp, :underwriting_adapter, original_adapter)
       if original_preferred, do: Application.put_env(:mcp, :preferred_vendor, original_preferred)
+      # Clean up circuits on exit too
+      CircuitBreaker.reset("Elixir.Mcp.Underwriting.Adapters.ComplyCube")
+      CircuitBreaker.reset("Elixir.Mcp.Underwriting.Adapters.Idenfy")
     end)
 
     :ok

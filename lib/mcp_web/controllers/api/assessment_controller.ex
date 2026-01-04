@@ -1,6 +1,7 @@
 defmodule McpWeb.Api.AssessmentController do
   use McpWeb, :controller
 
+  alias Mcp.Platform.Tenant
   alias Mcp.Underwriting.Execution
   alias Mcp.Underwriting.Jobs.RunPipeline
 
@@ -18,6 +19,8 @@ defmodule McpWeb.Api.AssessmentController do
           "subject_type" => subject_type
         } = params
       ) do
+    tenant_schema = get_tenant_schema(conn)
+
     # 1. Create the Execution record
     create_params = %{
       pipeline_id: pipeline_id,
@@ -27,9 +30,9 @@ defmodule McpWeb.Api.AssessmentController do
       status: :pending
     }
 
-    with {:ok, execution} <- Ash.create(Execution, create_params) do
+    with {:ok, execution} <- Ash.create(Execution, create_params, tenant: tenant_schema) do
       # 2. Trigger the Orchestrator via Oban
-      %{execution_id: execution.id}
+      %{execution_id: execution.id, tenant: tenant_schema}
       |> RunPipeline.new()
       |> Oban.insert!()
 
@@ -44,7 +47,22 @@ defmodule McpWeb.Api.AssessmentController do
   Retrieves the status and results of an Assessment.
   """
   def show(conn, %{"id" => id}) do
-    execution = Ash.get!(Execution, id)
+    tenant_schema = get_tenant_schema(conn)
+    execution = Ash.get!(Execution, id, tenant: tenant_schema)
     render(conn, :show, execution: execution)
+  end
+
+  # Get the tenant schema from the connection context
+  defp get_tenant_schema(conn) do
+    case conn.assigns[:current_tenant_id] do
+      nil ->
+        nil
+
+      tenant_id ->
+        case Ash.get(Tenant, tenant_id) do
+          {:ok, tenant} -> tenant.company_schema
+          _ -> nil
+        end
+    end
   end
 end

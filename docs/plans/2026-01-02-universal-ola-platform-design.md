@@ -2,20 +2,23 @@
 
 **Date**: January 2, 2026
 **Status**: Design Complete - Ready for Implementation Planning
-**Version**: 1.0
+**Version**: 1.1 (Leaner scope - merchant first)
 
 ---
 
 ## Executive Summary
 
-Transform the existing merchant-focused OLA (Online Application) and Underwriting domains into a **universal, multi-vertical application platform**. The platform will serve:
+Transform the existing merchant-focused OLA (Online Application) and Underwriting domains into a **universal, schema-driven application platform**.
 
-1. **Core Fintech** - Merchant onboarding for card processing (current use case)
-2. **Property Management** - Tenant screening, property manager onboarding
-3. **Lending** - Loan origination, borrower underwriting
-4. **Underwriting-as-a-Service** - Pure OLA/UW for companies with existing payment rails
+**Phase 1 Focus**: Build the extensible foundation using merchant onboarding as the proving ground. The architecture supports multiple verticals, but we build only what's needed now.
 
-Each vertical appears as a focused, purpose-built SaaS product while sharing a unified platform underneath.
+**Future Verticals** (enabled by the architecture, built when needed):
+- Property Management - Tenant screening, property manager onboarding
+- Lending - Personal loans, auto loans/leases, mortgages
+- Auto Finance - Consumer direct + dealer F&I submissions
+- Underwriting-as-a-Service - Pure OLA/UW for companies with existing payment rails
+
+The platform is designed so adding a new vertical = creating ApplicationTypes + schemas, not architectural changes.
 
 ---
 
@@ -829,13 +832,13 @@ end
 
 ## Implementation Phases
 
-### Phase 1: Foundation (Core Fintech)
-**Focus**: Extract OLA domain, build schema-driven renderer, maintain current functionality
+### Phase 1: Foundation (Merchant Only)
+**Focus**: Extract OLA domain, build schema-driven renderer, prove with existing merchant flow
 
 1. Create `Mcp.Ola` domain with `ApplicationType`, `ApplicationInstance`
 2. Define `FormSchema` structure for current merchant application
 3. Build dynamic renderer that generates current wizard from schema
-4. Extract AI to `Mcp.Ai` with layered architecture (base only)
+4. Extract AI to `Mcp.Ai` with layered architecture (base layer only)
 5. Migrate existing `/online-application` to use new renderer
 6. **Validation**: Existing merchant onboarding works identically
 
@@ -858,18 +861,7 @@ end
 4. Multi-pipeline execution (parallel/sequential)
 5. **Validation**: High-value merchants route to different pipeline
 
-### Phase 4: Vertical Framework
-**Focus**: Abstract entities, add property/lending verticals
-
-1. Create `Vertical` and `VerticalConfig` resources
-2. Implement entity label skinning
-3. Portal access control per vertical
-4. Feature toggle system
-5. Create property vertical template
-6. Create lending vertical template
-7. **Validation**: New tenant can onboard as property management vertical
-
-### Phase 5: Full Builder
+### Phase 4: Full Builder
 **Focus**: Complete builder with schema export, versioning
 
 1. Schema editor view (YAML/JSON)
@@ -879,15 +871,25 @@ end
 5. API for programmatic application type management
 6. **Validation**: Power user can build custom application from scratch
 
-### Phase 6: AI Enhancement
+### Phase 5: AI Enhancement
 **Focus**: Full layered AI with RAG
 
-1. Vertical-specific knowledge sources
-2. Tenant knowledge source management
-3. Persona customization UI
-4. RAG integration for dynamic responses
-5. Proactive assistance tuning
-6. **Validation**: Property AI knows rental regulations, fintech AI knows PCI
+1. Tenant knowledge source management
+2. Persona customization UI
+3. RAG integration for dynamic responses
+4. Proactive assistance tuning
+5. **Validation**: AI adapts to tenant-specific knowledge and branding
+
+### Phase N: First Non-Merchant Vertical (When Needed)
+**Trigger**: Business need for property, lending, auto finance, or other vertical
+
+1. Create `Vertical` and `VerticalConfig` resources
+2. Implement entity label skinning
+3. Portal access control per vertical
+4. Feature toggle system
+5. Create vertical-specific ApplicationType templates
+6. Add vertical-specific knowledge sources to AI
+7. **Validation**: New tenant can onboard in the new vertical
 
 ---
 
@@ -1024,6 +1026,55 @@ lib/mcp_web/
 # Risk score (calculated field)
 "risk_score > 70"
 ```
+
+---
+
+## Appendix B: Future Verticals (Deferred)
+
+These verticals are enabled by the architecture but deferred until business need arises.
+
+### Property Management
+| Abstract Entity | Property Vertical |
+|-----------------|-------------------|
+| Organization | Property Manager |
+| Location | Unit |
+| Counterparty | Tenant |
+| ServiceProvider | Contractor |
+| Product | Property |
+
+**Application Types**: Tenant Application, Manager Onboarding
+**Portals**: Platform, Tenant, Manager, Resident, Vendor
+
+### Lending / Auto Finance
+| Abstract Entity | Lending Vertical | Auto Finance |
+|-----------------|------------------|--------------|
+| Organization | Lender | Lender/Dealer |
+| Location | Branch | Dealership |
+| Counterparty | Borrower | Borrower/Lessee |
+| ServiceProvider | - | F&I Manager |
+| Product | Loan Product | Vehicle |
+
+**Application Types**: Personal Loan, Business Loan, Mortgage, Auto Loan, Auto Lease
+**Portals**: Platform, Tenant, Lender, Borrower, Dealer (F&I)
+**Unique Integrations**: Vehicle valuation (KBB, Black Book), VIN decode, title/lien
+
+### Auto Finance - Dealer Channel
+The dealer F&I portal allows dealers to submit applications on behalf of customers:
+- Dealer onboarding (KYC the dealership)
+- F&I submission flow (customer info + vehicle + deal structure)
+- Multi-lender routing (waterfall or shotgun)
+- Stipulation management
+- Funding/contracting workflow
+
+### Underwriting-as-a-Service
+Pure OLA/UW without payment features for companies with existing rails.
+| Abstract Entity | UW-Only Vertical |
+|-----------------|------------------|
+| Organization | Organization |
+| Location | Location |
+| Counterparty | Applicant |
+| ServiceProvider | Provider |
+| Product | Account |
 
 ---
 

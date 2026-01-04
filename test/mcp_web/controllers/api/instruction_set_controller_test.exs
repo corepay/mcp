@@ -6,27 +6,56 @@ defmodule McpWeb.Api.InstructionSetControllerTest do
   alias Mcp.Underwriting.AgentBlueprint
 
   setup do
-    blueprint =
-      Ash.create!(AgentBlueprint, %{
-        name: "Generic Agent",
-        base_prompt: "Be helpful.",
-        tools: []
+    # Create a tenant first (required for multitenancy)
+    tenant =
+      Tenant
+      |> Ash.Changeset.for_create(:create, %{
+        name: "Test Tenant",
+        slug: "test-tenant-#{:rand.uniform(999_999)}",
+        subdomain: "test-#{:rand.uniform(999_999)}"
       })
+      |> Ash.create!()
 
-    # Create a tenant for the API key
-    tenant_id = Ecto.UUID.generate()
+    schema = tenant.company_schema
 
-    Mcp.Repo.insert!(%Tenant{
-      id: tenant_id,
-      name: "Test Tenant",
-      slug: "test-tenant-#{tenant_id}",
-      subdomain: "test-#{tenant_id}",
-      company_schema: "acq_#{String.replace(tenant_id, "-", "_")}",
-      plan: :starter,
-      status: :active,
-      inserted_at: DateTime.utc_now(),
-      updated_at: DateTime.utc_now()
-    })
+    # Create required tables in tenant schema
+    Mcp.Repo.query!("""
+      CREATE TABLE IF NOT EXISTS "#{schema}".agent_blueprints (
+        id uuid PRIMARY KEY,
+        name text,
+        description text,
+        base_prompt text,
+        tools jsonb,
+        routing_config jsonb,
+        knowledge_base_ids jsonb,
+        inserted_at timestamp(6),
+        updated_at timestamp(6)
+      )
+    """)
+
+    Mcp.Repo.query!("""
+      CREATE TABLE IF NOT EXISTS "#{schema}".instruction_sets (
+        id uuid PRIMARY KEY,
+        name text,
+        instructions text,
+        blueprint_id uuid,
+        tenant_id uuid,
+        inserted_at timestamp(6),
+        updated_at timestamp(6)
+      )
+    """)
+
+    # Create blueprint with tenant context
+    blueprint =
+      Ash.create!(
+        AgentBlueprint,
+        %{
+          name: "Generic Agent",
+          base_prompt: "Be helpful.",
+          tools: []
+        },
+        tenant: schema
+      )
 
     # Create API Key using Platform.ApiKey
     {:ok, api_key} =
@@ -34,14 +63,14 @@ defmodule McpWeb.Api.InstructionSetControllerTest do
         prefix: "test",
         type: :developer,
         scopes: ["instruction_sets:write"],
-        owner_id: tenant_id,
+        owner_id: tenant.id,
         owner_type: :tenant
       })
 
     # Get the actual raw key from metadata
     raw_key = Ash.Resource.get_metadata(api_key, :raw_key)
 
-    %{blueprint: blueprint, api_key: raw_key}
+    %{blueprint: blueprint, api_key: raw_key, tenant: tenant}
   end
 
   describe "POST /api/instruction_sets" do

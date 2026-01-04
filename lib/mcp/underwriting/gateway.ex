@@ -6,11 +6,16 @@ defmodule Mcp.Underwriting.Gateway do
   alias Mcp.Underwriting.{
     Activity,
     Application,
+    Check,
+    Client,
     RiskAssessment,
     RiskEngine,
     SlaCalculator,
     VendorRouter
   }
+
+  require Ash.Query
+  require Logger
 
   alias Mcp.Utils.CircuitBreaker
 
@@ -31,22 +36,21 @@ defmodule Mcp.Underwriting.Gateway do
     with {:ok, kyb_result} <-
            call_adapter(adapter, :screen_business, [application.application_data, %{}]),
          {:ok, _check} <- record_check(application, :extensive_screening_check, kyb_result) do
-      # 2. Screen Owners (KYC) - Simplified loop
+      # 2. Screen Owners (KYC) - Process each owner, record checks, and propagate errors
       owners = Map.get(application.application_data, "owners", [])
 
-      Enum.each(owners, fn owner ->
-        {:ok, _kyc_result} = call_adapter(adapter, :verify_identity, [owner, %{}])
-      end)
+      with {:ok, _kyc_results} <-
+             process_owner_kyc_checks(application, owners, adapter, tenant) do
+        # 3. Screen Documents
+        application = Ash.load!(application, [:documents], tenant: tenant)
 
-      # 3. Screen Documents
-      application = Ash.load!(application, [:documents], tenant: tenant)
+        doc_results =
+          Enum.map(application.documents, fn doc ->
+            run_document_check(adapter, doc)
+          end)
 
-      doc_results =
-        Enum.map(application.documents, fn doc ->
-          run_document_check(adapter, doc)
-        end)
-
-      process_risk_assessment(application, kyb_result, doc_results, tenant)
+        process_risk_assessment(application, kyb_result, doc_results, tenant)
+      end
     else
       error -> {:error, error}
     end
@@ -135,8 +139,113 @@ defmodule Mcp.Underwriting.Gateway do
     end
   end
 
-  # Remove old calculate_risk_score if unused, or keep as fallback?
-  # The RiskEngine replaces it.
+  # Process KYC checks for all owners, recording both successes and failures
+  defp process_owner_kyc_checks(application, owners, adapter, tenant) do
+    Enum.reduce_while(owners, {:ok, []}, fn owner, {:ok, acc} ->
+      # Find or create client for this owner
+      client = find_or_create_client(application, owner, tenant)
+
+      case call_adapter(adapter, :verify_identity, [owner, %{}]) do
+        {:ok, kyc_result} ->
+          # Record successful KYC check
+          {:ok, check} = record_kyc_check(client, :complete, kyc_result, tenant)
+          {:cont, {:ok, [{:ok, check, kyc_result} | acc]}}
+
+        {:error, reason} ->
+          # Record failed KYC check
+          {:ok, _check} = record_kyc_check(client, :failed, %{error: reason}, tenant)
+
+          # Log activity for the failure
+          log_kyc_failure_activity(application, owner, reason, tenant)
+
+          {:halt, {:error, {:kyc_failed, owner["email"], reason}}}
+      end
+    end)
+  end
+
+  defp find_or_create_client(application, owner, tenant) do
+    email = owner["email"]
+
+    # Try to find existing client by email for this application
+    existing =
+      Client
+      |> Ash.Query.filter(application_id == ^application.id and email == ^email)
+      |> Ash.read_one(tenant: tenant)
+
+    case existing do
+      {:ok, nil} ->
+        # Create new client
+        {:ok, client} =
+          Client
+          |> Ash.Changeset.for_create(:create, %{
+            type: :person,
+            email: email,
+            person_details: %{
+              "first_name" => owner["first_name"],
+              "last_name" => owner["last_name"],
+              "dob" => owner["dob"]
+            },
+            application_id: application.id
+          })
+          |> Ash.create(tenant: tenant)
+
+        client
+
+      {:ok, client} ->
+        client
+
+      {:error, _} ->
+        # Fallback: create new client
+        {:ok, client} =
+          Client
+          |> Ash.Changeset.for_create(:create, %{
+            type: :person,
+            email: email,
+            person_details: %{
+              "first_name" => owner["first_name"],
+              "last_name" => owner["last_name"]
+            },
+            application_id: application.id
+          })
+          |> Ash.create(tenant: tenant)
+
+        client
+    end
+  end
+
+  defp record_kyc_check(client, status, result, tenant) do
+    outcome =
+      case status do
+        :complete -> :clear
+        :failed -> :not_confirmed
+      end
+
+    Check
+    |> Ash.Changeset.for_create(:create, %{
+      type: :identity_check,
+      status: status,
+      outcome: outcome,
+      raw_result: result,
+      client_id: client.id
+    })
+    |> Ash.create(tenant: tenant)
+  end
+
+  defp log_kyc_failure_activity(application, owner, reason, tenant) do
+    Activity.create!(
+      %{
+        application_id: application.id,
+        type: :kyc_failure,
+        metadata: %{
+          owner_email: owner["email"],
+          owner_name: "#{owner["first_name"]} #{owner["last_name"]}",
+          reason: inspect(reason)
+        },
+        actor_id: nil
+      },
+      tenant: tenant
+    )
+  end
 
   defp call_adapter(adapter, function, args) do
     service_name = Atom.to_string(adapter)

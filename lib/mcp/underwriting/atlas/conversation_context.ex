@@ -13,6 +13,15 @@ defmodule Mcp.Underwriting.Atlas.ConversationContext do
     :validation_errors
   ]
 
+  @type t :: %__MODULE__{
+          current_step: atom(),
+          completed_fields: [String.t()],
+          missing_required: [String.t()],
+          form_data: map(),
+          user_state: map(),
+          validation_errors: [any()]
+        }
+
   @step_required_fields %{
     business_info: ["business_name", "ein", "business_type", "business_address"],
     owners: ["owner_name", "owner_ssn", "ownership_percentage"],

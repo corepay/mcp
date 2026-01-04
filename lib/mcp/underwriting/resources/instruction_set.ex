@@ -11,6 +11,10 @@ defmodule Mcp.Underwriting.InstructionSet do
     repo(Mcp.Repo)
   end
 
+  multitenancy do
+    strategy :context
+  end
+
   actions do
     defaults [:read, :destroy]
 
@@ -22,6 +26,14 @@ defmodule Mcp.Underwriting.InstructionSet do
     update :update do
       accept [:name, :instructions]
     end
+  end
+
+  code_interface do
+    define :create
+    define :read
+    define :update
+    define :destroy
+    define :get, action: :read, get_by: [:id]
   end
 
   attributes do

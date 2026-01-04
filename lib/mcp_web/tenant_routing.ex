@@ -71,13 +71,10 @@ defmodule McpWeb.TenantRouting do
   defp extract_tenant_from_host(conn, _opts) do
     host = get_host(conn)
 
-    if is_nil(host) or host == "" do
+    if host == "" do
       {:error, :invalid_host}
     else
-      case identify_tenant_from_host(host) do
-        {:ok, tenant} -> {:ok, tenant}
-        {:error, reason} -> {:error, reason}
-      end
+      identify_tenant_from_host(host)
     end
   end
 
@@ -89,8 +86,12 @@ defmodule McpWeb.TenantRouting do
 
       [] ->
         case get_req_header(conn, "host") do
-          [host | _] -> String.downcase(host)
-          [] -> nil
+          [host | _] ->
+            String.downcase(host)
+
+          [] ->
+            # Fallback to conn.host if headers are not set (test environment)
+            String.downcase(conn.host)
         end
     end
   end
@@ -100,32 +101,38 @@ defmodule McpWeb.TenantRouting do
     host_without_port = String.split(host, ":") |> List.first()
 
     cond do
-      # Check for custom domain first
-      tenant_by_custom_domain =
-          Tenant.by_custom_domain!(host_without_port)
-          |> Enum.at(0) ->
-        {:ok, tenant_by_custom_domain}
-
-      # Check for subdomain pattern
+      # Check for subdomain pattern first (most common case)
       matches_subdomain_pattern?(host_without_port) ->
         subdomain = extract_subdomain_from_host(host_without_port)
-
-        case Tenant.by_subdomain!(subdomain) |> Enum.at(0) do
-          nil -> {:error, :tenant_not_found}
-          tenant -> {:ok, tenant}
-        end
+        lookup_tenant_by_subdomain(subdomain)
 
       # Base domain - no tenant context
       base_domain?(host_without_port) ->
         {:error, :tenant_not_found}
 
-      # Unknown pattern
+      # Check for custom domain (less common)
       true ->
-        {:error, :tenant_not_found}
+        lookup_tenant_by_custom_domain(host_without_port)
+    end
+  end
+
+  defp lookup_tenant_by_subdomain(subdomain) do
+    case Tenant.by_subdomain(subdomain) do
+      {:ok, tenant} when not is_nil(tenant) -> {:ok, tenant}
+      {:ok, nil} -> {:error, :tenant_not_found}
+      {:error, _} -> {:error, :tenant_not_found}
     end
   rescue
-    Ash.Error.Invalid.NoSuchResource -> {:error, :tenant_not_found}
-    Ash.Error.Query.NotFound -> {:error, :tenant_not_found}
+    _ -> {:error, :tenant_not_found}
+  end
+
+  defp lookup_tenant_by_custom_domain(domain) do
+    case Tenant.by_custom_domain(domain) do
+      {:ok, tenant} when not is_nil(tenant) -> {:ok, tenant}
+      {:ok, nil} -> {:error, :tenant_not_found}
+      {:error, _} -> {:error, :tenant_not_found}
+    end
+  rescue
     _ -> {:error, :tenant_not_found}
   end
 
@@ -141,9 +148,11 @@ defmodule McpWeb.TenantRouting do
 
   defp extract_subdomain_from_host(host) do
     base_domain = get_base_domain()
-    subdomain_part = String.replace_prefix(host, ".#{base_domain}", "")
+    # Remove the base domain suffix to get the subdomain part
+    # e.g., "test.localhost" -> "test"
+    subdomain_part = String.replace_suffix(host, ".#{base_domain}", "")
 
-    # Handle potential www prefix for base domain
+    # Handle potential www prefix for base domain or multi-level subdomains
     case String.split(subdomain_part, ".") do
       [subdomain] -> subdomain
       [subdomain | _] -> subdomain

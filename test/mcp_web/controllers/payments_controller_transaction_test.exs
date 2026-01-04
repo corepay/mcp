@@ -1,9 +1,6 @@
 defmodule McpWeb.PaymentsControllerTransactionTest do
   use McpWeb.ConnCase
 
-  # Mock path doesn't match actual gateway path - needs investigation
-  @moduletag :skip
-
   setup %{conn: conn} do
     Application.put_env(:mcp, :req_options, plug: {Req.Test, Mcp.Payments.Gateways.QorPay})
     on_exit(fn -> Application.put_env(:mcp, :req_options, []) end)
@@ -23,7 +20,7 @@ defmodule McpWeb.PaymentsControllerTransactionTest do
     # Mock QorPay Transaction Retrieval
     Req.Test.stub(Mcp.Payments.Gateways.QorPay, fn conn ->
       case conn.request_path do
-        "/v3/payment/transaction/txn_123" ->
+        "/payment/transaction/txn_123" ->
           Req.Test.json(conn, %{
             "status" => "approved",
             "transaction_id" => "txn_123",

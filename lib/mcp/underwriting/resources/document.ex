@@ -11,6 +11,10 @@ defmodule Mcp.Underwriting.Document do
     repo(Mcp.Repo)
   end
 
+  multitenancy do
+    strategy :context
+  end
+
   actions do
     defaults [:read, :destroy]
 
@@ -49,8 +53,7 @@ defmodule Mcp.Underwriting.Document do
       default :pending
     end
 
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
+    timestamps()
   end
 
   relationships do

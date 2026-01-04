@@ -11,12 +11,16 @@ defmodule Mcp.Underwriting.Execution do
     repo(Mcp.Repo)
   end
 
+  multitenancy do
+    strategy :context
+  end
+
   actions do
     defaults [:read, :destroy]
 
     create :create do
       primary? true
-      accept [:pipeline_id, :subject_id, :subject_type, :context, :status]
+      accept [:pipeline_id, :subject_id, :subject_type, :context, :status, :trigger]
     end
 
     update :update do
@@ -46,6 +50,10 @@ defmodule Mcp.Underwriting.Execution do
       allow_nil? false
     end
 
+    attribute :trigger, :string do
+      allow_nil? true
+    end
+
     attribute :context, :map do
       allow_nil? true
       default %{}
@@ -64,7 +72,7 @@ defmodule Mcp.Underwriting.Execution do
 
   relationships do
     belongs_to :pipeline, Mcp.Underwriting.Pipeline do
-      allow_nil? false
+      allow_nil? true
     end
   end
 end

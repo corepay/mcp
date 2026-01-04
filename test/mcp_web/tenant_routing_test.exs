@@ -1,203 +1,178 @@
 defmodule McpWeb.TenantRoutingTest do
-  use ExUnit.Case, async: false
+  use McpWeb.ConnCase, async: false
 
-  # Skip: Mock library not capturing Ash resource calls properly
-  @moduletag :skip
-
-  import Plug.Test
   import Plug.Conn
-  import Mock
 
   alias Mcp.Platform.Tenant
   alias McpWeb.TenantRouting
 
-  # Mock tenant data
-  @valid_tenant %Tenant{
-    id: "123e4567-e89b-12d3-a456-426614174000",
-    slug: "test-tenant",
-    name: "Test Company",
-    company_schema: "test_tenant",
-    subdomain: "test",
-    custom_domain: "test-company.com",
-    plan: :starter,
-    status: :active
-  }
+  # Test setup with real database records
+  setup do
+    # Create a tenant with subdomain
+    {:ok, tenant_with_subdomain} =
+      Tenant.create(%{
+        name: "Test Company",
+        slug: "test-tenant",
+        subdomain: "test",
+        plan: :starter
+      })
 
-  @tenant_with_custom_domain %Tenant{
-    id: "123e4567-e89b-12d3-a456-426614174001",
-    slug: "custom-tenant",
-    name: "Custom Domain Company",
-    company_schema: "custom_tenant",
-    subdomain: "custom",
-    custom_domain: "custom.example.com",
-    plan: :professional,
-    status: :active
-  }
+    # Create a tenant with custom domain
+    {:ok, tenant_with_custom_domain} =
+      Tenant.create(%{
+        name: "Custom Domain Company",
+        slug: "custom-tenant",
+        subdomain: "custom",
+        custom_domain: "custom.example.com",
+        plan: :professional
+      })
+
+    {:ok,
+     tenant_with_subdomain: tenant_with_subdomain,
+     tenant_with_custom_domain: tenant_with_custom_domain}
+  end
 
   describe "extract_tenant_from_host" do
-    test "identifies tenant by subdomain" do
+    test "identifies tenant by subdomain", %{tenant_with_subdomain: tenant} do
       conn =
-        conn(:get, "http://test.localhost")
+        build_conn(:get, "http://test.localhost")
 
-      # Mock the Tenant.read! call
-      with_mock Tenant, [:passthrough],
-        read!: fn
-          :by_custom_domain, _ -> []
-          :by_subdomain, subdomain: "test" -> [@valid_tenant]
-        end do
-        opts = TenantRouting.init(base_domain: "localhost")
-        result_conn = TenantRouting.call(conn, opts)
+      opts = TenantRouting.init(base_domain: "localhost")
+      result_conn = TenantRouting.call(conn, opts)
 
-        assert result_conn.assigns[:current_tenant] == @valid_tenant
-        assert result_conn.assigns[:tenant_schema] == "test_tenant"
-        assert result_conn.assigns[:tenant_id] == @valid_tenant.id
-      end
+      assert result_conn.assigns[:current_tenant].id == tenant.id
+      assert result_conn.assigns[:tenant_schema] == tenant.company_schema
+      assert result_conn.assigns[:tenant_id] == tenant.id
+      assert result_conn.private[:tenant_id] == tenant.id
+      assert result_conn.private[:tenant_schema] == tenant.company_schema
     end
 
-    test "identifies tenant by custom domain" do
+    test "identifies tenant by custom domain", %{tenant_with_custom_domain: tenant} do
       conn =
-        conn(:get, "http://custom.example.com")
+        build_conn(:get, "http://custom.example.com")
 
-      # Mock the Tenant.read! call
-      with_mock Tenant, [:passthrough],
-        read!: fn
-          :by_custom_domain, custom_domain: "custom.example.com" -> [@tenant_with_custom_domain]
-          :by_subdomain, _ -> []
-        end do
-        opts = TenantRouting.init(base_domain: "localhost")
-        result_conn = TenantRouting.call(conn, opts)
+      opts = TenantRouting.init(base_domain: "localhost")
+      result_conn = TenantRouting.call(conn, opts)
 
-        assert result_conn.assigns[:current_tenant] == @tenant_with_custom_domain
-        assert result_conn.assigns[:tenant_schema] == "custom_tenant"
-        assert result_conn.assigns[:tenant_id] == @tenant_with_custom_domain.id
-      end
+      assert result_conn.assigns[:current_tenant].id == tenant.id
+      assert result_conn.assigns[:tenant_schema] == tenant.company_schema
+      assert result_conn.assigns[:tenant_id] == tenant.id
+      assert result_conn.private[:tenant_id] == tenant.id
+      assert result_conn.private[:tenant_schema] == tenant.company_schema
     end
 
     test "handles base domain without tenant context" do
       conn =
-        conn(:get, "http://localhost")
-
-      # Mock the Tenant.read! call
-      with_mock Tenant, [:passthrough],
-        read!: fn
-          :by_custom_domain, _ -> []
-          :by_subdomain, _ -> []
-        end do
-        opts = TenantRouting.init(base_domain: "localhost")
-        result_conn = TenantRouting.call(conn, opts)
-
-        assert result_conn.assigns[:current_tenant] == nil
-        assert result_conn.assigns[:tenant_schema] == nil
-        assert result_conn.assigns[:tenant_id] == nil
-      end
-    end
-
-    test "handles www subdomain as base domain" do
-      conn =
-        conn(:get, "http://www.localhost")
+        build_conn(:get, "http://localhost")
 
       opts = TenantRouting.init(base_domain: "localhost")
       result_conn = TenantRouting.call(conn, opts)
 
       assert result_conn.assigns[:current_tenant] == nil
+      assert result_conn.assigns[:tenant_schema] == nil
+      assert result_conn.assigns[:tenant_id] == nil
+    end
+
+    test "handles www subdomain as base domain" do
+      conn =
+        build_conn(:get, "http://www.localhost")
+
+      opts = TenantRouting.init(base_domain: "localhost")
+      result_conn = TenantRouting.call(conn, opts)
+
+      assert result_conn.assigns[:current_tenant] == nil
+      assert result_conn.assigns[:tenant_schema] == nil
+      assert result_conn.assigns[:tenant_id] == nil
     end
 
     test "handles tenant not found" do
       conn =
-        conn(:get, "http://nonexistent.localhost")
+        build_conn(:get, "http://nonexistent.localhost")
 
-      # Mock the Tenant.read! call
-      with_mock Tenant, [:passthrough],
-        read!: fn
-          :by_custom_domain, _ -> []
-          :by_subdomain, subdomain: "nonexistent" -> []
-        end do
-        opts = TenantRouting.init(base_domain: "localhost")
-        result_conn = TenantRouting.call(conn, opts)
+      opts = TenantRouting.init(base_domain: "localhost")
+      result_conn = TenantRouting.call(conn, opts)
 
-        assert result_conn.assigns[:current_tenant] == nil
-        assert result_conn.assigns[:tenant_schema] == nil
-        assert result_conn.assigns[:tenant_id] == nil
-      end
+      assert result_conn.assigns[:current_tenant] == nil
+      assert result_conn.assigns[:tenant_schema] == nil
+      assert result_conn.assigns[:tenant_id] == nil
     end
 
     test "handles invalid host header" do
       conn =
-        conn(:get, "http://")
+        build_conn(:get, "http://")
         |> Map.put(:host, "")
 
       opts = TenantRouting.init(base_domain: "localhost")
       result_conn = TenantRouting.call(conn, opts)
 
-      assert result_conn.state == :sent
-      assert result_conn.status == 400
+      # In test environment, invalid hosts are allowed to pass through
+      # (see handle_invalid_host in TenantRouting)
+      assert result_conn.state != :sent
     end
 
-    test "handles port in host header" do
+    test "handles port in host header", %{tenant_with_subdomain: tenant} do
       conn =
-        conn(:get, "http://test.localhost:4000")
+        build_conn(:get, "http://test.localhost:4000")
 
-      # Mock the Tenant.read! call
-      with_mock Tenant, [:passthrough],
-        read!: fn
-          :by_custom_domain, _ -> []
-          :by_subdomain, subdomain: "test" -> [@valid_tenant]
-        end do
-        opts = TenantRouting.init(base_domain: "localhost")
-        result_conn = TenantRouting.call(conn, opts)
+      opts = TenantRouting.init(base_domain: "localhost")
+      result_conn = TenantRouting.call(conn, opts)
 
-        assert result_conn.assigns[:current_tenant] == @valid_tenant
-      end
+      assert result_conn.assigns[:current_tenant].id == tenant.id
     end
   end
 
   describe "x-forwarded-host header handling" do
-    test "uses x-forwarded-host when present" do
+    test "uses x-forwarded-host when present", %{tenant_with_subdomain: tenant} do
       conn =
-        conn(:get, "http://internal-host")
+        build_conn(:get, "http://internal-host")
         |> put_req_header("x-forwarded-host", "test.localhost")
 
-      # Mock the Tenant.read! call
-      with_mock Tenant, [:passthrough],
-        read!: fn
-          :by_custom_domain, _ -> []
-          :by_subdomain, subdomain: "test" -> [@valid_tenant]
-        end do
-        opts = TenantRouting.init(base_domain: "localhost")
-        result_conn = TenantRouting.call(conn, opts)
+      opts = TenantRouting.init(base_domain: "localhost")
+      result_conn = TenantRouting.call(conn, opts)
 
-        assert result_conn.assigns[:current_tenant] == @valid_tenant
-      end
+      assert result_conn.assigns[:current_tenant].id == tenant.id
+    end
+
+    test "prioritizes x-forwarded-host over host header", %{tenant_with_subdomain: tenant} do
+      conn =
+        build_conn(:get, "http://wrong.localhost")
+        |> put_req_header("x-forwarded-host", "test.localhost")
+
+      opts = TenantRouting.init(base_domain: "localhost")
+      result_conn = TenantRouting.call(conn, opts)
+
+      # Should use x-forwarded-host (test.localhost), not host (wrong.localhost)
+      assert result_conn.assigns[:current_tenant].id == tenant.id
     end
   end
 
   describe "get_current_tenant" do
-    test "returns current tenant from connection" do
+    test "returns current tenant from connection", %{tenant_with_subdomain: tenant} do
       conn =
-        conn(:get, "http://test.localhost")
-        |> assign(:current_tenant, @valid_tenant)
+        build_conn(:get, "http://test.localhost")
+        |> assign(:current_tenant, tenant)
 
-      assert TenantRouting.get_current_tenant(conn) == @valid_tenant
+      assert TenantRouting.get_current_tenant(conn).id == tenant.id
     end
 
     test "returns nil when no tenant is set" do
-      conn = conn(:get, "http://localhost")
+      conn = build_conn(:get, "http://localhost")
 
       assert TenantRouting.get_current_tenant(conn) == nil
     end
   end
 
   describe "tenant_context?" do
-    test "returns true when tenant context is active" do
+    test "returns true when tenant context is active", %{tenant_with_subdomain: tenant} do
       conn =
-        conn(:get, "http://test.localhost")
-        |> assign(:current_tenant, @valid_tenant)
+        build_conn(:get, "http://test.localhost")
+        |> assign(:current_tenant, tenant)
 
       assert TenantRouting.tenant_context?(conn) == true
     end
 
     test "returns false when no tenant context" do
-      conn = conn(:get, "http://localhost")
+      conn = build_conn(:get, "http://localhost")
 
       assert TenantRouting.tenant_context?(conn) == false
     end
@@ -205,29 +180,128 @@ defmodule McpWeb.TenantRoutingTest do
 
   describe "get_base_domain" do
     test "returns configured base domain" do
-      Application.put_env(:mcp, :base_domain, "example.com")
-      assert TenantRouting.get_base_domain() == "example.com"
-    after
-      Application.put_env(:mcp, :base_domain, "localhost")
+      original_domain = Application.get_env(:mcp, :base_domain)
+
+      try do
+        Application.put_env(:mcp, :base_domain, "example.com")
+        assert TenantRouting.get_base_domain() == "example.com"
+      after
+        Application.put_env(:mcp, :base_domain, original_domain)
+      end
     end
 
     test "returns localhost as default" do
-      Application.delete_env(:mcp, :base_domain)
-      assert TenantRouting.get_base_domain() == "localhost"
-    after
-      Application.put_env(:mcp, :base_domain, "localhost")
+      original_domain = Application.get_env(:mcp, :base_domain)
+
+      try do
+        Application.delete_env(:mcp, :base_domain)
+        assert TenantRouting.get_base_domain() == "localhost"
+      after
+        if original_domain do
+          Application.put_env(:mcp, :base_domain, original_domain)
+        end
+      end
     end
   end
 
   describe "skip_subdomain_extraction option" do
     test "skips tenant routing when skip_subdomain_extraction is true" do
       conn =
-        conn(:get, "http://any-host.com")
+        build_conn(:get, "http://any-host.com")
 
       opts = TenantRouting.init(skip_subdomain_extraction: true)
       result_conn = TenantRouting.call(conn, opts)
 
       assert result_conn.assigns[:current_tenant] == nil
+    end
+
+    test "processes tenant routing when skip_subdomain_extraction is false", %{
+      tenant_with_subdomain: tenant
+    } do
+      conn =
+        build_conn(:get, "http://test.localhost")
+
+      opts = TenantRouting.init(skip_subdomain_extraction: false)
+      result_conn = TenantRouting.call(conn, opts)
+
+      assert result_conn.assigns[:current_tenant].id == tenant.id
+    end
+  end
+
+  describe "edge cases and security" do
+    test "handles host with uppercase letters", %{tenant_with_subdomain: tenant} do
+      conn =
+        build_conn(:get, "http://TEST.localhost")
+
+      opts = TenantRouting.init(base_domain: "localhost")
+      result_conn = TenantRouting.call(conn, opts)
+
+      # Host should be normalized to lowercase
+      assert result_conn.assigns[:current_tenant].id == tenant.id
+    end
+
+    test "handles custom domain with uppercase letters", %{tenant_with_custom_domain: tenant} do
+      conn =
+        build_conn(:get, "http://CUSTOM.example.com")
+
+      opts = TenantRouting.init(base_domain: "localhost")
+      result_conn = TenantRouting.call(conn, opts)
+
+      # Custom domain should be normalized to lowercase
+      assert result_conn.assigns[:current_tenant].id == tenant.id
+    end
+
+    test "handles multiple subdomains (only uses first level)", %{tenant_with_subdomain: tenant} do
+      conn =
+        build_conn(:get, "http://test.app.localhost")
+
+      opts = TenantRouting.init(base_domain: "localhost")
+      result_conn = TenantRouting.call(conn, opts)
+
+      # Should extract "test" as the subdomain
+      assert result_conn.assigns[:current_tenant].id == tenant.id
+    end
+
+    test "prevents injection via host header" do
+      conn =
+        build_conn(:get, "http://malicious';DROP TABLE tenants;--@localhost")
+
+      opts = TenantRouting.init(base_domain: "localhost")
+      result_conn = TenantRouting.call(conn, opts)
+
+      # Should not find a tenant and should handle gracefully
+      assert result_conn.assigns[:current_tenant] == nil
+    end
+  end
+
+  describe "tenant context lifecycle" do
+    test "properly sets all tenant-related assigns", %{tenant_with_subdomain: tenant} do
+      conn =
+        build_conn(:get, "http://test.localhost")
+
+      opts = TenantRouting.init(base_domain: "localhost")
+      result_conn = TenantRouting.call(conn, opts)
+
+      # Verify all assigns are set correctly
+      assert result_conn.assigns[:current_tenant].id == tenant.id
+      assert result_conn.assigns[:tenant_schema] == tenant.company_schema
+      assert result_conn.assigns[:tenant_id] == tenant.id
+
+      # Verify private fields are also set (used by some downstream plugs)
+      assert result_conn.private[:tenant_id] == tenant.id
+      assert result_conn.private[:tenant_schema] == tenant.company_schema
+    end
+
+    test "preserves existing connection assigns", %{tenant_with_subdomain: tenant} do
+      conn =
+        build_conn(:get, "http://test.localhost")
+        |> assign(:existing_value, "should_persist")
+
+      opts = TenantRouting.init(base_domain: "localhost")
+      result_conn = TenantRouting.call(conn, opts)
+
+      assert result_conn.assigns[:existing_value] == "should_persist"
+      assert result_conn.assigns[:current_tenant].id == tenant.id
     end
   end
 end

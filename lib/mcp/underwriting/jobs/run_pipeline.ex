@@ -7,6 +7,12 @@ defmodule Mcp.Underwriting.Jobs.RunPipeline do
   alias Mcp.Underwriting.Engine.Orchestrator
 
   @impl Oban.Worker
+  def perform(%Oban.Job{args: %{"execution_id" => execution_id, "tenant" => tenant}}) do
+    Orchestrator.run_pipeline(execution_id, tenant: tenant)
+    :ok
+  end
+
+  # Fallback for jobs without tenant (backwards compatibility)
   def perform(%Oban.Job{args: %{"execution_id" => execution_id}}) do
     Orchestrator.run_pipeline(execution_id)
     :ok

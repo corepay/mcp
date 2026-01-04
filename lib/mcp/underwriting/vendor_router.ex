@@ -33,24 +33,29 @@ defmodule Mcp.Underwriting.VendorRouter do
   end
 
   defp determine_adapter do
+    from_adapter_config() || from_preferred_vendor() || from_api_keys()
+  end
+
+  defp from_adapter_config do
     case Application.get_env(:mcp, :underwriting_adapter) do
-      :idenfy ->
-        Idenfy
-
-      :complycube ->
-        ComplyCube
-
-      :mock ->
-        Mock
-
-      _ ->
-        # Auto-detect based on API keys
-        if System.get_env("COMPLY_CUBE_API_KEY") do
-          ComplyCube
-        else
-          Mock
-        end
+      :idenfy -> Idenfy
+      :complycube -> ComplyCube
+      :mock -> Mock
+      _ -> nil
     end
+  end
+
+  defp from_preferred_vendor do
+    case Application.get_env(:mcp, :preferred_vendor) do
+      :idenfy -> Idenfy
+      :comply_cube -> ComplyCube
+      :complycube -> ComplyCube
+      _ -> nil
+    end
+  end
+
+  defp from_api_keys do
+    if System.get_env("COMPLY_CUBE_API_KEY"), do: ComplyCube, else: Mock
   end
 
   defp get_fallback_adapter(Idenfy), do: ComplyCube

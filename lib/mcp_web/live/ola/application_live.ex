@@ -2,7 +2,7 @@ defmodule McpWeb.Ola.ApplicationLive do
   use McpWeb, :live_view
 
   alias Mcp.Chat.{Conversation, Message}
-  alias Mcp.Platform.{Merchant, Tenant}
+  alias Mcp.Platform.Tenant
   alias Mcp.Underwriting.Application, as: UnderwritingApplication
 
   alias Mcp.Underwriting.{
@@ -10,11 +10,10 @@ defmodule McpWeb.Ola.ApplicationLive do
     Document,
     Engine.AgentRunner,
     Execution,
-    Gateway,
     InstructionSet
   }
 
-  alias Mcp.Underwriting.Services.DocumentValidator
+  alias Mcp.Underwriting.Services.{DocumentValidator, SubmissionService}
 
   require Ash.Query
 
@@ -38,72 +37,65 @@ defmodule McpWeb.Ola.ApplicationLive do
       |> allow_upload(:documents, accept: ~w(.jpg .jpeg .png .pdf), max_entries: 5)
       |> allow_upload(:chat_files, accept: ~w(.jpg .jpeg .png .pdf .txt .csv), max_entries: 1)
 
-    if current_user do
-      # Find or create conversation
-      conversation =
-        Conversation
-        |> Ash.Query.filter(user_id == ^current_user.id)
-        |> Ash.Query.sort(updated_at: :desc)
-        |> Ash.Query.limit(1)
-        |> Ash.read_one!()
-
-      conversation =
-        if conversation do
-          conversation
-        else
+    socket =
+      if current_user do
+        # Find or create conversation
+        conversation =
           Conversation
-          |> Ash.Changeset.for_create(:create_for_user, %{
-            title: "Application Support",
-            user_id: current_user.id
-          })
-          |> Ash.create!()
+          |> Ash.Query.filter(user_id == ^current_user.id)
+          |> Ash.Query.sort(updated_at: :desc)
+          |> Ash.Query.limit(1)
+          |> Ash.read_one!()
+
+        conversation =
+          if conversation do
+            conversation
+          else
+            Conversation
+            |> Ash.Changeset.for_create(:create_for_user, %{
+              title: "Application Support",
+              user_id: current_user.id
+            })
+            |> Ash.create!()
+          end
+
+        # Load messages
+        messages =
+          Message
+          |> Ash.Query.for_read(:for_conversation, %{conversation_id: conversation.id})
+          |> Ash.read!(page: [limit: 50])
+
+        # Subscribe to conversation updates
+        if connected?(socket) do
+          Phoenix.PubSub.subscribe(Mcp.PubSub, "chat:messages:#{conversation.id}")
         end
 
-      # Load messages
-      messages =
-        Message
-        |> Ash.Query.for_read(:for_conversation, %{conversation_id: conversation.id})
-        |> Ash.read!(page: [limit: 50])
+        # Try to find existing application
+        tenant_schema = Tenant.get_by_id!(tenant_id).company_schema
 
-      # Subscribe to conversation updates
-      if connected?(socket) do
-        Phoenix.PubSub.subscribe(Mcp.PubSub, "chat:messages:#{conversation.id}")
+        existing_application =
+          UnderwritingApplication
+          |> Ash.Query.filter(application_data["email"] == ^current_user.email)
+          |> Ash.Query.sort(inserted_at: :desc)
+          |> Ash.Query.limit(1)
+          |> Ash.read_one(tenant: tenant_schema)
+          |> case do
+            {:ok, app} -> app
+            _ -> nil
+          end
+
+        socket
+        |> assign(:conversation_id, conversation.id)
+        |> assign(:messages, Enum.reverse(messages.results))
+        |> assign(:existing_application, existing_application)
+      else
+        # No logged-in user - use execution-based chat without conversation
+        # execution_id is initialized as nil on mount, will be created lazily on first chat
+        socket
+        |> assign(:conversation_id, nil)
+        |> assign(:messages, [])
+        |> assign(:existing_application, nil)
       end
-
-      # Try to find existing application
-      tenant_schema = Tenant.get_by_id!(tenant_id).company_schema
-
-      # We need to use a fragment or map access for jsonb
-      # Ash doesn't support map access in filter easily without calculation or fragment
-      # But basic map access might work if supported by data layer.
-      # Actually, AshPostgres supports map access.
-      # But let's try to be safe.
-      # Wait, application_data is a map attribute.
-      # Ash query: filter(application_data["contact_email"] == ^current_user.email)
-
-      existing_application =
-        UnderwritingApplication
-        |> Ash.Query.filter(application_data["contact_email"] == ^current_user.email)
-        |> Ash.Query.sort(inserted_at: :desc)
-        |> Ash.Query.limit(1)
-        |> Ash.read_one(tenant: tenant_schema)
-        |> case do
-          {:ok, app} -> app
-          _ -> nil
-        end
-
-      socket
-      |> assign(:conversation_id, conversation.id)
-      |> assign(:messages, Enum.reverse(messages.results))
-      |> assign(:existing_application, existing_application)
-    else
-      # No logged-in user - use execution-based chat without conversation
-      # execution_id is initialized as nil on mount, will be created lazily on first chat
-      socket
-      |> assign(:conversation_id, nil)
-      |> assign(:messages, [])
-      |> assign(:existing_application, nil)
-    end
 
     {:ok, socket}
   end
@@ -169,48 +161,32 @@ defmodule McpWeb.Ola.ApplicationLive do
     final_params = Map.merge(accumulated_params, params)
 
     tenant = Tenant.get_by_id!(socket.assigns.tenant_id)
+    current_user = socket.assigns.current_user
 
-    # HACK: For demo purposes, finding ANY merchant to attach to.
-    # In production, `socket.assigns.current_user.merchant_id` would be used.
-    merchant = Merchant.read!(tenant: tenant.company_schema) |> List.first()
+    case SubmissionService.create_application(final_params, current_user, tenant) do
+      {:ok, application} ->
+        # Consume uploaded files
+        bucket = Application.get_env(:mcp, :uploads)[:bucket]
 
-    if merchant do
-      case UnderwritingApplication.create(
-             %{
-               subject_id: merchant.id,
-               subject_type: :merchant,
-               status: :submitted,
-               application_data: final_params
-             },
-             tenant: tenant.company_schema
-           ) do
-        {:ok, application} ->
-          # Consume uploaded files
-          bucket = Application.get_env(:mcp, :uploads)[:bucket]
+        consume_uploaded_entries(
+          socket,
+          :documents,
+          &handle_upload_entry(&1, &2, application, tenant, bucket)
+        )
 
-          consume_uploaded_entries(
-            socket,
-            :documents,
-            &handle_upload_entry(&1, &2, application, tenant, bucket)
-          )
+        SubmissionService.finalize_submission(application, tenant.company_schema)
 
-          # Trigger Async Screening
-          Task.start(fn ->
-            Gateway.screen_application(application.id,
-              tenant: tenant.company_schema
-            )
-          end)
+        {:noreply,
+         socket
+         |> put_flash(:info, "Application submitted successfully!")
+         |> push_navigate(to: ~p"/online-application/login")}
 
-          {:noreply,
-           socket
-           |> put_flash(:info, "Application submitted successfully!")
-           |> push_navigate(to: ~p"/online-application/login")}
+      {:error, :no_merchant} ->
+        {:noreply,
+         put_flash(socket, :error, "No merchant account found. Please contact support.")}
 
-        {:error, changeset} ->
-          {:noreply, assign(socket, :form, to_form(changeset))}
-      end
-    else
-      {:noreply, put_flash(socket, :error, "No merchant account found. Please contact support.")}
+      {:error, changeset} ->
+        {:noreply, assign(socket, :form, to_form(changeset))}
     end
   end
 
@@ -302,7 +278,7 @@ defmodule McpWeb.Ola.ApplicationLive do
 
     context = %{
       execution_id: execution_id,
-      tenant_id: socket.assigns.current_tenant.id
+      tenant_id: socket.assigns.tenant_id
     }
 
     # Run the agent
@@ -402,21 +378,31 @@ defmodule McpWeb.Ola.ApplicationLive do
   end
 
   defp create_execution(socket) do
-    # Helper to create a new execution for the session
-    # In a real app, this would be tied to the Application resource
-    # For now, we stub it by creating a dummy execution or just returning a UUID if AgentRunner supports it
-    # But AgentRunner expects a real Execution struct or at least an ID that exists if it tries to update it.
-    # Let's assume we create a transient execution.
+    tenant = Tenant.get_by_id!(socket.assigns.tenant_id)
 
-    # For this refactor, we'll just return a UUID and ensure AgentRunner handles it or we create a real one.
-    # Since we don't have the full context here, let's create a real Execution if possible.
+    # Determine subject (Merchant, User, or Tenant)
+    {subject_id, subject_type} =
+      cond do
+        socket.assigns[:current_user] && socket.assigns.current_user.merchant_id ->
+          {socket.assigns.current_user.merchant_id, :merchant}
+
+        socket.assigns[:current_user] ->
+          {socket.assigns.current_user.id, :user}
+
+        true ->
+          {tenant.id, :tenant}
+      end
 
     {:ok, execution} =
-      Execution.create(%{
-        tenant_id: socket.assigns.current_tenant.id,
-        status: :running,
-        trigger: "ola_chat"
-      })
+      Execution.create(
+        %{
+          subject_id: subject_id,
+          subject_type: subject_type,
+          status: :processing,
+          trigger: "ola_chat"
+        },
+        tenant: tenant.company_schema
+      )
 
     execution.id
   end

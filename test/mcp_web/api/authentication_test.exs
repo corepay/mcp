@@ -289,7 +289,7 @@ defmodule McpWeb.API.AuthenticationTest do
   end
 
   describe "real-world API scenarios" do
-    test "handles rapid successive requests correctly", %{conn: conn, raw_key: raw_key} do
+    test "handles rapid successive requests correctly", %{conn: _conn, raw_key: raw_key} do
       # Make 10 rapid requests
       results =
         for i <- 1..10 do
@@ -306,7 +306,7 @@ defmodule McpWeb.API.AuthenticationTest do
       assert successful >= 1
     end
 
-    test "handles concurrent requests from same API key", %{conn: conn, raw_key: raw_key} do
+    test "handles concurrent requests from same API key", %{conn: _conn, raw_key: raw_key} do
       # Make concurrent requests
       tasks =
         for i <- 1..5 do
@@ -372,7 +372,7 @@ defmodule McpWeb.API.AuthenticationTest do
       assert conn.status in [200, 204, 404]
     end
 
-    test "supports API versioning via header", %{conn: conn, raw_key: raw_key} do
+    test "supports API versioning via header", %{conn: _conn, raw_key: raw_key} do
       # Request with specific API version
       v1_conn =
         build_conn()

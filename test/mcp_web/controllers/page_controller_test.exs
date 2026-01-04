@@ -1,14 +1,15 @@
 defmodule McpWeb.PageControllerTest do
   use McpWeb.ConnCase
 
-  # Skip: Routing configuration affects this test
-  @tag :skip
+  import Phoenix.LiveViewTest
+
   test "GET /", %{conn: conn} do
     # Set host to localhost to get platform context
-    conn =
+    # The root path now routes to LandingLive, not PageController
+    {:ok, _view, html} =
       %{conn | host: "localhost"}
-      |> get(~p"/")
+      |> live(~p"/")
 
-    assert html_response(conn, 200) =~ "Welcome to your"
+    assert html =~ "Welcome to your"
   end
 end

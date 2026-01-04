@@ -37,7 +37,11 @@ defmodule Mcp.Underwriting.Activity do
                     :system_event,
                     :internal_note,
                     :risk_assessment,
-                    :document_upload
+                    :document_upload,
+                    :kyc_failure,
+                    :kyc_success,
+                    :kyb_failure,
+                    :kyb_success
                   ]
 
       allow_nil? false

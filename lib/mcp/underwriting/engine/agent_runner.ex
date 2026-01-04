@@ -205,22 +205,21 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
     # 1.5 RAG Injection
     system_prompt =
       if blueprint.knowledge_base_ids && length(blueprint.knowledge_base_ids) > 0 do
-        # NOTE: `messages`, `execution` are not available in this scope.
-        # This code snippet is likely part of a larger change where these variables
-        # would be passed into `run_ollama` or derived from `context`.
-        # For now, we'll assume `enrich_prompt_with_rag` and `select_provider_and_model`
-        # are defined elsewhere or will be added.
-        # Placeholder for `messages` and `execution`
-        # Assuming messages would be derived from context or passed in
-        messages = []
-        # Assuming execution would be passed in
-        execution = %{tenant_id: "default_tenant"}
+        # Build messages from the current conversation for RAG enrichment
+        # Messages should include the user query for semantic search
+        messages = [
+          %{role: :system, content: system_prompt},
+          %{role: :user, content: user_message}
+        ]
+
+        # Extract tenant_id from context or use default
+        tenant_id = Map.get(context, :tenant_id, "default_tenant")
 
         enrich_prompt_with_rag(
           system_prompt,
           messages,
           blueprint.knowledge_base_ids,
-          execution.tenant_id
+          tenant_id
         )
       else
         system_prompt
@@ -231,11 +230,11 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
     # execution = %{tenant_id: "default_tenant"} # Assuming execution would be passed in
     # {_provider, _model} = select_provider_and_model(blueprint, execution)
 
-    model_name = System.get_env("OLLAMA_MODEL", "llama3")
-    ollama_port = System.get_env("OLLAMA_PORT", "42736")
-
-    ollama_base_url =
-      System.get_env("OLLAMA_BASE_URL", "http://localhost:#{ollama_port}/api/chat")
+    # Get Ollama configuration from Application config (not hardcoded)
+    ollama_config = Application.get_env(:mcp, :ollama, [])
+    model_name = ollama_config[:model] || System.get_env("OLLAMA_MODEL", "llama3")
+    ollama_port = ollama_config[:port] || System.get_env("OLLAMA_PORT")
+    ollama_base_url = ollama_config[:base_url] || "http://localhost:#{ollama_port}/api/chat"
 
     # Check Semantic Cache
     cache_key_prompt = system_prompt <> user_message
@@ -300,10 +299,11 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
     system_prompt = build_system_prompt(blueprint, instructions)
     user_message = build_user_message(context)
 
-    config = Application.get_env(:mcp, :llm)
+    config = Application.get_env(:mcp, :llm, [])
     api_key = config[:openrouter_api_key]
     base_url = config[:openrouter_base_url]
-    model = "openai/gpt-3.5-turbo"
+    # Get model from config instead of hardcoding
+    model = config[:openrouter_model] || "openai/gpt-3.5-turbo"
 
     headers = [
       {"Authorization", "Bearer #{api_key}"},
@@ -403,15 +403,12 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
     end
   end
 
-  defp enrich_prompt_with_rag(system_prompt, messages, _kb_ids, _tenant_id) when messages == [],
-    do: system_prompt
-
-  defp enrich_prompt_with_rag(system_prompt, messages, _kb_ids, tenant_id) do
+  defp enrich_prompt_with_rag(system_prompt, messages, kb_ids, tenant_id) do
     # Get the last user message to use as the search query
     last_message = List.last(messages)
 
     if last_message.role == :user do
-      context = retrieve_rag_context(last_message.content, tenant_id)
+      context = retrieve_rag_context(last_message.content, tenant_id, kb_ids)
 
       if context != "" do
         system_prompt <> "\n\nRelevant Context from Knowledge Base:\n" <> context
@@ -423,9 +420,13 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
     end
   end
 
-  defp retrieve_rag_context(query, tenant_id) do
+  defp retrieve_rag_context(query, tenant_id, kb_ids) do
     with {:ok, embedding} <- EmbeddingService.generate_embedding(query),
-         {:ok, documents} <- Document.search(embedding, tenant_id: tenant_id) do
+         {:ok, documents} <-
+           Document.search(embedding,
+             tenant_id: tenant_id,
+             knowledge_base_ids: kb_ids
+           ) do
       Enum.map_join(documents, "\n---\n", & &1.content)
     else
       _ -> ""

@@ -31,6 +31,29 @@ defmodule Mcp.Underwriting.Check do
       primary? true
       accept [:status, :outcome, :raw_result, :external_id]
     end
+
+    read :list_by_client do
+      argument :client_id, :uuid, allow_nil?: false
+      filter expr(client_id == ^arg(:client_id))
+    end
+
+    read :get_latest_by_type do
+      argument :client_id, :uuid, allow_nil?: false
+      argument :type, :atom, allow_nil?: false
+      get? true
+      filter expr(client_id == ^arg(:client_id) and type == ^arg(:type))
+      prepare build(sort: [inserted_at: :desc], limit: 1)
+    end
+  end
+
+  code_interface do
+    define :create
+    define :read
+    define :update
+    define :destroy
+    define :get, action: :read, get_by: [:id]
+    define :list_by_client, args: [:client_id]
+    define :get_latest_by_type, args: [:client_id, :type]
   end
 
   attributes do

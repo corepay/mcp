@@ -248,6 +248,20 @@ policies.
   benefits
 - **[User Guide](agents/user-guide.md)** - End user instructions
 
+### Underwriting Engine
+
+AI-powered automated underwriting with KYC/KYB verification, risk assessment,
+and multi-vendor integration with intelligent failover.
+
+- **[README](underwriting/README.md)** - Feature overview
+- **[Developer Guide](underwriting/developer-guide.md)** - Technical
+  implementation
+- **[API Reference](underwriting/api-reference.md)** - Complete API
+  documentation
+- **[Stakeholder Guide](underwriting/stakeholder-guide.md)** - Business value
+  and benefits
+- **[User Guide](underwriting/user-guide.md)** - End user instructions
+
 ## Documentation Standards
 
 ### Quality Requirements

@@ -79,8 +79,8 @@ defmodule McpWeb.Core.CoreComponents do
     assigns
     |> assign(field: nil, id: assigns.id || field.id)
     |> assign(:errors, Enum.map(errors, &translate_error(&1)))
-    |> assign_new(:name, fn -> field.name end)
-    |> assign_new(:value, fn -> field.value end)
+    |> assign(:name, assigns.name || field.name)
+    |> assign(:value, assigns.value || field.value)
     |> input()
   end
 

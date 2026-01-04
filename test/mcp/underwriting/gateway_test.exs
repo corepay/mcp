@@ -110,6 +110,48 @@ defmodule Mcp.Underwriting.GatewayTest do
       updated_at timestamp(6)
     )")
 
+    # Create underwriting_clients table (required for KYC processing)
+    Mcp.Repo.query!("CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_clients (
+      id uuid PRIMARY KEY,
+      type text,
+      email text,
+      phone text,
+      external_id text,
+      person_details jsonb,
+      company_details jsonb,
+      application_id uuid,
+      inserted_at timestamp(6),
+      updated_at timestamp(6)
+    )")
+
+    # Create underwriting_checks table (required for recording KYC results)
+    Mcp.Repo.query!("CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_checks (
+      id uuid PRIMARY KEY,
+      type text,
+      status text,
+      outcome text,
+      external_id text,
+      raw_result jsonb,
+      client_id uuid,
+      document_id uuid,
+      inserted_at timestamp(6),
+      updated_at timestamp(6)
+    )")
+
+    # Create underwriting_documents table (required for document screening)
+    Mcp.Repo.query!("CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_documents (
+      id uuid PRIMARY KEY,
+      file_path text,
+      file_name text,
+      mime_type text,
+      document_type text,
+      status text,
+      application_id uuid,
+      client_id uuid,
+      inserted_at timestamp(6),
+      updated_at timestamp(6)
+    )")
+
     # Configure Mock Adapter for tests
     Elixir.Application.put_env(:mcp, :underwriting_adapter, :mock)
 
@@ -198,6 +240,64 @@ defmodule Mcp.Underwriting.GatewayTest do
         |> Ash.create!(tenant: tenant)
 
       assert {:ok, _score} = Gateway.screen_application(application.id, tenant: tenant)
+    end
+
+    test "propagates KYC errors when owner verification fails", %{
+      merchant: merchant,
+      tenant: tenant
+    } do
+      # This test verifies that errors from KYC checks are properly propagated
+      # and the entire operation fails when any owner fails verification
+
+      # Create application with owner that will trigger a KYC failure
+      # The mock adapter should be configured to fail on specific names or patterns
+      application =
+        Application
+        |> Ash.Changeset.for_create(:create, %{
+          subject_id: merchant.id,
+          subject_type: :merchant,
+          status: :submitted,
+          application_data: %{
+            "business_name" => "Test Corp",
+            "legal_structure" => "llc",
+            "owners" => [
+              %{
+                "first_name" => "John",
+                "last_name" => "Doe",
+                "email" => "john@example.com"
+              },
+              %{
+                "first_name" => "KYC_FAILURE",
+                "last_name" => "Test",
+                "email" => "fail@example.com"
+              }
+            ]
+          }
+        })
+        |> Ash.create!(tenant: tenant)
+
+      # Mock adapter should be configured to return error for "KYC_FAILURE"
+      # This test should fail initially because Enum.each ignores errors
+      result = Gateway.screen_application(application.id, tenant: tenant)
+
+      # The operation should fail and return an error tuple
+      assert {:error, _reason} = result
+
+      # Verify that no risk assessment was created (transaction should rollback)
+      require Ash.Query
+
+      assessments =
+        RiskAssessment
+        |> Ash.Query.filter(application_id == ^application.id)
+        |> Ash.read!(tenant: tenant)
+
+      assert assessments == []
+
+      # Verify application status wasn't updated (should remain at default values)
+      updated_app = Application.get_by_id!(application.id, tenant: tenant)
+      assert updated_app.status == :submitted
+      # risk_score defaults to 0 and should not be updated to a real score
+      assert updated_app.risk_score == 0
     end
   end
 end
