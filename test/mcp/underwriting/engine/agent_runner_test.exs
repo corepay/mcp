@@ -105,22 +105,16 @@ defmodule Mcp.Underwriting.Engine.AgentRunnerTest do
       pipeline = Ash.create!(Pipeline, %{name: "Test Pipeline"}, tenant: tenant)
 
       _execution =
-        try do
-          Ash.create!(
-            Execution,
-            %{
-              pipeline_id: pipeline.id,
-              subject_id: Ecto.UUID.generate(),
-              subject_type: :individual,
-              status: :pending
-            },
-            tenant: tenant
-          )
-        rescue
-          e ->
-            IO.inspect(e, label: "EXECUTION CREATE ERROR")
-            reraise e, __STACKTRACE__
-        end
+        Ash.create!(
+          Execution,
+          %{
+            pipeline_id: pipeline.id,
+            subject_id: Ecto.UUID.generate(),
+            subject_type: :individual,
+            status: :pending
+          },
+          tenant: tenant
+        )
 
       blueprint = %AgentBlueprint{
         name: "TestAgent",

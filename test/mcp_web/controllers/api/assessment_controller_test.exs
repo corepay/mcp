@@ -59,6 +59,8 @@ defmodule McpWeb.Api.AssessmentControllerTest do
       )
     """)
 
+    Mcp.Repo.query!("DROP TABLE IF EXISTS \"#{schema}\".executions")
+
     Mcp.Repo.query!("""
       CREATE TABLE IF NOT EXISTS "#{schema}".executions (
         id uuid PRIMARY KEY,
@@ -66,6 +68,7 @@ defmodule McpWeb.Api.AssessmentControllerTest do
         subject_id uuid,
         subject_type text,
         status text,
+        trigger text,
         context jsonb,
         results jsonb,
         inserted_at timestamp(6),

@@ -45,7 +45,7 @@ defmodule McpWeb.Plugs.ApiRateLimitTest do
   end
 
   describe "requests under rate limit" do
-    test "allows requests under limit", %{conn: conn, raw_key: raw_key} do
+    test "allows requests under limit", %{conn: _conn, raw_key: raw_key} do
       # Make 5 requests (should be under default limit)
       results =
         for _i <- 1..5 do
@@ -80,7 +80,7 @@ defmodule McpWeb.Plugs.ApiRateLimitTest do
       assert get_resp_header(conn, "x-ratelimit-reset") != []
     end
 
-    test "decrements remaining count with each request", %{conn: conn, raw_key: raw_key} do
+    test "decrements remaining count with each request", %{conn: _conn, raw_key: raw_key} do
       # First request
       conn1 =
         build_conn()
@@ -108,7 +108,7 @@ defmodule McpWeb.Plugs.ApiRateLimitTest do
   end
 
   describe "requests over rate limit" do
-    test "returns 429 when rate limit exceeded", %{conn: conn, raw_key: raw_key} do
+    test "returns 429 when rate limit exceeded", %{conn: _conn, raw_key: raw_key} do
       # Configure very low limit
       limit = 3
 
@@ -132,7 +132,7 @@ defmodule McpWeb.Plugs.ApiRateLimitTest do
       assert conn.resp_body =~ "Rate limit exceeded"
     end
 
-    test "sets Retry-After header when rate limited", %{conn: conn, raw_key: raw_key} do
+    test "sets Retry-After header when rate limited", %{conn: _conn, raw_key: raw_key} do
       limit = 2
 
       # Exhaust the limit
@@ -159,7 +159,7 @@ defmodule McpWeb.Plugs.ApiRateLimitTest do
       assert retry_seconds <= 60
     end
 
-    test "sets correct rate limit headers when over limit", %{conn: conn, raw_key: raw_key} do
+    test "sets correct rate limit headers when over limit", %{conn: _conn, raw_key: raw_key} do
       limit = 2
 
       # Exhaust the limit
@@ -182,7 +182,7 @@ defmodule McpWeb.Plugs.ApiRateLimitTest do
       assert get_resp_header(conn, "x-ratelimit-reset") != []
     end
 
-    test "returns proper JSON error response", %{conn: conn, raw_key: raw_key} do
+    test "returns proper JSON error response", %{conn: _conn, raw_key: raw_key} do
       limit = 1
 
       # Exhaust the limit
@@ -210,7 +210,7 @@ defmodule McpWeb.Plugs.ApiRateLimitTest do
   end
 
   describe "rate limit window and reset" do
-    test "rate limit resets after time window expires", %{conn: conn, raw_key: raw_key} do
+    test "rate limit resets after time window expires", %{conn: _conn, raw_key: raw_key} do
       # Use very short window for testing (1 second)
       limit = 2
       window = 1
@@ -448,7 +448,7 @@ defmodule McpWeb.Plugs.ApiRateLimitTest do
   end
 
   describe "concurrent request handling" do
-    test "correctly counts concurrent requests", %{conn: conn, raw_key: raw_key} do
+    test "correctly counts concurrent requests", %{conn: _conn, raw_key: raw_key} do
       limit = 10
 
       # Make concurrent requests
@@ -479,7 +479,7 @@ defmodule McpWeb.Plugs.ApiRateLimitTest do
       assert conn.status == 429
     end
 
-    test "atomic increment prevents race conditions", %{conn: conn, raw_key: raw_key} do
+    test "atomic increment prevents race conditions", %{conn: _conn, raw_key: raw_key} do
       limit = 5
 
       # Make highly concurrent requests (more than limit)

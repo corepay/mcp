@@ -211,7 +211,7 @@ defmodule McpWeb.Auth.OAuthIntegrationTest do
     end
 
     @tag :pending_oauth_implementation
-    test "GitHub OAuth logs in existing user and links OAuth", %{conn: _conn, user: _user} do
+    test "GitHub OAuth logs in existing user and links OAuth", %{conn: conn, user: _user} do
       state = "test_state_existing_user"
 
       conn =
@@ -652,7 +652,7 @@ defmodule McpWeb.Auth.OAuthIntegrationTest do
     end
 
     @tag :pending_oauth_implementation
-    test "user can login with password after linking OAuth", %{conn: _conn, user: _user} do
+    test "user can login with password after linking OAuth", %{conn: _conn, user: user} do
       # Link OAuth
       {:ok, _linked} =
         OAuth.link_oauth(
@@ -699,7 +699,7 @@ defmodule McpWeb.Auth.OAuthIntegrationTest do
     end
 
     @tag :pending_oauth_implementation
-    test "linking multiple OAuth providers to same account", %{conn: _conn, user: _user} do
+    test "linking multiple OAuth providers to same account", %{conn: _conn, user: user} do
       # Link Google
       {:ok, user_with_google} =
         OAuth.link_oauth(
