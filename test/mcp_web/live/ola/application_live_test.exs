@@ -24,16 +24,23 @@ defmodule McpWeb.Ola.ApplicationLiveTest do
       })
       |> Ash.create!()
 
-    # WORKAROUND: Manually add columns because Ecto.Migrator fails in Sandbox
+    # WORKAROUND: Create table manually because Ecto.Migrator fails in Sandbox for tenant Schema
     schema = tenant.company_schema
 
-    Repo.query!(
-      "ALTER TABLE \"#{schema}\".underwriting_applications ADD COLUMN IF NOT EXISTS submitted_at timestamp(6)"
-    )
-
-    Repo.query!(
-      "ALTER TABLE \"#{schema}\".underwriting_applications ADD COLUMN IF NOT EXISTS sla_due_at timestamp(6)"
-    )
+    Repo.query!("""
+      CREATE TABLE IF NOT EXISTS "#{schema}".underwriting_applications (
+        id uuid PRIMARY KEY,
+        subject_id uuid,
+        subject_type text,
+        status text,
+        application_data jsonb DEFAULT '{}'::jsonb,
+        risk_score integer DEFAULT 0,
+        submitted_at timestamp(6),
+        sla_due_at timestamp(6),
+        inserted_at timestamp(6) NOT NULL,
+        updated_at timestamp(6) NOT NULL
+      )
+    """)
 
     Repo.query!(
       "CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_activities (id uuid PRIMARY KEY, type text, metadata jsonb, actor_id uuid, application_id uuid, inserted_at timestamp(6), updated_at timestamp(6))"
@@ -50,6 +57,77 @@ defmodule McpWeb.Ola.ApplicationLiveTest do
       |> Ash.Changeset.force_change_attribute(:tenant_id, tenant.id)
       |> Ash.create!()
 
+    # WORKAROUND: Create merchants table
+    Repo.query!("""
+      CREATE TABLE IF NOT EXISTS "#{schema}".merchants (
+        id uuid PRIMARY KEY,
+        slug text,
+        business_name text,
+        dba_name text,
+        subdomain text,
+        custom_domain text,
+        business_type text,
+        ein text,
+        website_url text,
+        description text,
+        address_line1 text,
+        address_line2 text,
+        city text,
+        state text,
+        postal_code text,
+        country text DEFAULT 'US',
+        phone text,
+        support_email text,
+        plan text DEFAULT 'starter',
+        reseller_id uuid,
+        status text DEFAULT 'active',
+        settings jsonb DEFAULT '{}'::jsonb,
+        branding jsonb DEFAULT '{}'::jsonb,
+        max_stores integer DEFAULT 0,
+        max_products integer,
+        max_monthly_volume numeric,
+        risk_level text DEFAULT 'low',
+        kyc_verified_at timestamp(6),
+        verification_status text DEFAULT 'pending',
+        mcc text,
+        tax_id_type text,
+        kyc_status text DEFAULT 'pending',
+        kyc_documents jsonb DEFAULT '{}'::jsonb,
+        timezone text DEFAULT 'UTC',
+        default_currency text DEFAULT 'USD',
+        operating_hours jsonb DEFAULT '{}'::jsonb,
+        risk_score integer,
+        risk_profile text DEFAULT 'low',
+        processing_limits jsonb DEFAULT '{}'::jsonb,
+        inserted_at timestamp(6) NOT NULL,
+        updated_at timestamp(6) NOT NULL
+      )
+    """)
+
+    Repo.query!("""
+      CREATE TABLE IF NOT EXISTS conversations (
+        id uuid PRIMARY KEY,
+        title text,
+        inserted_at timestamp(6) NOT NULL,
+        updated_at timestamp(6) NOT NULL
+      )
+    """)
+
+    Repo.query!("""
+      CREATE TABLE IF NOT EXISTS messages (
+        id uuid PRIMARY KEY,
+        text text,
+        source text DEFAULT 'user',
+        complete boolean DEFAULT true,
+        tool_calls jsonb[] DEFAULT ARRAY[]::jsonb[],
+        tool_results jsonb[] DEFAULT ARRAY[]::jsonb[],
+        conversation_id uuid,
+        response_to_id uuid,
+        inserted_at timestamp(6) NOT NULL,
+        updated_at timestamp(6) NOT NULL
+      )
+    """)
+
     # Create Merchant (needed for application submission)
     merchant =
       Merchant
@@ -61,11 +139,12 @@ defmodule McpWeb.Ola.ApplicationLiveTest do
       })
       |> Ash.create!(tenant: tenant.company_schema)
 
-    # Create Application linked to user via email
+    # Create Application linked to merchant
     application =
       Application
       |> Ash.Changeset.for_create(:create, %{
-        merchant_id: merchant.id,
+        subject_id: merchant.id,
+        subject_type: :merchant,
         status: :submitted,
         application_data: %{
           "business_name" => "Test Business",
@@ -200,5 +279,35 @@ defmodule McpWeb.Ola.ApplicationLiveTest do
 
     assert document
     assert document.mime_type == "application/pdf"
+  end
+
+  test "atlas concierge is present in form mode", %{conn: conn, tenant: tenant, user: user} do
+    # 1. Login
+    {:ok, session_data} = Auth.create_user_session(user, "127.0.0.1")
+
+    conn =
+      conn
+      |> init_test_session(%{
+        "tenant_id" => tenant.id,
+        "_mcp_access_token" => session_data.access_token
+      })
+      |> put_req_cookie("_mcp_access_token", session_data.access_token)
+
+    # 2. Mount & Switch to Form
+    {:ok, view, _html} = live(conn, "/online-application/application")
+
+    view
+    |> element("div[phx-value-mode='form']")
+    |> render_click()
+
+    # 3. Verify Concierge Component
+    assert has_element?(view, "#atlas-concierge")
+
+    # 4. Toggle Chat (using the button inside the component)
+    view
+    |> element("#atlas-concierge button[phx-click='toggle']")
+    |> render_click()
+
+    assert has_element?(view, "#atlas-messages", "Hi! I'm Atlas")
   end
 end

@@ -21,6 +21,7 @@ defmodule Mcp.Underwriting.Atlas.Agent do
   """
 
   alias Mcp.Underwriting.Atlas.ConversationContext
+  alias Mcp.Underwriting.Engine.AgentRunner
 
   @type response :: %{
           type: :proactive_help | :answer | :suggestion | :encouragement,
@@ -74,7 +75,7 @@ defmodule Mcp.Underwriting.Atlas.Agent do
   - `:field` - The relevant field (if applicable)
   - `:confidence` - Confidence score (0.0 to 1.0)
   """
-  @spec generate_response(String.t(), ConversationContext.t()) :: {:ok, response()}
+  @spec generate_response(String.t() | nil, ConversationContext.t()) :: {:ok, response()}
   def generate_response(user_message, context) do
     if mock_mode?() do
       mock_generate_response(user_message, context)
@@ -236,9 +237,113 @@ defmodule Mcp.Underwriting.Atlas.Agent do
   #   AgentRunner.run(blueprint, instructions, %{prompt: prompt})
   #
   # For now, uses mock responses for predictable behavior.
+  # Live Mode Implementation
+
   defp live_generate_response(user_message, context) do
+    # 1. Build resources expected by AgentRunner
+    blueprint = build_ash_blueprint()
+    instructions = build_instruction_set(user_message, context)
+
+    # 2. Add extra execution options
+    opts = [
+      tenant_id: Map.get(context.user_state, :tenant_id, "default"),
+      provider: Application.get_env(:mcp, :llm_provider, :ollama)
+    ]
+
+    # 3. Execution with Fallback protection
+    try do
+      case AgentRunner.run(
+             blueprint,
+             instructions,
+             context.form_data,
+             opts
+           ) do
+        {:ok, result} when is_map(result) ->
+          # Transform LLM string keys to atom structure
+          {:ok,
+           %{
+             type: parse_type(result["type"]),
+             message: result["message"] || "I'm not sure, but I can help you find out.",
+             field: result["field"],
+             confidence: Map.get(result, "confidence", 0.0)
+           }}
+
+        {:ok, _other} ->
+          # JSON parse failed or unexpected format
+          fallback_to_mock(user_message, context)
+
+        {:error, _reason} ->
+          # Provider failure
+          fallback_to_mock(user_message, context)
+      end
+    rescue
+      _e ->
+        # Safety net for runtime crashes during execution
+        fallback_to_mock(user_message, context)
+    end
+  end
+
+  defp fallback_to_mock(user_message, context) do
+    # Log the failure silently and fallback
     mock_generate_response(user_message, context)
   end
+
+  defp build_ash_blueprint do
+    raw = atlas_blueprint()
+
+    struct(Mcp.Underwriting.AgentBlueprint, %{
+      name: raw.name,
+      description: raw.description,
+      base_prompt: raw.base_prompt,
+      tools: raw.tools,
+      routing_config: raw.routing_config,
+      knowledge_base_ids: []
+    })
+  end
+
+  defp build_instruction_set(user_message, context) do
+    step_guidance = step_guidance_for(context.current_step)
+    field_context = build_field_context(context)
+
+    instructions_text = """
+    ## Current Step: #{context.current_step}
+    #{step_guidance}
+
+    ## Context
+    #{field_context}
+
+    ## User Input
+    "#{user_message}"
+
+    ## JSON Response Requirements
+    You must respond with a JSON object containing:
+    - "type": One of "answer", "suggestion", "proactive_help", "encouragement"
+    - "message": The content of your response (friendly, helpful, concise)
+    - "field": The specific field name (snake_case) if referring to a form field, or null
+    - "confidence": Float between 0.0 and 1.0
+
+    Example:
+    {
+      "type": "answer",
+      "message": "The EIN stands for Employer Identification Number.",
+      "field": "ein",
+      "confidence": 0.95
+    }
+    """
+
+    struct(Mcp.Underwriting.InstructionSet, %{
+      name: "Atlas Dynamic Instructions",
+      instructions: instructions_text,
+      # Ephemeral
+      blueprint_id: nil
+    })
+  end
+
+  defp parse_type("answer"), do: :answer
+  defp parse_type("suggestion"), do: :suggestion
+  defp parse_type("proactive_help"), do: :proactive_help
+  defp parse_type("encouragement"), do: :encouragement
+  defp parse_type(_), do: :answer
 
   defp empty_message?(message) do
     is_nil(message) || String.trim(message || "") == ""

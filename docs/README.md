@@ -23,7 +23,7 @@ Project management, epics, and roadmaps.
 - **TODOs**: `planning/todo_elimination.md`
 - **Workflows**: `planning/workflows.yaml`
 
-### 📚 [Guides](/docs/guides)
+### 📚 [Guides](/docs/features)
 Human-readable specific "How-to" guides for features and workflows.
 
 ## Contributing

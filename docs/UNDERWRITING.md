@@ -46,7 +46,11 @@ lib/mcp/underwriting/
 │   ├── instruction_set.ex  # Agent prompts
 │   └── vendor_settings.ex  # Tenant vendor config
 └── services/
-    └── ...
+│   ├── instruction_set.ex  # Agent prompts
+│   └── vendor_settings.ex  # Tenant vendor config
+└── services/
+    ├── magic_camera.ex     # QR code mobile upload
+    └── magic_link.ex       # Save & resume flow
 ```
 
 ### Key Patterns
@@ -197,6 +201,13 @@ draft → submitted → under_review → manual_review → approved
 - Risk Assessor
 - Response Reviewer
 
+### Atlas AI Concierge
+Context-aware assistant embedded in the Online Application (`ApplicationLive`).
+- **Features**: Proactive idle guidance, field-specific advice, generic Q&A.
+- **Components**: `AtlasConciergeComponent` (UI), `Mcp.Underwriting.Atlas.Agent` (Logic).
+- **Integration**: Uses `ConversationContext` to inject form state and user behavior (idle time, focus) into the LLM prompt.
+- **Resilience**: Falls back to mock responses if the AgentRunner provider is unavailable.
+
 ---
 
 ## Gaps (Not Yet Implemented)
@@ -205,7 +216,6 @@ draft → submitted → under_review → manual_review → approved
 
 | Feature | Description |
 |---------|-------------|
-| **Atlas AI Concierge** | Contextual guidance during application |
 | **Document Pre-Validation** | Check quality before submission |
 | **ML Risk Models** | Replace rule-based with trained models |
 | **Drip Campaigns** | Automated emails for stalled applications |
@@ -214,8 +224,6 @@ draft → submitted → under_review → manual_review → approved
 
 | Feature | Description |
 |---------|-------------|
-| **Magic Camera** | QR → phone camera → upload flow |
-| **Save & Resume Links** | Email/SMS magic links |
 | **Pizza Tracker** | Visual status timeline for applicants |
 | **Deal Room** | Collaboration features (@mentions, notes) |
 | **SLA Countdown UI** | Visual timer on cards |
@@ -269,8 +277,8 @@ test/mcp_web/live/tenant/underwriting_live_test.exs
 
 ## Related Documentation
 
-- `docs/guides/multi-tenancy/` - Schema isolation
-- `docs/guides/security/` - Data protection
+- `docs/features/multi-tenancy/` - Schema isolation
+- `docs/features/security/` - Data protection
 - `CLAUDE.md` - Development guidelines
 
 ---

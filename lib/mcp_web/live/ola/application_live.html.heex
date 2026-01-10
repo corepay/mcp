@@ -339,11 +339,9 @@
         <div class="sticky top-4">
           <div class="bg-base-100 shadow-xl rounded-lg overflow-hidden h-[600px]">
             <.live_component
-              module={McpWeb.Ola.Components.AtlasChat}
-              id="atlas-chat"
-              current_step={step_atom(@step)}
-              form_data={@form.params || %{}}
-              session_state={@atlas_session_state}
+              module={McpWeb.Components.AtlasConciergeComponent}
+              id="atlas-concierge"
+              hint={nil}
             />
           </div>
         </div>

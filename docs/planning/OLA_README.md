@@ -296,8 +296,8 @@ mix test
 - **Architecture**: [Implementation Status](./ola_implementation_status.md)
 - **Features**: [Enhancement Roadmap](./ola_enhancement_roadmap.md)
 - **Integration**: [Underwriting Integration](./ola_underwriting_integration.md)
-- **API Reference**: `docs/guides/underwriting/api-reference.md`
-- **Developer Guide**: `docs/guides/underwriting/developer-guide.md`
+- **API Reference**: `docs/features/underwriting/api-reference.md`
+- **Developer Guide**: `docs/features/underwriting/developer-guide.md`
 
 ### Getting Help
 - **Technical Issues**: Check Activity logs, application logs
@@ -370,7 +370,7 @@ For questions about:
 - **Architecture**: See [Implementation Status](./ola_implementation_status.md)
 - **Features**: See [Enhancement Roadmap](./ola_enhancement_roadmap.md)
 - **Integration**: See [Underwriting Integration](./ola_underwriting_integration.md)
-- **Everything else**: Check the guides in `docs/guides/`
+- **Everything else**: Check the features in `docs/features/`
 
 ---
 

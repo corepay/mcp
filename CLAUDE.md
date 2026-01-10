@@ -27,7 +27,7 @@ An AI-powered MSP (Managed Service Provider) platform built with:
 - **.rules**: Critical usage rules for specific packages (e.g., ash_typescript)
 - **docs/DESIGN_GUIDE.md**: **CRITICAL**. You must read and follow this guide for ALL UI tasks.
   It defines strict rules (e.g., No Raw HTML, Semantic Tokens). Failure to follow it is a violation of project standards.
-- **docs/guides/README.md**: Index of all available developer guides
+- **docs/features/README.md**: Index of all available developer guides
 
 ## Common Development Commands
 

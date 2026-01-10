@@ -573,8 +573,8 @@ config :mcp, :uploads,
 
 ### Developer Documentation
 - Architecture: This document
-- API Reference: `docs/guides/underwriting/api-reference.md`
-- Developer Guide: `docs/guides/underwriting/developer-guide.md`
+- API Reference: `docs/features/underwriting/api-reference.md`
+- Developer Guide: `docs/features/underwriting/developer-guide.md`
 
 ### Technical Support
 - Underwriting issues: Check `Activity` logs for audit trail

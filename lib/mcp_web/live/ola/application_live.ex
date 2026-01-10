@@ -13,6 +13,8 @@ defmodule McpWeb.Ola.ApplicationLive do
     InstructionSet
   }
 
+  alias Mcp.Underwriting.Atlas.Agent, as: AtlasAgent
+  alias Mcp.Underwriting.Atlas.ConversationContext
   alias Mcp.Underwriting.Services.{DocumentValidator, SubmissionService}
 
   require Ash.Query
@@ -408,6 +410,67 @@ defmodule McpWeb.Ola.ApplicationLive do
   end
 
   @impl true
+  def handle_info({:generate_atlas_response, user_message}, socket) do
+    # Build context
+    context =
+      ConversationContext.build_context(
+        step_atom(socket.assigns.step),
+        socket.assigns.form.params || %{},
+        socket.assigns.atlas_session_state
+      )
+
+    # Call Agent
+    # Note: We spawn this to avoid blocking the LV, but for simplicity here we call directly
+    # In production, this should be a Task.async if it takes time
+    {:ok, response} = AtlasAgent.generate_response(user_message, context)
+
+    send_update(McpWeb.Components.AtlasConciergeComponent,
+      id: "atlas-concierge",
+      messages:
+        socket.assigns.messages ++
+          [
+            %{role: :user, content: user_message},
+            %{role: :assistant, content: response.message}
+          ]
+    )
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(:check_idle, socket) do
+    new_seconds = socket.assigns.atlas_session_state.idle_seconds + 5
+    new_state = Map.put(socket.assigns.atlas_session_state, :idle_seconds, new_seconds)
+
+    socket = assign(socket, :atlas_session_state, new_state)
+
+    if new_seconds >= 30 do
+      # Trigger proactive help if logic allows
+      context =
+        ConversationContext.build_context(
+          step_atom(socket.assigns.step),
+          socket.assigns.form.params || %{},
+          new_state
+        )
+
+      case AtlasAgent.generate_response(nil, context) do
+        {:ok, %{type: :proactive_help, message: msg}} ->
+          send_update(McpWeb.Components.AtlasConciergeComponent,
+            id: "atlas-concierge",
+            hint: msg
+          )
+
+        _ ->
+          :ok
+      end
+    end
+
+    # Schedule next check
+    Process.send_after(self(), :check_idle, 5000)
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_info({:document_validated, ref, result}, socket) do
     validation =
       case result do
@@ -466,9 +529,10 @@ defmodule McpWeb.Ola.ApplicationLive do
 
   # Convert step number to atom for Atlas context
   defp step_atom(1), do: :business_info
-  defp step_atom(2), do: :contact_info
+  defp step_atom(2), do: :owners
   defp step_atom(3), do: :documents
-  defp step_atom(4), do: :review
+  defp step_atom(4), do: :banking
+  defp step_atom(5), do: :review
   defp step_atom(_), do: :unknown
 
   # Infer document type from filename for validation
