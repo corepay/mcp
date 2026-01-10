@@ -91,4 +91,52 @@ defmodule McpWeb.Core.DataDisplay do
     </span>
     """
   end
+
+  @doc """
+  Renders an avatar with image or initials.
+
+  ## Examples
+
+      <.avatar src="/images/user.jpg" alt="John Doe" />
+      <.avatar initials="JD" size="lg" />
+      <.avatar initials="JD" online />
+  """
+  attr :src, :string, default: nil
+  attr :alt, :string, default: "Avatar"
+  attr :initials, :string, default: nil
+  attr :size, :string, default: "md", values: ["xs", "sm", "md", "lg", "xl"]
+  attr :online, :boolean, default: false
+  attr :class, :string, default: nil
+
+  def avatar(assigns) do
+    size_classes = %{
+      "xs" => "w-6",
+      "sm" => "w-8",
+      "md" => "w-10",
+      "lg" => "w-16",
+      "xl" => "w-24"
+    }
+
+    assigns = assign(assigns, :size_class, size_classes[assigns.size])
+
+    ~H"""
+    <div class={["avatar", @online && "online", @class]}>
+      <div class={[
+        @size_class,
+        "rounded-full",
+        !@src && "bg-primary text-primary-content",
+        "ring ring-base-300 ring-offset-base-100 ring-offset-1",
+        "transition-all duration-200"
+      ]}>
+        <img :if={@src} src={@src} alt={@alt} class="object-cover" />
+        <span
+          :if={!@src && @initials}
+          class="flex items-center justify-center w-full h-full text-sm font-medium"
+        >
+          {@initials}
+        </span>
+      </div>
+    </div>
+    """
+  end
 end

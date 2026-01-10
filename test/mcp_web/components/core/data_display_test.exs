@@ -113,4 +113,53 @@ defmodule McpWeb.Core.DataDisplayTest do
       assert html =~ "badge-outline"
     end
   end
+
+  describe "avatar/1" do
+    test "renders with image" do
+      assigns = %{src: "/images/user.jpg", alt: "John Doe"}
+
+      html =
+        rendered_to_string(~H"""
+        <DataDisplay.avatar src={@src} alt={@alt} />
+        """)
+
+      assert html =~ "avatar"
+      assert html =~ "/images/user.jpg"
+      assert html =~ "John Doe"
+    end
+
+    test "renders with initials when no image" do
+      assigns = %{initials: "JD"}
+
+      html =
+        rendered_to_string(~H"""
+        <DataDisplay.avatar initials={@initials} />
+        """)
+
+      assert html =~ "JD"
+      assert html =~ "bg-primary"
+    end
+
+    test "renders with size" do
+      assigns = %{initials: "AB"}
+
+      html =
+        rendered_to_string(~H"""
+        <DataDisplay.avatar initials={@initials} size="lg" />
+        """)
+
+      assert html =~ "w-16"
+    end
+
+    test "renders with online indicator" do
+      assigns = %{initials: "CD", online: true}
+
+      html =
+        rendered_to_string(~H"""
+        <DataDisplay.avatar initials={@initials} online={@online} />
+        """)
+
+      assert html =~ "online"
+    end
+  end
 end
