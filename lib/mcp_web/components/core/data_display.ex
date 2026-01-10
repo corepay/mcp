@@ -48,4 +48,47 @@ defmodule McpWeb.Core.DataDisplay do
     </div>
     """
   end
+
+  @doc """
+  Renders a badge for status indicators and labels.
+
+  ## Examples
+
+      <.badge>Default</.badge>
+      <.badge variant="success">Active</.badge>
+      <.badge variant="error" size="lg">Failed</.badge>
+  """
+  attr :variant, :string,
+    default: nil,
+    values: [
+      nil,
+      "primary",
+      "secondary",
+      "accent",
+      "info",
+      "success",
+      "warning",
+      "error",
+      "ghost"
+    ]
+
+  attr :size, :string, default: nil, values: [nil, "lg", "md", "sm", "xs"]
+  attr :outline, :boolean, default: false
+  attr :class, :string, default: nil
+  slot :inner_block, required: true
+
+  def badge(assigns) do
+    ~H"""
+    <span class={[
+      "badge",
+      @variant && "badge-#{@variant}",
+      @size && "badge-#{@size}",
+      @outline && "badge-outline",
+      "transition-colors duration-150",
+      @class
+    ]}>
+      {render_slot(@inner_block)}
+    </span>
+    """
+  end
 end

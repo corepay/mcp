@@ -65,4 +65,52 @@ defmodule McpWeb.Core.DataDisplayTest do
       assert html =~ "hero-currency-dollar"
     end
   end
+
+  describe "badge/1" do
+    test "renders with default variant" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <DataDisplay.badge>New</DataDisplay.badge>
+        """)
+
+      assert html =~ "badge"
+      assert html =~ "New"
+    end
+
+    test "renders with variant" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <DataDisplay.badge variant="success">Active</DataDisplay.badge>
+        """)
+
+      assert html =~ "badge-success"
+      assert html =~ "Active"
+    end
+
+    test "renders with size" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <DataDisplay.badge size="lg">Large</DataDisplay.badge>
+        """)
+
+      assert html =~ "badge-lg"
+    end
+
+    test "renders outline variant" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <DataDisplay.badge outline>Outline</DataDisplay.badge>
+        """)
+
+      assert html =~ "badge-outline"
+    end
+  end
 end
