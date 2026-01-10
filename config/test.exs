@@ -3,6 +3,7 @@ config :mcp, Oban, testing: :manual
 config :mcp, :token_signing_secret, "test-secret-for-jwt-signing"
 config :mcp, env: :test
 config :mcp, :skip_dns_check, true
+config :ash, :missed_notifications, :ignore
 
 # Configure your database
 #
@@ -17,12 +18,13 @@ config :mcp, Mcp.Repo,
   port: String.to_integer(System.get_env("POSTGRES_PORT") || "41789"),
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 20,
-  queue_target: 5000,
+  queue_target: 30000,
   parameters: [search_path: "public,platform,ag_catalog"]
 
 config :mcp, :async_api_key_updates, false
 config :mcp, :compliance_impl, ComplianceMock
 config :mcp, :run_tenant_migrations, false
+config :mcp, :force_tenant_schema, "acq_test_template"
 config :mcp, :agent_runner_adapter, :mock
 
 config :mcp, :qorpay,

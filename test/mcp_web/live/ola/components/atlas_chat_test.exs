@@ -1,6 +1,5 @@
 defmodule McpWeb.Ola.Components.AtlasChatTest do
   use McpWeb.ConnCase, async: true
-  import Phoenix.LiveViewTest
 
   # Module not yet implemented
   @moduletag :pending_atlas_chat

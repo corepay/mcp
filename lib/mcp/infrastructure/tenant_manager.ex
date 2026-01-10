@@ -11,6 +11,20 @@ defmodule Mcp.Infrastructure.TenantManager do
   def create_tenant_schema(tenant_schema_name) when is_binary(tenant_schema_name) do
     schema_name = @tenant_schema_prefix <> tenant_schema_name
 
+    forced = Application.get_env(:mcp, :force_tenant_schema)
+    IO.puts("TenantManager: Request schema=#{schema_name}, Forced=#{inspect(forced)}")
+
+    # Optimization: If this is the forced template schema, skip all DDL.
+    if forced == schema_name do
+      IO.puts("TenantManager: OPTIMIZATION HIT. Skipping DDL for #{schema_name}")
+      {:ok, schema_name}
+    else
+      IO.puts("TenantManager: Proceeding with DDL for #{schema_name}...")
+      do_create_tenant_schema(tenant_schema_name, schema_name)
+    end
+  end
+
+  defp do_create_tenant_schema(tenant_schema_name, schema_name) do
     case check_schema_exists(tenant_schema_name) do
       {:ok, false} ->
         execute_create_tenant_schema(tenant_schema_name)

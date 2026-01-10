@@ -1,86 +1,31 @@
 defmodule Mcp.Underwriting.Services.SubmissionServiceTest do
-  use Mcp.DataCase, async: true
+  use Mcp.DataCase, async: false
 
   alias Mcp.Accounts.User
-  alias Mcp.Platform.{Merchant, Tenant}
+  alias Mcp.Platform.Merchant
   alias Mcp.Underwriting.Services.SubmissionService
 
   describe "create_application/3" do
     setup do
-      # Create Tenant
-      tenant =
-        Tenant
-        |> Ash.Changeset.for_create(:create, %{
-          name: "Service Test Tenant",
-          slug: "service-test",
-          subdomain: "service-test"
-        })
-        |> Ash.create!()
+      Mcp.Repo.query!("SET search_path TO public, platform")
 
-      schema = tenant.company_schema
-      Repo.query!("CREATE SCHEMA IF NOT EXISTS \"#{schema}\"")
+      # Optimization: We do not need to insert a Tenant record into platform.tenants
+      # for this test. We only need the struct with the correct schema info.
+      # This avoids potential locks/hangs on the tenants table during parallel tests.
 
-      # Setup tables (Similar to LiveView test but focused on service)
-      Repo.query!("""
-        CREATE TABLE IF NOT EXISTS \"#{schema}\".merchants (
-          id uuid PRIMARY KEY,
-          slug text,
-          business_name text,
-          dba_name text,
-          subdomain text,
-          custom_domain text,
-          business_type text,
-          ein text,
-          website_url text,
-          description text,
-          address_line1 text,
-          address_line2 text,
-          city text,
-          state text,
-          postal_code text,
-          country text DEFAULT 'US',
-          phone text,
-          support_email text,
-          plan text DEFAULT 'starter',
-          status text DEFAULT 'active',
-          settings jsonb DEFAULT '{}',
-          branding jsonb DEFAULT '{}',
-          max_stores integer DEFAULT 0,
-          max_products integer,
-          max_monthly_volume numeric,
-          risk_level text DEFAULT 'low',
-          kyc_verified_at timestamp(6),
-          verification_status text DEFAULT 'pending',
-          mcc text,
-          tax_id_type text,
-          kyc_status text DEFAULT 'pending',
-          kyc_documents jsonb DEFAULT '{}',
-          timezone text DEFAULT 'UTC',
-          default_currency text DEFAULT 'USD',
-          operating_hours jsonb DEFAULT '{}',
-          risk_score integer,
-          risk_profile text DEFAULT 'low',
-          processing_limits jsonb DEFAULT '{}',
-          reseller_id uuid,
-          inserted_at timestamp(6),
-          updated_at timestamp(6)
-        )
-      """)
+      uuid = Ecto.UUID.generate()
+      schema = "acq_test_template"
 
-      Repo.query!("""
-        CREATE TABLE IF NOT EXISTS \"#{schema}\".underwriting_applications (
-          id uuid PRIMARY KEY,
-          subject_id uuid,
-          subject_type text,
-          status text,
-          application_data jsonb,
-          risk_score integer,
-          submitted_at timestamp(6),
-          sla_due_at timestamp(6),
-          inserted_at timestamp(6),
-          updated_at timestamp(6)
-        )
-      """)
+      # Mock the tenant struct for downstream usage
+      tenant = %Mcp.Platform.Tenant{
+        id: uuid,
+        company_schema: schema,
+        name: "Service Test Tenant",
+        slug: "service-test",
+        subdomain: "service-test",
+        plan: :starter,
+        status: :active
+      }
 
       # Create Merchant
       merchant =

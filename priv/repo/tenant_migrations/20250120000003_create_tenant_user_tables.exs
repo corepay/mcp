@@ -1,3 +1,4 @@
+Code.put_compiler_option(:ignore_module_conflict, true)
 defmodule Mcp.Repo.TenantMigrations.CreateTenantUserTables do
   @moduledoc """
   Migration to create tenant user management tables.

@@ -1,3 +1,4 @@
+Code.put_compiler_option(:ignore_module_conflict, true)
 defmodule Mcp.Repo.TenantMigrations.AddApplicationToRiskAssessment do
   @moduledoc """
   Updates resources based on their most recent snapshots.

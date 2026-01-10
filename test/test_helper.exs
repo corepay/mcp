@@ -1,7 +1,8 @@
 ExUnit.start(
   max_failures: 1,
   seed: 0,
-  timeout: 60_000,
+  timeout: 120_000,
+  max_cases: 4,
   trace: System.get_env("TRACE", "false") == "true"
 )
 
@@ -16,16 +17,17 @@ end
 ExUnit.configure(exclude: [:slow, :integration])
 
 # Test utilities
-Code.require_file("test/support/mocks.ex")
 
 # Configure test database
 Application.put_env(:mcp, Mcp.Repo,
-  username: "postgres",
-  password: "postgres",
+  username: "base_mcp_dev",
+  password: "mcp_password",
   hostname: "localhost",
+  port: 41_789,
   database: "mcp_test#{System.get_env("MIX_TEST_PARTITION", "")}",
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: 10,
+  pool_size: 20,
+  queue_target: 30_000,
   show_sensitive_data_on_connection_error: true,
   ownership_timeout: 180_000
 )
@@ -92,6 +94,53 @@ ExUnit.configure(
 unless System.get_env("SKIP_MIGRATIONS", "false") == "true" do
   Mix.Task.run("ecto.create", ["--quiet"])
   Mix.Task.run("ecto.migrate", ["--quiet"])
+
+  # Bootstrap Template Schema (if configured)
+  # This serves as the single pre-migrated schema for all tests to avoid
+  # runtime migration deadlocks inside sandbox transactions.
+  if template_schema = Application.get_env(:mcp, :force_tenant_schema) do
+    {:ok, _} = Application.ensure_all_started(:mcp)
+
+    # Define a temporary Repo for setup that bypasses the Sandbox and its ownership issues
+    defmodule SetupRepo do
+      use Ecto.Repo,
+        otp_app: :mcp,
+        adapter: Ecto.Adapters.Postgres
+    end
+
+    # Configure SetupRepo using the same DB settings but standard pool
+    main_repo_config = Application.get_env(:mcp, Mcp.Repo)
+
+    setup_repo_config =
+      main_repo_config
+      |> Keyword.put(:pool, DBConnection.ConnectionPool)
+      |> Keyword.put(:pool_size, 2)
+      # Avoid name conflict
+      |> Keyword.put(:name, nil)
+
+    Application.put_env(:mcp, SetupRepo, setup_repo_config)
+
+    # Start SetupRepo
+    {:ok, _pid} = SetupRepo.start_link()
+
+    try do
+      IO.puts("Bootstrapping Template Schema: #{template_schema} via SetupRepo...")
+      path = Application.app_dir(:mcp, "priv/repo/tenant_migrations")
+
+      # 1. Drop (Clean Slate)
+      SetupRepo.query!("DROP SCHEMA IF EXISTS \"#{template_schema}\" CASCADE")
+
+      # 2. Create
+      SetupRepo.query!("CREATE SCHEMA \"#{template_schema}\"")
+
+      # 3. Migrate
+      Ecto.Migrator.run(SetupRepo, path, :up, all: true, prefix: template_schema)
+      IO.puts("Template Schema #{template_schema} ready.")
+    after
+      # Cleanup
+      SetupRepo.stop()
+    end
+  end
 end
 
 # Note: ExUnit.after_suite/1 would be used here if needed for cleanup

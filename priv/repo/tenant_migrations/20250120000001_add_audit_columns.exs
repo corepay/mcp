@@ -1,3 +1,4 @@
+Code.put_compiler_option(:ignore_module_conflict, true)
 defmodule Mcp.Repo.TenantMigrations.AddAuditColumns do
   @moduledoc """
   Migration to add audit columns to all tenant tables.

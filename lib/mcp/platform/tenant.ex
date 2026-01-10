@@ -36,10 +36,20 @@ defmodule Mcp.Platform.Tenant do
         if Ash.Changeset.get_attribute(changeset, :company_schema) do
           changeset
         else
+          # Check for forced schema override (Test Environment)
+          forced_schema = Application.get_env(:mcp, :force_tenant_schema)
+
+          schema_name =
+            if forced_schema do
+              forced_schema
+            else
+              "acq_#{Ecto.UUID.generate()}"
+            end
+
           Ash.Changeset.force_change_attribute(
             changeset,
             :company_schema,
-            "acq_#{Ecto.UUID.generate()}"
+            schema_name
           )
         end
       end

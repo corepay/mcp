@@ -1,3 +1,4 @@
+Code.put_compiler_option(:ignore_module_conflict, true)
 defmodule Mcp.Repo.TenantMigrations.AddSearchIndexes do
   @moduledoc """
   Migration to add search indexes for improved query performance.
