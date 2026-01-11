@@ -163,4 +163,46 @@ defmodule McpWeb.Core.Navigation do
     </aside>
     """
   end
+
+  @doc """
+  Renders horizontal navigation tabs.
+
+  ## Examples
+
+      <.tabs items={[
+        %{label: "Dashboard", href: "/", active: true},
+        %{label: "Products", href: "/products", active: false}
+      ]} />
+  """
+  attr :items, :list, required: true
+  attr :variant, :string, default: nil, values: [nil, "bordered", "boxed", "lifted"]
+  attr :size, :string, default: nil, values: [nil, "xs", "sm", "md", "lg"]
+  attr :class, :string, default: nil
+
+  def tabs(assigns) do
+    ~H"""
+    <div
+      role="tablist"
+      class={[
+        "tabs",
+        @variant && "tabs-#{@variant}",
+        @size && "tabs-#{@size}",
+        @class
+      ]}
+    >
+      <a
+        :for={item <- @items}
+        href={item.href}
+        role="tab"
+        class={[
+          "tab",
+          "transition-colors duration-150",
+          item.active && "tab-active"
+        ]}
+      >
+        {item.label}
+      </a>
+    </div>
+    """
+  end
 end

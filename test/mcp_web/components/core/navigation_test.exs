@@ -146,4 +146,48 @@ defmodule McpWeb.Core.NavigationTest do
       assert html =~ "collapse"
     end
   end
+
+  describe "tabs/1" do
+    test "renders tabs with items" do
+      assigns = %{
+        items: [
+          %{label: "Dashboard", href: "/", active: true},
+          %{label: "Products", href: "/products", active: false},
+          %{label: "Settings", href: "/settings", active: false}
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <Navigation.tabs items={@items} />
+        """)
+
+      assert html =~ "tabs"
+      assert html =~ "Dashboard"
+      assert html =~ "Products"
+      assert html =~ "tab-active"
+    end
+
+    test "renders with bordered variant" do
+      assigns = %{items: [%{label: "Tab 1", href: "#", active: true}]}
+
+      html =
+        rendered_to_string(~H"""
+        <Navigation.tabs items={@items} variant="bordered" />
+        """)
+
+      assert html =~ "tabs-bordered"
+    end
+
+    test "renders with boxed variant" do
+      assigns = %{items: [%{label: "Tab 1", href: "#", active: true}]}
+
+      html =
+        rendered_to_string(~H"""
+        <Navigation.tabs items={@items} variant="boxed" />
+        """)
+
+      assert html =~ "tabs-boxed"
+    end
+  end
 end
