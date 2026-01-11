@@ -73,6 +73,7 @@ defmodule McpWeb.Portal.DataTable do
   attr :selectable, :boolean, default: false
   attr :sort_by, :atom, default: nil
   attr :sort_dir, :atom, default: nil
+  attr :row_testid, :string, default: nil
 
   slot :col, required: true do
     attr :label, :string
@@ -141,6 +142,7 @@ defmodule McpWeb.Portal.DataTable do
                   class={row_classes(@row_click)}
                   phx-click={@row_click && "row-click"}
                   phx-value-id={@row_click && row_dom_id}
+                  data-testid={@row_testid}
                 >
                   <td :if={@selectable} class="w-12">
                     <input

@@ -27,9 +27,9 @@ defmodule McpWeb.Merchant.Products.IndexLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <.page_layout variant={:list} title="Products">
+    <.page_layout variant={:list} title="Products" data-testid="page-layout-list">
       <:stats>
-        <.stats_row>
+        <.stats_row data-testid="stats-row">
           <.stat
             label="Total Products"
             value={@stats.total_products}
@@ -63,13 +63,22 @@ defmodule McpWeb.Merchant.Products.IndexLive do
             value={@search}
             placeholder="Search products by name or SKU..."
             class="input input-bordered w-full max-w-xs"
+            phx-debounce="300"
           />
         </form>
         <.bulk_actions_bar :if={MapSet.size(@selected_ids) > 0} count={MapSet.size(@selected_ids)} />
+        <button
+          type="button"
+          class="btn btn-primary"
+          phx-click="add_product"
+          data-testid="add-product-btn"
+        >
+          Add Product
+        </button>
       </:toolbar>
 
       <:content>
-        <.data_table id="products-table" rows={@filtered_products} selectable>
+        <.data_table id="products-table" rows={@filtered_products} selectable row_testid="product-row">
           <:col :let={product} label="Name" field={:name}>
             <div class="flex items-center gap-3">
               <div class="avatar placeholder">
@@ -134,7 +143,7 @@ defmodule McpWeb.Merchant.Products.IndexLive do
       </:content>
 
       <:sidebar>
-        <.action_sidebar>
+        <.action_sidebar data-testid="action-sidebar">
           <:actions>
             <.sidebar_action icon="hero-plus" label="Add Product" phx-click="add_product" />
             <.sidebar_action
@@ -169,16 +178,9 @@ defmodule McpWeb.Merchant.Products.IndexLive do
           </:filters>
 
           <:insights>
-            <.ai_insight
-              message="3 products are running low on stock"
-              action="View low stock items"
-              phx-click="view_low_stock"
-            />
-            <.ai_insight
-              message="Widget Pro has 25% higher sales than similar products"
-              action="Analyze performance"
-              phx-click="analyze_performance"
-            />
+            <div class="text-center text-sm text-base-content/50 py-4">
+              AI insights coming in Phase 5
+            </div>
           </:insights>
         </.action_sidebar>
       </:sidebar>
@@ -189,8 +191,11 @@ defmodule McpWeb.Merchant.Products.IndexLive do
   # Bulk actions bar component
   defp bulk_actions_bar(assigns) do
     ~H"""
-    <div class="flex items-center gap-2 bg-primary/10 rounded-lg px-4 py-2">
-      <span class="text-sm font-medium">{@count} selected</span>
+    <div
+      class="flex items-center gap-2 bg-primary/10 rounded-lg px-4 py-2"
+      data-testid="bulk-actions-bar"
+    >
+      <span class="text-sm font-medium" data-testid="selected-count">{@count} selected</span>
       <button type="button" class="btn btn-sm btn-ghost" phx-click="bulk_update_status">
         Update Status
       </button>
@@ -256,8 +261,8 @@ defmodule McpWeb.Merchant.Products.IndexLive do
 
   @impl true
   def handle_event("add_product", _params, socket) do
-    # Placeholder for add product action - would navigate to new product form
-    {:noreply, socket}
+    # Route to be added in Phase 3 - Product Detail implementation
+    {:noreply, push_navigate(socket, to: "/app/products/new")}
   end
 
   @impl true

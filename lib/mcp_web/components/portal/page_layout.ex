@@ -70,6 +70,7 @@ defmodule McpWeb.Portal.PageLayout do
   attr :variant, :atom, required: true, values: [:dashboard, :list, :detail, :table, :calendar]
   attr :title, :string, required: true
   attr :back, :string, default: nil
+  attr :"data-testid", :string, default: nil
 
   slot :stats
   slot :toolbar
@@ -79,7 +80,7 @@ defmodule McpWeb.Portal.PageLayout do
 
   def page_layout(assigns) do
     ~H"""
-    <div class="page-layout">
+    <div class="page-layout" data-testid={assigns[:"data-testid"]}>
       <%!-- Page Header with Title and optional Back Link --%>
       <div class={header_classes(@variant, @back)}>
         <.back_link :if={@back} href={@back} />

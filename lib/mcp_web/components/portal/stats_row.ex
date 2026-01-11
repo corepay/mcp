@@ -32,14 +32,18 @@ defmodule McpWeb.Portal.StatsRow do
       </.stats_row>
   """
   attr :class, :string, default: nil
+  attr :"data-testid", :string, default: nil
   slot :inner_block, required: true
 
   def stats_row(assigns) do
     ~H"""
-    <div class={[
-      "grid grid-cols-2 md:grid-cols-4 gap-4",
-      @class
-    ]}>
+    <div
+      class={[
+        "grid grid-cols-2 md:grid-cols-4 gap-4",
+        @class
+      ]}
+      data-testid={assigns[:"data-testid"]}
+    >
       {render_slot(@inner_block)}
     </div>
     """

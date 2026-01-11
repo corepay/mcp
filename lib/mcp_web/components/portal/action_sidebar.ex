@@ -48,6 +48,7 @@ defmodule McpWeb.Portal.ActionSidebar do
   - `insights` - AI insight cards (optional)
   """
   attr :class, :string, default: nil
+  attr :"data-testid", :string, default: nil
 
   slot :actions
   slot :filters
@@ -55,11 +56,14 @@ defmodule McpWeb.Portal.ActionSidebar do
 
   def action_sidebar(assigns) do
     ~H"""
-    <aside class={[
-      "w-72 sticky top-20",
-      "flex flex-col gap-6",
-      @class
-    ]}>
+    <aside
+      class={[
+        "w-72 sticky top-20",
+        "flex flex-col gap-6",
+        @class
+      ]}
+      data-testid={assigns[:"data-testid"]}
+    >
       <section :if={@actions != []} class="flex flex-col gap-2">
         <h3 class="text-xs font-semibold uppercase tracking-wider text-base-content/60 px-1">
           QUICK ACTIONS

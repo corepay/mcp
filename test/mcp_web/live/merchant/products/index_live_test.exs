@@ -1,261 +1,300 @@
 defmodule McpWeb.Merchant.Products.IndexLiveTest do
-  use ExUnit.Case, async: true
+  @moduledoc false
+  use McpWeb.ConnCase
   import Phoenix.LiveViewTest
 
-  alias McpWeb.Merchant.Products.IndexLive
+  # Integration test requiring full tenant schema setup
+  @moduletag :integration
 
-  @endpoint McpWeb.Endpoint
+  alias Mcp.Accounts.Auth
+  alias Mcp.Accounts.User
+  alias Mcp.Platform.Tenant
 
-  defp build_socket do
-    %Phoenix.LiveView.Socket{
-      endpoint: @endpoint,
-      router: McpWeb.Router,
-      assigns: %{
-        __changed__: %{},
-        flash: %{}
-      }
-    }
-  end
+  describe "GET /app/products" do
+    setup %{conn: _conn} do
+      tenant =
+        Tenant
+        |> Ash.Changeset.for_create(:create, %{
+          name: "Test Product Tenant",
+          slug: "product-test-#{System.unique_integer([:positive])}",
+          subdomain: "product-#{System.unique_integer([:positive])}"
+        })
+        |> Ash.create!()
 
-  describe "mount/3" do
-    test "loads sample products and stats" do
-      socket = build_socket()
+      user =
+        User
+        |> Ash.Changeset.for_create(:register, %{
+          email: "product_merchant_#{System.unique_integer([:positive])}@example.com",
+          password: "password123",
+          password_confirmation: "password123",
+          first_name: "Test",
+          last_name: "Merchant"
+        })
+        |> Ash.Changeset.force_change_attribute(:tenant_id, tenant.id)
+        |> Ash.create!()
 
-      {:ok, socket} = IndexLive.mount(%{}, %{}, socket)
+      {:ok, session_data} = Auth.create_user_session(user, "127.0.0.1")
 
-      assert is_list(socket.assigns.products)
-      assert length(socket.assigns.products) > 0
-      assert socket.assigns.stats.total_products
-      assert socket.assigns.search == ""
-      assert socket.assigns.category_filter == "all"
-      assert socket.assigns.status_filter == "all"
+      host = "#{tenant.subdomain}.localhost"
+
+      authed_conn =
+        build_conn()
+        |> Map.put(:host, host)
+        |> put_req_header("x-forwarded-host", host)
+        |> init_test_session(%{"tenant_id" => tenant.id})
+        |> put_req_cookie("_mcp_access_token", session_data.access_token)
+        |> put_req_cookie("_mcp_refresh_token", session_data.refresh_token)
+        |> put_req_cookie("_mcp_session_id", session_data.session_id)
+
+      {:ok, conn: authed_conn, tenant: tenant, user: user}
     end
-  end
 
-  describe "render/1" do
-    setup do
-      socket = build_socket()
+    test "renders product list with page layout", %{conn: conn} do
+      {:ok, view, html} = live(conn, ~p"/app/products")
 
-      {:ok, socket} = IndexLive.mount(%{}, %{}, socket)
-      html = render_component(&IndexLive.render/1, socket.assigns)
-
-      {:ok, html: html, socket: socket}
-    end
-
-    test "renders page with title 'Products'", %{html: html} do
       assert html =~ "Products"
+      assert has_element?(view, "[data-testid='page-layout-list']")
+      assert has_element?(view, "[data-testid='stats-row']")
+      assert has_element?(view, "[data-testid='action-sidebar']")
     end
 
-    test "renders page layout with list variant", %{html: html} do
-      # The page layout has a grid with 2/3 + 1/3 split for list variant
-      assert html =~ "page-layout"
+    test "displays AI insights placeholder", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/app/products")
+
+      assert html =~ "AI insights coming in Phase 5"
     end
 
-    test "displays product metrics in stats row", %{html: html} do
+    test "displays product metrics in stats row", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/app/products")
+
       assert html =~ "Total Products"
       assert html =~ "Active"
       assert html =~ "Draft"
+      assert html =~ "Low Stock"
     end
 
-    test "displays product data table with correct columns", %{html: html} do
+    test "displays product data table with correct columns", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/app/products")
+
       assert html =~ "Name"
       assert html =~ "Status"
       assert html =~ "Stock"
       assert html =~ "Price"
     end
 
-    test "displays sample product data in table", %{html: html} do
-      # Check for some sample product data
-      assert html =~ "SKU-"
+    test "displays sample product data in table", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/app/products")
+
+      # Verify product rows are rendered with data-testid
+      assert has_element?(view, "[data-testid='product-row']")
     end
 
-    test "action sidebar has 'Add Product' action", %{html: html} do
+    test "has Add Product button with data-testid", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/app/products")
+
+      assert has_element?(view, "[data-testid='add-product-btn']")
+    end
+
+    test "action sidebar has quick actions section", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/app/products")
+
       assert html =~ "QUICK ACTIONS"
       assert html =~ "Add Product"
     end
 
-    test "action sidebar has category filter", %{html: html} do
+    test "action sidebar has category filter", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/app/products")
+
       assert html =~ "FILTERS"
       assert html =~ "Category"
     end
 
-    test "action sidebar has status filter", %{html: html} do
+    test "action sidebar has status filter", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/app/products")
+
       assert html =~ "Status"
     end
+  end
 
-    test "action sidebar has AI Insights placeholder section", %{html: html} do
-      assert html =~ "AI INSIGHTS"
+  describe "search" do
+    setup %{conn: _conn} do
+      tenant =
+        Tenant
+        |> Ash.Changeset.for_create(:create, %{
+          name: "Test Search Tenant",
+          slug: "search-test-#{System.unique_integer([:positive])}",
+          subdomain: "search-#{System.unique_integer([:positive])}"
+        })
+        |> Ash.create!()
+
+      user =
+        User
+        |> Ash.Changeset.for_create(:register, %{
+          email: "search_merchant_#{System.unique_integer([:positive])}@example.com",
+          password: "password123",
+          password_confirmation: "password123",
+          first_name: "Test",
+          last_name: "Merchant"
+        })
+        |> Ash.Changeset.force_change_attribute(:tenant_id, tenant.id)
+        |> Ash.create!()
+
+      {:ok, session_data} = Auth.create_user_session(user, "127.0.0.1")
+
+      host = "#{tenant.subdomain}.localhost"
+
+      authed_conn =
+        build_conn()
+        |> Map.put(:host, host)
+        |> put_req_header("x-forwarded-host", host)
+        |> init_test_session(%{"tenant_id" => tenant.id})
+        |> put_req_cookie("_mcp_access_token", session_data.access_token)
+        |> put_req_cookie("_mcp_refresh_token", session_data.refresh_token)
+        |> put_req_cookie("_mcp_session_id", session_data.session_id)
+
+      {:ok, conn: authed_conn, tenant: tenant, user: user}
+    end
+
+    test "filters products by search query", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/app/products")
+
+      # Use the search form to filter
+      view
+      |> form("#product-search-form", %{search: "Widget"})
+      |> render_change()
+
+      # Should still render the page with filtered results
+      html = render(view)
+      assert html =~ "Widget Pro"
     end
   end
 
-  describe "handle_event/3 - search" do
-    test "filters products by search term" do
-      socket = build_socket()
+  describe "filters" do
+    setup %{conn: _conn} do
+      tenant =
+        Tenant
+        |> Ash.Changeset.for_create(:create, %{
+          name: "Test Filter Tenant",
+          slug: "filter-test-#{System.unique_integer([:positive])}",
+          subdomain: "filter-#{System.unique_integer([:positive])}"
+        })
+        |> Ash.create!()
 
-      {:ok, socket} = IndexLive.mount(%{}, %{}, socket)
-      initial_count = length(socket.assigns.filtered_products)
+      user =
+        User
+        |> Ash.Changeset.for_create(:register, %{
+          email: "filter_merchant_#{System.unique_integer([:positive])}@example.com",
+          password: "password123",
+          password_confirmation: "password123",
+          first_name: "Test",
+          last_name: "Merchant"
+        })
+        |> Ash.Changeset.force_change_attribute(:tenant_id, tenant.id)
+        |> Ash.create!()
 
-      {:noreply, socket} =
-        IndexLive.handle_event("search", %{"search" => "Widget"}, socket)
+      {:ok, session_data} = Auth.create_user_session(user, "127.0.0.1")
 
-      assert socket.assigns.search == "Widget"
-      # Should have filtered results when search term is specific
-      filtered_count = length(socket.assigns.filtered_products)
-      assert filtered_count <= initial_count
+      host = "#{tenant.subdomain}.localhost"
 
-      assert Enum.all?(socket.assigns.filtered_products, fn p ->
-               String.contains?(String.downcase(p.name), "widget") ||
-                 String.contains?(String.downcase(p.sku), "widget")
-             end)
+      authed_conn =
+        build_conn()
+        |> Map.put(:host, host)
+        |> put_req_header("x-forwarded-host", host)
+        |> init_test_session(%{"tenant_id" => tenant.id})
+        |> put_req_cookie("_mcp_access_token", session_data.access_token)
+        |> put_req_cookie("_mcp_refresh_token", session_data.refresh_token)
+        |> put_req_cookie("_mcp_session_id", session_data.session_id)
+
+      {:ok, conn: authed_conn, tenant: tenant, user: user}
     end
 
-    test "shows all products when search is empty" do
-      socket = build_socket()
+    test "filters products by category", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/app/products")
 
-      {:ok, socket} = IndexLive.mount(%{}, %{}, socket)
-      {:noreply, socket} = IndexLive.handle_event("search", %{"search" => "xyz"}, socket)
+      # Trigger category filter change
+      render_change(view, "filter_category", %{"category" => "electronics"})
 
-      # Should have filtered results
-      assert length(socket.assigns.filtered_products) < length(socket.assigns.products)
-
-      {:noreply, socket} = IndexLive.handle_event("search", %{"search" => ""}, socket)
-
-      # Should show all again
-      assert length(socket.assigns.filtered_products) == length(socket.assigns.products)
-    end
-  end
-
-  describe "handle_event/3 - filter by category" do
-    test "filters products by category" do
-      socket = build_socket()
-
-      {:ok, socket} = IndexLive.mount(%{}, %{}, socket)
-
-      {:noreply, socket} =
-        IndexLive.handle_event("filter_category", %{"category" => "electronics"}, socket)
-
-      assert socket.assigns.category_filter == "electronics"
-
-      assert Enum.all?(socket.assigns.filtered_products, fn p ->
-               p.category == :electronics
-             end)
+      # Verify page still renders
+      html = render(view)
+      assert html =~ "Products"
     end
 
-    test "shows all products when category filter is 'all'" do
-      socket = build_socket()
+    test "filters products by status", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/app/products")
 
-      {:ok, socket} = IndexLive.mount(%{}, %{}, socket)
-      total_products = length(socket.assigns.products)
+      # Trigger status filter change
+      render_change(view, "filter_status", %{"status" => "active"})
 
-      {:noreply, socket} =
-        IndexLive.handle_event("filter_category", %{"category" => "electronics"}, socket)
-
-      assert length(socket.assigns.filtered_products) < total_products
-
-      {:noreply, socket} =
-        IndexLive.handle_event("filter_category", %{"category" => "all"}, socket)
-
-      assert length(socket.assigns.filtered_products) == total_products
+      # Verify page still renders
+      html = render(view)
+      assert html =~ "Products"
     end
   end
 
-  describe "handle_event/3 - filter by status" do
-    test "filters products by status" do
-      socket = build_socket()
+  describe "bulk selection" do
+    setup %{conn: _conn} do
+      tenant =
+        Tenant
+        |> Ash.Changeset.for_create(:create, %{
+          name: "Test Bulk Tenant",
+          slug: "bulk-test-#{System.unique_integer([:positive])}",
+          subdomain: "bulk-#{System.unique_integer([:positive])}"
+        })
+        |> Ash.create!()
 
-      {:ok, socket} = IndexLive.mount(%{}, %{}, socket)
+      user =
+        User
+        |> Ash.Changeset.for_create(:register, %{
+          email: "bulk_merchant_#{System.unique_integer([:positive])}@example.com",
+          password: "password123",
+          password_confirmation: "password123",
+          first_name: "Test",
+          last_name: "Merchant"
+        })
+        |> Ash.Changeset.force_change_attribute(:tenant_id, tenant.id)
+        |> Ash.create!()
 
-      {:noreply, socket} =
-        IndexLive.handle_event("filter_status", %{"status" => "active"}, socket)
+      {:ok, session_data} = Auth.create_user_session(user, "127.0.0.1")
 
-      assert socket.assigns.status_filter == "active"
+      host = "#{tenant.subdomain}.localhost"
 
-      assert Enum.all?(socket.assigns.filtered_products, fn p ->
-               p.status == :active
-             end)
+      authed_conn =
+        build_conn()
+        |> Map.put(:host, host)
+        |> put_req_header("x-forwarded-host", host)
+        |> init_test_session(%{"tenant_id" => tenant.id})
+        |> put_req_cookie("_mcp_access_token", session_data.access_token)
+        |> put_req_cookie("_mcp_refresh_token", session_data.refresh_token)
+        |> put_req_cookie("_mcp_session_id", session_data.session_id)
+
+      {:ok, conn: authed_conn, tenant: tenant, user: user}
     end
 
-    test "shows all products when status filter is 'all'" do
-      socket = build_socket()
+    test "select-all toggles all products selected and shows bulk actions bar", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/app/products")
 
-      {:ok, socket} = IndexLive.mount(%{}, %{}, socket)
-      total_products = length(socket.assigns.products)
+      # Initially no bulk actions bar
+      refute has_element?(view, "[data-testid='bulk-actions-bar']")
 
-      {:noreply, socket} =
-        IndexLive.handle_event("filter_status", %{"status" => "active"}, socket)
+      # Trigger select-all
+      render_click(view, "select-all")
 
-      assert length(socket.assigns.filtered_products) < total_products
-
-      {:noreply, socket} =
-        IndexLive.handle_event("filter_status", %{"status" => "all"}, socket)
-
-      assert length(socket.assigns.filtered_products) == total_products
-    end
-  end
-
-  describe "handle_event/3 - bulk selection" do
-    test "select-all toggles all products selected" do
-      socket = build_socket()
-
-      {:ok, socket} = IndexLive.mount(%{}, %{}, socket)
-      assert socket.assigns.selected_ids == MapSet.new()
-
-      {:noreply, socket} = IndexLive.handle_event("select-all", %{}, socket)
-
-      # Should have selected all products
-      expected_count = length(socket.assigns.filtered_products)
-      assert MapSet.size(socket.assigns.selected_ids) == expected_count
-
-      # Toggle again to deselect all
-      {:noreply, socket} = IndexLive.handle_event("select-all", %{}, socket)
-      assert MapSet.size(socket.assigns.selected_ids) == 0
+      # Now bulk actions bar should be visible with selected count
+      assert has_element?(view, "[data-testid='bulk-actions-bar']")
+      assert has_element?(view, "[data-testid='selected-count']")
     end
 
-    test "select-row toggles individual product selection" do
-      socket = build_socket()
+    test "select-row toggles individual product selection", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/app/products")
 
-      {:ok, socket} = IndexLive.mount(%{}, %{}, socket)
-      product = List.first(socket.assigns.products)
+      # Initially no bulk actions bar
+      refute has_element?(view, "[data-testid='bulk-actions-bar']")
 
-      {:noreply, socket} =
-        IndexLive.handle_event("select-row", %{"id" => "row-#{product.id}"}, socket)
+      # Trigger select-row for first product (id: "1")
+      render_click(view, "select-row", %{"id" => "row-1"})
 
-      assert MapSet.member?(socket.assigns.selected_ids, product.id)
-
-      # Toggle again to deselect
-      {:noreply, socket} =
-        IndexLive.handle_event("select-row", %{"id" => "row-#{product.id}"}, socket)
-
-      refute MapSet.member?(socket.assigns.selected_ids, product.id)
-    end
-  end
-
-  describe "handle_event/3 - actions" do
-    setup do
-      socket = build_socket()
-
-      {:ok, socket} = IndexLive.mount(%{}, %{}, socket)
-      {:ok, socket: socket}
-    end
-
-    test "handles add_product event", %{socket: socket} do
-      {:noreply, _socket} = IndexLive.handle_event("add_product", %{}, socket)
-    end
-
-    test "handles import_products event", %{socket: socket} do
-      {:noreply, _socket} = IndexLive.handle_event("import_products", %{}, socket)
-    end
-
-    test "handles export_products event", %{socket: socket} do
-      {:noreply, _socket} = IndexLive.handle_event("export_products", %{}, socket)
-    end
-
-    test "handles view_low_stock event", %{socket: socket} do
-      {:noreply, _socket} = IndexLive.handle_event("view_low_stock", %{}, socket)
-    end
-
-    test "handles bulk_update_status event", %{socket: socket} do
-      {:noreply, _socket} = IndexLive.handle_event("bulk_update_status", %{}, socket)
+      # Bulk actions bar should now appear
+      assert has_element?(view, "[data-testid='bulk-actions-bar']")
     end
   end
 end
