@@ -189,14 +189,16 @@ defmodule Mcp.MixProject do
         "phx.digest"
       ],
       precommit: [
-        "compile --warning-as-errors",
+        "compile --warnings-as-errors",
+        "cmd MIX_ENV=test mix compile --warnings-as-errors",
         "credo --strict",
+        "dialyzer",
         "deps.unlock --unused",
         "format --check-formatted",
         "test",
         "validate.stack"
       ],
-      quality: ["compile --warning-as-errors", "credo", "dialyzer"],
+      quality: ["compile --warnings-as-errors", "credo", "dialyzer"],
       check: ["compile", "credo --strict", "dialyzer", "test", "validate.stack"]
     ]
   end

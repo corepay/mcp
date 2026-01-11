@@ -84,8 +84,12 @@ defmodule McpWeb do
 
       # HTML escaping functionality
       import Phoenix.HTML
+
       # Core UI components
       import McpWeb.Core.CoreComponents
+      import McpWeb.Core.DataDisplay
+      import McpWeb.Core.Feedback
+      import McpWeb.Core.Navigation
 
       # Common modules used in templates
       alias McpWeb.Layouts

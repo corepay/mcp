@@ -139,7 +139,7 @@ defmodule McpWeb.Router do
   scope "/app", McpWeb do
     pipe_through [:browser, :jwt_auth, :merchant_portal_layout]
 
-    live "/dashboard", MockDashboardLive
+    live "/dashboard", Merchant.DashboardLive
     live "/orders", MockDashboardLive
     live "/products", MockDashboardLive
     live "/customers", MockDashboardLive
@@ -162,7 +162,7 @@ defmodule McpWeb.Router do
   scope "/app/stores/:store_slug", McpWeb do
     pipe_through [:browser, :jwt_auth, :store_portal_layout]
 
-    live "/dashboard", MockDashboardLive
+    live "/dashboard", Store.DashboardLive
     live "/terminal", MockDashboardLive
     live "/invoices", MockDashboardLive
     live "/subscriptions", MockDashboardLive

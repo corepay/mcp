@@ -4,6 +4,9 @@ defmodule McpWeb.Layouts.PortalLayouts do
   """
   use McpWeb, :html
 
+  alias McpWeb.Layouts.MerchantShell
+  alias McpWeb.Layouts.StoreShell
+
   @doc """
   Platform Admin Layout
   """
@@ -43,22 +46,25 @@ defmodule McpWeb.Layouts.PortalLayouts do
   end
 
   @doc """
-  Merchant Portal Layout
+  Merchant Portal Layout - Uses new MerchantShell with top nav + contextual sidebar
   """
   def merchant_portal(assigns) do
+    assigns =
+      assigns
+      |> assign_new(:merchant_name, fn -> get_merchant_name(assigns) end)
+      |> assign_new(:stores, fn -> get_stores(assigns) end)
+      |> assign_new(:current_path, fn -> get_current_path(assigns) end)
+      |> assign_new(:user_initials, fn -> get_user_initials(assigns) end)
+
     ~H"""
-    <.app_shell title="Merchant Portal">
-      <:sidebar>
-        <li><.link navigate={~p"/app"}>Dashboard</.link></li>
-        <li><.link navigate={~p"/app/orders"}>Orders</.link></li>
-        <li><.link navigate={~p"/app/products"}>Products</.link></li>
-        <li><.link navigate={~p"/app/customers"}>Customers</.link></li>
-      </:sidebar>
-      <:user_menu>
-        <li><.link method="delete" href={~p"/sign-out"}>Sign out</.link></li>
-      </:user_menu>
+    <MerchantShell.merchant_shell
+      merchant_name={@merchant_name}
+      stores={@stores}
+      current_path={@current_path}
+      user_initials={@user_initials}
+    >
       {@inner_content}
-    </.app_shell>
+    </MerchantShell.merchant_shell>
     """
   end
 
@@ -139,32 +145,31 @@ defmodule McpWeb.Layouts.PortalLayouts do
   end
 
   @doc """
-  Store Portal Layout
+  Store Portal Layout - Uses new StoreShell with left sidebar navigation
   """
   def store_portal(assigns) do
+    store_slug = assigns.conn.params["store_slug"] || "unknown"
+
+    assigns =
+      assigns
+      |> assign(:store_slug, store_slug)
+      |> assign_new(:store_name, fn -> get_store_name(assigns, store_slug) end)
+      |> assign_new(:merchant_name, fn -> get_merchant_name(assigns) end)
+      |> assign_new(:current_path, fn -> get_current_path(assigns) end)
+      |> assign_new(:user_initials, fn -> get_user_initials(assigns) end)
+      |> assign_new(:vertical, fn -> :retail end)
+
     ~H"""
-    <.app_shell title="Store Portal">
-      <:sidebar>
-        <li><.link navigate={~p"/app/stores/#{@conn.params["store_slug"]}"}>Dashboard</.link></li>
-        <li>
-          <.link navigate={~p"/app/stores/#{@conn.params["store_slug"]}/terminal"}>
-            Virtual Terminal
-          </.link>
-        </li>
-        <li>
-          <.link navigate={~p"/app/stores/#{@conn.params["store_slug"]}/invoices"}>Invoices</.link>
-        </li>
-        <li>
-          <.link navigate={~p"/app/stores/#{@conn.params["store_slug"]}/subscriptions"}>
-            Subscriptions
-          </.link>
-        </li>
-      </:sidebar>
-      <:user_menu>
-        <li><.link method="delete" href={~p"/sign-out"}>Sign out</.link></li>
-      </:user_menu>
+    <StoreShell.store_shell
+      store_name={@store_name}
+      store_slug={@store_slug}
+      merchant_name={@merchant_name}
+      current_path={@current_path}
+      user_initials={@user_initials}
+      vertical={@vertical}
+    >
       {@inner_content}
-    </.app_shell>
+    </StoreShell.store_shell>
     """
   end
 
@@ -218,5 +223,37 @@ defmodule McpWeb.Layouts.PortalLayouts do
       </div>
     </div>
     """
+  end
+
+  # Helper functions for extracting data from conn/session
+  defp get_merchant_name(assigns) do
+    # In production, get from session/assigns
+    Map.get(assigns, :merchant_name, "Acme Corp")
+  end
+
+  defp get_stores(_assigns) do
+    # In production, query from Ash
+    [
+      %{name: "Downtown Store", slug: "downtown"},
+      %{name: "Online Shop", slug: "online"}
+    ]
+  end
+
+  defp get_store_name(_assigns, slug) do
+    # In production, query from Ash
+    case slug do
+      "downtown" -> "Downtown Store"
+      "online" -> "Online Shop"
+      _ -> "Store"
+    end
+  end
+
+  defp get_current_path(assigns) do
+    assigns.conn.request_path
+  end
+
+  defp get_user_initials(assigns) do
+    # In production, get from current_user
+    Map.get(assigns, :user_initials, "JD")
   end
 end
