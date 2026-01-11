@@ -2,7 +2,7 @@
 
 > **Created**: 2026-01-10 | **Status**: Design Complete
 > **Track**: AI Infrastructure | **Depends On**: None
-> **Related**: [AI Portal UX Design](./complete/2026-01-10-ai-portal-ux-design.md)
+> **Related**: [AI Portal UX Design](docs/plans/completed/2026-01-10-ai-portal-ux-design.md)
 
 ## Overview
 
@@ -540,6 +540,6 @@ end
 
 ## Related Documents
 
-- [AI Portal UX Design](2026-01-10-ai-portal-ux-design.md)
-- [AI README](../features/ai/README.md)
-- [AshAi Strategy](ASH_AI_STRATEGY.md)
+- [AI Portal UX Design](docs/plans/completed/2026-01-10-ai-portal-ux-design.md)
+- [AI README](docs/features/ai/README.md)
+- [AshAi Strategy](docs/implement/ASH_AI_STRATEGY.md)

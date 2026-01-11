@@ -1,8 +1,8 @@
 # AI Portal UX Design
 
 > **Created**: 2026-01-10 | **Status**: Design Complete
-> **Track**: AI UX | **Depends On**: [AI Usage Infrastructure](2026-01-10-ai-usage-infrastructure-design.md)
-> **Related**: [Portal UI Design](2026-01-10-portal-ui-design.md)
+> **Track**: AI UX | **Depends On**: [AI Usage Infrastructure](docs/plans/2026-01-10-ai-usage-infrastructure-design.md)
+> **Related**: [Portal UI Design](docs/plans/completed/2026-01-10-portal-ui-design.md)
 
 ## Design Philosophy
 
@@ -610,7 +610,7 @@ end
 
 ## Related Documents
 
-- [AI Usage Infrastructure](2026-01-10-ai-usage-infrastructure-design.md)
-- [Portal UI Design](2026-01-10-portal-ui-design.md)
-- [Portal Skeleton Implementation](2026-01-10-portal-skeleton-implementation.md)
-- [AshAi Strategy](../implement/ASH_AI_STRATEGY.md)
+- [AI Usage Infrastructure](docs/plans/2026-01-10-ai-usage-infrastructure-design.md)
+- [Portal UI Design](docs/plans/completed/2026-01-10-portal-ui-design.md)
+- [Portal Skeleton Implementation](docs/plans/completed/2026-01-10-portal-skeleton-implementation.md)
+- [AshAi Strategy](docs/implement/ASH_AI_STRATEGY.md)

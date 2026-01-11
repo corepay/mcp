@@ -8,7 +8,7 @@
 
 **Tech Stack:** Phoenix LiveView, DaisyUI + Tailwind CSS v4, CoreComponents pattern, Alpine.js for client-only interactions
 
-**Design Reference:** `docs/plans/2026-01-10-portal-ui-design.md`
+**Design Reference:** `docs/plans/completed/2026-01-10-portal-ui-design.md`
 
 **Quality Standards:**
 - All components use semantic DaisyUI tokens (no hex values)
