@@ -4,18 +4,15 @@ defmodule Mcp.Billing.ApiUsageTest do
 
   alias Mcp.Billing.ApiUsage
   alias Mcp.Finance.Account
+  alias Mcp.Platform.Tenant
+
+  # Use existing tenant from seeder
+  @test_tenant_subdomain "acme"
 
   describe "charge_usage/1" do
     setup do
-      # Create a tenant using Ash
-      tenant =
-        Mcp.Platform.Tenant
-        |> Ash.Changeset.for_create(:create, %{
-          name: "Billing Validation Tenant",
-          slug: "billing-#{System.unique_integer([:positive])}",
-          subdomain: "billing-#{System.unique_integer([:positive])}"
-        })
-        |> Ash.create!()
+      # Get existing tenant (created by seeder)
+      {:ok, tenant} = Tenant.by_subdomain(@test_tenant_subdomain)
 
       {:ok, tenant: tenant}
     end

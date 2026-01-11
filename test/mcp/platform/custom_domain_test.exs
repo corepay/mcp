@@ -4,19 +4,24 @@ defmodule Mcp.Platform.CustomDomainTest do
   import Mox
 
   alias Mcp.Platform.CustomDomain
+  alias Mcp.Platform.Tenant
+
+  # Use existing tenant from seeder
+  @test_tenant_subdomain "acme"
 
   # Make sure mocks are verified when test exits
   setup :verify_on_exit!
 
   setup do
+    # Get existing tenant (created by seeder)
     tenant =
-      Mcp.Platform.Tenant
-      |> Ash.Changeset.for_create(:create, %{
-        name: "Test Tenant",
-        slug: "test-#{System.unique_integer([:positive])}",
-        subdomain: "test-#{System.unique_integer([:positive])}"
-      })
-      |> Ash.create!()
+      case Tenant.by_subdomain(@test_tenant_subdomain) do
+        {:ok, tenant} ->
+          tenant
+
+        {:error, _} ->
+          raise "Test tenant '#{@test_tenant_subdomain}' not found. Run: mix ecto.setup"
+      end
 
     %{tenant: tenant}
   end

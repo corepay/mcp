@@ -5,16 +5,12 @@ defmodule McpWeb.Api.InstructionSetControllerTest do
   alias Mcp.Platform.Tenant
   alias Mcp.Underwriting.AgentBlueprint
 
+  # Use existing tenant from seeder
+  @test_tenant_subdomain "acme"
+
   setup do
-    # Create a tenant first (required for multitenancy)
-    tenant =
-      Tenant
-      |> Ash.Changeset.for_create(:create, %{
-        name: "Test Tenant",
-        slug: "test-tenant-#{:rand.uniform(999_999)}",
-        subdomain: "test-#{:rand.uniform(999_999)}"
-      })
-      |> Ash.create!()
+    # Get existing tenant (created by seeder)
+    {:ok, tenant} = Tenant.by_subdomain(@test_tenant_subdomain)
 
     schema = tenant.company_schema
 

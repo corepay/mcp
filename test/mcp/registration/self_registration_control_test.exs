@@ -13,19 +13,22 @@ defmodule Mcp.Registration.SelfRegistrationControlTest do
   use Mcp.DataCase, async: true
 
   alias Mcp.Accounts.RegistrationSettings
+  alias Mcp.Platform.Tenant
   alias Mcp.Registration.{PolicyValidator, RegistrationService}
 
+  # Use existing tenant from seeder
+  @test_tenant_subdomain "acme"
+
   setup do
-    {:ok, tenant} =
-      Ash.create(
-        Mcp.Platform.Tenant,
-        %{
-          name: "Test Tenant",
-          slug: "test-tenant-#{Ecto.UUID.generate()}",
-          subdomain: "test-#{Ecto.UUID.generate()}"
-        },
-        action: :create
-      )
+    # Get existing tenant (created by seeder)
+    tenant =
+      case Tenant.by_subdomain(@test_tenant_subdomain) do
+        {:ok, tenant} ->
+          tenant
+
+        {:error, _} ->
+          raise "Test tenant '#{@test_tenant_subdomain}' not found. Run: mix ecto.setup"
+      end
 
     {:ok, tenant_id: tenant.id}
   end

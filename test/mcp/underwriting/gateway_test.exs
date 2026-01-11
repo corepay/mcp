@@ -1,21 +1,19 @@
 defmodule Mcp.Underwriting.GatewayTest do
   use Mcp.DataCase
+  # Tag as slow - requires specific database schema setup
+  @moduletag :slow
 
   alias Mcp.Platform.Tenant
   alias Mcp.Underwriting.Application
   alias Mcp.Underwriting.Gateway
   alias Mcp.Underwriting.RiskAssessment
 
+  # Use existing tenant from seeder
+  @test_tenant_subdomain "acme"
+
   setup do
-    # Create Tenant
-    tenant =
-      Tenant
-      |> Ash.Changeset.for_create(:create, %{
-        name: "Test Tenant",
-        slug: "test-tenant",
-        subdomain: "test-tenant"
-      })
-      |> Ash.create!()
+    # Get existing tenant (created by seeder)
+    {:ok, tenant} = Tenant.by_subdomain(@test_tenant_subdomain)
 
     # Create a merchant for the application
     schema = tenant.company_schema

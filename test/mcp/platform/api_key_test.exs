@@ -1,17 +1,15 @@
 defmodule Mcp.Platform.ApiKeyTest do
   use Mcp.DataCase
   alias Mcp.Platform.ApiKey
+  alias Mcp.Platform.Tenant
+
+  # Use existing tenant from seeder
+  @test_tenant_subdomain "acme"
 
   describe "api_keys" do
     setup do
-      tenant =
-        Mcp.Platform.Tenant
-        |> Ash.Changeset.for_create(:create, %{
-          name: "Test Tenant",
-          slug: "test-tenant-#{System.unique_integer()}",
-          subdomain: "test-#{System.unique_integer()}"
-        })
-        |> Ash.create!()
+      # Get existing tenant (created by seeder)
+      {:ok, tenant} = Tenant.by_subdomain(@test_tenant_subdomain)
 
       {:ok, tenant: tenant}
     end

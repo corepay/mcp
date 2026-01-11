@@ -1,21 +1,16 @@
 defmodule Mcp.Registration.RegistrationServiceTest do
   use Mcp.DataCase, async: true
 
+  alias Mcp.Platform.Tenant
   alias Mcp.Registration.RegistrationService
+
+  # Use existing tenant from seeder
+  @test_tenant_subdomain "acme"
 
   describe "initialize_registration/4" do
     test "creates a registration request successfully" do
-      {:ok, tenant} =
-        Ash.create(
-          Mcp.Platform.Tenant,
-          %{
-            name: "Test Tenant",
-            slug: "test-tenant-#{Ecto.UUID.generate()}",
-            subdomain: "test-#{Ecto.UUID.generate()}"
-          },
-          action: :create
-        )
-
+      # Get existing tenant (created by seeder)
+      {:ok, tenant} = Tenant.by_subdomain(@test_tenant_subdomain)
       tenant_id = tenant.id
 
       alias Mcp.Accounts.RegistrationSettings

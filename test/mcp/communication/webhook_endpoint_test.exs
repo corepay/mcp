@@ -8,29 +8,24 @@ defmodule Mcp.Communication.WebhookEndpointTest do
   alias Mcp.Platform.TeamMember
   alias Mcp.Platform.Tenant
 
+  # Use existing tenant from seeder
+  @test_tenant_subdomain "acme"
+
   setup do
-    {:ok, user} = User.register("user@example.com", "Password123!")
+    unique_id = "webhook#{System.unique_integer([:positive])}"
+    {:ok, user} = User.register("#{unique_id}@example.com", "Password123!")
 
-    tenant_uuid = Ash.UUID.generate()
-
-    tenant =
-      Tenant.create!(
-        %{
-          name: "Test Tenant",
-          slug: "test-tenant-#{tenant_uuid}",
-          subdomain: "test-#{tenant_uuid}"
-        },
-        actor: user
-      )
+    # Get existing tenant (created by seeder)
+    {:ok, tenant} = Tenant.by_subdomain(@test_tenant_subdomain)
 
     team =
       Team.create!(
         %{
-          name: "Tenant Admin Team",
-          slug: "tenant-admin-#{tenant_uuid}",
+          name: "Webhook Test Team #{unique_id}",
+          slug: "webhook-team-#{unique_id}",
           entity_type: :tenant,
           entity_id: tenant.id,
-          description: "Auto-created admin team"
+          description: "Auto-created team for webhook tests"
         },
         actor: user
       )

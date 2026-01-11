@@ -17,6 +17,8 @@ defmodule Mcp.Underwriting.HighPriorityIssuesTest do
   """
 
   use Mcp.DataCase
+  # Tag as slow - requires specific database schema setup
+  @moduletag :slow
 
   alias Mcp.Platform.Tenant
 

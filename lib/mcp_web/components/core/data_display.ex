@@ -12,21 +12,27 @@ defmodule McpWeb.Core.DataDisplay do
       <.stat_card value="$12,847" label="Today's Revenue" />
       <.stat_card value="156" label="Transactions" trend="+12%" trend_direction={:up} />
   """
+  attr :id, :string, default: nil
   attr :value, :string, required: true
   attr :label, :string, required: true
   attr :trend, :string, default: nil
   attr :trend_direction, :atom, default: nil, values: [nil, :up, :down]
   attr :icon, :string, default: nil
   attr :class, :string, default: nil
+  attr :rest, :global
 
   def stat_card(assigns) do
     ~H"""
-    <div class={[
-      "stat bg-base-100 rounded-box shadow-sm",
-      "border border-base-300/50",
-      "transition-all duration-200 hover:shadow-md hover:border-base-300",
-      @class
-    ]}>
+    <div
+      id={@id}
+      {@rest}
+      class={[
+        "stat bg-base-100 rounded-box shadow-sm",
+        "border border-base-300/50",
+        "transition-all duration-200 hover:shadow-md hover:border-base-300",
+        @class
+      ]}
+    >
       <div :if={@icon} class="stat-figure text-primary">
         <span class={[@icon, "size-8 opacity-60"]} />
       </div>

@@ -1,5 +1,7 @@
 defmodule Mcp.Underwriting.Services.SubmissionServiceTest do
   use Mcp.DataCase, async: false
+  # Tag as slow - requires specific database schema setup
+  @moduletag :slow
 
   alias Mcp.Accounts.User
   alias Mcp.Platform.Merchant

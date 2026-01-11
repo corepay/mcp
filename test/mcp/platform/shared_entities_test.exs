@@ -2,29 +2,27 @@ defmodule Mcp.Platform.SharedEntitiesTest do
   use Mcp.DataCase
   alias Mcp.Accounts.User
   alias Mcp.Platform.Address
+  alias Mcp.Platform.Tenant
+
+  # Use existing tenant from seeder
+  @test_tenant_subdomain "acme"
 
   setup do
     # Create users
     user1 = user_fixture()
     user2 = user_fixture()
 
-    # Create tenant and team (mocking structure if needed, or using real resources)
-    # Assuming we have helpers or can create them directly
-    tenant =
-      Mcp.Platform.Tenant
-      |> Ash.Changeset.for_create(:create, %{
-        name: "Test Tenant",
-        slug: "test-tenant",
-        subdomain: "test-tenant"
-      })
-      |> Ash.create!()
+    # Get existing tenant (created by seeder)
+    {:ok, tenant} = Tenant.by_subdomain(@test_tenant_subdomain)
 
     # Create team for tenant
+    unique_id = System.unique_integer([:positive])
+
     team =
       Mcp.Platform.Team
       |> Ash.Changeset.for_create(:create, %{
-        name: "Default Team",
-        slug: "default-team",
+        name: "Default Team #{unique_id}",
+        slug: "default-team-#{unique_id}",
         entity_type: :tenant,
         entity_id: tenant.id
       })

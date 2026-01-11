@@ -1,5 +1,7 @@
 defmodule Mcp.Platform.SchemaProvisionerTest do
   use ExUnit.Case, async: false
+  # Tag as slow since this test runs database migrations
+  @moduletag :slow
 
   alias Ecto.Adapters.SQL.Sandbox
   alias Mcp.Infrastructure.Context

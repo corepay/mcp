@@ -144,7 +144,11 @@ defmodule McpWeb.Router do
       live "/dashboard", Merchant.DashboardLive
       live "/orders", MockDashboardLive
       live "/products", MockDashboardLive
-      live "/customers", MockDashboardLive
+      # Phase 2 routes - will be re-added after rebuild
+      # live "/customers", Merchant.Customers.IndexLive
+      # live "/payments/transactions", Merchant.Payments.Transactions.IndexLive
+      # live "/payments/transactions/:id", Merchant.Payments.Transactions.ShowLive
+      # live "/customers/:id", Merchant.Customers.ShowLive
     end
   end
 
@@ -168,10 +172,17 @@ defmodule McpWeb.Router do
     live_session :store_dashboard,
       layout: {McpWeb.Layouts.PortalLayouts, :store_portal} do
       live "/dashboard", Store.DashboardLive
-      live "/terminal", MockDashboardLive
+      # Phase 2 routes - will be re-added after rebuild
+      # live "/terminal", Store.TerminalLive
       live "/invoices", MockDashboardLive
       live "/subscriptions", MockDashboardLive
+      # live "/customers", Store.Customers.IndexLive
+      # live "/customers/:id", Store.Customers.ShowLive
     end
+
+    # Phase 2 routes - will be re-added after rebuild
+    # POS uses focused layout (not store_portal layout)
+    # live "/pos", Store.PosLive
   end
 
   # Developer Portal
