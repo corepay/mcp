@@ -148,7 +148,7 @@ defmodule McpWeb.Layouts.PortalLayouts do
   Store Portal Layout - Uses new StoreShell with left sidebar navigation
   """
   def store_portal(assigns) do
-    store_slug = assigns.conn.params["store_slug"] || "unknown"
+    store_slug = get_store_slug(assigns)
 
     assigns =
       assigns
@@ -225,7 +225,27 @@ defmodule McpWeb.Layouts.PortalLayouts do
     """
   end
 
-  # Helper functions for extracting data from conn/session
+  # Helper functions for extracting data from conn/session/socket
+  defp get_store_slug(assigns) do
+    cond do
+      # Check if already in assigns (from LiveView)
+      Map.has_key?(assigns, :store_slug) ->
+        assigns.store_slug
+
+      # LiveView socket context - check path_params
+      Map.has_key?(assigns, :socket) && Map.has_key?(assigns.socket.assigns, :store_slug) ->
+        assigns.socket.assigns.store_slug
+
+      # Traditional conn context
+      Map.has_key?(assigns, :conn) ->
+        assigns.conn.params["store_slug"] || "unknown"
+
+      # Fallback
+      true ->
+        "unknown"
+    end
+  end
+
   defp get_merchant_name(assigns) do
     # In production, get from session/assigns
     Map.get(assigns, :merchant_name, "Acme Corp")
@@ -249,7 +269,32 @@ defmodule McpWeb.Layouts.PortalLayouts do
   end
 
   defp get_current_path(assigns) do
-    assigns.conn.request_path
+    cond do
+      # LiveView socket context
+      Map.has_key?(assigns, :socket) ->
+        assigns.socket.view
+        |> to_string()
+        |> get_path_from_module()
+
+      # Traditional conn context
+      Map.has_key?(assigns, :conn) ->
+        assigns.conn.request_path
+
+      # Fallback
+      true ->
+        "/app"
+    end
+  end
+
+  defp get_path_from_module(module_string) do
+    cond do
+      String.contains?(module_string, "Merchant.DashboardLive") -> "/app/dashboard"
+      String.contains?(module_string, "Store.DashboardLive") -> "/app/stores"
+      String.contains?(module_string, "ProductsLive") -> "/app/products"
+      String.contains?(module_string, "CustomersLive") -> "/app/customers"
+      String.contains?(module_string, "OrdersLive") -> "/app/orders"
+      true -> "/app"
+    end
   end
 
   defp get_user_initials(assigns) do

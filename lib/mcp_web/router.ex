@@ -139,10 +139,13 @@ defmodule McpWeb.Router do
   scope "/app", McpWeb do
     pipe_through [:browser, :jwt_auth, :merchant_portal_layout]
 
-    live "/dashboard", Merchant.DashboardLive
-    live "/orders", MockDashboardLive
-    live "/products", MockDashboardLive
-    live "/customers", MockDashboardLive
+    live_session :merchant_dashboard,
+      layout: {McpWeb.Layouts.PortalLayouts, :merchant_portal} do
+      live "/dashboard", Merchant.DashboardLive
+      live "/orders", MockDashboardLive
+      live "/products", MockDashboardLive
+      live "/customers", MockDashboardLive
+    end
   end
 
   pipeline :store_portal_layout do
@@ -162,10 +165,13 @@ defmodule McpWeb.Router do
   scope "/app/stores/:store_slug", McpWeb do
     pipe_through [:browser, :jwt_auth, :store_portal_layout]
 
-    live "/dashboard", Store.DashboardLive
-    live "/terminal", MockDashboardLive
-    live "/invoices", MockDashboardLive
-    live "/subscriptions", MockDashboardLive
+    live_session :store_dashboard,
+      layout: {McpWeb.Layouts.PortalLayouts, :store_portal} do
+      live "/dashboard", Store.DashboardLive
+      live "/terminal", MockDashboardLive
+      live "/invoices", MockDashboardLive
+      live "/subscriptions", MockDashboardLive
+    end
   end
 
   # Developer Portal

@@ -2,79 +2,127 @@
 
 ## Overview
 
-The MCP Platform integrates advanced AI capabilities directly into the core
-architecture. By leveraging **pgvector** for vector embeddings and **AshAi** for
-orchestration, we enable semantic search, recommendation systems, and
-intelligent document processing.
+The MCP Platform integrates AI capabilities directly into the core architecture
+using **pgvector** for embeddings, **AshAi** for orchestration, **LangChain**
+for LLM interactions, and **Apache AGE** for graph relationships.
+
+## Current Implementation Status
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Vector Embeddings (pgvector) | ✅ Production | HNSW index, cosine similarity |
+| Document Resource | ✅ Production | Multi-tenant scoped |
+| KnowledgeBase Resource | ✅ Production | Tenant/Merchant/Reseller scoped |
+| Embedding Service | ✅ Production | Ollama + OpenRouter fallback |
+| Chat Domain | ✅ Production | Full conversation system |
+| LangChain + Tool Calling | ✅ Production | AnalyzeDocument, ConsultExpert |
+| Chat LiveView | ✅ Production | Real-time streaming |
+| Graph Context (AGE) | ✅ Production | Tenant-isolated Cypher |
+| GraphRAG (combined) | 🚧 Planned | Vector + Graph fusion |
+| NL → Ash Filters | 🚧 Planned | Natural language queries |
+| Portal AI Integration | 🚧 Planned | Merchant/Store dashboards |
 
 ## Architecture
 
-The AI subsystem is built on a dual-layer architecture designed for both robust
-application integration and developer productivity.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        AI Layer                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  Mcp.Ai Domain                                                   │
+│  ├── Chat (AshAi prompts)                                       │
+│  ├── Document (pgvector embeddings)                             │
+│  ├── KnowledgeBase (RAG scoping)                                │
+│  └── LlmUsage (tracking)                                        │
+├─────────────────────────────────────────────────────────────────┤
+│  Mcp.Chat Domain                                                 │
+│  ├── Conversation                                               │
+│  ├── Message (with tool_calls, tool_results)                    │
+│  └── Changes.Respond (LangChain orchestration)                  │
+├─────────────────────────────────────────────────────────────────┤
+│  Services                                                        │
+│  ├── EmbeddingService (Ollama/OpenRouter)                       │
+│  ├── VectorStore (pgvector operations)                          │
+│  └── SemanticCache                                              │
+├─────────────────────────────────────────────────────────────────┤
+│  Graph Layer (Apache AGE)                                        │
+│  ├── Graph.TenantContext (isolation)                            │
+│  └── Platform.Graph (Cypher execution)                          │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-### 1. Application Layer: AshAi
+## Infrastructure
 
-- **Purpose**: Programmatic integration with business logic.
-- **Role**: Handles embedding generation, semantic search, and RAG
-  (Retrieval-Augmented Generation) workflows within the Elixir application.
-- **Key Component**: `Mcp.Ai` Domain.
+| Service | Purpose | Port |
+|---------|---------|------|
+| **Ollama** | Local LLM inference | `${OLLAMA_PORT}` (42736) |
+| **Open WebUI** | Chat interface for debugging | `${OPEN_WEBUI_PORT}` |
+| **PostgreSQL + pgvector** | Vector storage | `${POSTGRES_PORT}` |
+| **PostgreSQL + AGE** | Graph database | Same as above |
 
-### 2. Developer Tooling: Open WebUI
+## Key Resources
 
-- **Purpose**: Interactive debugging and prompt engineering.
-- **Role**: Provides a ChatGPT-like interface to interact directly with the
-  local LLM (Ollama). Use this to test prompts, verify model behavior, and debug
-  "hallucinations" without writing code.
-- **Access**: Available at `http://localhost:${OPEN_WEBUI_PORT}` (check `.env`
-  for port).
+### Mcp.Ai.Document
 
-### Infrastructure
-
-- **Ollama**: Local LLM inference engine (port `${OLLAMA_PORT}`, default
-  `42736`).
-- **Postgres + pgvector**: Vector database for storing embeddings (port
-  `${POSTGRES_PORT}`, default `41789`).
-- **Open WebUI**: Admin interface for Ollama (port `${OPEN_WEBUI_PORT}`, default
-  `53000` or `8080`).
-
-## Key Capabilities
-
-### 1. Vector Embeddings
-
-- **Semantic Search**: Search for content based on meaning rather than just
-  keywords.
-- **Similarity Matching**: Find related documents, products, or users.
-- **High Performance**: Uses `ivfflat` or `hnsw` indexes for fast approximate
-  nearest neighbor search.
-
-### 2. Document Management (`Mcp.Ai.Document`)
-
-- **Unified Storage**: A central resource for storing text content and its
-  vector representation.
-- **Polymorphic Associations**: Link AI documents to any other resource
-  (Merchant, Transaction, Message).
-- **Automatic Embedding**: Content is automatically embedded upon creation or
-  update.
-
-## Quick Start
-
-### Creating a Document
+Vector-enabled document storage with automatic embedding:
 
 ```elixir
+# Create a document (embedding generated separately)
 Mcp.Ai.Document.create!(%{
   content: "The quick brown fox jumps over the lazy dog.",
-  ref_type: "message",
-  ref_id: "msg_123"
+  tenant_id: tenant_id,
+  knowledge_base_id: kb_id
+})
+
+# Semantic search
+Mcp.Ai.Document.search(query_embedding,
+  tenant_id: tenant_id,
+  similarity_threshold: 0.7
+)
+```
+
+### Mcp.Ai.KnowledgeBase
+
+Scoped knowledge collections:
+
+```elixir
+# Platform-level KB
+Mcp.Ai.KnowledgeBase.create!(%{name: "Platform Policies"})
+
+# Tenant-level KB
+Mcp.Ai.KnowledgeBase.create!(%{
+  name: "Acme Guidelines",
+  tenant_id: tenant_id
+})
+
+# Merchant-level KB
+Mcp.Ai.KnowledgeBase.create!(%{
+  name: "Store Procedures",
+  merchant_id: merchant_id
 })
 ```
 
-### Searching
+### Mcp.Chat (Conversations)
+
+Full chat system with LangChain:
 
 ```elixir
-Mcp.Ai.Document.search("animal jumping", limit: 5)
+# Messages automatically trigger LLM response via Changes.Respond
+# Tools available: AnalyzeDocument, ConsultExpert
 ```
 
-## Related Resources
+## Embedding Dimensions
 
-- [Retrieval-Augmented Generation (RAG)](../rag/README.md)
-- [Multi-Tenancy](../multi-tenancy/README.md) (Infrastructure support)
+The system uses **1536 dimensions** for compatibility with OpenAI embeddings.
+Local Ollama models (768-1024 dim) fall back to OpenRouter for now.
+
+| Model | Dimensions | Provider |
+|-------|------------|----------|
+| text-embedding-3-small | 1536 | OpenRouter (default) |
+| nomic-embed-text | 768 | Ollama (planned) |
+| mxbai-embed-large | 1024 | Ollama (planned) |
+
+## Related Docs
+
+- [RAG Developer Guide](../rag/developer-guide.md)
+- [Graph RAG Implementation](../../implement/graph/graph-rag-implementation.md)
+- [AshAi Strategy](../../implement/ASH_AI_STRATEGY.md)

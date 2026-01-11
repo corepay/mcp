@@ -237,15 +237,16 @@ defmodule McpWeb.TenantContext do
 
   defp establish_tenant_database_context(tenant) do
     # Verify tenant schema exists and is accessible
+    # Note: company_schema already contains the full schema name with acq_ prefix
     case Repo.query(
-           "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'acq_#{tenant.company_schema}'"
+           "SELECT schema_name FROM information_schema.schemata WHERE schema_name = '#{tenant.company_schema}'"
          ) do
       {:ok, %{rows: [_ | _]}} ->
         # Schema exists, establish context by setting search path
         original_search_path = Repo.get_search_path()
 
         case Repo.query(
-               "SET search_path TO acq_#{tenant.company_schema}, public, platform, shared, ag_catalog"
+               "SET search_path TO \"#{tenant.company_schema}\", public, platform, shared, ag_catalog"
              ) do
           {:ok, _} ->
             # Store original path for cleanup
@@ -263,7 +264,7 @@ defmodule McpWeb.TenantContext do
         end
 
       {:ok, _} ->
-        Logger.error("Tenant schema not found: acq_#{tenant.company_schema}")
+        Logger.error("Tenant schema not found: #{tenant.company_schema}")
         {:error, :schema_not_found}
 
       {:error, reason} ->
@@ -299,7 +300,8 @@ defmodule McpWeb.TenantContext do
   defp verify_tenant_schema_context(tenant) do
     case Repo.query("SELECT current_schema()") do
       {:ok, %{rows: [[current_schema]]}} ->
-        expected_schema = "acq_#{tenant.company_schema}"
+        # company_schema already contains the full schema name with acq_ prefix
+        expected_schema = tenant.company_schema
 
         unless String.contains?(current_schema, expected_schema) do
           Logger.warning(

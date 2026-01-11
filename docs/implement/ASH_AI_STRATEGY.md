@@ -1,66 +1,140 @@
-# AshAi & AshMCP Strategy
+# AshAi & AI Integration Strategy
 
 ## Overview
 
-This document outlines the strategy for leveraging `AshAi` and `AshMCP` within
-the Core Foundation. The goal is to enhance the platform with intelligent
-capabilities while maintaining strict architectural boundaries and data privacy.
+Strategy for leveraging AI capabilities within the MCP platform. The goal is to
+make AI a **first-class citizen** across all portal experiences while
+maintaining tenant isolation and data privacy.
 
-## AshAi Opportunities
+## Current Implementation
 
-### 1. Intelligent Search & Filtering
+### ✅ Built & Working
 
-- **Concept**: Use `AshAi` to interpret natural language queries and convert
-  them into Ash filters.
-- **Implementation**: Use `AshAi.Filter` (if available) or prompt-backed actions
-  to generate filter structs.
-- **Use Case**: "Show me all high-risk merchants from last week" ->
-  `Ash.Query.filter(Merchant, risk_level == :high and inserted_at > ago(7, :day))`
+| Component | Description | Location |
+|-----------|-------------|----------|
+| **Mcp.Ai.Chat** | Simple AshAi prompt action | `lib/mcp/ai/chat.ex` |
+| **Mcp.Ai.Document** | Vector storage with pgvector | `lib/mcp/ai/document.ex` |
+| **Mcp.Ai.KnowledgeBase** | Multi-scope KB management | `lib/mcp/ai/resources/knowledge_base.ex` |
+| **Mcp.Ai.EmbeddingService** | Ollama + OpenRouter embeddings | `lib/mcp/ai/embedding_service.ex` |
+| **Mcp.Chat Domain** | Full conversation system | `lib/mcp/chat/` |
+| **LangChain Integration** | Tool calling, streaming | `lib/mcp/chat/message/changes/respond.ex` |
+| **Chat LiveView** | Real-time chat UI | `lib/mcp_web/live/chat_live.ex` |
+| **Graph.TenantContext** | Apache AGE isolation | `lib/mcp/graph/tenant_context.ex` |
+| **Platform.Graph** | Cypher query execution | `lib/mcp/platform/graph.ex` |
+| **VectorStore** | pgvector operations | `lib/mcp/ai/vector_store.ex` |
 
-### 2. Automated Compliance Audits
+### 🚧 Planned / Not Started
 
-- **Concept**: Analyze audit logs and merchant data for compliance violations
-  using LLMs.
-- **Implementation**: A background job (Oban) that feeds batched data to an
-  `AshAi` action for analysis.
-- **Use Case**: "Review this merchant's transaction history for potential money
-  laundering patterns."
+| Feature | Priority | Description |
+|---------|----------|-------------|
+| **Portal AI Integration** | HIGH | AI in Merchant/Store dashboards |
+| **Command Palette (⌘K)** | HIGH | Universal AI search/actions |
+| **NL → Ash Filters** | MEDIUM | "Show high-risk merchants" → query |
+| **GraphRAG Fusion** | MEDIUM | Vector + Graph combined search |
+| **Proactive Insights** | MEDIUM | AI-generated alerts and recommendations |
+| **MCP Server** | LOW | Expose resources as MCP tools |
 
-### 3. Smart Data Generation
+## AI-First Portal Vision
 
-- **Concept**: Generate realistic seed data for testing and development.
-- **Implementation**: Use `AshAi` to generate valid, context-aware data for
-  complex resources.
+### Three Modes of AI Interaction
 
-## AshMCP Server Opportunities
+1. **Invisible Enhancement**
+   - Smart search across all data
+   - Auto-categorization of transactions
+   - Anomaly detection in background
+   - Semantic caching of common queries
 
-### 1. Context-Aware Coding Assistant
+2. **Assistant Copilot (⌘K)**
+   - Natural language queries: "Show me failed transactions today"
+   - Action execution: "Create an invoice for John Smith"
+   - Context-aware help based on current screen
+   - Tool calling for complex operations
 
-- **Concept**: Expose the codebase structure and documentation via an MCP server
-  to local LLMs.
-- **Implementation**: Use `AshMCP` to expose resources as MCP tools.
-- **Benefit**: Allows the coding assistant (like the one you are using) to "see"
-  the domain logic more clearly.
+3. **Proactive Intelligence**
+   - Dashboard insights: "Revenue down 15% - top 3 reasons"
+   - Risk alerts: "Customer X payment pattern changed"
+   - Recommendations: "Consider offering discount to retain this customer"
+   - Automated compliance checks
 
-### 2. Operational Dashboard
+### Portal-Specific AI Features
 
-- **Concept**: Create an MCP server that allows authorized LLMs to perform
-  operational tasks.
-- **Implementation**: Expose specific actions (e.g., `Merchant.approve`,
-  `Refund.process`) as MCP tools.
-- **Security**: Strictly controlled via Ash policies and authentication.
+| Portal | AI Features |
+|--------|-------------|
+| **Merchant** | Business insights, trend analysis, NL queries across stores |
+| **Store** | Quick customer lookup, transaction assistance, shift summaries |
+| **Platform** | Tenant analytics, risk scoring, compliance automation |
 
-## Local LLM Strategy (Ollama)
+## Technical Strategy
 
-- **Stack**: Ollama + Open WebUI (Dockerized).
-- **Integration**: `AshAi` configured to use OpenAI adapter pointing to local
-  Ollama instance.
-- **Model**: `llama3` or `mistral` for general tasks; specialized models for
-  code analysis.
-- **Privacy**: All data remains local; no external API calls.
+### LLM Stack
 
-## Roadmap
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Application Layer                                               │
+│  └── AshAi + LangChain orchestration                            │
+├─────────────────────────────────────────────────────────────────┤
+│  Inference Layer                                                 │
+│  ├── Ollama (local, privacy-first)                              │
+│  └── OpenRouter (fallback, embeddings)                          │
+├─────────────────────────────────────────────────────────────────┤
+│  Storage Layer                                                   │
+│  ├── pgvector (embeddings, similarity search)                   │
+│  └── Apache AGE (graph relationships)                           │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-1. **Phase 1 (Current)**: Basic `AshAi` integration and `Chat` resource.
-2. **Phase 2**: Implement "Intelligent Search" for Merchants.
-3. **Phase 3**: Prototype `AshMCP` server for operational tasks.
+### Models in Use
+
+| Purpose | Model | Provider | Dimensions |
+|---------|-------|----------|------------|
+| Chat/Reasoning | llama3 | Ollama | - |
+| Embeddings | text-embedding-3-small | OpenRouter | 1536 |
+| (Planned) Local Embeddings | nomic-embed-text | Ollama | 768 |
+
+### Tool Calling
+
+Current tools in `Changes.Respond`:
+- `AnalyzeDocument` - Document analysis
+- `ConsultExpert` - Expert consultation routing
+
+Planned tools:
+- `SearchTransactions` - NL transaction queries
+- `CreateInvoice` - Invoice generation
+- `LookupCustomer` - Customer search
+- `GetMerchantInsights` - Business analytics
+
+## Implementation Roadmap
+
+### Phase 1: Portal AI Foundation (Next)
+- [ ] Add ⌘K command palette to Merchant/Store shells
+- [ ] Create portal-specific AI context (merchant, store, user)
+- [ ] Wire Chat domain to portal contexts
+- [ ] Add "Ask AI" entry point in dashboards
+
+### Phase 2: Intelligent Search
+- [ ] Implement NL → Ash filter translation
+- [ ] Add semantic search across transactions, customers, products
+- [ ] Create search results ranking with AI explanations
+
+### Phase 3: Proactive Features
+- [ ] Dashboard insight generation (Oban jobs)
+- [ ] Anomaly detection alerts
+- [ ] AI-powered "Needs Attention" section
+
+### Phase 4: GraphRAG
+- [ ] Combine vector search with graph traversal
+- [ ] Relationship-aware recommendations
+- [ ] Cross-entity insights
+
+## Privacy & Security
+
+- **Local First**: Ollama for all chat/reasoning (no external API)
+- **Tenant Isolation**: All AI queries scoped to tenant context
+- **Audit Trail**: LlmUsage resource tracks all AI interactions
+- **Policy Enforcement**: Ash policies apply to AI actions
+
+## Related Docs
+
+- [AI README](../features/ai/README.md)
+- [RAG README](../features/rag/README.md)
+- [Graph RAG Implementation](graph/graph-rag-implementation.md)

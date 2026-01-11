@@ -18,12 +18,30 @@ defmodule Mcp.Repo do
     end)
   end
 
+  @doc """
+  Execute a function within a tenant's schema context.
+
+  Accepts either a raw tenant identifier (e.g., "17633917-a45e-4129-959b-308bac311b1d")
+  or a full schema name with prefix (e.g., "acq_17633917-a45e-4129-959b-308bac311b1d").
+  Schema names are quoted to handle hyphens and special characters.
+  """
   def with_tenant_schema(tenant_schema_name, fun) when is_function(fun, 0) do
-    schema_name = "acq_" <> tenant_schema_name
+    # Handle both raw tenant IDs and full schema names with prefix
+    schema_name =
+      if String.starts_with?(tenant_schema_name, "acq_") do
+        tenant_schema_name
+      else
+        "acq_" <> tenant_schema_name
+      end
+
     original_search_path = get_search_path()
 
     try do
-      __MODULE__.query("SET search_path TO #{schema_name}, public, platform, shared, ag_catalog")
+      # Quote schema name to handle hyphens in UUIDs
+      __MODULE__.query(
+        "SET search_path TO \"#{schema_name}\", public, platform, shared, ag_catalog"
+      )
+
       fun.()
     after
       if original_search_path do
