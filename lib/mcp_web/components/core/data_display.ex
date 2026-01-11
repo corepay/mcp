@@ -81,18 +81,22 @@ defmodule McpWeb.Core.DataDisplay do
   attr :size, :string, default: nil, values: [nil, "lg", "md", "sm", "xs"]
   attr :outline, :boolean, default: false
   attr :class, :string, default: nil
+  attr :rest, :global, include: ~w(data-testid)
   slot :inner_block, required: true
 
   def badge(assigns) do
     ~H"""
-    <span class={[
-      "badge",
-      @variant && "badge-#{@variant}",
-      @size && "badge-#{@size}",
-      @outline && "badge-outline",
-      "transition-colors duration-150",
-      @class
-    ]}>
+    <span
+      class={[
+        "badge",
+        @variant && "badge-#{@variant}",
+        @size && "badge-#{@size}",
+        @outline && "badge-outline",
+        "transition-colors duration-150",
+        @class
+      ]}
+      {@rest}
+    >
       {render_slot(@inner_block)}
     </span>
     """

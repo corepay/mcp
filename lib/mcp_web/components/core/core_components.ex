@@ -71,6 +71,7 @@ defmodule McpWeb.Core.CoreComponents do
   attr :required, :boolean, default: false
   attr :accept, :string, default: nil
   attr :options, :list, default: []
+  attr :step, :string, default: nil
   attr :rest, :global
 
   def input(%{field: %Phoenix.HTML.FormField{} = field} = assigns) do
@@ -128,6 +129,7 @@ defmodule McpWeb.Core.CoreComponents do
         ]}
         required={@required}
         accept={@accept}
+        step={@step}
         {@rest}
       />
       <label :for={msg <- @errors} class="label">
@@ -242,11 +244,12 @@ defmodule McpWeb.Core.CoreComponents do
   Renders a card.
   """
   attr :class, :string, default: nil
+  attr :rest, :global, include: ~w(data-testid)
   slot :inner_block, required: true
 
   def card(assigns) do
     ~H"""
-    <div class={["card bg-base-100 shadow-xl", @class]}>
+    <div class={["card bg-base-100 shadow-xl", @class]} {@rest}>
       <div class="card-body">
         {render_slot(@inner_block)}
       </div>
