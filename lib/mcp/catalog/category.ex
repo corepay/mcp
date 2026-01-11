@@ -23,7 +23,7 @@ defmodule Mcp.Catalog.Category do
 
     create :create do
       primary? true
-      accept [:name, :slug, :description, :parent_id]
+      accept [:name, :slug, :description, :parent_id, :position]
 
       change fn changeset, _context ->
         if Ash.Changeset.get_attribute(changeset, :slug) do
@@ -48,7 +48,7 @@ defmodule Mcp.Catalog.Category do
 
     update :update do
       primary? true
-      accept [:name, :slug, :description, :parent_id]
+      accept [:name, :slug, :description, :parent_id, :position]
     end
 
     read :list do
@@ -76,7 +76,16 @@ defmodule Mcp.Catalog.Category do
 
     attribute :parent_id, :uuid
 
+    attribute :position, :integer do
+      default 0
+      allow_nil? false
+    end
+
     timestamps()
+  end
+
+  aggregates do
+    count :product_count, :products
   end
 
   relationships do

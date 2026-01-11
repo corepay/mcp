@@ -146,6 +146,7 @@ defmodule McpWeb.Router do
       # Phase 3 routes - Product Management
       live "/products", Merchant.Products.IndexLive
       live "/products/new", Merchant.Products.NewLive
+      live "/products/categories", Merchant.Products.CategoriesLive
       live "/products/:id", Merchant.Products.ShowLive
       # Phase 2 routes - Customer Management
       live "/customers", Merchant.Customers.IndexLive
