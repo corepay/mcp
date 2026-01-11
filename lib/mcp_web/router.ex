@@ -186,6 +186,7 @@ defmodule McpWeb.Router do
       live "/customers/:id", Store.Customers.ShowLive
       # Phase 3 routes - Product Search (read-only)
       live "/products", Store.Products.IndexLive
+      live "/products/:id", Store.Products.ShowLive
     end
 
     # Terminal and POS use focused layout (not store_portal layout)
