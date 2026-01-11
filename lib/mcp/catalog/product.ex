@@ -75,7 +75,7 @@ defmodule Mcp.Catalog.Product do
       argument :status, :atom
       argument :search, :string
 
-      pagination offset?: true, default_limit: 25
+      pagination offset?: true, default_limit: 25, max_page_size: 100
 
       prepare fn query, _context ->
         query
@@ -218,7 +218,6 @@ defmodule Mcp.Catalog.Product do
     define :update
     define :destroy
     define :list_products
-    define :by_id, action: :by_id, args: [:id]
     define :get_by_id, action: :by_id, args: [:id]
     define :get_product_stats
   end
