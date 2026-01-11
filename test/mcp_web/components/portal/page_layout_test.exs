@@ -389,6 +389,80 @@ defmodule McpWeb.Portal.PageLayoutTest do
     end
   end
 
+  describe "page_layout/1 - calendar variant" do
+    test "renders calendar navigation slot" do
+      assigns = %{title: "Appointments"}
+
+      html =
+        rendered_to_string(~H"""
+        <PageLayout.page_layout variant={:calendar} title={@title}>
+          <:calendar_nav>
+            <button>Prev</button>
+            <span>January 2026</span>
+            <button>Next</button>
+          </:calendar_nav>
+          <:content>
+            <div id="calendar-grid">Calendar grid here</div>
+          </:content>
+        </PageLayout.page_layout>
+        """)
+
+      assert html =~ "January 2026"
+      assert html =~ "calendar-grid"
+      assert html =~ "calendar-layout" or html =~ "calendar-nav"
+    end
+
+    test "calendar variant renders full-width content" do
+      assigns = %{title: "Schedule"}
+
+      html =
+        rendered_to_string(~H"""
+        <PageLayout.page_layout variant={:calendar} title={@title}>
+          <:content>
+            <div id="schedule-content">Schedule content</div>
+          </:content>
+        </PageLayout.page_layout>
+        """)
+
+      assert html =~ "schedule-content"
+      # Calendar should NOT have sidebar split (full width)
+      refute html =~ "lg:col-span-2"
+    end
+
+    test "calendar variant calendar_nav is optional" do
+      assigns = %{title: "Calendar"}
+
+      html =
+        rendered_to_string(~H"""
+        <PageLayout.page_layout variant={:calendar} title={@title}>
+          <:content>
+            <div>Calendar content without nav</div>
+          </:content>
+        </PageLayout.page_layout>
+        """)
+
+      assert html =~ "Calendar content without nav"
+    end
+
+    test "calendar variant ignores sidebar slot" do
+      assigns = %{title: "Calendar"}
+
+      html =
+        rendered_to_string(~H"""
+        <PageLayout.page_layout variant={:calendar} title={@title}>
+          <:content>
+            <div>Calendar content</div>
+          </:content>
+          <:sidebar>
+            <div id="ignored-sidebar">Should not appear</div>
+          </:sidebar>
+        </PageLayout.page_layout>
+        """)
+
+      refute html =~ "ignored-sidebar"
+    end
+  end
+
   describe "page_layout/1 - back link navigation" do
     test "back link is only rendered when back prop is provided" do
       assigns = %{title: "Detail Page"}

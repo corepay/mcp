@@ -11,6 +11,7 @@ defmodule McpWeb.Portal.PageLayout do
   - `:list` - 2/3 + 1/3 split with sidebar for list pages
   - `:detail` - 2/3 + 1/3 split with back navigation for detail pages
   - `:table` - Full-width content for data table pages
+  - `:calendar` - Full-width with calendar navigation slot for scheduling
 
   ## Examples
 
@@ -35,6 +36,16 @@ defmodule McpWeb.Portal.PageLayout do
         <:content>Product details</:content>
         <:sidebar><.action_sidebar /></:sidebar>
       </.page_layout>
+
+      # Calendar layout with navigation
+      <.page_layout variant={:calendar} title="Appointments">
+        <:calendar_nav>
+          <button>← Prev</button>
+          <span>January 2026</span>
+          <button>Next →</button>
+        </:calendar_nav>
+        <:content>Calendar grid</:content>
+      </.page_layout>
   """
   use Phoenix.Component
   import McpWeb.Core.CoreComponents, only: [icon: 1]
@@ -53,9 +64,10 @@ defmodule McpWeb.Portal.PageLayout do
   - `:stats` - Stats row area at the top of the page. Optional.
   - `:toolbar` - Search, filters, and action buttons. Optional.
   - `:content` - Main content area. Required.
-  - `:sidebar` - Sidebar for list/detail variants. Optional, ignored for dashboard/table.
+  - `:sidebar` - Sidebar for list/detail variants. Optional, ignored for dashboard/table/calendar.
+  - `:calendar_nav` - Calendar navigation controls for calendar variant. Optional.
   """
-  attr :variant, :atom, required: true, values: [:dashboard, :list, :detail, :table]
+  attr :variant, :atom, required: true, values: [:dashboard, :list, :detail, :table, :calendar]
   attr :title, :string, required: true
   attr :back, :string, default: nil
 
@@ -63,6 +75,7 @@ defmodule McpWeb.Portal.PageLayout do
   slot :toolbar
   slot :content, required: true
   slot :sidebar
+  slot :calendar_nav
 
   def page_layout(assigns) do
     ~H"""
@@ -81,6 +94,14 @@ defmodule McpWeb.Portal.PageLayout do
       <%!-- Toolbar (optional) --%>
       <div :if={@toolbar != []} class="flex items-center justify-between gap-4 mb-4">
         {render_slot(@toolbar)}
+      </div>
+
+      <%!-- Calendar Navigation (optional, for calendar variant) --%>
+      <div
+        :if={@variant == :calendar and @calendar_nav != []}
+        class="calendar-nav flex items-center justify-between gap-4 mb-4 bg-base-200 rounded-lg px-4 py-3"
+      >
+        {render_slot(@calendar_nav)}
       </div>
 
       <%!-- Main Content Area --%>
