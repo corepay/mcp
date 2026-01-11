@@ -147,9 +147,9 @@ defmodule McpWeb.Router do
       # Phase 2 routes - Customer Management
       live "/customers", Merchant.Customers.IndexLive
       live "/customers/:id", Merchant.Customers.ShowLive
-      # Phase 2 routes - Payments (will be re-added after rebuild)
-      # live "/payments/transactions", Merchant.Payments.Transactions.IndexLive
-      # live "/payments/transactions/:id", Merchant.Payments.Transactions.ShowLive
+      # Phase 2 routes - Payments
+      live "/payments/transactions", Merchant.Payments.Transactions.IndexLive
+      live "/payments/transactions/:id", Merchant.Payments.Transactions.ShowLive
     end
   end
 
@@ -182,7 +182,7 @@ defmodule McpWeb.Router do
 
     # Terminal and POS use focused layout (not store_portal layout)
     live "/terminal", Store.TerminalLive
-    # live "/pos", Store.PosLive
+    live "/pos", Store.PosLive
   end
 
   # Developer Portal

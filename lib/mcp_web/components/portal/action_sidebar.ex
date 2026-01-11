@@ -100,16 +100,19 @@ defmodule McpWeb.Portal.ActionSidebar do
   - `icon` - Heroicon name (e.g., "hero-plus")
   - `label` - Button label text
   - `href` - URL for link actions (optional)
+  - `disabled` - Whether the action is disabled (optional)
   - `rest` - Additional attributes including phx-click, phx-value-*, etc.
 
   ## Examples
 
       <.sidebar_action icon="hero-plus" label="Add New" href="/products/new" />
       <.sidebar_action icon="hero-arrow-up-tray" label="Import" phx-click="open_import" />
+      <.sidebar_action icon="hero-trash" label="Delete" phx-click="delete" disabled={true} />
   """
   attr :icon, :string, required: true
   attr :label, :string, required: true
   attr :href, :string, default: nil
+  attr :disabled, :boolean, default: false
   attr :rest, :global, include: ~w(phx-click phx-value-id phx-value-type)
 
   def sidebar_action(assigns) do
@@ -120,7 +123,8 @@ defmodule McpWeb.Portal.ActionSidebar do
         class={[
           "btn btn-ghost btn-sm",
           "justify-start gap-2 w-full",
-          "transition-colors duration-150"
+          "transition-colors duration-150",
+          @disabled && "btn-disabled"
         ]}
         {@rest}
       >
@@ -130,6 +134,7 @@ defmodule McpWeb.Portal.ActionSidebar do
     <% else %>
       <button
         type="button"
+        disabled={@disabled}
         class={[
           "btn btn-ghost btn-sm",
           "justify-start gap-2 w-full",
