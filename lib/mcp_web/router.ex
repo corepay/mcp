@@ -144,11 +144,12 @@ defmodule McpWeb.Router do
       live "/dashboard", Merchant.DashboardLive
       live "/orders", MockDashboardLive
       live "/products", MockDashboardLive
-      # Phase 2 routes - will be re-added after rebuild
-      # live "/customers", Merchant.Customers.IndexLive
+      # Phase 2 routes - Customer Management
+      live "/customers", Merchant.Customers.IndexLive
+      live "/customers/:id", Merchant.Customers.ShowLive
+      # Phase 2 routes - Payments (will be re-added after rebuild)
       # live "/payments/transactions", Merchant.Payments.Transactions.IndexLive
       # live "/payments/transactions/:id", Merchant.Payments.Transactions.ShowLive
-      # live "/customers/:id", Merchant.Customers.ShowLive
     end
   end
 
@@ -174,9 +175,9 @@ defmodule McpWeb.Router do
       live "/dashboard", Store.DashboardLive
       live "/invoices", MockDashboardLive
       live "/subscriptions", MockDashboardLive
-      # Phase 2 routes - will be re-added after rebuild
-      # live "/customers", Store.Customers.IndexLive
-      # live "/customers/:id", Store.Customers.ShowLive
+      # Phase 2 routes
+      live "/customers", Store.Customers.IndexLive
+      live "/customers/:id", Store.Customers.ShowLive
     end
 
     # Terminal and POS use focused layout (not store_portal layout)
