@@ -27,6 +27,7 @@ import topbar from "../vendor/topbar"
 import AuthHook from "./hooks/auth_hook"
 import AnalyticsHooks from "./hooks/analytics_hooks"
 import KanbanHook from "./hooks/kanban_hook"
+import SortableHook from "./hooks/sortable_hook"
 import { AtlasFieldTracker } from "./hooks/atlas_hooks"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
@@ -37,6 +38,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
     ...colocatedHooks,
     Auth: AuthHook,
     Kanban: KanbanHook,
+    Sortable: SortableHook,
     AtlasFieldTracker: AtlasFieldTracker,
     LineChartHook: AnalyticsHooks.LineChartHook,
     BarChartHook: AnalyticsHooks.BarChartHook,
