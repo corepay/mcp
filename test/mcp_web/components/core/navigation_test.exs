@@ -189,5 +189,39 @@ defmodule McpWeb.Core.NavigationTest do
 
       assert html =~ "tabs-boxed"
     end
+
+    test "renders with lifted variant" do
+      assigns = %{items: [%{label: "Tab 1", href: "#", active: true}]}
+
+      html =
+        rendered_to_string(~H"""
+        <Navigation.tabs items={@items} variant="lifted" />
+        """)
+
+      assert html =~ "tabs-lifted"
+    end
+
+    test "renders with size attribute" do
+      assigns = %{items: [%{label: "Tab 1", href: "#", active: true}]}
+
+      html =
+        rendered_to_string(~H"""
+        <Navigation.tabs items={@items} size="lg" />
+        """)
+
+      assert html =~ "tabs-lg"
+    end
+
+    test "includes accessibility attributes" do
+      assigns = %{items: [%{label: "Tab 1", href: "#", active: true}]}
+
+      html =
+        rendered_to_string(~H"""
+        <Navigation.tabs items={@items} />
+        """)
+
+      assert html =~ ~r/role="tablist"/
+      assert html =~ ~r/role="tab"/
+    end
   end
 end
