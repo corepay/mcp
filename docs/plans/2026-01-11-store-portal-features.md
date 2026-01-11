@@ -95,62 +95,237 @@ Sidebar items show/hide based on store vertical:
 
 ---
 
+## Page Layout Templates
+
+All content pages follow one of five layout templates. Every page has a **Stats Row** at the top showing key metrics for that context. The Store Portal uses the persistent left sidebar for navigation.
+
+### Template A: Full-Width Dashboard
+
+Used for: Dashboard, Reports with cards/charts
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ [Left Sidebar]     │                                                         │
+│                    │  Page Title                             [Date] [Export] │
+│ ◉ Dashboard        │                                                         │
+│                    │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐       │
+│ SELL               │  │ Stat 1  │ │ Stat 2  │ │ Stat 3  │ │ Stat 4  │       │
+│   POS              │  └─────────┘ └─────────┘ └─────────┘ └─────────┘       │
+│   Terminal         │                                                         │
+│   Orders           │  ┌─────────────────────────────────────────────────────┐│
+│   ...              │  │                                                     ││
+│                    │  │           Full-Width Content Area                   ││
+│ MANAGE             │  │     (Quick Actions, Cards, Charts, Grids)           ││
+│   Customers        │  │                                                     ││
+│   ...              │  └─────────────────────────────────────────────────────┘│
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Template B: 2/3 + 1/3 Split (List View)
+
+Used for: List pages with contextual actions
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ [Left Sidebar]     │                                                         │
+│                    │  Page Title                       [Search] [+ Add New]  │
+│   Dashboard        │                                                         │
+│                    │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐       │
+│ SELL               │  │ Stat 1  │ │ Stat 2  │ │ Stat 3  │ │ Stat 4  │       │
+│   POS              │  └─────────┘ └─────────┘ └─────────┘ └─────────┘       │
+│   Terminal         │                                                         │
+│ • Orders           │  ┌─────────────────────────────────┐ ┌─────────────────┐│
+│   Invoices         │  │                                 │ │ QUICK ACTIONS   ││
+│   ...              │  │        Main Content (2/3)       │ │                 ││
+│                    │  │                                 │ │ [New Order]     ││
+│                    │  │   List / Table / Cards          │ │ [Quick Lookup]  ││
+│                    │  │   - Row 1                       │ │                 ││
+│                    │  │   - Row 2                       │ │ ─────────────── ││
+│                    │  │   - Row 3                       │ │ FILTERS         ││
+│                    │  │   ...                           │ │ [Status ▾]      ││
+│                    │  │                                 │ │                 ││
+│                    │  │                                 │ │ ─────────────── ││
+│                    │  │                                 │ │ AI INSIGHTS     ││
+│                    │  │                                 │ │ 💡 2 ready      ││
+│                    │  └─────────────────────────────────┘ └─────────────────┘│
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Template C: 2/3 + 1/3 Split (Detail View)
+
+Used for: Detail pages with contextual actions
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ [Left Sidebar]     │                                                         │
+│                    │  ← Back          Order #1234                    [···]   │
+│   Dashboard        │                                                         │
+│                    │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐       │
+│ SELL               │  │ Total   │ │ Items   │ │ Status  │ │ Time    │       │
+│   POS              │  └─────────┘ └─────────┘ └─────────┘ └─────────┘       │
+│   Terminal         │                                                         │
+│ • Orders           │  ┌─────────────────────────────────┐ ┌─────────────────┐│
+│   Invoices         │  │                                 │ │ ACTIONS         ││
+│   ...              │  │        Main Content (2/3)       │ │                 ││
+│                    │  │                                 │ │ [Mark Ready]    ││
+│                    │  │   Detail Information            │ │ [Print Ticket]  ││
+│                    │  │   - Order items                 │ │ [Refund]        ││
+│                    │  │   - Customer info               │ │                 ││
+│                    │  │   - Payment info                │ │ ─────────────── ││
+│                    │  │                                 │ │ CUSTOMER        ││
+│                    │  │   Timeline / Activity           │ │ John Smith      ││
+│                    │  │   - Created at...               │ │ 12 orders       ││
+│                    │  │   - Paid at...                  │ │ [View Profile]  ││
+│                    │  └─────────────────────────────────┘ └─────────────────┘│
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Template D: Full-Width Table
+
+Used for: Dense data needing all columns visible
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ [Left Sidebar]     │                                                         │
+│                    │  Page Title                       [Filter] [Export]     │
+│   Dashboard        │                                                         │
+│                    │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐       │
+│ MANAGE             │  │ Stat 1  │ │ Stat 2  │ │ Stat 3  │ │ Stat 4  │       │
+│   Customers        │  └─────────┘ └─────────┘ └─────────┘ └─────────┘       │
+│   Products         │                                                         │
+│ • Inventory        │  [Search...                    ] [Category ▾] [Stock ▾] │
+│   ...              │                                                         │
+│                    │  ┌─────────────────────────────────────────────────────┐│
+│                    │  │ SKU    │ Product  │ On Hand │ Reserved │ Available ││
+│                    │  │────────│──────────│─────────│──────────│───────────││
+│                    │  │ SKU001 │ Widget A │ 45      │ 3        │ 42        ││
+│                    │  │ SKU002 │ Widget B │ 12      │ 0        │ 12        ││
+│                    │  │ SKU003 │ Gadget X │ 0       │ 0        │ 0  ⚠️     ││
+│                    │  │ ...    │ ...      │ ...     │ ...      │ ...       ││
+│                    │  └─────────────────────────────────────────────────────┘│
+│                    │  Showing 1-25 of 234                        [< 1 2 3 >] │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Template E: Focused Mode
+
+Used for: POS, Terminal, Invoice Builder - No sidebar, maximum focus
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ← Exit                        POS                            [⌘K] [👤 Jamie] │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────────────────────────────────────┐ ┌──────────────────────────┐│
+│  │                                             │ │                          ││
+│  │          Full-Height Left Panel             │ │   Full-Height Right      ││
+│  │                                             │ │         Panel            ││
+│  │   (Product Grid / Form / Content)           │ │                          ││
+│  │                                             │ │   (Cart / Summary)       ││
+│  │                                             │ │                          ││
+│  │                                             │ │                          ││
+│  │                                             │ │   ┌──────────────────┐   ││
+│  │                                             │ │   │  [Pay $124.00]   │   ││
+│  │                                             │ │   └──────────────────┘   ││
+│  └─────────────────────────────────────────────┘ └──────────────────────────┘│
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Template F: Full-Width Calendar/Map
+
+Used for: Appointments, Tables, Schedule - Visual layouts needing full space
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ [Left Sidebar]     │                                                         │
+│                    │  Appointments          [Today] [< Week >] [+ New]       │
+│   Dashboard        │                                                         │
+│                    │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐       │
+│ SCHEDULE           │  │ Today   │ │ This Wk │ │ Pending │ │ Revenue │       │
+│ • Appointments     │  └─────────┘ └─────────┘ └─────────┘ └─────────┘       │
+│   Tables           │                                                         │
+│   Staff            │  ┌─────────────────────────────────────────────────────┐│
+│   ...              │  │  9am │ 10am │ 11am │ 12pm │ 1pm │ 2pm │ 3pm │ 4pm  ││
+│                    │  │──────│──────│──────│──────│─────│─────│─────│──────││
+│                    │  │      │▓▓▓▓▓▓│▓▓▓▓▓▓│      │     │▓▓▓▓▓│▓▓▓▓▓│      ││
+│                    │  │      │ Smith│ Smith│      │     │ Lee │ Lee │      ││
+│                    │  │──────│──────│──────│──────│─────│─────│─────│──────││
+│                    │  │▓▓▓▓▓▓│      │      │▓▓▓▓▓▓│▓▓▓▓▓│     │     │▓▓▓▓▓▓││
+│                    │  │ Chen │      │      │ Park │ Park│     │     │ Jones││
+│                    │  └─────────────────────────────────────────────────────┘│
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Layout Selection Guide
+
+| Layout | Use When | Examples |
+|--------|----------|----------|
+| **A: Full-Width Dashboard** | Cards, charts, overview | Dashboard, Reports |
+| **B: 2/3 + 1/3 List** | List with actions sidebar | Orders, Invoices, Customers |
+| **C: 2/3 + 1/3 Detail** | Detail with actions | Order Detail, Customer Card |
+| **D: Full-Width Table** | Dense data, many columns | Inventory, Time Log |
+| **E: Focused Mode** | Single-purpose, no distractions | POS, Terminal, Invoice Builder |
+| **F: Calendar/Map** | Visual layouts | Appointments, Tables, Schedule |
+
+---
+
 ## Feature Inventory
 
 ### Complete Feature List
 
 | Section | Feature | Priority | Layout | LiveView Module |
 |---------|---------|----------|--------|-----------------|
-| **Dashboard** | Shift Overview | P0 | Full-width | `Store.DashboardLive` |
+| **Dashboard** | Shift Overview | P0 | A (Dashboard) | `Store.DashboardLive` |
 | | Quick Actions | P0 | (component) | |
 | | Today's Stats | P0 | (component) | |
 | | Pending Items | P0 | (component) | |
-| **POS** | Point of Sale | P0 | Focused | `Store.PosLive` |
+| **POS** | Point of Sale | P0 | E (Focused) | `Store.PosLive` |
 | | Product Grid | P0 | (component) | |
 | | Cart | P0 | (component) | |
 | | Payment Flow | P0 | (component) | |
 | | Receipt | P0 | (component) | |
-| **Terminal** | Virtual Terminal | P0 | Focused | `Store.TerminalLive` |
+| **Terminal** | Virtual Terminal | P0 | E (Focused) | `Store.TerminalLive` |
 | | Card Entry | P0 | Modal | |
 | | Payment Link | P1 | (component) | |
-| **Orders** | Order Queue | P0 | List | `Store.Orders.IndexLive` |
-| | Order Detail | P0 | Detail | `Store.Orders.ShowLive` |
+| **Orders** | Order Queue | P0 | B (2/3+1/3 List) | `Store.Orders.IndexLive` |
+| | Order Detail | P0 | C (2/3+1/3 Detail) | `Store.Orders.ShowLive` |
 | | Fulfillment | P1 | (component) | |
 | | Returns | P1 | Modal | |
-| **Invoices** | Invoice List | P0 | List | `Store.Invoices.IndexLive` |
-| | Invoice Builder | P0 | Focused | `Store.Invoices.NewLive` |
-| | Invoice Detail | P0 | Detail | `Store.Invoices.ShowLive` |
+| **Invoices** | Invoice List | P0 | B (2/3+1/3 List) | `Store.Invoices.IndexLive` |
+| | Invoice Builder | P0 | E (Focused) | `Store.Invoices.NewLive` |
+| | Invoice Detail | P0 | C (2/3+1/3 Detail) | `Store.Invoices.ShowLive` |
 | | Send/Remind | P1 | Modal | |
-| **Customers** | Customer Lookup | P0 | List | `Store.Customers.IndexLive` |
-| | Customer Card | P0 | Detail | `Store.Customers.ShowLive` |
+| **Customers** | Customer Lookup | P0 | B (2/3+1/3 List) | `Store.Customers.IndexLive` |
+| | Customer Card | P0 | C (2/3+1/3 Detail) | `Store.Customers.ShowLive` |
 | | Quick Add | P1 | Modal | |
-| **Products** | Product Search | P1 | List | `Store.Products.IndexLive` |
-| | Product Detail | P1 | Detail | `Store.Products.ShowLive` |
-| **Inventory** | Stock Levels | P1 | List | `Store.InventoryLive` |
+| **Products** | Product Search | P1 | B (2/3+1/3 List) | `Store.Products.IndexLive` |
+| | Product Detail | P1 | C (2/3+1/3 Detail) | `Store.Products.ShowLive` |
+| **Inventory** | Stock Levels | P1 | D (Full-Width Table) | `Store.InventoryLive` |
 | | Adjust Stock | P1 | Modal | |
-| | Receive Stock | P2 | Form | |
-| **Subscriptions** | Active List | P1 | List | `Store.Subscriptions.IndexLive` |
-| | Subscription Detail | P1 | Detail | `Store.Subscriptions.ShowLive` |
+| | Receive Stock | P2 | Modal | |
+| **Subscriptions** | Active List | P1 | B (2/3+1/3 List) | `Store.Subscriptions.IndexLive` |
+| | Subscription Detail | P1 | C (2/3+1/3 Detail) | `Store.Subscriptions.ShowLive` |
 | | Renewal Flow | P2 | Modal | |
-| **Loyalty** | Points Lookup | P1 | (component) | `Store.LoyaltyLive` |
+| **Loyalty** | Points Lookup | P1 | B (2/3+1/3 List) | `Store.LoyaltyLive` |
 | | Redemption | P1 | Modal | |
 | | Enrollment | P2 | Modal | |
-| **Appointments** | Calendar View | P1 | Calendar | `Store.Appointments.IndexLive` |
+| **Appointments** | Calendar View | P1 | F (Calendar) | `Store.Appointments.IndexLive` |
 | | Booking | P1 | Modal | `Store.Appointments.NewLive` |
 | | Check In/Out | P1 | (component) | |
-| **Tables** | Table Map | P2 | Custom | `Store.TablesLive` |
+| **Tables** | Table Map | P2 | F (Map) | `Store.TablesLive` |
 | | Assign/Transfer | P2 | Modal | |
 | **Staff** | Clock In/Out | P1 | (component) | `Store.Staff.ClockLive` |
-| | Schedule View | P2 | Calendar | `Store.Staff.ScheduleLive` |
-| | Time Log | P2 | List | `Store.Staff.TimeLive` |
-| **Refunds** | Refund List | P0 | List | `Store.Refunds.IndexLive` |
-| | Process Refund | P0 | Form | `Store.Refunds.NewLive` |
-| **Tips** | Tip Entry | P1 | Form | `Store.TipsLive` |
-| | Tip Distribution | P2 | Form | |
-| **Reports** | Daily Summary | P1 | Dashboard | `Store.Reports.DailyLive` |
-| | Shift Report | P1 | Dashboard | `Store.Reports.ShiftLive` |
-| | Close Register | P1 | Form | `Store.Reports.CloseLive` |
-| **Settings** | Store Settings | P2 | Form | `Store.SettingsLive` |
+| | Schedule View | P2 | F (Calendar) | `Store.Staff.ScheduleLive` |
+| | Time Log | P2 | D (Full-Width Table) | `Store.Staff.TimeLive` |
+| **Refunds** | Refund List | P0 | B (2/3+1/3 List) | `Store.Refunds.IndexLive` |
+| | Process Refund | P0 | E (Focused) | `Store.Refunds.NewLive` |
+| **Tips** | Tip Entry | P1 | B (2/3+1/3 List) | `Store.TipsLive` |
+| | Tip Distribution | P2 | (component) | |
+| **Reports** | Daily Summary | P1 | A (Dashboard) | `Store.Reports.DailyLive` |
+| | Shift Report | P1 | A (Dashboard) | `Store.Reports.ShiftLive` |
+| | Close Register | P1 | E (Focused) | `Store.Reports.CloseLive` |
+| **Settings** | Store Settings | P2 | C (2/3+1/3 Detail) | `Store.SettingsLive` |
 
 ---
 

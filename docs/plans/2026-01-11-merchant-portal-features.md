@@ -44,9 +44,9 @@ The Merchant Portal is the command center for business owners. It provides full 
 └────────────────────────┘
 ```
 
-### Sidebar Pattern (240px, persistent per section)
+### Section Sidebar (240px, persistent per section)
 
-Used for sections with subsections. Collapses on mobile.
+Used within sections that have subsections (Products, Payments, Settings). The sidebar provides navigation within that section.
 
 ```
 ┌─────────────────────┐
@@ -66,58 +66,214 @@ Used for sections with subsections. Collapses on mobile.
 
 ---
 
+## Page Layout Templates
+
+All content pages follow one of four layout templates. Every page has a **Stats Row** at the top showing key metrics for that context.
+
+### Template A: Full-Width Dashboard
+
+Used for: Dashboards, Reports, Visualizations
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ [Section Sidebar]  │                                                         │
+│                    │  Page Title                           [Date] [Export]   │
+│ • Dashboard        │                                                         │
+│   Other Items      │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐       │
+│   ...              │  │ Stat 1  │ │ Stat 2  │ │ Stat 3  │ │ Stat 4  │       │
+│                    │  └─────────┘ └─────────┘ └─────────┘ └─────────┘       │
+│                    │                                                         │
+│                    │  ┌─────────────────────────────────────────────────────┐│
+│                    │  │                                                     ││
+│                    │  │           Full-Width Content Area                   ││
+│                    │  │      (Cards, Charts, Grids - flexible layout)       ││
+│                    │  │                                                     ││
+│                    │  └─────────────────────────────────────────────────────┘│
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Template B: 2/3 + 1/3 Split (List View)
+
+Used for: List pages with contextual actions and filters
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ [Section Sidebar]  │                                                         │
+│                    │  Page Title                    [Search] [+ Add New]     │
+│   Products         │                                                         │
+│ • All Products     │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐       │
+│   Categories       │  │ Stat 1  │ │ Stat 2  │ │ Stat 3  │ │ Stat 4  │       │
+│   Inventory        │  └─────────┘ └─────────┘ └─────────┘ └─────────┘       │
+│   ...              │                                                         │
+│                    │  ┌─────────────────────────────────┐ ┌─────────────────┐│
+│                    │  │                                 │ │ QUICK ACTIONS   ││
+│                    │  │                                 │ │                 ││
+│                    │  │        Main Content (2/3)       │ │ [+ Add New]     ││
+│                    │  │                                 │ │ [Import]        ││
+│                    │  │   Table / List / Cards          │ │ [Bulk Edit]     ││
+│                    │  │                                 │ │                 ││
+│                    │  │   - Row 1                       │ │ ─────────────── ││
+│                    │  │   - Row 2                       │ │ FILTERS         ││
+│                    │  │   - Row 3                       │ │                 ││
+│                    │  │   ...                           │ │ [Status ▾]      ││
+│                    │  │                                 │ │ [Category ▾]    ││
+│                    │  │                                 │ │                 ││
+│                    │  │                                 │ │ ─────────────── ││
+│                    │  │                                 │ │ AI INSIGHTS     ││
+│                    │  │                                 │ │ 💡 3 low stock  ││
+│                    │  └─────────────────────────────────┘ └─────────────────┘│
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Template C: 2/3 + 1/3 Split (Detail View)
+
+Used for: Detail/Edit pages with contextual actions
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ [Section Sidebar]  │                                                         │
+│                    │  ← Back to List    Item Name              [Edit] [···] │
+│   Products         │                                                         │
+│ • All Products     │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐       │
+│   Categories       │  │ Revenue │ │ Orders  │ │ Views   │ │ Conv %  │       │
+│   Inventory        │  └─────────┘ └─────────┘ └─────────┘ └─────────┘       │
+│   ...              │                                                         │
+│                    │  ┌─────────────────────────────────┐ ┌─────────────────┐│
+│                    │  │                                 │ │ ACTIONS         ││
+│                    │  │        Main Content (2/3)       │ │                 ││
+│                    │  │                                 │ │ [Edit]          ││
+│                    │  │   Detail Information            │ │ [Duplicate]     ││
+│                    │  │   - Section 1                   │ │ [Archive]       ││
+│                    │  │   - Section 2                   │ │                 ││
+│                    │  │   - Section 3                   │ │ ─────────────── ││
+│                    │  │                                 │ │ SUMMARY         ││
+│                    │  │   History / Activity            │ │                 ││
+│                    │  │   - Event 1                     │ │ Created: Jan 1  ││
+│                    │  │   - Event 2                     │ │ Updated: Jan 10 ││
+│                    │  │                                 │ │ Status: Active  ││
+│                    │  │                                 │ │                 ││
+│                    │  │                                 │ │ ─────────────── ││
+│                    │  │                                 │ │ RELATED         ││
+│                    │  │                                 │ │ [Category]      ││
+│                    │  │                                 │ │ [Variants (3)]  ││
+│                    │  └─────────────────────────────────┘ └─────────────────┘│
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Template D: Full-Width Table
+
+Used for: Dense data tables requiring maximum horizontal space
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ [Section Sidebar]  │                                                         │
+│                    │  Page Title                    [Filter] [Export] [···]  │
+│   Payments         │                                                         │
+│   Transactions     │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐       │
+│ • All              │  │ Volume  │ │ Count   │ │ Avg     │ │ Decline │       │
+│   Settlements      │  └─────────┘ └─────────┘ └─────────┘ └─────────┘       │
+│   Payouts          │                                                         │
+│   ...              │  [Search...                    ] [Status ▾] [Date ▾]    │
+│                    │                                                         │
+│                    │  ┌─────────────────────────────────────────────────────┐│
+│                    │  │ ID     │ Customer │ Amount │ Status │ Method │ Time ││
+│                    │  │────────│──────────│────────│────────│────────│──────││
+│                    │  │ TXN001 │ J. Smith │ $124   │ ✓ Paid │ Visa   │ 2:34 ││
+│                    │  │ TXN002 │ M. Lee   │ $89.50 │ ✓ Paid │ Amex   │ 2:21 ││
+│                    │  │ TXN003 │ Guest    │ $42    │ ✗ Fail │ MC     │ 2:15 ││
+│                    │  │ ...    │ ...      │ ...    │ ...    │ ...    │ ...  ││
+│                    │  └─────────────────────────────────────────────────────┘│
+│                    │  Showing 1-25 of 1,234                      [< 1 2 3 >] │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Template E: Focused Mode
+
+Used for: Single-purpose flows (wizards, builders) - No section sidebar
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ← Back                    Step 2 of 4: Configure                    [Cancel] │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│                    ┌────────────────────────────────────┐                    │
+│                    │                                    │                    │
+│                    │         Centered Content           │                    │
+│                    │                                    │                    │
+│                    │   Form / Wizard / Builder          │                    │
+│                    │                                    │                    │
+│                    │                                    │                    │
+│                    └────────────────────────────────────┘                    │
+│                                                                              │
+│                              [Previous]  [Next →]                            │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Layout Selection Guide
+
+| Layout | Use When | Examples |
+|--------|----------|----------|
+| **A: Full-Width Dashboard** | Multiple cards/charts, overview data | Dashboard, Reports |
+| **B: 2/3 + 1/3 List** | List with actions & filters sidebar | Products, Customers, Orders |
+| **C: 2/3 + 1/3 Detail** | Detail view with actions & context | Product Detail, Customer Profile |
+| **D: Full-Width Table** | Dense data, many columns | Transactions, Settlements, Audit Log |
+| **E: Focused Mode** | Single-task flows, no distractions | Wizards, Builders, Import |
+
+---
+
 ## Feature Inventory
 
 ### Complete Feature List
 
-| Section | Feature | Priority | Sidebar? | LiveView Module |
-|---------|---------|----------|----------|-----------------|
-| **Dashboard** | Aggregate Overview | P0 | No | `Merchant.DashboardLive` |
-| | AI Insights Feed | P0 | No | (component) |
-| | Quick Actions | P0 | No | (component) |
-| **Products** | Product List | P0 | Yes | `Merchant.Products.IndexLive` |
-| | Product Detail/Edit | P0 | Yes | `Merchant.Products.ShowLive` |
-| | Product Create | P0 | Yes | `Merchant.Products.NewLive` |
-| | Categories | P1 | Yes | `Merchant.Products.CategoriesLive` |
-| | Inventory Overview | P1 | Yes | `Merchant.Products.InventoryLive` |
-| | Import/Export | P2 | Yes | `Merchant.Products.ImportLive` |
-| | Bulk Editor | P2 | Yes | `Merchant.Products.BulkLive` |
-| **Stores** | Store List | P0 | Yes | `Merchant.Stores.IndexLive` |
-| | Store Configuration | P0 | Yes | `Merchant.Stores.ShowLive` |
-| | Store Creation Wizard | P1 | No | `Merchant.Stores.NewLive` |
-| | Hardware Management | P2 | Yes | `Merchant.Stores.HardwareLive` |
-| **Payments** | Transactions | P0 | Yes | `Merchant.Payments.TransactionsLive` |
-| | Transaction Detail | P0 | Yes | `Merchant.Payments.TransactionLive` |
-| | Settlements | P1 | Yes | `Merchant.Payments.SettlementsLive` |
-| | Payouts | P1 | Yes | `Merchant.Payments.PayoutsLive` |
-| | Chargebacks | P1 | Yes | `Merchant.Payments.ChargebacksLive` |
-| | Chargeback Detail | P1 | Yes | `Merchant.Payments.ChargebackLive` |
-| | MIDs | P1 | Yes | `Merchant.Payments.MidsLive` |
-| | Gateway Health | P2 | Yes | `Merchant.Payments.HealthLive` |
-| **Customers** | Customer List | P0 | Yes | `Merchant.Customers.IndexLive` |
-| | Customer Detail | P0 | Yes | `Merchant.Customers.ShowLive` |
-| | Segments | P1 | Yes | `Merchant.Customers.SegmentsLive` |
-| | Loyalty Program | P2 | Yes | `Merchant.Customers.LoyaltyLive` |
-| **Orders** | Order List | P0 | Yes | `Merchant.Orders.IndexLive` |
-| | Order Detail | P0 | Yes | `Merchant.Orders.ShowLive` |
-| | Fulfillment Queue | P1 | Yes | `Merchant.Orders.FulfillmentLive` |
-| | Returns | P1 | Yes | `Merchant.Orders.ReturnsLive` |
-| **Reports** | Sales Report | P1 | Yes | `Merchant.Reports.SalesLive` |
-| | Payments Report | P1 | Yes | `Merchant.Reports.PaymentsLive` |
-| | Inventory Report | P2 | Yes | `Merchant.Reports.InventoryLive` |
-| | Customer Report | P2 | Yes | `Merchant.Reports.CustomersLive` |
-| | Custom Reports | P3 | Yes | `Merchant.Reports.CustomLive` |
-| **Team** | User List | P1 | Yes | `Merchant.Team.IndexLive` |
-| | User Detail | P1 | Yes | `Merchant.Team.ShowLive` |
-| | Roles & Permissions | P2 | Yes | `Merchant.Team.RolesLive` |
-| | Activity Log | P2 | Yes | `Merchant.Team.ActivityLive` |
+| Section | Feature | Priority | Layout | LiveView Module |
+|---------|---------|----------|--------|-----------------|
+| **Dashboard** | Aggregate Overview | P0 | A (Dashboard) | `Merchant.DashboardLive` |
+| | AI Insights Feed | P0 | (component) | |
+| | Quick Actions | P0 | (component) | |
+| **Products** | Product List | P0 | B (2/3+1/3 List) | `Merchant.Products.IndexLive` |
+| | Product Detail/Edit | P0 | C (2/3+1/3 Detail) | `Merchant.Products.ShowLive` |
+| | Product Create | P0 | C (2/3+1/3 Detail) | `Merchant.Products.NewLive` |
+| | Categories | P1 | B (2/3+1/3 List) | `Merchant.Products.CategoriesLive` |
+| | Inventory Overview | P1 | D (Full-Width Table) | `Merchant.Products.InventoryLive` |
+| | Import/Export | P2 | E (Focused) | `Merchant.Products.ImportLive` |
+| | Bulk Editor | P2 | D (Full-Width Table) | `Merchant.Products.BulkLive` |
+| **Stores** | Store List | P0 | B (2/3+1/3 List) | `Merchant.Stores.IndexLive` |
+| | Store Configuration | P0 | C (2/3+1/3 Detail) | `Merchant.Stores.ShowLive` |
+| | Store Creation Wizard | P1 | E (Focused) | `Merchant.Stores.NewLive` |
+| | Hardware Management | P2 | B (2/3+1/3 List) | `Merchant.Stores.HardwareLive` |
+| **Payments** | Transactions | P0 | D (Full-Width Table) | `Merchant.Payments.TransactionsLive` |
+| | Transaction Detail | P0 | C (2/3+1/3 Detail) | `Merchant.Payments.TransactionLive` |
+| | Settlements | P1 | D (Full-Width Table) | `Merchant.Payments.SettlementsLive` |
+| | Payouts | P1 | D (Full-Width Table) | `Merchant.Payments.PayoutsLive` |
+| | Chargebacks | P1 | B (2/3+1/3 List) | `Merchant.Payments.ChargebacksLive` |
+| | Chargeback Detail | P1 | C (2/3+1/3 Detail) | `Merchant.Payments.ChargebackLive` |
+| | MIDs | P1 | B (2/3+1/3 List) | `Merchant.Payments.MidsLive` |
+| | Gateway Health | P2 | A (Dashboard) | `Merchant.Payments.HealthLive` |
+| **Customers** | Customer List | P0 | B (2/3+1/3 List) | `Merchant.Customers.IndexLive` |
+| | Customer Detail | P0 | C (2/3+1/3 Detail) | `Merchant.Customers.ShowLive` |
+| | Segments | P1 | B (2/3+1/3 List) | `Merchant.Customers.SegmentsLive` |
+| | Loyalty Program | P2 | C (2/3+1/3 Detail) | `Merchant.Customers.LoyaltyLive` |
+| **Orders** | Order List | P0 | B (2/3+1/3 List) | `Merchant.Orders.IndexLive` |
+| | Order Detail | P0 | C (2/3+1/3 Detail) | `Merchant.Orders.ShowLive` |
+| | Fulfillment Queue | P1 | D (Full-Width Table) | `Merchant.Orders.FulfillmentLive` |
+| | Returns | P1 | B (2/3+1/3 List) | `Merchant.Orders.ReturnsLive` |
+| **Reports** | Sales Report | P1 | A (Dashboard) | `Merchant.Reports.SalesLive` |
+| | Payments Report | P1 | A (Dashboard) | `Merchant.Reports.PaymentsLive` |
+| | Inventory Report | P2 | A (Dashboard) | `Merchant.Reports.InventoryLive` |
+| | Customer Report | P2 | A (Dashboard) | `Merchant.Reports.CustomersLive` |
+| | Custom Reports | P3 | A (Dashboard) | `Merchant.Reports.CustomLive` |
+| **Team** | User List | P1 | B (2/3+1/3 List) | `Merchant.Team.IndexLive` |
+| | User Detail | P1 | C (2/3+1/3 Detail) | `Merchant.Team.ShowLive` |
+| | Roles & Permissions | P2 | B (2/3+1/3 List) | `Merchant.Team.RolesLive` |
+| | Activity Log | P2 | D (Full-Width Table) | `Merchant.Team.ActivityLive` |
 | | Invite Flow | P1 | Modal | (component) |
-| **Settings** | Business Info | P1 | Yes | `Merchant.Settings.BusinessLive` |
-| | Branding | P2 | Yes | `Merchant.Settings.BrandingLive` |
-| | Notifications | P2 | Yes | `Merchant.Settings.NotificationsLive` |
-| | Integrations | P3 | Yes | `Merchant.Settings.IntegrationsLive` |
-| | Billing & Usage | P1 | Yes | `Merchant.Settings.BillingLive` |
-| | API & Webhooks | P2 | Yes | `Merchant.Settings.ApiLive` |
+| **Settings** | Business Info | P1 | C (2/3+1/3 Detail) | `Merchant.Settings.BusinessLive` |
+| | Branding | P2 | C (2/3+1/3 Detail) | `Merchant.Settings.BrandingLive` |
+| | Notifications | P2 | C (2/3+1/3 Detail) | `Merchant.Settings.NotificationsLive` |
+| | Integrations | P3 | B (2/3+1/3 List) | `Merchant.Settings.IntegrationsLive` |
+| | Billing & Usage | P1 | C (2/3+1/3 Detail) | `Merchant.Settings.BillingLive` |
+| | API & Webhooks | P2 | C (2/3+1/3 Detail) | `Merchant.Settings.ApiLive` |
 
 ---
 
