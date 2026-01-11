@@ -53,4 +53,46 @@ defmodule McpWeb.Core.Navigation do
     </div>
     """
   end
+
+  @doc """
+  Renders a top navigation bar.
+
+  ## Examples
+
+      <.navbar>
+        <:start>Logo</:start>
+        <:center>
+          <a href="/dashboard">Dashboard</a>
+        </:center>
+        <:nav_end>
+          <.avatar initials="JD" />
+        </:nav_end>
+      </.navbar>
+  """
+  attr :class, :string, default: nil
+
+  slot :start
+  slot :center
+  slot :nav_end
+
+  def navbar(assigns) do
+    ~H"""
+    <nav class={[
+      "navbar bg-base-100 shadow-sm",
+      "border-b border-base-300/50",
+      "px-4 min-h-14",
+      @class
+    ]}>
+      <div :if={@start != []} class="navbar-start gap-2">
+        {render_slot(@start)}
+      </div>
+      <div :if={@center != []} class="navbar-center gap-1">
+        {render_slot(@center)}
+      </div>
+      <div :if={@nav_end != []} class="navbar-end gap-2">
+        {render_slot(@nav_end)}
+      </div>
+    </nav>
+    """
+  end
 end

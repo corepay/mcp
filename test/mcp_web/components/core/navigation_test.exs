@@ -60,4 +60,47 @@ defmodule McpWeb.Core.NavigationTest do
       assert html =~ "dropdown-hover"
     end
   end
+
+  describe "navbar/1" do
+    test "renders navbar with start, center, end zones" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <Navigation.navbar>
+          <:start>
+            <span>Logo</span>
+          </:start>
+          <:center>
+            <a>Dashboard</a>
+            <a>Products</a>
+          </:center>
+          <:nav_end>
+            <button>Profile</button>
+          </:nav_end>
+        </Navigation.navbar>
+        """)
+
+      assert html =~ "navbar"
+      assert html =~ "Logo"
+      assert html =~ "Dashboard"
+      assert html =~ "Profile"
+      assert html =~ "navbar-start"
+      assert html =~ "navbar-center"
+      assert html =~ "navbar-end"
+    end
+
+    test "renders with custom background" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <Navigation.navbar class="bg-primary">
+          <:start>Logo</:start>
+        </Navigation.navbar>
+        """)
+
+      assert html =~ "bg-primary"
+    end
+  end
 end
