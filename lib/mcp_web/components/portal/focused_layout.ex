@@ -61,6 +61,7 @@ defmodule McpWeb.Portal.FocusedLayout do
   slot :right_panel
   slot :content
   slot :progress
+  slot :intelligence_bar
 
   def focused_layout(assigns) do
     ~H"""
@@ -76,6 +77,22 @@ defmodule McpWeb.Portal.FocusedLayout do
       <main class="flex-1 flex overflow-hidden">
         <.layout_content variant={@variant} assigns={assigns} />
       </main>
+
+      <.intelligence_bar_section :if={@intelligence_bar != []} intelligence_bar={@intelligence_bar} />
+    </div>
+    """
+  end
+
+  # Private component: Intelligence bar at bottom of screen
+  defp intelligence_bar_section(assigns) do
+    ~H"""
+    <div class="intelligence-bar fixed bottom-0 left-0 right-0 bg-gradient-to-r from-primary/10 to-secondary/10 backdrop-blur-sm border-t border-base-300 px-4 py-3">
+      <div class="max-w-7xl mx-auto flex items-center gap-3">
+        <.icon name="hero-sparkles" class="size-5 text-primary animate-pulse" />
+        <div class="flex-1">
+          {render_slot(@intelligence_bar)}
+        </div>
+      </div>
     </div>
     """
   end

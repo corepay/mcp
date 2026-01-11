@@ -467,6 +467,66 @@ defmodule McpWeb.Portal.FocusedLayoutTest do
     end
   end
 
+  describe "focused_layout/1 - intelligence_bar slot" do
+    test "renders intelligence bar slot content when provided" do
+      assigns = %{title: "POS", exit: "/dashboard"}
+
+      html =
+        rendered_to_string(~H"""
+        <FocusedLayout.focused_layout title={@title} exit={@exit}>
+          <:left_panel>
+            <div>Products</div>
+          </:left_panel>
+          <:right_panel>
+            <div>Cart</div>
+          </:right_panel>
+          <:intelligence_bar>
+            AI is analyzing 3 items...
+          </:intelligence_bar>
+        </FocusedLayout.focused_layout>
+        """)
+
+      assert html =~ "AI is analyzing 3 items"
+      assert html =~ "intelligence-bar"
+    end
+
+    test "does not render intelligence bar when slot not provided" do
+      assigns = %{title: "POS", exit: "/dashboard"}
+
+      html =
+        rendered_to_string(~H"""
+        <FocusedLayout.focused_layout title={@title} exit={@exit}>
+          <:left_panel>
+            <div>Products</div>
+          </:left_panel>
+          <:right_panel>
+            <div>Cart</div>
+          </:right_panel>
+        </FocusedLayout.focused_layout>
+        """)
+
+      refute html =~ "intelligence-bar"
+    end
+
+    test "intelligence bar has sparkles icon" do
+      assigns = %{title: "Terminal", exit: "/dashboard"}
+
+      html =
+        rendered_to_string(~H"""
+        <FocusedLayout.focused_layout title={@title} exit={@exit} variant={:centered}>
+          <:content>
+            <div>Content</div>
+          </:content>
+          <:intelligence_bar>
+            Suggestions ready
+          </:intelligence_bar>
+        </FocusedLayout.focused_layout>
+        """)
+
+      assert html =~ "hero-sparkles"
+    end
+  end
+
   describe "focused_layout/1 - accessibility" do
     test "exit link has accessible name" do
       assigns = %{title: "Point of Sale", exit: "/dashboard"}
