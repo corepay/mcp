@@ -361,6 +361,22 @@ defmodule McpWeb.Merchant.Products.NewLive do
                 </li>
               </ul>
             </div>
+            <div class="bg-base-200 rounded-box p-4">
+              <h4 class="font-medium text-sm mb-2">Form Status</h4>
+              <div class="flex items-center gap-2 text-sm">
+                <.icon
+                  name={if @errors == %{}, do: "hero-check-circle", else: "hero-exclamation-circle"}
+                  class={"size-5 #{if @errors == %{}, do: "text-success", else: "text-warning"}"}
+                />
+                <span>
+                  <%= if @errors == %{} do %>
+                    Ready to submit
+                  <% else %>
+                    {map_size(@errors)} field(s) need attention
+                  <% end %>
+                </span>
+              </div>
+            </div>
             <div class="text-center text-sm text-base-content/50 py-4">
               AI insights coming in Phase 5
             </div>

@@ -69,12 +69,12 @@ defmodule McpWeb.Store.Customers.ShowLive do
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <%!-- Contact Information (phone only for store staff) --%>
+                <%!-- Contact Information (Email only for store staff) --%>
                 <div class="space-y-3">
                   <div class="flex items-center gap-2 text-base-content/80">
-                    <.icon name="hero-phone" class="size-5" />
-                    <a href={"tel:#{@customer.phone}"} class="link link-hover">
-                      {@customer.phone}
+                    <.icon name="hero-envelope" class="size-5" />
+                    <a href={"mailto:#{@customer.email}"} class="link link-hover">
+                      {@customer.email}
                     </a>
                   </div>
                   <div class="flex items-center gap-2 text-base-content/80">
@@ -146,6 +146,7 @@ defmodule McpWeb.Store.Customers.ShowLive do
       id: id,
       name: "John Doe",
       phone: "+1 555-0123",
+      email: "john.doe@example.com",
       loyalty_points: 1250,
       loyalty_tier: :gold,
       member_since: ~U[2024-06-15 10:00:00Z],
