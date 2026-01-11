@@ -143,7 +143,8 @@ defmodule McpWeb.Router do
       layout: {McpWeb.Layouts.PortalLayouts, :merchant_portal} do
       live "/dashboard", Merchant.DashboardLive
       live "/orders", MockDashboardLive
-      live "/products", MockDashboardLive
+      # Phase 3 routes - Product Management
+      live "/products", Merchant.Products.IndexLive
       # Phase 2 routes - Customer Management
       live "/customers", Merchant.Customers.IndexLive
       live "/customers/:id", Merchant.Customers.ShowLive
