@@ -307,17 +307,14 @@ defmodule McpWeb.Merchant.Products.InventoryLive do
 
   defp filter_button(assigns) do
     ~H"""
-    <button
+    <.button
       type="button"
-      class={[
-        "btn btn-sm",
-        @active && "btn-primary",
-        !@active && "btn-ghost"
-      ]}
+      variant={if @active, do: "primary", else: "ghost"}
+      size="sm"
       {@rest}
     >
       {@label}
-    </button>
+    </.button>
     """
   end
 
