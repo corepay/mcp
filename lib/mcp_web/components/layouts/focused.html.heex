@@ -1,0 +1,34 @@
+<%!--
+  Focused Layout Template
+
+  A minimal chrome layout for distraction-free experiences like POS, Terminal, and Wizards.
+  This layout bypasses the normal shell navigation entirely.
+
+  ## Usage
+
+  LiveViews can use this layout by setting it in mount:
+
+      def mount(_params, _session, socket) do
+        {:ok, socket, layout: {McpWeb.Layouts, :focused}}
+      end
+
+  Then use the focused_layout component in render:
+
+      def render(assigns) do
+        ~H\"""
+        <.focused_layout title="Point of Sale" exit={~p"/dashboard"}>
+          <:left_panel>Product grid</:left_panel>
+          <:right_panel>Cart summary</:right_panel>
+        </.focused_layout>
+        \"""
+      end
+
+  See McpWeb.Portal.FocusedLayout for available variants:
+  - :two_panel - 60/40 split (default, for POS)
+  - :centered - Single centered panel (for Terminal)
+  - :wizard - Progress indicator with centered content
+--%>
+<div class="focused-layout-container min-h-screen bg-base-100">
+  <.flash_group flash={@flash} />
+  {@inner_content}
+</div>

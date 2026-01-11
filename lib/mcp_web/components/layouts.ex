@@ -2,8 +2,50 @@ defmodule McpWeb.Layouts do
   @moduledoc """
   This module holds layouts and related functionality
   used by your application.
+
+  ## Layout Types
+
+  ### Standard Layouts (embedded templates)
+
+  - `root` - Base HTML document with head, scripts, and body wrapper
+  - `app` - Default application layout with nav and content area
+  - `focused` - Minimal chrome layout for distraction-free experiences (POS, Terminal, Wizards)
+  - `ola_layout` - Online Application layout with AI assistant sidebar
+
+  ### Shell Layouts (component modules)
+
+  - `McpWeb.Layouts.MerchantShell` - Merchant portal with top nav and contextual sidebar
+  - `McpWeb.Layouts.StoreShell` - Store portal with left sidebar navigation
+  - `McpWeb.Layouts.PortalLayouts` - Portal-specific layouts and app shell
+
+  ## Using the Focused Layout
+
+  For pages that need to bypass normal shell navigation (POS, Terminal, Wizards),
+  use the focused layout:
+
+      defmodule McpWeb.Store.PosLive do
+        use McpWeb, :live_view
+
+        def mount(_params, _session, socket) do
+          {:ok, socket, layout: {McpWeb.Layouts, :focused}}
+        end
+
+        def render(assigns) do
+          ~H\"\"\"
+          <.focused_layout title="Point of Sale" exit={~p"/dashboard"}>
+            <:left_panel>Product grid</:left_panel>
+            <:right_panel>Cart summary</:right_panel>
+          </.focused_layout>
+          \"\"\"
+        end
+      end
+
+  See `McpWeb.Portal.FocusedLayout` for available variants and options.
   """
   use McpWeb, :html
+
+  # Note: Portal layout components (including focused_layout) are automatically
+  # available via McpWeb html_helpers which are included by `use McpWeb, :html`
 
   # Embed all files in layouts/* within this module.
   # The default root.html.heex file contains the HTML

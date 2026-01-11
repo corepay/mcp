@@ -1,12 +1,64 @@
 defmodule McpWeb.Layouts.MerchantShell do
   @moduledoc """
   Merchant Portal shell layout with top nav + contextual sidebar.
+
+  This shell provides navigation infrastructure (top nav, sidebar) while portal
+  components provide content structure within the shell.
+
+  ## Integration with Portal Components
+
+  The shell makes portal layout components available for use in LiveViews:
+
+  - `page_layout/1` - Provides content structure (dashboard, list, detail, table variants)
+  - `stats_row/1`, `stat/1` - Key metrics display
+  - `action_sidebar/1`, `sidebar_action/1`, `sidebar_filter/1`, `ai_insight/1` - Sidebar actions/filters
+  - `data_table/1`, `pagination/1` - Data tables with pagination
+
+  ## Usage Pattern
+
+  Normal pages use the shell for navigation + page_layout for content:
+
+      defmodule McpWeb.Merchant.Products.IndexLive do
+        use McpWeb, :live_view
+
+        def render(assigns) do
+          ~H\"\"\"
+          <.page_layout variant={:list} title="Products">
+            <:stats>
+              <.stats_row>
+                <.stat label="Total" value="156" />
+                <.stat label="Active" value="142" trend={+3} comparison="vs last week" />
+              </.stats_row>
+            </:stats>
+            <:content>
+              <.data_table id="products" rows={@products}>
+                <:col :let={product} label="Name" field={:name}>{product.name}</:col>
+                <:col :let={product} label="Price" field={:price} align={:right}>{product.price}</:col>
+              </.data_table>
+            </:content>
+            <:sidebar>
+              <.action_sidebar>
+                <:actions>
+                  <.sidebar_action icon="hero-plus" label="Add Product" href={~p"/app/products/new"} />
+                </:actions>
+              </.action_sidebar>
+            </:sidebar>
+          </.page_layout>
+          \"\"\"
+        end
+      end
+
+  For focused pages (POS, Terminal, Wizards), bypass the shell entirely using
+  `layout {McpWeb.Layouts, :focused}` - see `McpWeb.Portal.FocusedLayout`.
   """
   use Phoenix.Component
   import McpWeb.Core.Navigation, only: [navbar: 1, dropdown: 1]
   import McpWeb.Core.DataDisplay, only: [avatar: 1]
   import McpWeb.Core.CoreComponents, only: [icon: 1]
   import McpWeb.Portals.Merchant.Components, only: [context_switcher: 1]
+
+  # Note: Portal layout components (stats_row, page_layout, action_sidebar, data_table)
+  # are globally available via McpWeb html_helpers - no need to import here.
 
   @nav_items [
     %{label: "Dashboard", href: "/app", icon: "hero-home"},

@@ -1,12 +1,87 @@
 defmodule McpWeb.Layouts.StoreShell do
   @moduledoc """
   Store Portal shell layout with left sidebar navigation.
+
+  This shell provides navigation infrastructure (left sidebar, top bar) while portal
+  components provide content structure within the shell.
+
+  ## Integration with Portal Components
+
+  The shell makes portal layout components available for use in LiveViews:
+
+  - `page_layout/1` - Provides content structure (dashboard, list, detail, table variants)
+  - `stats_row/1`, `stat/1` - Key metrics display
+  - `action_sidebar/1`, `sidebar_action/1`, `sidebar_filter/1`, `ai_insight/1` - Sidebar actions/filters
+  - `data_table/1`, `pagination/1` - Data tables with pagination
+
+  ## Usage Pattern
+
+  Normal pages use the shell for navigation + page_layout for content:
+
+      defmodule McpWeb.Store.Orders.IndexLive do
+        use McpWeb, :live_view
+
+        def render(assigns) do
+          ~H\"\"\"
+          <.page_layout variant={:list} title="Orders">
+            <:stats>
+              <.stats_row>
+                <.stat label="Today" value="24" trend={+12} comparison="vs yesterday" />
+                <.stat label="Revenue" value="$1,847" trend={+8} comparison="vs yesterday" />
+              </.stats_row>
+            </:stats>
+            <:content>
+              <.data_table id="orders" rows={@orders}>
+                <:col :let={order} label="Order #" field={:number}>{order.number}</:col>
+                <:col :let={order} label="Customer" field={:customer}>{order.customer_name}</:col>
+                <:col :let={order} label="Total" field={:total} align={:right}>{order.total}</:col>
+              </.data_table>
+            </:content>
+            <:sidebar>
+              <.action_sidebar>
+                <:actions>
+                  <.sidebar_action icon="hero-plus" label="New Order" href={~p"/app/stores/\#{@store_slug}/orders/new"} />
+                </:actions>
+                <:filters>
+                  <.sidebar_filter label="Status" options={@status_options} field={:status} />
+                </:filters>
+              </.action_sidebar>
+            </:sidebar>
+          </.page_layout>
+          \"\"\"
+        end
+      end
+
+  For focused pages (POS, Terminal, Wizards), bypass the shell entirely using
+  `layout {McpWeb.Layouts, :focused}` - see `McpWeb.Portal.FocusedLayout`.
+
+      defmodule McpWeb.Store.PosLive do
+        use McpWeb, :live_view
+
+        # Use focused layout instead of shell
+        @impl true
+        def mount(_params, _session, socket) do
+          {:ok, socket, layout: {McpWeb.Layouts, :focused}}
+        end
+
+        def render(assigns) do
+          ~H\"\"\"
+          <.focused_layout title="Point of Sale" exit={~p"/app/stores/\#{@store_slug}"}>
+            <:left_panel>Product grid</:left_panel>
+            <:right_panel>Cart summary</:right_panel>
+          </.focused_layout>
+          \"\"\"
+        end
+      end
   """
   use Phoenix.Component
   import McpWeb.Core.Navigation, only: [dropdown: 1]
   import McpWeb.Core.DataDisplay, only: [avatar: 1]
   import McpWeb.Core.CoreComponents, only: [icon: 1]
   import McpWeb.Portals.Merchant.Components, only: [context_switcher: 1]
+
+  # Note: Portal layout components (stats_row, page_layout, action_sidebar, data_table)
+  # are globally available via McpWeb html_helpers - no need to import here.
 
   # Navigation sections - visibility controlled by vertical
   @nav_sections [

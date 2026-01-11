@@ -91,6 +91,13 @@ defmodule McpWeb do
       import McpWeb.Core.Feedback
       import McpWeb.Core.Navigation
 
+      # Portal layout components
+      import McpWeb.Portal.StatsRow
+      import McpWeb.Portal.ActionSidebar
+      import McpWeb.Portal.PageLayout
+      import McpWeb.Portal.DataTable
+      import McpWeb.Portal.FocusedLayout
+
       # Common modules used in templates
       alias McpWeb.Layouts
       alias Phoenix.LiveView.JS

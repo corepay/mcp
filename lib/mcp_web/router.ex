@@ -283,6 +283,7 @@ defmodule McpWeb.Router do
 
     # Developer Routes
     live "/dev/style-guide", Dev.StyleGuideLive, :index
+    live "/dev/portal-components", Dev.PortalComponentsLive, :index
   end
 
   # Magic Camera upload - public route accessed via QR code from phone
