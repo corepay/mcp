@@ -62,6 +62,8 @@ defmodule McpWeb.Portal.FocusedLayout do
   slot :content
   slot :progress
   slot :intelligence_bar
+  slot :actions
+  slot :main_header
 
   def focused_layout(assigns) do
     ~H"""
@@ -70,9 +72,17 @@ defmodule McpWeb.Portal.FocusedLayout do
         title={@title}
         exit={@exit}
         show_intelligence_bar={@show_intelligence_bar}
+        actions={@actions}
       />
 
       <.progress_bar :if={@variant == :wizard and @progress != []} progress={@progress} />
+
+      <div
+        :if={@main_header != []}
+        class="flex-none border-b border-base-300 bg-base-100 relative z-20"
+      >
+        {render_slot(@main_header)}
+      </div>
 
       <main class="flex-1 flex overflow-hidden">
         <.layout_content variant={@variant} assigns={assigns} />
@@ -106,15 +116,16 @@ defmodule McpWeb.Portal.FocusedLayout do
           <.icon name="hero-arrow-left" class="size-5" />
         </a>
       </div>
-      <div class="flex-1 justify-center">
+      <div class="flex-1 px-4">
         <h1 class="text-lg font-semibold text-base-content">{@title}</h1>
       </div>
-      <div class="flex-none">
+      <div class="flex-none gap-2">
         <div :if={@show_intelligence_bar} class="intelligence-bar">
           <button class="btn btn-ghost btn-sm" aria-label="Command palette">
             <.icon name="hero-command-line" class="size-5" />
           </button>
         </div>
+        {render_slot(@actions)}
       </div>
     </header>
     """

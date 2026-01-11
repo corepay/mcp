@@ -51,33 +51,43 @@ defmodule McpWeb.Store.TerminalLiveTest do
     {:ok, conn: authed_conn, tenant: tenant, user: user}
   end
 
-  describe "Terminal LiveView" do
-    test "renders terminal interface with focused layout", %{conn: conn} do
-      {:ok, _view, html} = live(conn, ~p"/app/stores/test-store/terminal")
+  describe "Terminal LiveView - Single Screen Layout" do
+    test "renders terminal interface with two-panel layout", %{conn: conn, tenant: tenant} do
+      {:ok, _view, html} = live(conn, ~p"/app/stores/#{tenant.slug}/terminal")
 
       assert html =~ "Virtual Terminal"
-      # Should start at amount entry step
-      assert html =~ ~s(data-testid="amount-display")
+      # Should show search/line items panel and order summary panel
+      assert html =~ "Search items"
+      assert html =~ "Order Summary"
     end
 
-    test "starts at amount entry step", %{conn: conn} do
-      {:ok, _view, html} = live(conn, ~p"/app/stores/test-store/terminal")
+    test "shows empty state when no items added", %{conn: conn, tenant: tenant} do
+      {:ok, _view, html} = live(conn, ~p"/app/stores/#{tenant.slug}/terminal")
 
       assert html =~ "$0.00"
-      assert html =~ ~s(data-testid="keypad")
+      assert html =~ "Search or add products"
     end
 
-    test "displays step indicator", %{conn: conn} do
-      {:ok, _view, html} = live(conn, ~p"/app/stores/test-store/terminal")
+    test "has customer section", %{conn: conn, tenant: tenant} do
+      {:ok, _view, html} = live(conn, ~p"/app/stores/#{tenant.slug}/terminal")
 
-      # Should show wizard steps
-      assert html =~ "Amount" or html =~ "Step 1"
+      # Customer section should be visible (optional customer)
+      assert html =~ "customer" or html =~ "Add Customer"
     end
 
-    test "has exit button to dashboard", %{conn: conn} do
-      {:ok, _view, html} = live(conn, ~p"/app/stores/test-store/terminal")
+    test "has exit button to dashboard", %{conn: conn, tenant: tenant} do
+      {:ok, _view, html} = live(conn, ~p"/app/stores/#{tenant.slug}/terminal")
 
-      assert html =~ ~s(href="/app/stores/test-store/dashboard")
+      # Use Regex or partial match for link ensuring it points to dashboard
+      assert html =~ "href=\"/app/stores/#{tenant.slug}/dashboard\""
+    end
+
+    test "shows order summary with subtotal, tax, and total", %{conn: conn, tenant: tenant} do
+      {:ok, _view, html} = live(conn, ~p"/app/stores/#{tenant.slug}/terminal")
+
+      assert html =~ "Subtotal"
+      assert html =~ "Tax"
+      assert html =~ "TOTAL"
     end
   end
 end

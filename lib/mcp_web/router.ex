@@ -86,9 +86,12 @@ defmodule McpWeb.Router do
   scope "/admin", McpWeb do
     pipe_through [:browser, :jwt_auth, :platform_admin_layout]
 
-    live "/dashboard", Platform.DashboardLive
-    live "/tenants", MockDashboardLive
-    live "/settings", MockDashboardLive
+    live_session :admin_dashboard,
+      layout: {McpWeb.Layouts.PortalLayouts, :platform_admin} do
+      live "/dashboard", Platform.DashboardLive
+      live "/tenants", MockDashboardLive
+      live "/settings", MockDashboardLive
+    end
   end
 
   # Tenant Portal
@@ -104,18 +107,22 @@ defmodule McpWeb.Router do
   scope "/tenant", McpWeb do
     pipe_through [:browser, :jwt_auth, :tenant_portal_layout]
 
-    live "/dashboard", Tenant.DashboardLive
-    live "/applications", Tenant.ApplicationsLive
-    live "/applications/:id", Tenant.ApplicationDetailLive
-    live "/settings", TenantSettingsLive
-    live "/merchants", MockDashboardLive
-    live "/gdpr", GdprLive
-    live "/change-password", AuthLive.ChangePassword
-    live "/settings/api-keys", Settings.ApiKeysLive, :index
-    live "/settings/custom-domains", Settings.CustomDomainsLive
-    live "/settings/webhooks", Settings.WebhooksLive
+    live_session :tenant_dashboard,
+      layout: {McpWeb.Layouts.PortalLayouts, :tenant_portal} do
+      live "/dashboard", Tenant.DashboardLive
+      live "/applications", Tenant.ApplicationsLive
+      live "/applications/:id", Tenant.ApplicationDetailLive
+      live "/settings", TenantSettingsLive
+      live "/merchants", MockDashboardLive
+      live "/gdpr", GdprLive
+      live "/change-password", AuthLive.ChangePassword
+      live "/settings/api-keys", Settings.ApiKeysLive, :index
+      live "/settings/custom-domains", Settings.CustomDomainsLive
+      live "/settings/webhooks", Settings.WebhooksLive
+    end
 
     live_session :tenant_underwriting,
+      layout: {McpWeb.Layouts.PortalLayouts, :tenant_portal},
       on_mount: [{McpWeb.Auth.LiveAuth, :require_authenticated}] do
       live "/underwriting", Tenant.UnderwritingLive
       live "/underwriting/board", Tenant.Underwriting.KanbanLive
@@ -207,9 +214,12 @@ defmodule McpWeb.Router do
   scope "/developers", McpWeb do
     pipe_through [:browser, :jwt_auth, :developer_portal_layout]
 
-    live "/dashboard", MockDashboardLive
-    live "/apps", MockDashboardLive
-    live "/docs", MockDashboardLive
+    live_session :developer_dashboard,
+      layout: {McpWeb.Layouts.PortalLayouts, :developer_portal} do
+      live "/dashboard", MockDashboardLive
+      live "/apps", MockDashboardLive
+      live "/docs", MockDashboardLive
+    end
   end
 
   # Reseller Portal
@@ -225,11 +235,14 @@ defmodule McpWeb.Router do
   scope "/partners", McpWeb do
     pipe_through [:browser, :jwt_auth, :reseller_portal_layout]
 
-    live "/dashboard", MockDashboardLive
-    live "/applications", Reseller.ApplicationsLive
-    live "/applications/:id", Reseller.UnderwritingApplicationLive
-    live "/merchants", MockDashboardLive
-    live "/commissions", MockDashboardLive
+    live_session :reseller_dashboard,
+      layout: {McpWeb.Layouts.PortalLayouts, :reseller_portal} do
+      live "/dashboard", MockDashboardLive
+      live "/applications", Reseller.ApplicationsLive
+      live "/applications/:id", Reseller.UnderwritingApplicationLive
+      live "/merchants", MockDashboardLive
+      live "/commissions", MockDashboardLive
+    end
   end
 
   # Customer Portal
@@ -245,9 +258,12 @@ defmodule McpWeb.Router do
   scope "/store/account", McpWeb do
     pipe_through [:browser, :jwt_auth, :customer_portal_layout]
 
-    live "/dashboard", MockDashboardLive
-    live "/orders", MockDashboardLive
-    live "/profile", MockDashboardLive
+    live_session :customer_dashboard,
+      layout: {McpWeb.Layouts.PortalLayouts, :customer_portal} do
+      live "/dashboard", MockDashboardLive
+      live "/orders", MockDashboardLive
+      live "/profile", MockDashboardLive
+    end
   end
 
   # Vendor Portal
@@ -263,9 +279,12 @@ defmodule McpWeb.Router do
   scope "/vendors", McpWeb do
     pipe_through [:browser, :jwt_auth, :vendor_portal_layout]
 
-    live "/dashboard", MockDashboardLive
-    live "/products", MockDashboardLive
-    live "/orders", MockDashboardLive
+    live_session :vendor_dashboard,
+      layout: {McpWeb.Layouts.PortalLayouts, :vendor_portal} do
+      live "/dashboard", MockDashboardLive
+      live "/products", MockDashboardLive
+      live "/orders", MockDashboardLive
+    end
   end
 
   pipeline :ola_layout do

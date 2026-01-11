@@ -196,6 +196,8 @@ defmodule McpWeb.Auth.SessionPlug do
       home_path = get_home_path(conn)
 
       conn
+      # Clear stale current_user from session so sign-in page doesn't redirect back
+      |> delete_session(:current_user)
       |> put_status(:unauthorized)
       |> Phoenix.Controller.put_view(McpWeb.ErrorHTML)
       |> Phoenix.Controller.render("401.html", layout: false, home_path: home_path)
@@ -215,7 +217,10 @@ defmodule McpWeb.Auth.SessionPlug do
     else
       home_path = get_home_path(conn)
 
-      clear_jwt_session(conn)
+      conn
+      |> clear_jwt_session()
+      # Clear stale current_user from session so sign-in page doesn't redirect back
+      |> delete_session(:current_user)
       |> put_status(:unauthorized)
       |> Phoenix.Controller.put_view(McpWeb.ErrorHTML)
       |> Phoenix.Controller.render("401.html", layout: false, home_path: home_path)

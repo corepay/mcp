@@ -199,7 +199,7 @@ defmodule McpWeb.Layouts.PortalLayouts do
         
     <!-- Page Content -->
         <main class="flex-1 p-6">
-          {@inner_content}
+          {render_slot(@inner_block)}
         </main>
       </div>
       
