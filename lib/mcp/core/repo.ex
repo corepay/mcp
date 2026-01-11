@@ -10,6 +10,22 @@ defmodule Mcp.Repo do
 
   # Advanced features for AI-powered MSP platform
 
+  @doc """
+  Returns all tenant schemas for multi-tenant migrations.
+  Required by AshPostgres for running tenant migrations.
+  """
+  @impl true
+  def all_tenants do
+    import Ecto.Query, only: [from: 2]
+
+    query = from(t in {"tenants", Mcp.Platform.Tenant}, select: t.company_schema)
+
+    case __MODULE__.all(query, prefix: "platform") do
+      schemas when is_list(schemas) -> schemas
+      _ -> []
+    end
+  end
+
   # Advanced query helpers for full technology stack
 
   def tenant_query(tenant_schema_name, query) do

@@ -53,7 +53,8 @@ config :mcp,
     Mcp.Billing,
     Mcp.Webhooks,
     Mcp.Communication,
-    Mcp.Ola
+    Mcp.Ola,
+    Mcp.Catalog
   ],
   base_domain: "localhost"
 
