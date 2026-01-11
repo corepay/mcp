@@ -6,13 +6,21 @@ defmodule Mcp.Billing.ApiUsageTest do
   alias Mcp.Finance.Account
   alias Mcp.Platform.Tenant
 
-  # Use existing tenant from seeder
-  @test_tenant_subdomain "acme"
-
   describe "charge_usage/1" do
     setup do
-      # Get existing tenant (created by seeder)
-      {:ok, tenant} = Tenant.by_subdomain(@test_tenant_subdomain)
+      # Create isolated test tenant
+      unique_id = System.unique_integer([:positive])
+
+      tenant =
+        Mcp.Repo.insert!(%Tenant{
+          id: Ecto.UUID.generate(),
+          name: "Test Tenant #{unique_id}",
+          slug: "test-tenant-#{unique_id}",
+          subdomain: "test-#{unique_id}",
+          company_schema: "acq_test_#{unique_id}",
+          inserted_at: DateTime.utc_now(),
+          updated_at: DateTime.utc_now()
+        })
 
       {:ok, tenant: tenant}
     end

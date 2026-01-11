@@ -4,14 +4,20 @@ defmodule Mcp.Registration.RegistrationServiceTest do
   alias Mcp.Platform.Tenant
   alias Mcp.Registration.RegistrationService
 
-  # Use existing tenant from seeder
-  @test_tenant_subdomain "acme"
-
   describe "initialize_registration/4" do
     test "creates a registration request successfully" do
-      # Get existing tenant (created by seeder)
-      {:ok, tenant} = Tenant.by_subdomain(@test_tenant_subdomain)
-      tenant_id = tenant.id
+      # Create isolated test tenant
+      tenant_id = Ecto.UUID.generate()
+
+      Mcp.Repo.insert!(%Tenant{
+        id: tenant_id,
+        name: "Test Tenant",
+        slug: "test-tenant-#{tenant_id}",
+        company_schema: "test_tenant_#{String.replace(tenant_id, "-", "_")}",
+        subdomain: "test-#{tenant_id}",
+        inserted_at: DateTime.utc_now(),
+        updated_at: DateTime.utc_now()
+      })
 
       alias Mcp.Accounts.RegistrationSettings
 

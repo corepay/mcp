@@ -8,15 +8,21 @@ defmodule Mcp.Communication.WebhookEndpointTest do
   alias Mcp.Platform.TeamMember
   alias Mcp.Platform.Tenant
 
-  # Use existing tenant from seeder
-  @test_tenant_subdomain "acme"
-
   setup do
     unique_id = "webhook#{System.unique_integer([:positive])}"
     {:ok, user} = User.register("#{unique_id}@example.com", "Password123!")
 
-    # Get existing tenant (created by seeder)
-    {:ok, tenant} = Tenant.by_subdomain(@test_tenant_subdomain)
+    # Create isolated test tenant
+    tenant =
+      Mcp.Repo.insert!(%Tenant{
+        id: Ecto.UUID.generate(),
+        name: "Test Tenant #{unique_id}",
+        slug: "test-tenant-#{unique_id}",
+        subdomain: "test-#{unique_id}",
+        company_schema: "acq_test_#{unique_id}",
+        inserted_at: DateTime.utc_now(),
+        updated_at: DateTime.utc_now()
+      })
 
     team =
       Team.create!(

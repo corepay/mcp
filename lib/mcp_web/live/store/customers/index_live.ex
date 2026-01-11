@@ -85,6 +85,12 @@ defmodule McpWeb.Store.Customers.IndexLive do
             </div>
           </:col>
 
+          <:col :let={customer} label="Email" field={:email}>
+            <a href={"mailto:#{customer.email}"} class="link link-hover">
+              {customer.email}
+            </a>
+          </:col>
+
           <:col :let={customer} label="Phone" field={:phone}>
             <a href={"tel:#{customer.phone}"} class="link link-hover">
               {customer.phone}
@@ -210,6 +216,7 @@ defmodule McpWeb.Store.Customers.IndexLive do
       %{
         id: "1",
         name: "John Doe",
+        email: "john.doe@example.com",
         phone: "+1 555-0123",
         loyalty_points: 1250,
         loyalty_tier: :gold
@@ -217,6 +224,7 @@ defmodule McpWeb.Store.Customers.IndexLive do
       %{
         id: "2",
         name: "Jane Smith",
+        email: "jane.smith@example.com",
         phone: "+1 555-0124",
         loyalty_points: 850,
         loyalty_tier: :silver
@@ -224,6 +232,7 @@ defmodule McpWeb.Store.Customers.IndexLive do
       %{
         id: "3",
         name: "Bob Johnson",
+        email: "bob.johnson@example.com",
         phone: "+1 555-0125",
         loyalty_points: 420,
         loyalty_tier: :bronze
@@ -231,6 +240,7 @@ defmodule McpWeb.Store.Customers.IndexLive do
       %{
         id: "4",
         name: "Alice Williams",
+        email: "alice.williams@example.com",
         phone: "+1 555-0126",
         loyalty_points: 1500,
         loyalty_tier: :gold
@@ -238,6 +248,7 @@ defmodule McpWeb.Store.Customers.IndexLive do
       %{
         id: "5",
         name: "Charlie Brown",
+        email: "charlie.brown@example.com",
         phone: "+1 555-0127",
         loyalty_points: 0,
         loyalty_tier: :none

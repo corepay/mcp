@@ -8,34 +8,40 @@ defmodule McpWeb.TenantRoutingTest do
 
   # Test setup with real database records
   setup do
+    unique_id = System.unique_integer([:positive])
+
     # Create a tenant with subdomain
     {:ok, tenant_with_subdomain} =
       Tenant.create(%{
-        name: "Test Company",
-        slug: "test-tenant",
-        subdomain: "test",
+        name: "Test Company #{unique_id}",
+        slug: "test-tenant-#{unique_id}",
+        subdomain: "test-#{unique_id}",
+        company_schema: "acq_test_subdomain_#{unique_id}",
         plan: :starter
       })
 
     # Create a tenant with custom domain
     {:ok, tenant_with_custom_domain} =
       Tenant.create(%{
-        name: "Custom Domain Company",
-        slug: "custom-tenant",
-        subdomain: "custom",
-        custom_domain: "custom.example.com",
+        name: "Custom Domain Company #{unique_id}",
+        slug: "custom-tenant-#{unique_id}",
+        subdomain: "custom-#{unique_id}",
+        custom_domain: "custom-#{unique_id}.example.com",
+        company_schema: "acq_test_custom_#{unique_id}",
         plan: :professional
       })
 
     {:ok,
      tenant_with_subdomain: tenant_with_subdomain,
-     tenant_with_custom_domain: tenant_with_custom_domain}
+     tenant_with_custom_domain: tenant_with_custom_domain,
+     subdomain: "test-#{unique_id}",
+     custom_domain: "custom-#{unique_id}.example.com"}
   end
 
   describe "extract_tenant_from_host" do
-    test "identifies tenant by subdomain", %{tenant_with_subdomain: tenant} do
+    test "identifies tenant by subdomain", %{tenant_with_subdomain: tenant, subdomain: subdomain} do
       conn =
-        build_conn(:get, "http://test.localhost")
+        build_conn(:get, "http://#{subdomain}.localhost")
 
       opts = TenantRouting.init(base_domain: "localhost")
       result_conn = TenantRouting.call(conn, opts)
@@ -47,9 +53,12 @@ defmodule McpWeb.TenantRoutingTest do
       assert result_conn.private[:tenant_schema] == tenant.company_schema
     end
 
-    test "identifies tenant by custom domain", %{tenant_with_custom_domain: tenant} do
+    test "identifies tenant by custom domain", %{
+      tenant_with_custom_domain: tenant,
+      custom_domain: custom_domain
+    } do
       conn =
-        build_conn(:get, "http://custom.example.com")
+        build_conn(:get, "http://#{custom_domain}")
 
       opts = TenantRouting.init(base_domain: "localhost")
       result_conn = TenantRouting.call(conn, opts)
@@ -110,9 +119,9 @@ defmodule McpWeb.TenantRoutingTest do
       assert result_conn.state != :sent
     end
 
-    test "handles port in host header", %{tenant_with_subdomain: tenant} do
+    test "handles port in host header", %{tenant_with_subdomain: tenant, subdomain: subdomain} do
       conn =
-        build_conn(:get, "http://test.localhost:4000")
+        build_conn(:get, "http://#{subdomain}.localhost:4000")
 
       opts = TenantRouting.init(base_domain: "localhost")
       result_conn = TenantRouting.call(conn, opts)
@@ -122,10 +131,13 @@ defmodule McpWeb.TenantRoutingTest do
   end
 
   describe "x-forwarded-host header handling" do
-    test "uses x-forwarded-host when present", %{tenant_with_subdomain: tenant} do
+    test "uses x-forwarded-host when present", %{
+      tenant_with_subdomain: tenant,
+      subdomain: subdomain
+    } do
       conn =
         build_conn(:get, "http://internal-host")
-        |> put_req_header("x-forwarded-host", "test.localhost")
+        |> put_req_header("x-forwarded-host", "#{subdomain}.localhost")
 
       opts = TenantRouting.init(base_domain: "localhost")
       result_conn = TenantRouting.call(conn, opts)
@@ -133,23 +145,29 @@ defmodule McpWeb.TenantRoutingTest do
       assert result_conn.assigns[:current_tenant].id == tenant.id
     end
 
-    test "prioritizes x-forwarded-host over host header", %{tenant_with_subdomain: tenant} do
+    test "prioritizes x-forwarded-host over host header", %{
+      tenant_with_subdomain: tenant,
+      subdomain: subdomain
+    } do
       conn =
         build_conn(:get, "http://wrong.localhost")
-        |> put_req_header("x-forwarded-host", "test.localhost")
+        |> put_req_header("x-forwarded-host", "#{subdomain}.localhost")
 
       opts = TenantRouting.init(base_domain: "localhost")
       result_conn = TenantRouting.call(conn, opts)
 
-      # Should use x-forwarded-host (test.localhost), not host (wrong.localhost)
+      # Should use x-forwarded-host, not host
       assert result_conn.assigns[:current_tenant].id == tenant.id
     end
   end
 
   describe "get_current_tenant" do
-    test "returns current tenant from connection", %{tenant_with_subdomain: tenant} do
+    test "returns current tenant from connection", %{
+      tenant_with_subdomain: tenant,
+      subdomain: subdomain
+    } do
       conn =
-        build_conn(:get, "http://test.localhost")
+        build_conn(:get, "http://#{subdomain}.localhost")
         |> assign(:current_tenant, tenant)
 
       assert TenantRouting.get_current_tenant(conn).id == tenant.id
@@ -163,9 +181,12 @@ defmodule McpWeb.TenantRoutingTest do
   end
 
   describe "tenant_context?" do
-    test "returns true when tenant context is active", %{tenant_with_subdomain: tenant} do
+    test "returns true when tenant context is active", %{
+      tenant_with_subdomain: tenant,
+      subdomain: subdomain
+    } do
       conn =
-        build_conn(:get, "http://test.localhost")
+        build_conn(:get, "http://#{subdomain}.localhost")
         |> assign(:current_tenant, tenant)
 
       assert TenantRouting.tenant_context?(conn) == true
@@ -216,10 +237,11 @@ defmodule McpWeb.TenantRoutingTest do
     end
 
     test "processes tenant routing when skip_subdomain_extraction is false", %{
-      tenant_with_subdomain: tenant
+      tenant_with_subdomain: tenant,
+      subdomain: subdomain
     } do
       conn =
-        build_conn(:get, "http://test.localhost")
+        build_conn(:get, "http://#{subdomain}.localhost")
 
       opts = TenantRouting.init(skip_subdomain_extraction: false)
       result_conn = TenantRouting.call(conn, opts)
@@ -229,9 +251,12 @@ defmodule McpWeb.TenantRoutingTest do
   end
 
   describe "edge cases and security" do
-    test "handles host with uppercase letters", %{tenant_with_subdomain: tenant} do
+    test "handles host with uppercase letters", %{
+      tenant_with_subdomain: tenant,
+      subdomain: subdomain
+    } do
       conn =
-        build_conn(:get, "http://TEST.localhost")
+        build_conn(:get, "http://#{String.upcase(subdomain)}.localhost")
 
       opts = TenantRouting.init(base_domain: "localhost")
       result_conn = TenantRouting.call(conn, opts)
@@ -240,9 +265,12 @@ defmodule McpWeb.TenantRoutingTest do
       assert result_conn.assigns[:current_tenant].id == tenant.id
     end
 
-    test "handles custom domain with uppercase letters", %{tenant_with_custom_domain: tenant} do
+    test "handles custom domain with uppercase letters", %{
+      tenant_with_custom_domain: tenant,
+      custom_domain: custom_domain
+    } do
       conn =
-        build_conn(:get, "http://CUSTOM.example.com")
+        build_conn(:get, "http://#{String.upcase(custom_domain)}")
 
       opts = TenantRouting.init(base_domain: "localhost")
       result_conn = TenantRouting.call(conn, opts)
@@ -251,9 +279,12 @@ defmodule McpWeb.TenantRoutingTest do
       assert result_conn.assigns[:current_tenant].id == tenant.id
     end
 
-    test "handles multiple subdomains (only uses first level)", %{tenant_with_subdomain: tenant} do
+    test "handles multiple subdomains (only uses first level)", %{
+      tenant_with_subdomain: tenant,
+      subdomain: subdomain
+    } do
       conn =
-        build_conn(:get, "http://test.app.localhost")
+        build_conn(:get, "http://#{subdomain}.app.localhost")
 
       opts = TenantRouting.init(base_domain: "localhost")
       result_conn = TenantRouting.call(conn, opts)
@@ -275,9 +306,12 @@ defmodule McpWeb.TenantRoutingTest do
   end
 
   describe "tenant context lifecycle" do
-    test "properly sets all tenant-related assigns", %{tenant_with_subdomain: tenant} do
+    test "properly sets all tenant-related assigns", %{
+      tenant_with_subdomain: tenant,
+      subdomain: subdomain
+    } do
       conn =
-        build_conn(:get, "http://test.localhost")
+        build_conn(:get, "http://#{subdomain}.localhost")
 
       opts = TenantRouting.init(base_domain: "localhost")
       result_conn = TenantRouting.call(conn, opts)
@@ -292,9 +326,12 @@ defmodule McpWeb.TenantRoutingTest do
       assert result_conn.private[:tenant_schema] == tenant.company_schema
     end
 
-    test "preserves existing connection assigns", %{tenant_with_subdomain: tenant} do
+    test "preserves existing connection assigns", %{
+      tenant_with_subdomain: tenant,
+      subdomain: subdomain
+    } do
       conn =
-        build_conn(:get, "http://test.localhost")
+        build_conn(:get, "http://#{subdomain}.localhost")
         |> assign(:existing_value, "should_persist")
 
       opts = TenantRouting.init(base_domain: "localhost")

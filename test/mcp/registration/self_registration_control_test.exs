@@ -16,19 +16,20 @@ defmodule Mcp.Registration.SelfRegistrationControlTest do
   alias Mcp.Platform.Tenant
   alias Mcp.Registration.{PolicyValidator, RegistrationService}
 
-  # Use existing tenant from seeder
-  @test_tenant_subdomain "acme"
-
   setup do
-    # Get existing tenant (created by seeder)
-    tenant =
-      case Tenant.by_subdomain(@test_tenant_subdomain) do
-        {:ok, tenant} ->
-          tenant
+    # Create test tenant for isolated test data
+    unique_id = System.unique_integer([:positive])
 
-        {:error, _} ->
-          raise "Test tenant '#{@test_tenant_subdomain}' not found. Run: mix ecto.setup"
-      end
+    tenant =
+      Mcp.Repo.insert!(%Tenant{
+        id: Ecto.UUID.generate(),
+        name: "Test Tenant #{unique_id}",
+        slug: "test-tenant-#{unique_id}",
+        subdomain: "test-#{unique_id}",
+        company_schema: "acq_test_#{unique_id}",
+        inserted_at: DateTime.utc_now(),
+        updated_at: DateTime.utc_now()
+      })
 
     {:ok, tenant_id: tenant.id}
   end

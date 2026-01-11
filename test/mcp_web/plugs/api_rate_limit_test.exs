@@ -21,12 +21,15 @@ defmodule McpWeb.Plugs.ApiRateLimitTest do
   alias McpWeb.Plugs.{ApiAuthPlug, ApiRateLimitPlug}
 
   setup do
+    unique_id = System.unique_integer([:positive])
+
     tenant =
       Tenant
       |> Ash.Changeset.for_create(:create, %{
-        name: "Test Tenant #{System.unique_integer()}",
-        slug: "test-tenant-#{System.unique_integer()}",
-        subdomain: "test-#{System.unique_integer()}"
+        name: "Test Tenant #{unique_id}",
+        slug: "test-tenant-#{unique_id}",
+        subdomain: "test-#{unique_id}",
+        company_schema: "acq_test_rate_limit_#{unique_id}"
       })
       |> Ash.create!()
 
@@ -267,12 +270,15 @@ defmodule McpWeb.Plugs.ApiRateLimitTest do
 
   describe "different rate limits per API key type" do
     test "developer keys have higher rate limits", %{conn: conn} do
+      unique_id = System.unique_integer([:positive])
+
       tenant =
         Tenant
         |> Ash.Changeset.for_create(:create, %{
-          name: "Test Tenant #{System.unique_integer()}",
-          slug: "test-tenant-#{System.unique_integer()}",
-          subdomain: "test-#{System.unique_integer()}"
+          name: "Test Tenant #{unique_id}",
+          slug: "test-tenant-dev-#{unique_id}",
+          subdomain: "test-dev-#{unique_id}",
+          company_schema: "acq_test_dev_#{unique_id}"
         })
         |> Ash.create!()
 
@@ -300,12 +306,15 @@ defmodule McpWeb.Plugs.ApiRateLimitTest do
     end
 
     test "merchant keys have standard rate limits", %{conn: conn} do
+      unique_id = System.unique_integer([:positive])
+
       tenant =
         Tenant
         |> Ash.Changeset.for_create(:create, %{
-          name: "Test Tenant #{System.unique_integer()}",
-          slug: "test-tenant-#{System.unique_integer()}",
-          subdomain: "test-#{System.unique_integer()}"
+          name: "Test Tenant #{unique_id}",
+          slug: "test-tenant-merch-#{unique_id}",
+          subdomain: "test-merch-#{unique_id}",
+          company_schema: "acq_test_merch_#{unique_id}"
         })
         |> Ash.create!()
 
@@ -334,12 +343,15 @@ defmodule McpWeb.Plugs.ApiRateLimitTest do
     end
 
     test "reseller keys have elevated rate limits", %{conn: conn} do
+      unique_id = System.unique_integer([:positive])
+
       tenant =
         Tenant
         |> Ash.Changeset.for_create(:create, %{
-          name: "Test Tenant #{System.unique_integer()}",
-          slug: "test-tenant-#{System.unique_integer()}",
-          subdomain: "test-#{System.unique_integer()}"
+          name: "Test Tenant #{unique_id}",
+          slug: "test-tenant-res-#{unique_id}",
+          subdomain: "test-res-#{unique_id}",
+          company_schema: "acq_test_res_#{unique_id}"
         })
         |> Ash.create!()
 
@@ -369,12 +381,15 @@ defmodule McpWeb.Plugs.ApiRateLimitTest do
 
   describe "rate limit storage and isolation" do
     test "rate limits are isolated per API key", %{conn: conn} do
+      unique_id = System.unique_integer([:positive])
+
       tenant =
         Tenant
         |> Ash.Changeset.for_create(:create, %{
-          name: "Test Tenant #{System.unique_integer()}",
-          slug: "test-tenant-#{System.unique_integer()}",
-          subdomain: "test-#{System.unique_integer()}"
+          name: "Test Tenant #{unique_id}",
+          slug: "test-tenant-iso-#{unique_id}",
+          subdomain: "test-iso-#{unique_id}",
+          company_schema: "acq_test_iso_#{unique_id}"
         })
         |> Ash.create!()
 

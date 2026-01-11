@@ -4,16 +4,24 @@ defmodule Mcp.Platform.SharedEntitiesTest do
   alias Mcp.Platform.Address
   alias Mcp.Platform.Tenant
 
-  # Use existing tenant from seeder
-  @test_tenant_subdomain "acme"
-
   setup do
     # Create users
     user1 = user_fixture()
     user2 = user_fixture()
 
-    # Get existing tenant (created by seeder)
-    {:ok, tenant} = Tenant.by_subdomain(@test_tenant_subdomain)
+    # Create isolated test tenant
+    unique_id = System.unique_integer([:positive])
+
+    tenant =
+      Mcp.Repo.insert!(%Tenant{
+        id: Ecto.UUID.generate(),
+        name: "Test Tenant #{unique_id}",
+        slug: "test-tenant-#{unique_id}",
+        subdomain: "test-#{unique_id}",
+        company_schema: "acq_test_#{unique_id}",
+        inserted_at: DateTime.utc_now(),
+        updated_at: DateTime.utc_now()
+      })
 
     # Create team for tenant
     unique_id = System.unique_integer([:positive])

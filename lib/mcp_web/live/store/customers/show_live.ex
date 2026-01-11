@@ -77,6 +77,12 @@ defmodule McpWeb.Store.Customers.ShowLive do
                       {@customer.phone}
                     </a>
                   </div>
+                  <div class="flex items-center gap-2 text-base-content/80">
+                    <.icon name="hero-phone" class="size-5" />
+                    <a href={"tel:#{@customer.phone}"} class="link link-hover">
+                      {@customer.phone}
+                    </a>
+                  </div>
                 </div>
                 <%!-- Loyalty & Stats --%>
                 <div class="space-y-3">

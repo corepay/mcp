@@ -22,7 +22,7 @@ defmodule McpWeb.Merchant.Products.ShowLive do
   import McpWeb.Portal.ActionSidebar,
     only: [action_sidebar: 1, sidebar_action: 1]
 
-  import McpWeb.Core.CoreComponents, only: [icon: 1, card: 1, input: 1, modal: 1]
+  import McpWeb.Core.CoreComponents, only: [icon: 1, card: 1, input: 1, modal: 1, button: 1]
   import McpWeb.Core.DataDisplay, only: [badge: 1]
 
   @impl true
@@ -116,14 +116,14 @@ defmodule McpWeb.Merchant.Products.ShowLive do
         <.card class="mb-6" data-testid="variants-section">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold">Variants</h3>
-            <button
-              type="button"
-              class="btn btn-sm btn-primary"
+            <.button
+              variant="primary"
+              size="sm"
               phx-click="show_add_variant"
               data-testid="add-variant-btn"
             >
               <.icon name="hero-plus" class="size-4" /> Add Variant
-            </button>
+            </.button>
           </div>
 
           <.data_table id="variants-table" rows={@variants} row_testid="variant-row">
@@ -202,12 +202,12 @@ defmodule McpWeb.Merchant.Products.ShowLive do
               placeholder="0"
             />
             <div class="modal-action">
-              <button type="button" class="btn" phx-click={hide_modal("variant-modal")}>
+              <.button variant="ghost" phx-click={hide_modal("variant-modal")}>
                 Cancel
-              </button>
-              <button type="submit" class="btn btn-primary">
+              </.button>
+              <.button type="submit" variant="primary" phx-disable-with="Adding...">
                 Add Variant
-              </button>
+              </.button>
             </div>
           </.form>
         </.modal>
@@ -220,17 +220,17 @@ defmodule McpWeb.Merchant.Products.ShowLive do
             Archived products will no longer appear in your store.
           </p>
           <div class="modal-action">
-            <button type="button" class="btn" phx-click={hide_modal("archive-modal")}>
+            <.button variant="ghost" phx-click={hide_modal("archive-modal")}>
               Cancel
-            </button>
-            <button
-              type="button"
-              class="btn btn-warning"
+            </.button>
+            <.button
+              variant="warning"
               phx-click="confirm_archive"
               data-testid="confirm-archive"
+              phx-disable-with="Archiving..."
             >
               Archive Product
-            </button>
+            </.button>
           </div>
         </.modal>
       </:content>
@@ -317,12 +317,12 @@ defmodule McpWeb.Merchant.Products.ShowLive do
         <.input field={@form[:description]} label="Description" type="textarea" />
         <.input field={@form[:price]} label="Price" type="number" step="0.01" />
         <div class="flex gap-2 justify-end pt-4">
-          <button type="button" class="btn btn-ghost" phx-click="cancel_edit">
+          <.button variant="ghost" phx-click="cancel_edit">
             Cancel
-          </button>
-          <button type="submit" class="btn btn-primary">
+          </.button>
+          <.button type="submit" variant="primary" phx-disable-with="Saving...">
             Save Changes
-          </button>
+          </.button>
         </div>
       </div>
     </.form>
