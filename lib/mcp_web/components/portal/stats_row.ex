@@ -73,6 +73,7 @@ defmodule McpWeb.Portal.StatsRow do
   attr :icon, :string, default: nil
   attr :href, :string, default: nil
   attr :class, :string, default: nil
+  attr :"data-testid", :string, default: nil
 
   def stat(assigns) do
     assigns = assign(assigns, :trend_direction, get_trend_direction(assigns.trend))
@@ -89,6 +90,7 @@ defmodule McpWeb.Portal.StatsRow do
           "block",
           @class
         ]}
+        data-testid={assigns[:"data-testid"]}
       >
         <.stat_content
           label={@label}
@@ -100,12 +102,15 @@ defmodule McpWeb.Portal.StatsRow do
         />
       </.link>
     <% else %>
-      <div class={[
-        "bg-base-100 rounded-box shadow-sm p-4",
-        "border border-base-300/50",
-        "transition-all duration-200",
-        @class
-      ]}>
+      <div
+        class={[
+          "bg-base-100 rounded-box shadow-sm p-4",
+          "border border-base-300/50",
+          "transition-all duration-200",
+          @class
+        ]}
+        data-testid={assigns[:"data-testid"]}
+      >
         <.stat_content
           label={@label}
           value={@value}

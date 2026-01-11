@@ -147,6 +147,7 @@ defmodule McpWeb.Router do
       live "/products", Merchant.Products.IndexLive
       live "/products/new", Merchant.Products.NewLive
       live "/products/categories", Merchant.Products.CategoriesLive
+      live "/products/inventory", Merchant.Products.InventoryLive
       live "/products/:id", Merchant.Products.ShowLive
       # Phase 2 routes - Customer Management
       live "/customers", Merchant.Customers.IndexLive

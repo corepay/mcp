@@ -72,6 +72,8 @@ defmodule McpWeb.Core.CoreComponents do
   attr :accept, :string, default: nil
   attr :options, :list, default: []
   attr :step, :string, default: nil
+  attr :min, :string, default: nil
+  attr :max, :string, default: nil
   attr :rest, :global
 
   def input(%{field: %Phoenix.HTML.FormField{} = field} = assigns) do
@@ -130,6 +132,8 @@ defmodule McpWeb.Core.CoreComponents do
         required={@required}
         accept={@accept}
         step={@step}
+        min={@min}
+        max={@max}
         {@rest}
       />
       <label :for={msg <- @errors} class="label">
@@ -145,6 +149,7 @@ defmodule McpWeb.Core.CoreComponents do
   attr :id, :string, required: true
   attr :show, :boolean, default: false
   attr :on_cancel, :any, default: nil
+  attr :"data-testid", :string, default: nil
   slot :inner_block, required: true
   slot :title
   slot :confirm_text
@@ -152,7 +157,7 @@ defmodule McpWeb.Core.CoreComponents do
 
   def modal(assigns) do
     ~H"""
-    <dialog id={@id} class={["modal", @show && "modal-open"]}>
+    <dialog id={@id} class={["modal", @show && "modal-open"]} data-testid={assigns[:"data-testid"]}>
       <div class="modal-box">
         <h3 :if={@title != []} class="font-bold text-lg">{render_slot(@title)}</h3>
         <div class="py-4">
