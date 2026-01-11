@@ -95,4 +95,72 @@ defmodule McpWeb.Core.Navigation do
     </nav>
     """
   end
+
+  @doc """
+  Renders a left sidebar with grouped sections.
+
+  ## Examples
+
+      <.sidebar>
+        <:header><span>Store Name</span></:header>
+        <:section title="SELL">
+          <li><a href="/pos">POS</a></li>
+        </:section>
+        <:footer><li><a>Settings</a></li></:footer>
+      </.sidebar>
+  """
+  attr :class, :string, default: nil
+
+  slot :header
+
+  slot :section do
+    attr :title, :string, required: true
+    attr :collapsible, :boolean
+  end
+
+  slot :footer
+
+  def sidebar(assigns) do
+    ~H"""
+    <aside class={[
+      "flex flex-col w-64 min-h-screen",
+      "bg-base-200 border-r border-base-300/50",
+      @class
+    ]}>
+      <div :if={@header != []} class="p-4 border-b border-base-300/50">
+        {render_slot(@header)}
+      </div>
+
+      <nav class="flex-1 overflow-y-auto p-2">
+        <ul class="menu gap-1">
+          <%= for section <- @section do %>
+            <%= if section[:collapsible] do %>
+              <li>
+                <details class="collapse collapse-arrow">
+                  <summary class="menu-title text-xs font-semibold text-base-content/60 uppercase tracking-wider">
+                    {section.title}
+                  </summary>
+                  <ul class="collapse-content menu p-0 pl-2">
+                    {render_slot(section)}
+                  </ul>
+                </details>
+              </li>
+            <% else %>
+              <li class="menu-title text-xs font-semibold text-base-content/60 uppercase tracking-wider mt-4 first:mt-0">
+                {section.title}
+              </li>
+              {render_slot(section)}
+            <% end %>
+          <% end %>
+        </ul>
+      </nav>
+
+      <div :if={@footer != []} class="mt-auto border-t border-base-300/50 p-2">
+        <ul class="menu gap-1">
+          {render_slot(@footer)}
+        </ul>
+      </div>
+    </aside>
+    """
+  end
 end

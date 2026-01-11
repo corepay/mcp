@@ -103,4 +103,47 @@ defmodule McpWeb.Core.NavigationTest do
       assert html =~ "bg-primary"
     end
   end
+
+  describe "sidebar/1" do
+    test "renders sidebar with header and items" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <Navigation.sidebar>
+          <:header>
+            <span>Store Name</span>
+          </:header>
+          <:section title="SELL">
+            <li><a>POS</a></li>
+            <li><a>Terminal</a></li>
+          </:section>
+          <:footer>
+            <li><a>Settings</a></li>
+          </:footer>
+        </Navigation.sidebar>
+        """)
+
+      assert html =~ "Store Name"
+      assert html =~ "SELL"
+      assert html =~ "POS"
+      assert html =~ "Settings"
+    end
+
+    test "renders collapsible sections" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <Navigation.sidebar>
+          <:section title="MANAGE" collapsible>
+            <li><a>Customers</a></li>
+          </:section>
+        </Navigation.sidebar>
+        """)
+
+      assert html =~ "MANAGE"
+      assert html =~ "collapse"
+    end
+  end
 end
