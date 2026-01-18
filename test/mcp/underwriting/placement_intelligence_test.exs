@@ -37,28 +37,35 @@ defmodule Mcp.Underwriting.Services.PlacementIntelligenceTest do
       updated_at timestamp
     )")
 
-    # Create a Global Processor and Profiles (outside schema)
-    processor = Processor.create!(%{name: "Test Processor", adapter: "TestAdapter"})
+    # Create a Global Processor and Profiles (outside schema, bypass auth for test fixtures)
+    processor =
+      Processor.create!(%{name: "Test Processor", adapter: "TestAdapter"}, authorize?: false)
 
-    BankProfile.create!(%{
-      name: "Retail Safe",
-      processor_id: processor.id,
-      risk_weight: 20,
-      appetite_rules: %{
-        "allowed_industries" => ["retail"],
-        "min_score" => 80
-      }
-    })
+    BankProfile.create!(
+      %{
+        name: "Retail Safe",
+        processor_id: processor.id,
+        risk_weight: 20,
+        appetite_rules: %{
+          "allowed_industries" => ["retail"],
+          "min_score" => 80
+        }
+      },
+      authorize?: false
+    )
 
-    BankProfile.create!(%{
-      name: "High Risk High Return",
-      processor_id: processor.id,
-      risk_weight: 80,
-      appetite_rules: %{
-        "allowed_industries" => ["gaming"],
-        "min_score" => 60
-      }
-    })
+    BankProfile.create!(
+      %{
+        name: "High Risk High Return",
+        processor_id: processor.id,
+        risk_weight: 80,
+        appetite_rules: %{
+          "allowed_industries" => ["gaming"],
+          "min_score" => 60
+        }
+      },
+      authorize?: false
+    )
 
     {:ok, %{schema: schema}}
   end
@@ -70,11 +77,16 @@ defmodule Mcp.Underwriting.Services.PlacementIntelligenceTest do
     {:ok, app_retail} =
       Application.create(
         %{
-          application_data: %{"industry" => "retail", "monthly_volume" => 10_000},
+          application_data: %{
+            "industry" => "retail",
+            "monthly_volume" => 10_000,
+            "country" => "US"
+          },
           subject_id: subject_id,
           subject_type: :merchant
         },
-        tenant: schema
+        tenant: schema,
+        authorize?: false
       )
 
     {:ok, ra_retail} =
@@ -86,21 +98,27 @@ defmodule Mcp.Underwriting.Services.PlacementIntelligenceTest do
           subject_id: subject_id,
           subject_type: :merchant
         },
-        tenant: schema
+        tenant: schema,
+        authorize?: false
       )
 
-    {:ok, profile} = PlacementIntelligence.suggest_placement(app_retail.id, ra_retail.id, schema)
-    assert profile.name == "Retail Safe"
+    {:ok, result} = PlacementIntelligence.suggest_placement(app_retail.id, ra_retail.id, schema)
+    assert result.profile.name == "Retail Safe"
 
     # 2. Gaming Application (Mid Score)
     {:ok, app_gaming} =
       Application.create(
         %{
-          application_data: %{"industry" => "gaming", "monthly_volume" => 50_000},
+          application_data: %{
+            "industry" => "gaming",
+            "monthly_volume" => 50_000,
+            "country" => "US"
+          },
           subject_id: subject_id,
           subject_type: :merchant
         },
-        tenant: schema
+        tenant: schema,
+        authorize?: false
       )
 
     {:ok, ra_gaming} =
@@ -112,13 +130,14 @@ defmodule Mcp.Underwriting.Services.PlacementIntelligenceTest do
           subject_id: subject_id,
           subject_type: :merchant
         },
-        tenant: schema
+        tenant: schema,
+        authorize?: false
       )
 
-    {:ok, profile_gaming} =
+    {:ok, result_gaming} =
       PlacementIntelligence.suggest_placement(app_gaming.id, ra_gaming.id, schema)
 
-    assert profile_gaming.name == "High Risk High Return"
+    assert result_gaming.profile.name == "High Risk High Return"
   end
 
   test "suggest_placement/3 returns error when no banks match", %{schema: schema} do
@@ -128,11 +147,12 @@ defmodule Mcp.Underwriting.Services.PlacementIntelligenceTest do
     {:ok, app} =
       Application.create(
         %{
-          application_data: %{"industry" => "crypto"},
+          application_data: %{"industry" => "crypto", "country" => "US"},
           subject_id: subject_id,
           subject_type: :merchant
         },
-        tenant: schema
+        tenant: schema,
+        authorize?: false
       )
 
     {:ok, ra} =
@@ -144,7 +164,8 @@ defmodule Mcp.Underwriting.Services.PlacementIntelligenceTest do
           subject_id: subject_id,
           subject_type: :merchant
         },
-        tenant: schema
+        tenant: schema,
+        authorize?: false
       )
 
     assert {:error, :no_eligible_banks} ==
