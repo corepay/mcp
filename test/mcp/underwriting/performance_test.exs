@@ -64,7 +64,8 @@ defmodule Mcp.Underwriting.PerformanceTest do
         application_data: %{
           "business_name" => "Performance Corp",
           "industry" => "retail",
-          "monthly_volume" => 50_000
+          "monthly_volume" => 50_000,
+          "country" => "US"
         }
       })
       |> Ash.create!(tenant: schema, authorize?: false)
