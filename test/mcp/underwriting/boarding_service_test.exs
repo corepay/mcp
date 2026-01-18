@@ -76,6 +76,8 @@ defmodule Mcp.Underwriting.Services.BoardingServiceTest do
       tid text,
       status text,
       metadata jsonb,
+      rationale text,
+      error_metadata jsonb,
       application_id uuid REFERENCES \"#{schema}\".underwriting_applications(id),
       processor_id uuid,
       bank_profile_id uuid,
@@ -95,15 +97,18 @@ defmodule Mcp.Underwriting.Services.BoardingServiceTest do
         tenant: schema
       )
 
-    # Create Processor & Profile
-    processor = Processor.create!(%{name: "QorPay", adapter: "QorPayAdapter"})
+    # Create Processor & Profile (bypass authorization for test fixtures)
+    processor = Processor.create!(%{name: "QorPay", adapter: "QorPayAdapter"}, authorize?: false)
 
     profile =
-      BankProfile.create!(%{
-        name: "QorPay Retail",
-        processor_id: processor.id,
-        risk_weight: 30
-      })
+      BankProfile.create!(
+        %{
+          name: "QorPay Retail",
+          processor_id: processor.id,
+          risk_weight: 30
+        },
+        authorize?: false
+      )
 
     Req.Test.verify_on_exit!()
 
@@ -134,24 +139,28 @@ defmodule Mcp.Underwriting.Services.BoardingServiceTest do
           subject_id: merchant.id,
           subject_type: :merchant
         },
-        tenant: schema
+        tenant: schema,
+        authorize?: false
       )
 
+    # Create a mock actor for authorization
+    actor = %Mcp.Accounts.User{id: Ecto.UUID.generate(), role: :member, tenant_id: schema}
+
     # Execute Boarding
-    {:ok, result} = BoardingService.board(app.id, profile.id, schema)
+    {:ok, result} = BoardingService.board(app.id, profile.id, schema, actor: actor)
 
     assert result.status == :active
     assert String.starts_with?(result.mid, "QOR_")
 
     # Verify Boarding Record exists
-    boardings = Boarding.read!(tenant: schema)
+    boardings = Boarding.read!(tenant: schema, authorize?: false)
     assert length(boardings) == 1
     boarding = List.first(boardings)
     assert boarding.mid == result.mid
     assert boarding.application_id == app.id
 
     # Verify Application status updated
-    updated_app = Application.get_by_id!(app.id, tenant: schema)
+    updated_app = Application.get_by_id!(app.id, tenant: schema, authorize?: false)
     assert updated_app.status == :funded
   end
 end
