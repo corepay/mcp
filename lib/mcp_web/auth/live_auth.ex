@@ -99,15 +99,15 @@ defmodule McpWeb.Auth.LiveAuth do
     current_context = socket.assigns[:current_context]
     authorized_contexts = socket.assigns[:authorized_contexts] || []
 
-    current_context["tenant_id"] == tenant_id or
-      Enum.any?(authorized_contexts, fn ctx -> ctx["tenant_id"] == tenant_id end)
+    current_context[:tenant_id] == tenant_id or
+      Enum.any?(authorized_contexts, fn ctx -> ctx[:tenant_id] == tenant_id end)
   end
 
   @doc """
   Get the current tenant context.
   """
   def current_tenant(socket) do
-    (socket.assigns[:current_context] || %{})["tenant_id"]
+    (socket.assigns[:current_context] || %{})[:tenant_id]
   end
 
   @doc """
@@ -116,8 +116,8 @@ defmodule McpWeb.Auth.LiveAuth do
   def switch_tenant(socket, tenant_id) do
     authorized_contexts = socket.assigns[:authorized_contexts] || []
 
-    if Enum.any?(authorized_contexts, fn ctx -> ctx["tenant_id"] == tenant_id end) do
-      new_context = Enum.find(authorized_contexts, fn ctx -> ctx["tenant_id"] == tenant_id end)
+    if Enum.any?(authorized_contexts, fn ctx -> ctx[:tenant_id] == tenant_id end) do
+      new_context = Enum.find(authorized_contexts, fn ctx -> ctx[:tenant_id] == tenant_id end)
 
       socket
       |> assign(:current_context, new_context)
@@ -169,7 +169,7 @@ defmodule McpWeb.Auth.LiveAuth do
   """
   def current_permissions(socket) do
     current_context = socket.assigns[:current_context] || %{}
-    current_context["permissions"] || []
+    current_context[:permissions] || []
   end
 
   @doc """
@@ -185,7 +185,7 @@ defmodule McpWeb.Auth.LiveAuth do
   """
   def current_role(socket) do
     current_context = socket.assigns[:current_context] || %{}
-    current_context["role"]
+    current_context[:role]
   end
 
   @doc """

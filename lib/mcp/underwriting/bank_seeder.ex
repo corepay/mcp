@@ -87,7 +87,7 @@ defmodule Mcp.Underwriting.BankSeeder do
   defp ensure_processor(name, adapter) do
     case Ash.Query.filter(Processor, name == ^name) |> Ash.read_one() do
       {:ok, nil} ->
-        Processor.create!(%{name: name, adapter: adapter})
+        Ash.create!(Processor, %{name: name, adapter: adapter}, authorize?: false)
 
       {:ok, p} ->
         p
@@ -97,13 +97,17 @@ defmodule Mcp.Underwriting.BankSeeder do
   defp ensure_bank_profile(processor, name, rules, weight, is_default \\ false) do
     case Ash.Query.filter(BankProfile, name == ^name) |> Ash.read_one() do
       {:ok, nil} ->
-        BankProfile.create!(%{
-          name: name,
-          appetite_rules: rules,
-          risk_weight: weight,
-          is_default: is_default,
-          processor_id: processor.id
-        })
+        Ash.create!(
+          BankProfile,
+          %{
+            name: name,
+            appetite_rules: rules,
+            risk_weight: weight,
+            is_default: is_default,
+            processor_id: processor.id
+          },
+          authorize?: false
+        )
 
       {:ok, bp} ->
         bp

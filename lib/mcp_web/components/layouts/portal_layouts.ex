@@ -6,6 +6,7 @@ defmodule McpWeb.Layouts.PortalLayouts do
 
   alias McpWeb.Layouts.MerchantShell
   alias McpWeb.Layouts.StoreShell
+  alias McpWeb.Layouts.TenantShell
 
   @doc """
   Platform Admin Layout
@@ -30,20 +31,33 @@ defmodule McpWeb.Layouts.PortalLayouts do
   Tenant Portal Layout
   """
   def tenant_portal(assigns) do
+    assigns =
+      assigns
+      |> assign_new(:current_path, fn -> get_current_path(assigns) end)
+      |> assign_new(:user_initials, fn -> get_user_initials(assigns) end)
+
     ~H"""
-    <.app_shell title="Tenant Portal">
-      <:sidebar>
-        <li><.link navigate={~p"/tenant"}>Dashboard</.link></li>
-        <li><.link navigate={~p"/tenant/merchants"}>Merchants</.link></li>
-        <li><.link navigate={~p"/tenant/underwriting"}>Underwriting</.link></li>
-        <li><.link navigate={~p"/tenant/underwriting/boarding"}>Boarding</.link></li>
-        <li><.link navigate={~p"/tenant/settings"}>Settings</.link></li>
-      </:sidebar>
-      <:user_menu>
-        <li><.link method="delete" href={~p"/sign-out"}>Sign out</.link></li>
-      </:user_menu>
-      {@inner_content}
-    </.app_shell>
+    <TenantShell.tenant_shell
+      title="Intelligence Plane"
+      theme="noir"
+      current_path={@current_path}
+      user_initials={@user_initials}
+    >
+      <div id="portal-content" phx-hook="Lucide" class="h-full">
+        {@inner_content}
+      </div>
+    </TenantShell.tenant_shell>
+    <script>
+      document.addEventListener("phx:update", (e) => {
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        }
+      });
+      // Initial call
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    </script>
     """
   end
 

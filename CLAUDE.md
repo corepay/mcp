@@ -12,8 +12,7 @@ An AI-powered MSP (Managed Service Provider) platform built with:
 - **DaisyUI + Tailwind CSS v4** - Frontend component library
 - **PostgreSQL** - With TimescaleDB, PostGIS, pgvector, and Apache AGE
   extensions
-- **AI Stack** - **Ollama** (LLM inference), **Open WebUI** (Chat interface),
-  **AshAi** (Orchestration)
+- **AI Stack** - **OpenRouter** (Unified LLM Gateway), **AshAi** (Orchestration)
 - **Redis** - Caching and session storage
 - **MinIO** - S3-compatible object storage
 - **Meilisearch** - Full-text search engine
@@ -47,10 +46,8 @@ mix phx.server         # Start Phoenix server
 iex -S mix phx.server  # Start with IEx console
 ```
 
-### Infrastructure (Docker)
-
 ```bash
-docker-compose up -d   # Start Postgres, Redis, MinIO, Meilisearch, Ollama, Open WebUI
+docker-compose up -d   # Start Postgres, Redis, MinIO, Meilisearch
 docker-compose down    # Stop all services
 ```
 
@@ -95,10 +92,7 @@ mix assets.deploy      # Build/minify for prod
 - **Design Guide**: See `docs/DESIGN_GUIDE.md` for strict component rules.
 - **Theme**: Dynamic theming via `ThemePlug` and CSS variables.
 
-### AI Integration
-
-- **Ollama**: Local LLM inference (Port: `${OLLAMA_PORT}`)
-- **Open WebUI**: User interface for chat (Port: `${OPEN_WEBUI_PORT}`)
+- **OpenRouter**: Unified LLM provider gateway (Primary: Gemini 2.0 Pro)
 - **AshAi**: Elixir library for integrating LLMs with Ash resources
 
 ## Project Guidelines
@@ -133,8 +127,6 @@ mix assets.deploy      # Build/minify for prod
   - Redis: `${REDIS_PORT}`
   - MinIO: `${MINIO_PORT}`
   - Meilisearch: `${MEILISEARCH_PORT}`
-  - Ollama: `${OLLAMA_PORT}`
-  - Open WebUI: `${OPEN_WEBUI_PORT}`
 
 ### Documentation
 

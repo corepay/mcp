@@ -54,7 +54,8 @@ config :mcp,
     Mcp.Webhooks,
     Mcp.Communication,
     Mcp.Ola,
-    Mcp.Catalog
+    Mcp.Catalog,
+    Mcp.Graph
   ],
   base_domain: "localhost"
 
@@ -66,9 +67,14 @@ config :ash_typescript,
   output_file: "assets/js/ash_generated.ts"
 
 config :mcp, :llm,
-  ollama_base_url: System.get_env("OLLAMA_BASE_URL", "http://localhost:11434"),
   openrouter_base_url: "https://openrouter.ai/api/v1",
-  openrouter_api_key: System.get_env("OPENROUTER_API_KEY")
+  openrouter_api_key: System.get_env("OPENROUTER_API_KEY"),
+  openrouter_model: "google/gemini-2.5-pro",
+  analytics_model: "google/gemini-2.0-flash-exp:free"
+
+# AshAi Configuration
+config :ash_ai,
+  default_model: "google/gemini-2.5-pro"
 
 config :mcp, :qorpay,
   base_url: System.get_env("QORPAY_SANDBOX_URL", "https://api-sandbox.qorcommerce.io/v3"),
@@ -101,7 +107,9 @@ config :mcp, Oban,
     # Email notifications and reminders
     notifications: 5,
     chat_responses: [limit: 10],
-    conversations: [limit: 10]
+    conversations: [limit: 10],
+    document_vectorizer: [limit: 5],
+    graph_sync: [limit: 20]
   ],
   plugins: [
     # Prune completed jobs after 24 hours
@@ -225,10 +233,6 @@ config :mcp, Mcp.Accounts.JWT,
   issuer: "mcp-platform",
   audience: "mcp-users"
 
-# AshAi Configuration
-config :ash_ai,
-  default_model: "llama3"
-
 # Secrets / Cloak Configuration
 config :mcp, Mcp.Secrets,
   json_library: Jason,
@@ -237,12 +241,6 @@ config :mcp, Mcp.Secrets,
       {Cloak.Ciphers.AES.GCM,
        tag: "AES.GCM.V1", key: System.get_env("CLOAK_KEY", "k8s_secret_key_must_be_32_bytes!")}
   ]
-
-config :mcp, :ollama,
-  model: System.get_env("OLLAMA_MODEL", "llama3"),
-  base_url:
-    System.get_env("OLLAMA_BASE_URL") ||
-      "http://localhost:#{System.get_env("OLLAMA_PORT", "11434")}"
 
 # Ash type compatibility configuration
 config :ash, :compatible_foreign_key_types, [

@@ -136,7 +136,7 @@ defmodule Mcp.Repo do
   def installed_extensions do
     # Return list of installed PostgreSQL extensions
     # This can be dynamic by querying the database
-    ["uuid-ossp", "pgcrypto", "btree_gist", "citext", "ash-functions"]
+    ["uuid-ossp", "pgcrypto", "btree_gist", "citext", "ash-functions", "age", "vector"]
   end
 
   @impl true

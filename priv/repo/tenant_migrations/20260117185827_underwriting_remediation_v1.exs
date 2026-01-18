@@ -6,10 +6,20 @@ defmodule Mcp.Repo.TenantMigrations.UnderwritingRemediationV1 do
 
   def up do
     # Drop existing to ensure fresh state for remediation
-    execute "DROP TABLE IF EXISTS #{prefix()}.underwriting_vendor_settings CASCADE"
-    execute "DROP TABLE IF EXISTS #{prefix()}.document_analyses CASCADE"
-    execute "DROP TABLE IF EXISTS #{prefix()}.agent_blueprints CASCADE"
-    execute "DROP TABLE IF EXISTS #{prefix()}.instruction_sets CASCADE"
+    execute "DROP TABLE IF EXISTS \"#{prefix()}\".underwriting_vendor_settings CASCADE"
+    execute "DROP TABLE IF EXISTS \"#{prefix()}\".document_analyses CASCADE"
+    execute "DROP TABLE IF EXISTS \"#{prefix()}\".agent_blueprints CASCADE"
+    execute "DROP TABLE IF EXISTS \"#{prefix()}\".instruction_sets CASCADE"
+
+    # Fix underwriting_documents columns
+    execute "ALTER TABLE \"#{prefix()}\".underwriting_documents ADD COLUMN IF NOT EXISTS file_path text"
+    execute "ALTER TABLE \"#{prefix()}\".underwriting_documents ADD COLUMN IF NOT EXISTS file_name text"
+    execute "ALTER TABLE \"#{prefix()}\".underwriting_documents ADD COLUMN IF NOT EXISTS mime_type text"
+    execute "ALTER TABLE \"#{prefix()}\".underwriting_documents ADD COLUMN IF NOT EXISTS document_type text"
+    execute "ALTER TABLE \"#{prefix()}\".underwriting_documents ADD COLUMN IF NOT EXISTS application_id uuid"
+
+    # Legacy cleanup
+    execute "ALTER TABLE \"#{prefix()}\".underwriting_documents ALTER COLUMN type DROP NOT NULL"
 
     # 1. Vendor Settings
     create table(:underwriting_vendor_settings, primary_key: false, prefix: prefix()) do

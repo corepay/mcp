@@ -28,7 +28,7 @@ import AuthHook from "./hooks/auth_hook"
 import AnalyticsHooks from "./hooks/analytics_hooks"
 import KanbanHook from "./hooks/kanban_hook"
 import SortableHook from "./hooks/sortable_hook"
-import { AtlasFieldTracker } from "./hooks/atlas_hooks"
+import { AtlasFieldTracker, ScrollToBottom } from "./hooks/atlas_hooks"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
@@ -40,9 +40,23 @@ const liveSocket = new LiveSocket("/live", Socket, {
     Kanban: KanbanHook,
     Sortable: SortableHook,
     AtlasFieldTracker: AtlasFieldTracker,
+    ScrollToBottom: ScrollToBottom,
+    Lucide: {
+      mounted() {
+        if (typeof lucide !== "undefined") {
+          lucide.createIcons();
+        }
+      },
+      updated() {
+        if (typeof lucide !== "undefined") {
+          lucide.createIcons();
+        }
+      }
+    },
     LineChartHook: AnalyticsHooks.LineChartHook,
     BarChartHook: AnalyticsHooks.BarChartHook,
     PieChartHook: AnalyticsHooks.PieChartHook,
+    ExecutiveBarHook: AnalyticsHooks.ExecutiveBarHook,
     WidgetHook: AnalyticsHooks.WidgetHook,
     SignaturePad: {
       mounted() {

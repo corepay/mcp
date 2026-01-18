@@ -72,13 +72,13 @@ export const LineChartHook = {
               }
             },
             grid: {
-              display: config.showGrid || true
+              display: config.showGrid !== undefined ? config.showGrid : true
             }
           },
           y: {
             beginAtZero: config.beginAtZero || false,
             grid: {
-              display: config.showGrid || true
+              display: config.showGrid !== undefined ? config.showGrid : true
             },
             ticks: {
               callback: function(value) {
@@ -539,11 +539,116 @@ export const WidgetHook = {
     }
   }
 };
+// Executive Sparkline Hook - High density, professional bars with gradients
+export const ExecutiveBarHook = {
+  mounted() {
+    this.init();
+  },
+  updated() {
+    this.init();
+  },
+  init() {
+    if (typeof Chart === 'undefined') return;
+    const canvas = this.el;
+    const ctx = canvas.getContext('2d');
+    const data = JSON.parse(this.el.dataset.chartData || "[]");
+    const config = JSON.parse(this.el.dataset.config || "{}");
+    
+    if (this.chart) this.chart.destroy();
+
+    // Data format expected: [{timestamp: "...", approved: 5, pending: 3, declined: 1}, ...]
+    const datasets = [
+      { key: 'approved', label: 'Approved', color: '#10B981' },
+      { key: 'pending', label: 'In Progress', color: '#3B82F6' },
+      { key: 'declined', label: 'Declined', color: '#EF4444' }
+    ];
+
+    const chartDatasets = datasets.map(ds => {
+      const color = ds.color;
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+      
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height || 100);
+      gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.6)`);
+      gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.1)`);
+
+      return {
+        label: ds.label,
+        data: data.map(d => d[ds.key] || 0),
+        backgroundColor: gradient,
+        borderColor: `rgba(${r}, ${g}, ${b}, 0.8)`,
+        borderWidth: 1,
+        borderRadius: 2,
+        hoverBackgroundColor: color,
+        stack: 'stack0'
+      };
+    });
+
+    this.chart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: data.map(d => d.timestamp),
+        datasets: chartDatasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        onClick: (evt, elements) => {
+          if (elements.length > 0) {
+            const index = elements[0].index;
+            const label = data[index].timestamp;
+            this.pushEvent("chart_click", { label: label });
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { 
+            enabled: true,
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(0,0,0,0.9)',
+            titleFont: { size: 10, weight: 'bold' },
+            bodyFont: { size: 10 },
+            padding: 10,
+            displayColors: true,
+            boxWidth: 8,
+            boxHeight: 8,
+            usePointStyle: true,
+            cornerRadius: 8
+          }
+        },
+        scales: {
+          x: { 
+            display: true,
+            stacked: true,
+            grid: { display: false },
+            ticks: {
+              color: 'rgba(255,255,255,0.3)',
+              font: { size: 9, weight: 'bold' },
+              padding: 5
+            },
+            border: { display: false }
+          },
+          y: { 
+            display: false, 
+            stacked: true,
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  },
+  destroyed() {
+    if (this.chart) this.chart.destroy();
+  }
+};
 
 // Export all hooks
 export default {
   LineChartHook,
   BarChartHook,
   PieChartHook,
+  ExecutiveBarHook,
   WidgetHook
 };

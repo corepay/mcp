@@ -101,6 +101,7 @@ defmodule Mcp.Platform.ApiKey do
     define :revoke
     define :update_last_used
     define :authenticate, args: [:token], get?: true
+    define :get_by_id, action: :read, get_by: [:id]
   end
 
   def hash_key(key) do

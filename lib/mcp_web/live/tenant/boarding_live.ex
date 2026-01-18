@@ -7,7 +7,7 @@ defmodule McpWeb.Tenant.BoardingLive do
 
   @impl true
   def mount(_params, session, socket) do
-    tenant_id = session["tenant_id"] || socket.assigns.current_user.tenant_id
+    tenant_id = session["tenant_id"] || socket.assigns.current_context[:tenant_id]
     tenant = Tenant.get_by_id!(tenant_id)
 
     if connected?(socket) do
@@ -64,43 +64,50 @@ defmodule McpWeb.Tenant.BoardingLive do
     <div class="h-screen flex overflow-hidden bg-zinc-50 dark:bg-black font-sans">
       <!-- Main Content -->
       <main class="flex-1 flex flex-col min-w-0 overflow-y-auto p-8 lg:p-12 relative">
-        <header class="flex justify-between items-start mb-12">
-          <div>
-            <h1 class="text-4xl font-black text-zinc-900 dark:text-white tracking-tighter mb-2">
-              Boarding Lifecycle
-            </h1>
-            <p class="text-zinc-500 dark:text-zinc-500 max-w-md leading-relaxed">
-              Global gateway orchestration and decision lineage. View the rationale behind every merchant-bank assignment.
-            </p>
+        <%!-- Contextual Workbench Header (Thin) --%>
+        <header class="bg-base-100 border-b border-base-200/50 px-8 py-4 flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="bg-base-200 p-2 rounded-lg text-primary">
+              <.icon name="hero-rocket-launch" class="size-5" />
+            </div>
+            <div class="flex flex-col gap-0.5">
+              <h1 class="text-sm font-black uppercase tracking-widest text-base-content/90">
+                Connectivity & MIDs
+              </h1>
+              <p class="text-[10px] font-medium text-base-content/40 uppercase tracking-tight">
+                Processor gateway orchestration and MID provisioning logs.
+              </p>
+            </div>
           </div>
+
           <div class="flex items-center gap-6">
             <div class="flex flex-col items-end">
-              <span class="text-[10px] uppercase tracking-widest font-black text-zinc-400 dark:text-zinc-600 mb-1">
+              <span class="text-[10px] uppercase tracking-widest font-black text-zinc-400 dark:text-zinc-600 mb-1 leading-none">
                 Health
               </span>
               <div class="flex items-center gap-2">
-                <div class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span class="text-xs font-mono font-bold text-zinc-900 dark:text-zinc-300">
+                <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span class="text-[10px] font-mono font-bold text-zinc-900 dark:text-zinc-300">
                   SYSTEM_NOMINAL
                 </span>
               </div>
             </div>
-            <div class="h-10 w-[1px] bg-zinc-200 dark:bg-zinc-800"></div>
+            <div class="h-8 w-[1px] bg-zinc-200 dark:bg-zinc-800"></div>
             <div class="flex gap-4">
-              <div class="stats bg-transparent border-none p-0 flex space-x-8">
-                <div class="stat p-0 min-w-[80px]">
+              <div class="stats bg-transparent border-none p-0 flex space-x-6">
+                <div class="stat p-0 min-w-fit">
                   <div class="stat-title text-[9px] uppercase font-black text-zinc-400 dark:text-zinc-600 tracking-widest">
                     Active
                   </div>
-                  <div class="stat-value text-3xl font-black text-emerald-500">
+                  <div class="stat-value text-lg font-black text-emerald-500 leading-none">
                     {active_count(@boardings)}
                   </div>
                 </div>
-                <div class="stat p-0 min-w-[80px]">
+                <div class="stat p-0 min-w-fit">
                   <div class="stat-title text-[9px] uppercase font-black text-zinc-400 dark:text-zinc-600 tracking-widest">
                     Pending
                   </div>
-                  <div class="stat-value text-3xl font-black text-amber-500">
+                  <div class="stat-value text-lg font-black text-amber-500 leading-none">
                     {pending_count(@boardings)}
                   </div>
                 </div>
@@ -109,114 +116,117 @@ defmodule McpWeb.Tenant.BoardingLive do
           </div>
         </header>
 
-        <div class="bg-white dark:bg-zinc-900 rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-          <table class="table w-full border-collapse">
-            <thead>
-              <tr class="border-b border-zinc-100 dark:border-zinc-800">
-                <th class="py-6 px-8 text-[10px] uppercase font-black text-zinc-400 dark:text-zinc-500 tracking-widest text-left">
-                  Merchant Entity
-                </th>
-                <th class="py-6 px-8 text-[10px] uppercase font-black text-zinc-400 dark:text-zinc-500 tracking-widest text-left">
-                  Processor Stack
-                </th>
-                <th class="py-6 px-8 text-[10px] uppercase font-black text-zinc-400 dark:text-zinc-500 tracking-widest text-left">
-                  Identifiers
-                </th>
-                <th class="py-6 px-8 text-[10px] uppercase font-black text-zinc-400 dark:text-zinc-500 tracking-widest text-left">
-                  State
-                </th>
-                <th class="py-6 px-8 text-[10px] uppercase font-black text-zinc-400 dark:text-zinc-500 tracking-widest text-right">
-                  Timestamp
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-              <%= if Enum.empty?(@boardings) do %>
-                <tr>
-                  <td colspan="5" class="py-32 text-center text-zinc-400 italic font-medium">
-                    <div class="flex flex-col items-center opacity-40">
-                      <.icon name="hero-archive-box" class="h-12 w-12 mb-4" />
-                      <span>Zero boarding activities recorded.</span>
-                    </div>
-                  </td>
+        <div class="flex-1 overflow-y-auto p-12 lg:p-12 relative">
+          <div class="bg-white dark:bg-zinc-900 rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+            <table class="table w-full border-collapse">
+              <thead>
+                <tr class="border-b border-zinc-100 dark:border-zinc-800">
+                  <th class="py-6 px-8 text-[10px] uppercase font-black text-zinc-400 dark:text-zinc-500 tracking-widest text-left">
+                    Merchant Entity
+                  </th>
+                  <th class="py-6 px-8 text-[10px] uppercase font-black text-zinc-400 dark:text-zinc-500 tracking-widest text-left">
+                    Processor Stack
+                  </th>
+                  <th class="py-6 px-8 text-[10px] uppercase font-black text-zinc-400 dark:text-zinc-500 tracking-widest text-left">
+                    Identifiers
+                  </th>
+                  <th class="py-6 px-8 text-[10px] uppercase font-black text-zinc-400 dark:text-zinc-500 tracking-widest text-left">
+                    State
+                  </th>
+                  <th class="py-6 px-8 text-[10px] uppercase font-black text-zinc-400 dark:text-zinc-500 tracking-widest text-right">
+                    Timestamp
+                  </th>
                 </tr>
-              <% else %>
-                <%= for boarding <- @boardings do %>
-                  <tr
-                    phx-click="select_boarding"
-                    phx-value-id={boarding.id}
-                    class={"group cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all duration-300 #{if @selected_boarding_id == boarding.id, do: "bg-zinc-50 dark:bg-zinc-800/50", else: ""}"}
-                  >
-                    <td class="py-6 px-8">
-                      <div class="flex flex-col">
-                        <span class="text-sm font-bold text-zinc-900 dark:text-white group-hover:underline decoration-zinc-300 decoration-2 underline-offset-4">
-                          {boarding.application.application_data["business_name"] || "Generic Entity"}
-                        </span>
-                        <div class="flex items-center gap-2 mt-1">
-                          <span class="text-[9px] font-mono p-0.5 px-1 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-500 uppercase tracking-tighter">
-                            APP_{boarding.application.id |> String.slice(0, 6)}
-                          </span>
-                          <span class="text-[9px] text-zinc-400 uppercase font-black tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                            View Audit
-                          </span>
-                        </div>
+              </thead>
+              <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
+                <%= if Enum.empty?(@boardings) do %>
+                  <tr>
+                    <td colspan="5" class="py-32 text-center text-zinc-400 italic font-medium">
+                      <div class="flex flex-col items-center opacity-40">
+                        <.icon name="hero-archive-box" class="h-12 w-12 mb-4" />
+                        <span>Zero boarding activities recorded.</span>
                       </div>
-                    </td>
-                    <td class="py-6 px-8">
-                      <div class="flex flex-col gap-1">
-                        <span class="text-[10px] font-black text-zinc-400 dark:text-zinc-600 uppercase tracking-widest leading-none">
-                          {boarding.processor.name}
-                        </span>
-                        <span class="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                          {boarding.bank_profile.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td class="py-6 px-8">
-                      <div class="flex flex-col font-mono text-[10px] space-y-1">
-                        <div class="flex justify-between gap-4">
-                          <span class="text-zinc-400 font-bold tracking-tighter">MID</span>
-                          <span class="text-zinc-900 dark:text-zinc-100 font-black">
-                            {boarding.mid || "N/A"}
-                          </span>
-                        </div>
-                        <div class="flex justify-between gap-4">
-                          <span class="text-zinc-400 font-bold tracking-tighter">TID</span>
-                          <span class="text-zinc-900 dark:text-zinc-300">
-                            {boarding.tid || "N/A"}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="py-6 px-8">
-                      <div class="flex items-center gap-3">
-                        <div class={"h-1.5 w-1.5 rounded-full #{status_dot_color(boarding.status)}"}>
-                        </div>
-                        <span class={"text-[10px] font-black uppercase tracking-widest #{status_text_color(boarding.status)}"}>
-                          {boarding.status}
-                        </span>
-                        <%= if boarding.status == :pending do %>
-                          <button
-                            phx-click="sync_boarding"
-                            phx-value-id={boarding.id}
-                            class="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded transition-colors text-zinc-400"
-                            title="Manual Sync"
-                          >
-                            <.icon name="hero-arrow-path" class="h-3 w-3" />
-                          </button>
-                        <% end %>
-                      </div>
-                    </td>
-                    <td class="py-6 px-8 text-right">
-                      <span class="text-[10px] font-mono text-zinc-400 dark:text-zinc-600 font-bold">
-                        {Calendar.strftime(boarding.inserted_at, "%Y-%m-%d %H:%M:%S UTC")}
-                      </span>
                     </td>
                   </tr>
+                <% else %>
+                  <%= for boarding <- @boardings do %>
+                    <tr
+                      phx-click="select_boarding"
+                      phx-value-id={boarding.id}
+                      class={"group cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all duration-300 #{if @selected_boarding_id == boarding.id, do: "bg-zinc-50 dark:bg-zinc-800/50", else: ""}"}
+                    >
+                      <td class="py-6 px-8">
+                        <div class="flex flex-col">
+                          <span class="text-sm font-bold text-zinc-900 dark:text-white group-hover:underline decoration-zinc-300 decoration-2 underline-offset-4">
+                            {boarding.application.application_data["business_name"] ||
+                              "Generic Entity"}
+                          </span>
+                          <div class="flex items-center gap-2 mt-1">
+                            <span class="text-[9px] font-mono p-0.5 px-1 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-500 uppercase tracking-tighter">
+                              APP_{boarding.application.id |> String.slice(0, 6)}
+                            </span>
+                            <span class="text-[9px] text-zinc-400 uppercase font-black tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                              View Audit
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="py-6 px-8">
+                        <div class="flex flex-col gap-1">
+                          <span class="text-[10px] font-black text-zinc-400 dark:text-zinc-600 uppercase tracking-widest leading-none">
+                            {boarding.processor.name}
+                          </span>
+                          <span class="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                            {boarding.bank_profile.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td class="py-6 px-8">
+                        <div class="flex flex-col font-mono text-[10px] space-y-1">
+                          <div class="flex justify-between gap-4">
+                            <span class="text-zinc-400 font-bold tracking-tighter">MID</span>
+                            <span class="text-zinc-900 dark:text-zinc-100 font-black">
+                              {boarding.mid || "N/A"}
+                            </span>
+                          </div>
+                          <div class="flex justify-between gap-4">
+                            <span class="text-zinc-400 font-bold tracking-tighter">TID</span>
+                            <span class="text-zinc-900 dark:text-zinc-300">
+                              {boarding.tid || "N/A"}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="py-6 px-8">
+                        <div class="flex items-center gap-3">
+                          <div class={"h-1.5 w-1.5 rounded-full #{status_dot_color(boarding.status)}"}>
+                          </div>
+                          <span class={"text-[10px] font-black uppercase tracking-widest #{status_text_color(boarding.status)}"}>
+                            {boarding.status}
+                          </span>
+                          <%= if boarding.status == :pending do %>
+                            <button
+                              phx-click="sync_boarding"
+                              phx-value-id={boarding.id}
+                              class="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded transition-colors text-zinc-400"
+                              title="Manual Sync"
+                            >
+                              <.icon name="hero-arrow-path" class="h-3 w-3" />
+                            </button>
+                          <% end %>
+                        </div>
+                      </td>
+                      <td class="py-6 px-8 text-right">
+                        <span class="text-[10px] font-mono text-zinc-400 dark:text-zinc-600 font-bold">
+                          {Calendar.strftime(boarding.inserted_at, "%Y-%m-%d %H:%M:%S UTC")}
+                        </span>
+                      </td>
+                    </tr>
+                  <% end %>
                 <% end %>
-              <% end %>
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         </div>
       </main>
       

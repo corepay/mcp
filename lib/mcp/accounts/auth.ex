@@ -263,6 +263,8 @@ defmodule Mcp.Accounts.Auth do
     %{
       tenant_id: claims["tenant_id"],
       user_id: claims["sub"],
+      role: claims["role"],
+      permissions: claims["permissions"],
       token_type: claims["type"],
       issued_at: claims["iat"],
       expires_at: claims["exp"]

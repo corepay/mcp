@@ -6,7 +6,7 @@ defmodule Mcp.Ai.OpenRouter do
 
   @base_url "https://openrouter.ai/api/v1"
 
-  def chat_completion(messages, model \\ "openai/gpt-4o") do
+  def chat_completion(messages, model \\ "google/gemini-2.5-pro") do
     api_key = System.get_env("OPENROUTER_API_KEY")
 
     if is_nil(api_key) do

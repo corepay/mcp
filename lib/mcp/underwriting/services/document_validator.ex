@@ -47,23 +47,13 @@ defmodule Mcp.Underwriting.Services.DocumentValidator do
            suggestions: ["Please upload a clearer image"]
          }}
 
-      {:error, :service_unavailable} ->
-        # Gracefully degrade - allow submission but flag for manual review
-        {:ok,
-         %__MODULE__{
-           valid?: true,
-           quality_score: 50,
-           issues: [],
-           suggestions: ["Document will be verified manually"]
-         }}
-
-      {:error, reason} ->
+      {:error, {:extraction_failed, reason}} ->
         {:error,
          %__MODULE__{
            valid?: false,
            quality_score: 0,
-           issues: ["Failed to process document: #{inspect(reason)}"],
-           suggestions: ["Please try uploading again"]
+           issues: ["Document extraction failed: #{inspect(reason)}"],
+           suggestions: ["Please upload a clearer image or try again"]
          }}
     end
   end

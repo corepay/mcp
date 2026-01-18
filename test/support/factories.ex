@@ -125,6 +125,47 @@ defmodule Mcp.TestFactories do
     rejected
   end
 
+  def insert(:tenant, attrs) do
+    attrs = Map.new(attrs)
+
+    tenant_attrs =
+      %{
+        name: Map.get(attrs, :name, sequence(:name, &"Test Tenant #{&1}")),
+        slug: Map.get(attrs, :slug, sequence(:slug, &"tenant-#{&1}")),
+        subdomain: Map.get(attrs, :subdomain, sequence(:subdomain, &"subdomain-#{&1}")),
+        company_schema: Map.get(attrs, :company_schema, sequence(:schema, &"acq_test_#{&1}")),
+        plan: Map.get(attrs, :plan, :starter)
+      }
+      |> Map.merge(attrs)
+
+    case Mcp.Platform.Tenant.create(tenant_attrs) do
+      {:ok, tenant} ->
+        tenant
+
+      {:error, reason} ->
+        raise "Failed to create tenant: #{inspect(reason)}"
+    end
+  end
+
+  def insert(:merchant, attrs) do
+    attrs = Map.new(attrs)
+
+    merchant_attrs =
+      %{
+        business_name: Map.get(attrs, :business_name, sequence(:name, &"Test Merchant #{&1}")),
+        status: Map.get(attrs, :status, :active),
+        email: Map.get(attrs, :email, sequence(:email, &"merchant#{&1}@example.com"))
+      }
+      |> Map.merge(attrs)
+
+    tenant = Map.get(attrs, :tenant)
+
+    case Mcp.Platform.Merchant.create(merchant_attrs, tenant: tenant) do
+      {:ok, merchant} -> merchant
+      {:error, reason} -> raise "Failed to create merchant: #{inspect(reason)}"
+    end
+  end
+
   @doc """
   Creates a Platform.ApiKey and returns {api_key, raw_key}.
   The raw_key is needed for authentication since the key is hashed on create.

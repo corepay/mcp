@@ -49,5 +49,6 @@ defmodule Mcp.Finance.Ledger do
   code_interface do
     define :create
     define :read
+    define :get_by_id, action: :read, get_by: [:id]
   end
 end

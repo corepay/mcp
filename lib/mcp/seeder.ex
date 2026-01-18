@@ -23,8 +23,7 @@ defmodule Mcp.Seeder do
     seed_tenant("Acme Corp", "acme", "acme")
     seed_tenant("Globex Corp", "globex", "globex")
 
-    # 3. Create Agent Blueprints
-    seed_agent_blueprints()
+    # seed_agent_blueprints() is now called per-tenant
 
     # 4. Create Bank Matrix
     BankSeeder.run()
@@ -40,6 +39,9 @@ defmodule Mcp.Seeder do
     user = ensure_user(admin_email, @password)
     ensure_tenant_user(tenant, user, :owner)
     IO.puts("  - Tenant Admin (#{name}): #{admin_email} / #{@password}")
+
+    # Seed Blueprints for this tenant
+    seed_agent_blueprints(tenant)
 
     # Create Merchants & Stores
     case slug do
@@ -321,8 +323,10 @@ defmodule Mcp.Seeder do
     )
   end
 
-  defp seed_agent_blueprints do
-    IO.puts("  - Seeding Agent Blueprints...")
+  defp seed_agent_blueprints(tenant) do
+    IO.puts("  - Seeding Agent Blueprints for #{tenant.name}...")
+
+    schema = tenant.company_schema
 
     agents = [
       %{
@@ -360,11 +364,15 @@ defmodule Mcp.Seeder do
         1. Interview them to understand the role and requirements.
         2. Suggest a persona (Name, Base Prompt).
         3. Suggest necessary tools.
-        4. Suggest a routing configuration (Ollama vs OpenRouter) based on complexity.
+        4. Suggest a routing configuration (local vs cloud) based on complexity.
         5. Output the configuration in JSON format or Elixir seed format.",
         tools: [],
         # Use the smartest model for architecture
-        routing_config: %{mode: :single, primary_provider: :openrouter}
+        routing_config: %{
+          mode: :single,
+          primary_provider: :openrouter,
+          primary_model: "google/gemini-2.5-pro"
+        }
       },
       %{
         name: "ResponseReviewer",
@@ -382,8 +390,12 @@ defmodule Mcp.Seeder do
         If the response contains PII, redact it (replace with [REDACTED]).
         If the response is unsafe or hallucinates, rewrite it to be safe.",
         tools: [],
-        # Fast local review is usually sufficient
-        routing_config: %{mode: :single, primary_provider: :ollama}
+        # Review with Gemini Flash for high performance
+        routing_config: %{
+          mode: :single,
+          primary_provider: :openrouter,
+          primary_model: "google/gemini-2.0-flash-001"
+        }
       },
       %{
         name: "MortgageUnderwriter",
@@ -401,10 +413,9 @@ defmodule Mcp.Seeder do
         Analyze the provided application and credit report data to recommend approval or denial.",
         tools: [:calculator, :verify_employment],
         routing_config: %{
-          mode: :fallback,
-          primary_provider: :ollama,
-          fallback_provider: :openrouter,
-          min_confidence: 0.9
+          mode: :single,
+          primary_provider: :openrouter,
+          primary_model: "google/gemini-2.5-pro"
         }
       },
       %{
@@ -421,7 +432,11 @@ defmodule Mcp.Seeder do
 
         Ensure the loan terms match the vehicle depreciation curve.",
         tools: [:vehicle_valuation, :verify_income],
-        routing_config: %{mode: :single, primary_provider: :ollama}
+        routing_config: %{
+          mode: :single,
+          primary_provider: :openrouter,
+          primary_model: "google/gemini-2.5-pro"
+        }
       },
       %{
         name: "RentalScreener",
@@ -437,21 +452,27 @@ defmodule Mcp.Seeder do
 
         Provide a 'Pass', 'Conditional', or 'Fail' recommendation.",
         tools: [:background_check, :verify_income],
-        routing_config: %{mode: :single, primary_provider: :ollama}
+        routing_config: %{
+          mode: :single,
+          primary_provider: :openrouter,
+          primary_model: "google/gemini-2.0-flash-001"
+        }
       }
     ]
 
     Enum.each(agents, fn agent_attrs ->
-      case Ash.Query.filter(AgentBlueprint, name == ^agent_attrs.name) |> Ash.read_one() do
+      case AgentBlueprint
+           |> Ash.Query.filter(name == ^agent_attrs.name)
+           |> Ash.read_one(tenant: schema) do
         {:ok, nil} ->
-          Ash.create!(AgentBlueprint, agent_attrs)
+          Ash.create!(AgentBlueprint, agent_attrs, tenant: schema)
           IO.puts("    + Created #{agent_attrs.name}")
 
         {:ok, _existing} ->
           IO.puts("    . #{agent_attrs.name} already exists")
 
-        _ ->
-          IO.puts("    ! Failed to check #{agent_attrs.name}")
+        error ->
+          IO.puts("    ! Failed to check #{agent_attrs.name}: #{inspect(error)}")
       end
     end)
   end

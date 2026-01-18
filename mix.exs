@@ -78,7 +78,7 @@ defmodule Mcp.MixProject do
       {:ash_typescript, "~> 0.7"},
       {:usage_rules, "~> 0.1", only: [:dev]},
       {:ash_cloak, "~> 0.1"},
-      {:ash_ai, "~> 0.3"},
+      {:ash_ai, "~> 0.4.0"},
       {:ash_paper_trail, "~> 0.5"},
       {:tidewave, "~> 0.5", only: [:dev]},
       {:live_debugger, "~> 0.4", only: [:dev]},
@@ -165,7 +165,9 @@ defmodule Mcp.MixProject do
       {:ex_check, "~> 0.16", only: [:dev, :test], runtime: false},
 
       # LLM Integration
-      {:langchain, "~> 0.4"}
+      {:langchain, "~> 0.4"},
+      {:kreuzberg, "~> 4.0"},
+      {:rustler, "~> 0.35"}
     ]
   end
 

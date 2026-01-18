@@ -37,7 +37,7 @@ defmodule Mcp.Ai.LlmUsage do
     uuid_primary_key :id
 
     attribute :provider, :atom do
-      constraints one_of: [:ollama, :openrouter]
+      constraints one_of: [:openrouter]
       allow_nil? false
     end
 
@@ -112,6 +112,36 @@ defmodule Mcp.Ai.LlmUsage do
       {:ok, val} when not is_nil(val) -> val
       _ -> Decimal.new(0)
     end
+  end
+
+  def calculate_cost(model, prompt_tokens, completion_tokens) do
+    # Prices per 1M tokens (USD)
+    {input_price, output_price} =
+      case model do
+        "google/gemini-2.5-pro" ->
+          {Decimal.new("1.25"), Decimal.new("10.00")}
+
+        "google/gemini-2.0-flash-001" ->
+          {Decimal.new("0.10"), Decimal.new("0.40")}
+
+        model when is_binary(model) ->
+          if String.ends_with?(model, ":free") do
+            {Decimal.new(0), Decimal.new(0)}
+          else
+            # Default for safety
+            {Decimal.new("3.00"), Decimal.new("15.00")}
+          end
+      end
+
+    input_cost =
+      Decimal.div(Decimal.new(prompt_tokens), Decimal.new(1_000_000))
+      |> Decimal.mult(input_price)
+
+    output_cost =
+      Decimal.div(Decimal.new(completion_tokens), Decimal.new(1_000_000))
+      |> Decimal.mult(output_price)
+
+    Decimal.add(input_cost, output_cost)
   end
 
   relationships do

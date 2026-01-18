@@ -79,4 +79,9 @@ defmodule Mcp.Underwriting.Playbook do
 
     Ash.Changeset.force_change_attribute(changeset, :hash, hash)
   end
+
+  code_interface do
+    define :active, action: :active
+    define :read
+  end
 end

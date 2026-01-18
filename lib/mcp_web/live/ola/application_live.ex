@@ -271,7 +271,7 @@ defmodule McpWeb.Ola.ApplicationLive do
       name: "OlaAssistant",
       description: "Application Helper",
       base_prompt: "You are Ola, a helpful underwriting assistant.",
-      routing_config: %{primary_provider: :ollama, mode: :single}
+      routing_config: %{primary_provider: :openrouter, mode: :single}
     }
 
     instructions = %InstructionSet{

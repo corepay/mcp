@@ -57,38 +57,150 @@
 }
 
 @plugin "../vendor/daisyui-theme" {
-  name: "light";
-  default: true;
-  prefersdark: false;
-  color-scheme: "light";
-  --color-base-100: oklch(98% 0.005 260);
-  --color-base-200: oklch(95% 0.01 260);
-  --color-base-300: oklch(92% 0.01 260);
-  --color-base-content: oklch(20% 0.04 260);
-  --color-primary: oklch(55% 0.15 255);
-  --color-primary-content: oklch(98% 0.01 260);
-  --color-secondary: oklch(50% 0.15 255);
-  --color-secondary-content: oklch(98% 0.01 260);
-  --color-accent: oklch(60% 0.15 250);
-  --color-accent-content: oklch(98% 0.01 260);
-  --color-neutral: oklch(30% 0.04 260);
-  --color-neutral-content: oklch(98% 0.01 260);
-  --color-info: oklch(60% 0.15 240);
-  --color-info-content: oklch(98% 0.01 260);
-  --color-success: oklch(60% 0.18 150);
-  --color-success-content: oklch(98% 0.01 150);
-  --color-warning: oklch(70% 0.18 85);
-  --color-warning-content: oklch(10% 0.05 85);
-  --color-error: oklch(60% 0.2 30);
-  --color-error-content: oklch(98% 0.01 30);
-  --radius-selector: 0.25rem;
-  --radius-field: 0.25rem;
-  --radius-box: 0.5rem;
-  --size-selector: 0.21875rem;
-  --size-field: 0.21875rem;
-  --border: 1.5px;
-  --depth: 1;
-  --noise: 0;
+  name: "noir";
+  default: false;
+  prefersdark: true;
+  color-scheme: "dark";
+  --color-base-100: #050505;
+  --color-base-200: #101010;
+  --color-base-300: #1a1a1a;
+  --color-base-content: #e5e5e5;
+  --color-primary: #10b981; /* Emerald */
+  --color-primary-content: #ffffff;
+  --color-secondary: #f59e0b; /* Amber */
+  --color-secondary-content: #ffffff;
+  --color-accent: #6366f1; /* Indigo */
+  --color-accent-content: #ffffff;
+  --color-info: #3b82f6;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --radius-selector: 0.5rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.75rem;
+}
+
+/* Noir Workbench Utilities */
+@layer utilities {
+  .glass-panel {
+    background: rgba(20, 20, 20, 0.75);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .mono-num {
+    font-family: var(--font-mono);
+  }
+
+  .dropdown-content-glass {
+    background: rgba(15, 15, 15, 0.9) !important;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Fluid Expert Layout - The Panopticon */
+  .layout-panopticon {
+    display: flex;
+    height: calc(100vh - 4rem); /* Header height offset */
+    background: #050505;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .panopticon-wing-left {
+    width: 320px;
+    flex-shrink: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .panopticon-canvas {
+    flex-grow: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .panopticon-wing-right {
+    width: 420px;
+    flex-shrink: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Collapsed States */
+  .wing-collapsed {
+    width: 48px !important;
+    overflow: hidden;
+  }
+  
+  .wing-hidden {
+    width: 0 !important;
+    overflow: hidden;
+    opacity: 0;
+    border: none !important;
+  }
+
+  .queue-item {
+    border-left-width: 3px;
+    border-left-color: transparent;
+    transition-property: all;
+    transition-duration: 200ms;
+  }
+
+  .queue-item.active-emerald {
+    background: rgba(16, 185, 129, 0.05);
+    border-left-color: #10b981;
+  }
+
+  .queue-item.active-amber {
+    background: rgba(245, 158, 11, 0.05);
+    border-left-color: #f59e0b;
+  }
+
+  .queue-item.active-crimson {
+    background: rgba(239, 68, 68, 0.05);
+    border-left-color: #ef4444;
+  }
+
+  .scroll-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 2px;
+  }
+
+  .command-center-grid {
+    background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.03) 1px, transparent 0);
+    background-size: 24px 24px;
+  }
+
+  .scanline {
+    width: 100%;
+    height: 100px;
+    z-index: 5;
+    background: linear-gradient(0deg, 
+      rgba(16, 185, 129, 0) 0%, 
+      rgba(16, 185, 129, 0.05) 50%, 
+      rgba(16, 185, 129, 0) 100%);
+    opacity: 0.1;
+    position: absolute;
+    bottom: 100%;
+    animation: scanline 10s linear infinite;
+  }
+
+  @keyframes scanline {
+    0% { bottom: 100%; }
+    100% { bottom: -100px; }
+  }
 }
 
 /* Add variants based on LiveView classes */

@@ -110,10 +110,9 @@ defmodule McpWeb.Router do
     live_session :tenant_dashboard,
       layout: {McpWeb.Layouts.PortalLayouts, :tenant_portal} do
       live "/dashboard", Tenant.DashboardLive
-      live "/applications", Tenant.ApplicationsLive
-      live "/applications/:id", Tenant.ApplicationDetailLive
       live "/settings", TenantSettingsLive
-      live "/merchants", MockDashboardLive
+      live "/merchants", Tenant.Merchants.IndexLive
+      live "/audit", Tenant.Audit.IndexLive
       live "/gdpr", GdprLive
       live "/change-password", AuthLive.ChangePassword
       live "/settings/api-keys", Settings.ApiKeysLive, :index
@@ -124,11 +123,10 @@ defmodule McpWeb.Router do
     live_session :tenant_underwriting,
       layout: {McpWeb.Layouts.PortalLayouts, :tenant_portal},
       on_mount: [{McpWeb.Auth.LiveAuth, :require_authenticated}] do
-      live "/underwriting", Tenant.UnderwritingLive
-      live "/underwriting/board", Tenant.Underwriting.KanbanLive
+      live "/underwriting", Tenant.Underwriting.WorkbenchLive, :index
+      live "/underwriting/:id", Tenant.Underwriting.WorkbenchLive, :show
       live "/underwriting/boarding", Tenant.BoardingLive
       live "/underwriting/settings", Tenant.Underwriting.SettingsLive
-      live "/underwriting/:id", Tenant.ReviewLive
     end
 
     post "/select", TenantSessionController, :create
@@ -314,6 +312,7 @@ defmodule McpWeb.Router do
     live "/", LandingLive, :home
 
     # Auth Routes - Global sign-in removed in favor of scoped routes
+    get "/sign-out", AuthController, :delete
     post "/sign-in", AuthController, :create
     delete "/sign-out", AuthController, :delete
 

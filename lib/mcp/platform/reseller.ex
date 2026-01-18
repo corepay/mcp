@@ -7,7 +7,8 @@ defmodule Mcp.Platform.Reseller do
     domain: Mcp.Platform,
     data_layer: AshPostgres.DataLayer,
     # , AshPaperTrail.Resource]
-    extensions: [AshJsonApi.Resource, AshArchival]
+    extensions: [AshJsonApi.Resource, AshArchival, AshOban],
+    notifiers: []
 
   # paper_trail do
   # end
@@ -39,6 +40,8 @@ defmodule Mcp.Platform.Reseller do
         :commission_rate,
         :status
       ]
+
+      change run_oban_trigger(:sync_to_graph)
     end
 
     update :update do
@@ -54,6 +57,31 @@ defmodule Mcp.Platform.Reseller do
         :commission_rate,
         :status
       ]
+
+      change run_oban_trigger(:sync_to_graph)
+    end
+
+    update :sync_to_graph do
+      accept []
+      require_atomic? false
+
+      change fn changeset, _ ->
+        Ash.Changeset.after_action(changeset, fn _changeset, reseller ->
+          Mcp.Graph.Notifier.sync_to_graph(Mcp.Platform.Reseller, reseller, reseller.id)
+          {:ok, reseller}
+        end)
+      end
+    end
+  end
+
+  oban do
+    triggers do
+      trigger :sync_to_graph do
+        action :sync_to_graph
+        queue(:graph_sync)
+        worker_module_name(:reseller_graph_sync)
+        scheduler_module_name(:reseller_graph_sync_scheduler)
+      end
     end
   end
 

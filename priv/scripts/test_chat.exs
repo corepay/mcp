@@ -45,4 +45,4 @@ IO.puts("   Message sent: \"#{msg.text}\"")
 
 IO.puts("\n--- Verification Complete ---")
 IO.puts("The AI response will be processed in the background.")
-IO.puts("Check your server logs for Ollama activity.")
+IO.puts("Check your server logs for LLM activity.")

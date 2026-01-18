@@ -13,7 +13,7 @@ defmodule Mcp.Underwriting.Processor do
     end
 
     policy action_type([:create, :update, :destroy]) do
-      authorize_if expr(role == :admin)
+      authorize_if actor_attribute_equals(:role, :admin)
     end
   end
 

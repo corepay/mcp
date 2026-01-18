@@ -158,23 +158,23 @@ defmodule McpWeb.Core.CoreComponents do
   def modal(assigns) do
     ~H"""
     <dialog id={@id} class={["modal", @show && "modal-open"]} data-testid={assigns[:"data-testid"]}>
-      <div class="modal-box">
+      <div class="modal-box bg-base-100/90 border border-white/10 shadow-2xl backdrop-blur-xl">
         <h3 :if={@title != []} class="font-bold text-lg">{render_slot(@title)}</h3>
         <div class="py-4">
           {render_slot(@inner_block)}
         </div>
-        <div class="modal-action">
+        <div :if={@confirm_text != [] || @cancel_text != []} class="modal-action">
           <form method="dialog">
-            <button class="btn" phx-click={@on_cancel}>
-              {render_slot(@cancel_text) || "Cancel"}
+            <button :if={@cancel_text != []} class="btn" phx-click={@on_cancel}>
+              {render_slot(@cancel_text)}
             </button>
-            <button class="btn btn-primary" phx-click="confirm">
-              {render_slot(@confirm_text) || "Confirm"}
+            <button :if={@confirm_text != []} class="btn btn-primary" phx-click="confirm">
+              {render_slot(@confirm_text)}
             </button>
           </form>
         </div>
       </div>
-      <form method="dialog" class="modal-backdrop">
+      <form method="dialog" class="modal-backdrop bg-black/40 backdrop-blur-sm">
         <button phx-click={@on_cancel}>close</button>
       </form>
     </dialog>

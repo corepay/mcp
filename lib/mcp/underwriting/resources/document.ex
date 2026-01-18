@@ -20,7 +20,7 @@ defmodule Mcp.Underwriting.Document do
 
     create :create do
       primary? true
-      accept [:file_path, :file_name, :mime_type, :document_type, :application_id]
+      accept [:file_path, :file_name, :mime_type, :document_type, :application_id, :status]
     end
 
     update :update_status do

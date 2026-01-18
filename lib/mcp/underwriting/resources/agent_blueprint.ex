@@ -61,7 +61,13 @@ defmodule Mcp.Underwriting.AgentBlueprint do
 
     attribute :routing_config, :map do
       allow_nil? true
-      default %{mode: :single, primary_provider: :ollama}
+
+      default %{
+        mode: :single,
+        primary_provider: :openrouter,
+        primary_model: "google/gemini-2.5-pro"
+      }
+
       description "Configuration for smart routing and fallback logic."
     end
 

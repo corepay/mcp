@@ -20,12 +20,12 @@ defmodule Mcp.Underwriting.Application do
 
     create :create do
       primary? true
-      accept [:status, :application_data, :risk_score, :subject_id, :subject_type]
+      accept [:status, :application_data, :risk_score, :subject_id, :subject_type, :healed_data]
     end
 
     update :update do
       primary? true
-      accept [:status, :application_data, :risk_score, :submitted_at, :sla_due_at]
+      accept [:status, :application_data, :risk_score, :submitted_at, :sla_due_at, :healed_data]
     end
 
     update :submit do
@@ -77,6 +77,10 @@ defmodule Mcp.Underwriting.Application do
 
     attribute :submitted_at, :utc_datetime_usec
     attribute :sla_due_at, :utc_datetime_usec
+
+    attribute :healed_data, :map do
+      default %{}
+    end
 
     timestamps()
   end

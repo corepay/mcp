@@ -7,7 +7,9 @@ defmodule Mcp.Underwriting.PlaybookConcierge do
     domain: Mcp.Underwriting,
     extensions: [AshAi]
 
-  alias LangChain.ChatModels.ChatOllamaAI
+  alias LangChain.ChatModels.ChatOpenAI
+
+  import AshAi.Actions
 
   code_interface do
     define :suggest_rules, args: [:industry]
@@ -27,25 +29,35 @@ defmodule Mcp.Underwriting.PlaybookConcierge do
         default "moderate"
       end
 
-      run {AshAi.Actions.Prompt,
-           prompt: """
-           You are an expert Underwriting Architect.
-           Generate a comprehensive set of underwriting rules in Markdown format for the <%= industry %> industry.
-           The risk appetite for this tenant is <%= appetite %>.
+      run prompt(
+            fn _input, _context ->
+              config = Application.get_env(:mcp, :llm)
+              api_key = config[:openrouter_api_key]
+              base_url = config[:openrouter_base_url]
+              model = config[:analytics_model] || "google/gemini-2.0-flash-exp:free"
 
-           Include specific sections for:
-           - KYB/KYC Requirements
-           - Financial Thresholds (DTI, Revenue, etc.)
-           - Industry-specific Red Flags
-           - Acceptable Business Models
+              ChatOpenAI.new!(%{
+                model: model,
+                api_key: api_key,
+                endpoint: "#{base_url}/chat/completions",
+                receive_timeout: 120_000
+              })
+            end,
+            prompt: """
+            You are an expert Underwriting Architect.
+            Generate a comprehensive set of underwriting rules in Markdown format for the <%= @input.arguments.industry %> industry.
+            The risk appetite for this tenant is <%= @input.arguments.appetite %>.
 
-           Return ONLY the Markdown content.
-           """,
-           model:
-             ChatOllamaAI.new!(%{
-               model: "llama3",
-               base_url: Application.compile_env(:mcp, :ollama)[:base_url]
-             })}
+            Include specific sections for:
+            - KYB/KYC Requirements
+            - Financial Thresholds (DTI, Revenue, etc.)
+            - Industry-specific Red Flags
+            - Acceptable Business Models
+
+            Return ONLY the Markdown content.
+            """,
+            adapter: AshAi.Actions.Prompt.Adapter.RequestJson
+          )
     end
 
     action :analyze_policy, :map do
@@ -55,19 +67,29 @@ defmodule Mcp.Underwriting.PlaybookConcierge do
         allow_nil? false
       end
 
-      run {AshAi.Actions.Prompt,
-           prompt: """
-           Analyze the following underwriting rules for gaps, logic errors, or missing edge cases:
+      run prompt(
+            fn _input, _context ->
+              config = Application.get_env(:mcp, :llm)
+              api_key = config[:openrouter_api_key]
+              base_url = config[:openrouter_base_url]
+              model = config[:analytics_model] || "google/gemini-2.0-flash-exp:free"
 
-           <%= rules_markdown %>
+              ChatOpenAI.new!(%{
+                model: model,
+                api_key: api_key,
+                endpoint: "#{base_url}/chat/completions",
+                receive_timeout: 120_000
+              })
+            end,
+            prompt: """
+            Analyze the following underwriting rules for gaps, logic errors, or missing edge cases:
 
-           Return a JSON map with "gaps", "strengths", and "recommendations".
-           """,
-           model:
-             ChatOllamaAI.new!(%{
-               model: "llama3",
-               base_url: Application.compile_env(:mcp, :ollama)[:base_url]
-             })}
+            <%= @input.arguments.rules_markdown %>
+
+            Return a JSON map with "gaps", "strengths", and "recommendations".
+            """,
+            adapter: AshAi.Actions.Prompt.Adapter.RequestJson
+          )
     end
   end
 end

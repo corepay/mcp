@@ -38,7 +38,7 @@ defmodule Mcp.Underwriting.Tools.ConsultExpert do
         ]
 
         # Use a high-quality model for expert analysis
-        case OpenRouter.chat_completion(messages, "anthropic/claude-3.5-sonnet") do
+        case OpenRouter.chat_completion(messages, "google/gemini-2.5-pro") do
           {:ok, response} ->
             {:ok, [struct(__MODULE__, result: response)]}
 

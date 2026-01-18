@@ -14,9 +14,6 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
   Runs the agent.
   For v1, this is a mock that returns a static response based on the blueprint name.
   """
-  alias LangChain.Chains.LLMChain
-  alias LangChain.ChatModels.ChatOllamaAI
-  alias LangChain.Message
 
   def run(
         %AgentBlueprint{} = blueprint,
@@ -45,10 +42,10 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
 
   defp do_run(blueprint, instructions, context, opts) do
     # Determine initial provider based on blueprint config or opts override
-    routing_config = blueprint.routing_config || %{mode: :single, primary_provider: :ollama}
+    routing_config = blueprint.routing_config || %{mode: :single, primary_provider: :openrouter}
 
     requested_provider =
-      Keyword.get(opts, :provider, routing_config[:primary_provider] || :ollama)
+      Keyword.get(opts, :provider, routing_config[:primary_provider] || :openrouter)
 
     tenant_id = Keyword.get(opts, :tenant_id, "default")
 
@@ -178,14 +175,10 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
     end
   end
 
-  defp execute_provider(:ollama, blueprint, instructions, context, opts),
-    do: run_ollama(blueprint, instructions, context, opts)
-
   defp execute_provider(:openrouter, blueprint, instructions, context, opts),
     do: run_openrouter(blueprint, instructions, context, opts)
 
   # Fallback for atom/string mismatch if any
-  defp execute_provider("ollama", b, i, c, o), do: run_ollama(b, i, c, o)
   defp execute_provider("openrouter", b, i, c, o), do: run_openrouter(b, i, c, o)
 
   defp low_confidence?({:ok, result}, threshold) when is_map(result) do
@@ -200,114 +193,6 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
   defp error?({:ok, %{"error" => _}}), do: true
   # defp error?({:error, _}), do: true # Unused
   defp error?(_), do: false
-
-  # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
-  defp run_ollama(blueprint, instructions, context, opts) do
-    IO.puts("🤖 Agent [#{blueprint.name}] is running via Ollama...")
-    # 1. Build the prompt
-    system_prompt = build_system_prompt(blueprint, instructions)
-    user_message = build_user_message(context)
-
-    # 1.5 Precedent Harvesting & RAG Injection
-    tenant_id = Map.get(context, :tenant_id) || Keyword.get(opts, :tenant_id, "default")
-    merchant_id = Map.get(context, :merchant_id) || Keyword.get(opts, :merchant_id)
-
-    system_prompt =
-      if merchant_id do
-        # In a real app, resolve tenant_schema from tenant_id
-        # For now, using a placeholder or assuming current context
-        tenant_schema = "tenant_#{tenant_id}"
-        precedents = PrecedentEngine.harvest(merchant_id, tenant_schema)
-        system_prompt <> "\n\n" <> precedents
-      else
-        system_prompt
-      end
-
-    system_prompt =
-      if blueprint.knowledge_base_ids && length(blueprint.knowledge_base_ids) > 0 do
-        # Build messages from the current conversation for RAG enrichment
-        messages = [
-          %{role: :system, content: system_prompt},
-          %{role: :user, content: user_message}
-        ]
-
-        enrich_prompt_with_rag(
-          system_prompt,
-          messages,
-          blueprint.knowledge_base_ids,
-          tenant_id
-        )
-      else
-        system_prompt
-      end
-
-    # 2. Select Provider & Model
-    # Placeholder for `execution`
-    # execution = %{tenant_id: "default_tenant"} # Assuming execution would be passed in
-    # {_provider, _model} = select_provider_and_model(blueprint, execution)
-
-    # Get Ollama configuration from Application config (not hardcoded)
-    ollama_config = Application.get_env(:mcp, :ollama, [])
-    model_name = ollama_config[:model] || System.get_env("OLLAMA_MODEL", "llama3")
-    ollama_port = ollama_config[:port] || System.get_env("OLLAMA_PORT")
-    ollama_base_url = ollama_config[:base_url] || "http://localhost:#{ollama_port}/api/chat"
-
-    # Check Semantic Cache
-    cache_key_prompt = system_prompt <> user_message
-
-    case SemanticCache.get(cache_key_prompt, model_name, :ollama) do
-      {:ok, cached_response} ->
-        IO.puts("⚡️ Cache Hit for Agent [#{blueprint.name}]")
-
-        usage_stats = %{
-          provider: :ollama,
-          model: model_name,
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0,
-          cost: Decimal.new(0),
-          cached: true
-        }
-
-        {cached_response, usage_stats}
-
-      nil ->
-        llm =
-          ChatOllamaAI.new!(%{
-            model: model_name,
-            endpoint: ollama_base_url,
-            temperature: 0.1,
-            format: "json"
-          })
-
-        {:ok, chain} =
-          LLMChain.new!(%{llm: llm, verbose: true})
-          |> LLMChain.add_message(Message.new_system!(system_prompt))
-          |> LLMChain.add_message(Message.new_user!(user_message))
-          |> LLMChain.run()
-
-        last_message = chain.last_message
-        content = extract_content(last_message)
-
-        usage_stats = %{
-          provider: :ollama,
-          model: model_name,
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0,
-          cost: Decimal.new(0)
-        }
-
-        result = parse_json(content)
-
-        # Cache the successful result
-        case result do
-          {:ok, json_result} ->
-            SemanticCache.put(cache_key_prompt, model_name, :ollama, json_result)
-            {{:ok, json_result}, usage_stats}
-        end
-    end
-  end
 
   # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
   defp run_openrouter(blueprint, instructions, context, opts) do
@@ -329,52 +214,109 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
         system_prompt
       end
 
+    system_prompt =
+      if blueprint.knowledge_base_ids && length(blueprint.knowledge_base_ids) > 0 do
+        messages = [
+          %{role: :system, content: system_prompt},
+          %{role: :user, content: user_message}
+        ]
+
+        enrich_prompt_with_rag(
+          system_prompt,
+          messages,
+          blueprint.knowledge_base_ids,
+          tenant_id
+        )
+      else
+        system_prompt
+      end
+
     config = Application.get_env(:mcp, :llm, [])
     api_key = config[:openrouter_api_key]
     base_url = config[:openrouter_base_url]
-    # Get model from config instead of hardcoding
-    model = config[:openrouter_model] || "openai/gpt-3.5-turbo"
+    # Prioritize model from blueprint routing config, then global config, then fallback
+    model =
+      blueprint.routing_config[:primary_model] ||
+        blueprint.routing_config["primary_model"] ||
+        config[:openrouter_model] ||
+        "google/gemini-2.5-pro"
 
-    headers = [
-      {"Authorization", "Bearer #{api_key}"},
-      {"Content-Type", "application/json"},
-      {"HTTP-Referer", "https://mcp.local"},
-      {"X-Title", "MCP Underwriting"}
-    ]
+    # Check Semantic Cache
+    cache_key_prompt = system_prompt <> user_message
 
-    body = %{
-      model: model,
-      messages: [
-        %{role: "system", content: system_prompt},
-        %{role: "user", content: user_message}
-      ],
-      temperature: 0.1,
-      response_format: %{type: "json_object"}
-    }
-
-    case Req.post("#{base_url}/chat/completions", headers: headers, json: body) do
-      {:ok, %{status: 200, body: body}} ->
-        choice = List.first(body["choices"])
-        content = choice["message"]["content"]
-        usage = body["usage"] || %{}
+    case SemanticCache.get(cache_key_prompt, model, :openrouter) do
+      {:ok, cached_response} ->
+        IO.puts("⚡️ Cache Hit for Agent [#{blueprint.name}]")
 
         usage_stats = %{
           provider: :openrouter,
           model: model,
-          prompt_tokens: usage["prompt_tokens"] || 0,
-          completion_tokens: usage["completion_tokens"] || 0,
-          total_tokens: usage["total_tokens"] || 0,
-          cost: 0
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0,
+          cost: Decimal.new(0),
+          cached: true
         }
 
-        {parse_json(content), usage_stats}
+        {{:ok, cached_response}, usage_stats}
 
-      {:ok, %{status: status}} ->
-        {{:ok, %{"error" => "OpenRouter request failed: #{status}"}},
-         %{provider: :openrouter, model: model}}
+      nil ->
+        headers = [
+          {"Authorization", "Bearer #{api_key}"},
+          {"Content-Type", "application/json"},
+          {"HTTP-Referer", "https://mcp.local"},
+          {"X-Title", "MCP Underwriting"}
+        ]
 
-      {:error, _reason} ->
-        {{:ok, %{"error" => "OpenRouter request failed"}}, %{provider: :openrouter, model: model}}
+        body = %{
+          model: model,
+          messages: [
+            %{role: "system", content: system_prompt},
+            %{role: "user", content: user_message}
+          ],
+          temperature: 0.1,
+          response_format: %{type: "json_object"}
+        }
+
+        case Req.post("#{base_url}/chat/completions", headers: headers, json: body) do
+          {:ok, %{status: 200, body: body}} ->
+            choice = List.first(body["choices"])
+            content = choice["message"]["content"]
+            usage = body["usage"] || %{}
+
+            usage_stats = %{
+              provider: :openrouter,
+              model: model,
+              prompt_tokens: usage["prompt_tokens"] || 0,
+              completion_tokens: usage["completion_tokens"] || 0,
+              total_tokens: usage["total_tokens"] || 0,
+              cost:
+                LlmUsage.calculate_cost(
+                  model,
+                  usage["prompt_tokens"] || 0,
+                  usage["completion_tokens"] || 0
+                )
+            }
+
+            result = parse_json(content)
+
+            case result do
+              {:ok, json_result} ->
+                SemanticCache.put(cache_key_prompt, model, :openrouter, json_result)
+                {{:ok, json_result}, usage_stats}
+
+              {:error, _} = error ->
+                {error, usage_stats}
+            end
+
+          {:ok, %{status: status}} ->
+            {{:ok, %{"error" => "OpenRouter request failed: #{status}"}},
+             %{provider: :openrouter, model: model}}
+
+          {:error, _reason} ->
+            {{:ok, %{"error" => "OpenRouter request failed"}},
+             %{provider: :openrouter, model: model}}
+        end
     end
   end
 
@@ -418,19 +360,6 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
 
   defp build_user_message(context) do
     "Context: #{Jason.encode!(context)}"
-  end
-
-  defp extract_content(message) do
-    case message.content do
-      content when is_binary(content) ->
-        content
-
-      parts when is_list(parts) ->
-        Enum.map_join(parts, "\n", fn
-          %{type: :text, content: text} -> text
-          _ -> ""
-        end)
-    end
   end
 
   defp enrich_prompt_with_rag(system_prompt, messages, kb_ids, tenant_id) do

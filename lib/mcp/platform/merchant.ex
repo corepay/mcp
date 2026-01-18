@@ -7,13 +7,11 @@ defmodule Mcp.Platform.Merchant do
     domain: Mcp.Platform,
     data_layer: AshPostgres.DataLayer,
     extensions: [
-      AshPostgres.DataLayer,
       AshJsonApi.Resource,
-      AshJsonApi.Resource,
-      AshJsonApi.Resource,
-      # Mcp.Graph.Extension,
-      AshArchival
-    ]
+      AshArchival,
+      AshOban
+    ],
+    notifiers: []
 
   # use Mcp.Graph.Extension
 
@@ -62,6 +60,8 @@ defmodule Mcp.Platform.Merchant do
         :status,
         :risk_level
       ]
+
+      change run_oban_trigger(:sync_to_graph)
     end
 
     update :update do
@@ -88,12 +88,37 @@ defmodule Mcp.Platform.Merchant do
         :status,
         :risk_level
       ]
+
+      change run_oban_trigger(:sync_to_graph)
     end
 
     read :by_slug do
       argument :slug, :string, allow_nil?: false
       get? true
       filter expr(slug == ^arg(:slug))
+    end
+
+    update :sync_to_graph do
+      accept []
+      require_atomic? false
+
+      change fn changeset, _ ->
+        Ash.Changeset.after_action(changeset, fn _changeset, merchant ->
+          Mcp.Graph.Notifier.sync_to_graph(Mcp.Platform.Merchant, merchant, merchant.tenant_id)
+          {:ok, merchant}
+        end)
+      end
+    end
+  end
+
+  oban do
+    triggers do
+      trigger :sync_to_graph do
+        action :sync_to_graph
+        queue(:graph_sync)
+        worker_module_name(:merchant_graph_sync)
+        scheduler_module_name(:merchant_graph_sync_scheduler)
+      end
     end
   end
 

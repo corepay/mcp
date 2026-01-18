@@ -195,6 +195,7 @@ defmodule Mcp.Platform.Tenant do
   def delete(tenant, _opts \\ []), do: destroy(tenant)
   def by_subdomain!(subdomain), do: by_subdomain(subdomain) |> handle_bang()
   def by_custom_domain!(domain), do: by_custom_domain(domain) |> handle_bang()
+  def by_slug!(slug), do: by_slug(slug) |> handle_bang()
   def by_id!(id), do: get_by_id!(id)
 
   # Helper for bang methods

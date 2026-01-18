@@ -6,7 +6,7 @@ defmodule Mcp.Graph.TenantContext do
 
   alias Mcp.Repo
 
-  def with_tenant_graph(tenant_slug, graph_suffix \\ "relationships", fun)
+  def with_tenant_graph(tenant_slug, graph_suffix \\ "graph", fun)
       when is_function(fun, 0) do
     schema_name = "acq_#{tenant_slug}"
     full_graph_name = "#{schema_name}_#{graph_suffix}"

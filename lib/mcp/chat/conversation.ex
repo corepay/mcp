@@ -16,6 +16,25 @@ defmodule Mcp.Chat.Conversation do
       public? true
     end
 
+    attribute :subject_id, :uuid do
+      public? true
+    end
+
+    attribute :subject_type, :atom do
+      public? true
+
+      constraints one_of: [
+                    :merchant,
+                    :application,
+                    :reseller,
+                    :playbook,
+                    :mid,
+                    :ledger,
+                    :api_key,
+                    :tenant
+                  ]
+    end
+
     timestamps()
   end
 
@@ -34,12 +53,12 @@ defmodule Mcp.Chat.Conversation do
     defaults [:read, :destroy]
 
     create :create do
-      accept [:title]
+      accept [:title, :subject_id, :subject_type]
       change relate_actor(:user)
     end
 
     create :create_for_user do
-      accept [:title]
+      accept [:title, :subject_id, :subject_type]
       argument :user_id, :uuid, allow_nil?: false
       change manage_relationship(:user_id, :user, type: :append_and_remove)
     end
@@ -95,5 +114,12 @@ defmodule Mcp.Chat.Conversation do
         where expr(needs_title)
       end
     end
+  end
+
+  code_interface do
+    define :get_by_id, action: :read, get_by: [:id]
+    define :read
+    define :create
+    define :destroy
   end
 end

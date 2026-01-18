@@ -6,7 +6,7 @@ defmodule Mcp.Ai.Chat do
     domain: Mcp.Ai,
     extensions: [AshAi]
 
-  alias LangChain.ChatModels.ChatOllamaAI
+  import AshAi.Actions
 
   actions do
     action :chat, :string do
@@ -16,13 +16,23 @@ defmodule Mcp.Ai.Chat do
         allow_nil? false
       end
 
-      run {AshAi.Actions.Prompt,
-           prompt: "You are a helpful assistant. User says: <%= message %>",
-           model:
-             ChatOllamaAI.new!(%{
-               model: "llama3",
-               base_url: Application.compile_env(:mcp, :ollama)[:base_url]
-             })}
+      run prompt(
+            fn _input, _context ->
+              config = Application.get_env(:mcp, :llm)
+              base_url = config[:openrouter_base_url]
+              api_key = config[:openrouter_api_key]
+
+              LangChain.ChatModels.ChatOpenAI.new!(%{
+                # Using most recent pro exp as placeholder for "2.5 pro"
+                model: "google/gemini-2.0-pro-exp-02-05:free",
+                api_key: api_key,
+                endpoint: "#{base_url}/chat/completions",
+                receive_timeout: 120_000
+              })
+            end,
+            prompt: "You are a helpful assistant. User says: <%= @input.arguments.message %>",
+            adapter: AshAi.Actions.Prompt.Adapter.StructuredOutput
+          )
     end
   end
 end

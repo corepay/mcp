@@ -57,7 +57,7 @@ defmodule Mcp.Underwriting.Engine.AgentRunnerTest do
     end
 
     @tag :external_api
-    test "tracks usage when execution_id is provided (Ollama)", %{tenant: tenant} do
+    test "tracks usage when execution_id is provided (OpenRouter)", %{tenant: tenant} do
       pipeline = Ash.create!(Pipeline, %{name: "Test Pipeline"}, tenant: tenant)
 
       execution =
@@ -85,7 +85,7 @@ defmodule Mcp.Underwriting.Engine.AgentRunnerTest do
       {:ok, result} =
         AgentRunner.run(blueprint, instructions, %{},
           execution_id: execution.id,
-          provider: :ollama
+          provider: :openrouter
         )
 
       assert result["status"] == "ok"
@@ -96,7 +96,7 @@ defmodule Mcp.Underwriting.Engine.AgentRunnerTest do
         |> Ash.Query.filter(execution_id == ^execution.id)
         |> Ash.read_one!()
 
-      assert usage.provider == :ollama
+      assert usage.provider == :openrouter
       # Default model
       assert usage.model == "llama3"
       # Ollama tracking is currently 0
@@ -122,9 +122,9 @@ defmodule Mcp.Underwriting.Engine.AgentRunnerTest do
         name: "TestAgent",
         base_prompt: "You are a test agent.",
         routing_config: %{
-          mode: :fallback,
-          primary_provider: :ollama,
-          fallback_provider: :openrouter,
+          mode: :single,
+          primary_provider: :openrouter,
+          fallback_provider: nil,
           min_confidence: 0.9
         }
       }
@@ -144,7 +144,7 @@ defmodule Mcp.Underwriting.Engine.AgentRunnerTest do
       # But since we don't have OpenRouter configured, it might fail.
       # Let's just verify the routing config is respected in the blueprint.
 
-      assert blueprint.routing_config.mode == :fallback
+      assert blueprint.routing_config.primary_provider == :openrouter
     end
 
     @tag :external_api
@@ -185,7 +185,7 @@ defmodule Mcp.Underwriting.Engine.AgentRunnerTest do
         AgentRunner.run(blueprint, instructions, context,
           execution_id: execution.id,
           tenant_id: "test_tenant",
-          provider: :ollama
+          provider: :openrouter
         )
 
       # Should succeed even if RAG returns no documents

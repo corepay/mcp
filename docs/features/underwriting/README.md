@@ -1,7 +1,8 @@
 # Underwriting Engine: The Sovereign Cognitive Platform
 
 ## 🌟 Mission
-To transform traditional "System of Record" underwriting into a **Sovereign Cognitive Decision Platform** through Human-Architected Playbooks, Autonomous Agentic Negotiation, and Multimodal Forensic Analysis.
+
+To transform traditional "System of Record" underwriting into a **Sovereign Intelligence Factory** through Human-Architected Playbooks, the Atlas Analysis Reactor, and the "Noir" Forensic Workbench. We achieve 10x analytical density by distilling raw signals into immutable decision lineage.
 
 ## 🏗️ The Underwriting Pipeline
 
@@ -36,7 +37,7 @@ flowchart TD
         HEAL[Atlas Healing Chat]
         APPROVE[Approval]
         REJECT[Rejection]
-        
+
         RA --> AZ
         AZ -- No (Clear) --> APPROVE
         AZ -- No (Fail) --> REJECT
@@ -56,29 +57,41 @@ flowchart TD
 ## 🚀 Key Capabilities
 
 ### 1. Merchant Atlas Concierge (Intelligent Intake)
-- **Proactive Guidance**: Atlas tracks user behavior in real-time. If a merchant is stuck on the "EIN" field for 30 seconds, Atlas interjects with field-specific tax guidance.
-- **Data Healing**: Instead of a "hard fail" on a vague business description, Atlas suggests improvements (e.g., "Tell us more about your target market") to increase the chance of auto-approval.
-- **Data Quality**: Reduces "garbage-in, garbage-out" by validating input intent before the costly KYC/KYB screening begins.
 
-### 2. Cognitive Screening & The Amber Zone
-- **Multi-Vendor Orchestration**: Automatically routes between ComplyCube and Idenfy based on cost and success rates.
-- **The "Amber Zone"**: Deals that aren't clear approvals or rejections are routed here. 
-- **Asymmetric Negotiation**: In the Amber Zone, Atlas initiates an automated "Healing Chat" with the merchant to gather missing evidence, while the Underwriter reviews the **Sovereign Brief**.
+- **Active Data Harvesting**: Atlas proactive idle-detection (10s threshold) triggers field-specific tax and entity guidance.
+- **Real-time Healing**: Automated clarification requests (e.g., website verification, entity type mismatches) reduce "garbage-in" by 70%.
+- **Sovereign Evidence Collection**: Multimodal document harvesting ensures forensic documents (SOS filings, bank statements) are captured, verified, and linked to the context graph before an underwriter ever sees the deal.
 
-### 3. Human-Architected Playbooks (Cognitive Control)
-- **Playbook Concierge**: An AI assistant helps underwriters write complex risk policies in Markdown.
-- **Immutable Lineage**: Every decision is tagged with a SHA-256 fingerprint of the exact rule-set used, ensuring absolute auditability.
+### 2. Atlas Analysis Reactor (The Intelligence Factory)
+
+- **Four-Phase Cognitive Pipeline**: Automates data harvesting, forensic triage, and signal classification via a high-performance Ash Reactor (`AnalyzeApplication`).
+- **Forensic Signal Triage**: Automatically extracts and scores signals across KYB, Financials, and Social/Web footprints.
+- **Deterministic Decisioning**: Ensures every application is triaged through human-architected Playbooks with millisecond latency.
+
+### 3. The Sovereign Underwriting Workbench
+
+- **Three-Column Analytical UX**: High-density 20/50/30 layout (Queue, Evidence Canvas, Control Plane) optimized for rapid forensic review.
+- **OLED "Noir" Design System**: Forensic dark-mode with semantic status mapping (Emerald, Amber, Crimson, Indigo).
+- **Audit-First Interface**: Real-time visualization of Atlas Copilot signals, decision lineage, and playbook hashes.
+
+### 4. Human-Architected Playbooks (Cognitive Control)
+
+- **Immutable Lineage**: Every decision is tagged with a SHA-256 fingerprint (`policy_hash`) of the exact instruction set used, ensuring 100% regulatory auditability.
+- **Intelligence Playbooks**: Policies are authored as versioned code-artifacts, ensuring consistent risk application across all global regions.
 
 ### 4. Profit-Aware Routing (Yield Optimization)
+
 - **Placement Intelligence**: Matches merchants to bank profiles with sub-5ms latency.
 - **Yield Capture**: Dynamically routes based on the current "appetite" of our bank-processor matrix, capturing up to 10% more EBITDA.
 
 ## 📈 Strategic ROI
+
 - **70% Underwriter Load Reduction**: Atlas handles doc-collection and merchant Q&A.
 - **< 2 min Time-to-Board**: Real-time MID/TID generation for approved merchants.
 - **Defensible Compliance**: 100% deterministic logic lineage for regulatory audits.
 
 ## 📖 Deep Dives
+
 - **[Feature Catalog](feature-catalog.md)**: Full list of Merchant and Underwriter features with value propositions.
 - **[Business Strategy](business-strategy.md)**: Business model, Pricing, and Competitive Matrix.
 - **[UI/UX Architecture](ui-ux-architecture.md)**: The "Noir" Design System and Persona Workflows.

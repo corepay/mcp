@@ -37,25 +37,32 @@ defmodule Mcp.Underwriting.Atlas.Agent do
   for helping users through the merchant onboarding process.
   """
   def atlas_blueprint do
+    config = Application.get_env(:mcp, :llm, [])
+    model = config[:analytics_model] || "google/gemini-2.0-flash-exp:free"
+
     %{
       name: "Atlas",
-      description: "Friendly onboarding assistant for merchant applications",
+      description: "Friendly and professional AI assistant for the MCP platform",
       base_prompt: """
-      You are Atlas, a helpful and friendly assistant guiding merchants through
-      the application process. Your role is to:
+      You are Atlas, a helpful and friendly AI assistant for the MCP (Merchant Commerce Platform).
+      Your role is to:
 
-      1. Provide clear explanations for required information
-      2. Help users understand why certain data is needed
-      3. Offer proactive assistance when users seem stuck
-      4. Suggest improvements to vague or incomplete entries
-      5. Maintain a supportive and encouraging tone
+      1. Provide clear explanations for complex platform features and financial data.
+      2. Help users navigate merchant onboarding, risk assessment, and portfolio management.
+      3. Offer proactive assistance based on the current page or subject context.
+      4. Suggest improvements and actionable insights.
+      5. Maintain a professional, supportive, and encouraging tone.
 
       You have deep knowledge of merchant services, business verification,
-      and the underwriting process. Always prioritize user privacy and
-      never ask for more information than necessary.
+      underwriting, and global payment connectivity. Always prioritize user privacy
+      and data integrity.
       """,
       tools: [:field_help, :validation_check, :progress_summary],
-      routing_config: %{mode: :single, primary_provider: :ollama}
+      routing_config: %{
+        mode: :single,
+        primary_provider: :openrouter,
+        primary_model: model
+      }
     }
   end
 
@@ -247,7 +254,7 @@ defmodule Mcp.Underwriting.Atlas.Agent do
     # 2. Add extra execution options
     opts = [
       tenant_id: Map.get(context.user_state, :tenant_id, "default"),
-      provider: Application.get_env(:mcp, :llm_provider, :ollama)
+      provider: Application.get_env(:mcp, :llm_provider, :openrouter)
     ]
 
     # 3. Execution with Fallback protection
@@ -557,6 +564,126 @@ defmodule Mcp.Underwriting.Atlas.Agent do
   defp generic_field_help(field) do
     field_name = humanize_field(field)
     "Please provide your #{field_name}. If you need help finding this information, let me know!"
+  end
+
+  @doc """
+  Generates a strategic summary of a merchant portfolio.
+  """
+  def generate_portfolio_summary(tenant_id, merchants, applications) do
+    if mock_mode?() do
+      {:ok,
+       %{
+         type: :answer,
+         insights: [
+           %{
+             status: "green",
+             message: "Portfolio acquisition velocity is up 15% vs previous month."
+           },
+           %{
+             status: "amber",
+             message: "High-Ticket Retail sector requires manual signal verification."
+           },
+           %{status: "red", message: "Risk cluster detected in emerging tech merchant segment."}
+         ],
+         confidence: 0.95
+       }}
+    else
+      # Real LLM call for aggregate data
+      blueprint = build_ash_blueprint()
+
+      portfolio_context = %{
+        merchant_count: length(merchants),
+        application_count: length(applications),
+        active_plans:
+          merchants
+          |> Enum.group_by(& &1.plan)
+          |> Enum.map(fn {p, l} -> {p, length(l)} end)
+          |> Map.new(),
+        risk_levels:
+          merchants
+          |> Enum.group_by(& &1.risk_level)
+          |> Enum.map(fn {r, l} -> {r, length(l)} end)
+          |> Map.new()
+      }
+
+      instructions_text = """
+      You are Atlas, the Portfolio Intelligence Analyst.
+      Analyze the following merchant portfolio data and provide exactly 3 strategic insights.
+      Each insight must have a status: "green" (positive/growth), "amber" (cautionary/pending), or "red" (risk/alert).
+
+      ## Portfolio Metrics
+      #{Jason.encode!(portfolio_context, pretty: true)}
+
+      Your goal is to identify trends in plan distribution, risk concentration, and acquisition velocity.
+      Respond with JSON:
+      {
+        "type": "answer",
+        "insights": [
+          {"status": "green", "message": "..."},
+          {"status": "amber", "message": "..."},
+          {"status": "red", "message": "..."}
+        ],
+        "confidence": 0.xx
+      }
+      """
+
+      instructions = %Mcp.Underwriting.InstructionSet{
+        name: "Dashboard Intelligence",
+        instructions: instructions_text
+      }
+
+      try do
+        case AgentRunner.run(blueprint, instructions, portfolio_context, tenant_id: tenant_id) do
+          {:ok, result} when is_map(result) ->
+            # Normalize insights to atom keys for stable rendering
+            insights =
+              case result["insights"] do
+                list when is_list(list) ->
+                  Enum.map(list, fn
+                    item when is_map(item) ->
+                      %{
+                        status: item["status"] || item[:status] || "green",
+                        message: item["message"] || item[:message] || "Analysis complete."
+                      }
+
+                    _ ->
+                      %{status: "green", message: "Portfolio analysis complete."}
+                  end)
+
+                _ ->
+                  [%{status: "green", message: "Portfolio analysis complete."}]
+              end
+
+            {:ok,
+             %{
+               type: :answer,
+               insights: insights,
+               confidence: result["confidence"] || 0.9
+             }}
+
+          {:ok, _other} ->
+            {:ok,
+             %{
+               type: :answer,
+               insights: [%{status: "green", message: "Portfolio analysis complete."}],
+               confidence: 0.5
+             }}
+
+          error ->
+            error
+        end
+      rescue
+        _ ->
+          {:ok,
+           %{
+             type: :answer,
+             insights: [
+               %{status: "green", message: "Strategic scan offline. Please try again later."}
+             ],
+             confidence: 0.0
+           }}
+      end
+    end
   end
 
   defp humanize_field(field) when is_binary(field) do
