@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sovereign Evidence Vault | Interactive Mockup</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --noir-bg: #0a0a0a;
+            --noir-surface: #141414;
+            --noir-accent: #2ecc71;
+            --code-font: 'JetBrains Mono', monospace;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--noir-bg);
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .json-key { color: #f87171; }
+        .json-string { color: #2ecc71; }
+        .json-number { color: #60a5fa; }
+        .json-boolean { color: #f59e0b; }
+
+        .scan-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(46, 204, 113, 0.2);
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+            animation: scan 4s linear infinite;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        @keyframes scan {
+            0% { top: 0; opacity: 0; }
+            5% { opacity: 1; }
+            95% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-20">
+    <div class="scan-line"></div>
+
+    <!-- Navigation Overlay -->
+    <div class="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex gap-2 p-1 glass rounded-full">
+        <button onclick="showView('vault')" id="btn-vault" class="px-6 py-2 rounded-full font-medium transition-all bg-white text-black">Evidence Vault</button>
+        <button onclick="showView('settings')" id="btn-settings" class="px-6 py-2 rounded-full font-medium transition-all hover:bg-white/5">Vendor Settings</button>
+    </div>
+
+    <div class="p-8 pt-24 max-w-7xl mx-auto min-h-screen">
+        
+        <!-- === EVIDENCE VAULT VIEW === -->
+        <div id="view-vault" class="view space-y-6 animate-in fade-in">
+            <header class="flex justify-between items-end">
+                <div>
+                    <h1 class="text-4xl font-extrabold tracking-tight">Evidence Vault</h1>
+                    <p class="text-zinc-500 mt-2">Immutable Audit Trail & Raw Data Inspection</p>
+                </div>
+                <div class="badge badge-lg bg-zinc-800 border-zinc-700 font-mono text-xs">
+                    ENTITY: CYBERDYNE SYSTEMS LLC
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Document List -->
+                <div class="lg:col-span-1 space-y-4">
+                    <div class="glass p-4 rounded-2xl border-l-4 border-emerald-500 cursor-pointer hover:bg-white/5 transition-all">
+                        <div class="flex justify-between mb-2">
+                            <span class="font-bold text-sm">KYB_ComplyCube_Report.json</span>
+                            <span class="badge badge-xs bg-emerald-500 text-black">PASS</span>
+                        </div>
+                        <div class="text-[10px] uppercase font-mono text-zinc-500">Hash: 8a7d...11b2</div>
+                        <div class="text-[10px] font-mono text-zinc-500 mt-1">2026-01-17 14:22:01</div>
+                    </div>
+
+                    <div class="glass p-4 rounded-2xl border-l-4 border-emerald-500 cursor-pointer hover:bg-white/5 transition-all">
+                         <div class="flex justify-between mb-2">
+                             <span class="font-bold text-sm">SecretaryOfState_Filing.pdf</span>
+                             <span class="badge badge-xs bg-emerald-500 text-black">VERIFIED</span>
+                         </div>
+                         <div class="text-[10px] uppercase font-mono text-zinc-500">OCR Confidence: 99.2%</div>
+                         <div class="text-[10px] font-mono text-zinc-500 mt-1">2026-01-17 14:22:05</div>
+                    </div>
+
+                    <div class="glass p-4 rounded-2xl border-l-4 border-amber-500 cursor-pointer hover:bg-white/5 transition-all bg-amber-500/5">
+                         <div class="flex justify-between mb-2">
+                             <span class="font-bold text-sm">UBO_Passport_Scan.jpg</span>
+                             <span class="badge badge-xs bg-amber-500 text-black">MANUAL</span>
+                         </div>
+                         <div class="text-[10px] uppercase font-mono text-zinc-500">Analyst: "Visually Confirmed"</div>
+                         <div class="text-[10px] font-mono text-zinc-500 mt-1">2026-01-17 14:25:33</div>
+                    </div>
+                    
+                    <div class="glass p-4 rounded-2xl border-l-4 border-zinc-700 cursor-pointer hover:bg-white/5 transition-all opacity-50">
+                        <div class="flex justify-between mb-2">
+                            <span class="font-bold text-sm">Dunn&Bradstreet_Credit.xml</span>
+                            <span class="badge badge-xs badge-ghost">SKIPPED</span>
+                        </div>
+                        <div class="text-[10px] uppercase font-mono text-zinc-500">Reason: Policy Exemption</div>
+                   </div>
+                </div>
+
+                <!-- Preview / Raw Data -->
+                <div class="lg:col-span-2">
+                    <div class="card bg-[#0d1117] border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl">
+                        <div class="bg-zinc-900/50 p-2 px-4 border-b border-white/5 flex justify-between items-center">
+                            <span class="font-mono text-xs text-zinc-400">Preview: KYB_ComplyCube_Report.json</span>
+                            <button class="btn btn-xs btn-ghost text-zinc-500">Download Raw</button>
+                        </div>
+                        <div class="p-6 font-mono text-xs overflow-x-auto h-[600px] custom-scrollbar">
+<pre><code><span class="json-key">"report_id"</span>: <span class="json-string">"cc_882910_xff"</span>,
+<span class="json-key">"status"</span>: <span class="json-string">"clear"</span>,
+<span class="json-key">"analysis_time"</span>: <span class="json-number">432</span>, <span class="text-zinc-600">// ms</span>
+<span class="json-key">"company"</span>: {
+    <span class="json-key">"name"</span>: <span class="json-string">"CYBERDYNE SYSTEMS LLC"</span>,
+    <span class="json-key">"registration_number"</span>: <span class="json-string">"99281002"</span>,
+    <span class="json-key">"incorporation_date"</span>: <span class="json-string">"2024-05-12"</span>,
+    <span class="json-key">"jurisdiction"</span>: <span class="json-string">"US-DE"</span>,
+    <span class="json-key">"active_status"</span>: <span class="json-boolean">true</span>
+},
+<span class="json-key">"checks"</span>: [
+    {
+        <span class="json-key">"type"</span>: <span class="json-string">"watchlist_screening"</span>,
+        <span class="json-key">"outcome"</span>: <span class="json-string">"clear"</span>,
+        <span class="json-key">"hits"</span>: []
+    },
+    {
+        <span class="json-key">"type"</span>: <span class="json-string">"adverse_media"</span>,
+        <span class="json-key">"outcome"</span>: <span class="json-string">"clear"</span>,
+        <span class="json-key">"sentiment_score"</span>: <span class="json-number">0.98</span>
+    }
+],
+<span class="json-key">"ubo_structure"</span>: [
+    {
+        <span class="json-key">"name"</span>: <span class="json-string">"Miles Dyson"</span>,
+        <span class="json-key">"shareholding"</span>: <span class="json-number">100.0</span>,
+        <span class="json-key">"verification_status"</span>: <span class="json-string">"verified"</span>
+    }
+]</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- === VENDOR SETTINGS VIEW === -->
+        <div id="view-settings" class="hidden view space-y-8 animate-in zoom-in-95">
+             <header class="flex justify-between items-end">
+                <div>
+                    <h1 class="text-4xl font-extrabold tracking-tight">Vendor Configuration</h1>
+                    <p class="text-zinc-500 mt-2">Manage API Keys & Circuit Breaker Thresholds</p>
+                </div>
+            </header>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- ComplyCube Config -->
+                <div class="glass p-8 rounded-3xl border border-white/5 space-y-6">
+                    <div class="flex items-center gap-3 border-b border-white/5 pb-4">
+                        <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-500 font-bold">CC</div>
+                        <div>
+                            <h3 class="font-bold text-lg">ComplyCube</h3>
+                            <div class="badge badge-success badge-xs">Connected</div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="form-control">
+                            <label class="label"><span class="label-text">API Key (Live)</span></label>
+                            <input type="password" value="sk_live_99283..." class="input input-bordered bg-black/40 font-mono text-sm" />
+                        </div>
+                        <div class="form-control">
+                             <label class="label"><span class="label-text">Webhook Secret</span></label>
+                             <input type="password" value="whsec_882..." class="input input-bordered bg-black/40 font-mono text-sm" />
+                        </div>
+                        <div class="flex gap-4">
+                             <div class="form-control w-1/2">
+                                 <label class="label"><span class="label-text">Circuit Threshold</span></label>
+                                 <input type="number" value="5" class="input input-bordered bg-black/40" />
+                             </div>
+                             <div class="form-control w-1/2">
+                                 <label class="label"><span class="label-text">Reset Timeout (s)</span></label>
+                                 <input type="number" value="60" class="input input-bordered bg-black/40" />
+                             </div>
+                        </div>
+                    </div>
+                    <div class="pt-4 flex justify-end">
+                        <button class="btn btn-primary btn-sm">Save Changes</button>
+                    </div>
+                </div>
+
+                <!-- QorPay Config -->
+                <div class="glass p-8 rounded-3xl border border-white/5 space-y-6">
+                    <div class="flex items-center gap-3 border-b border-white/5 pb-4">
+                         <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center text-purple-500 font-bold">QP</div>
+                         <div>
+                             <h3 class="font-bold text-lg">QorPay</h3>
+                             <div class="badge badge-success badge-xs">Connected</div>
+                         </div>
+                     </div>
+                     
+                     <div class="space-y-4">
+                         <div class="form-control">
+                             <label class="label"><span class="label-text">Client ID</span></label>
+                             <input type="text" value="qp_client_x99" class="input input-bordered bg-black/40 font-mono text-sm" />
+                         </div>
+                         <div class="form-control">
+                              <label class="label"><span class="label-text">Client Secret</span></label>
+                              <input type="password" value="qp_sec_772..." class="input input-bordered bg-black/40 font-mono text-sm" />
+                         </div>
+                         <div class="form-control">
+                            <label class="cursor-pointer label justify-start gap-4">
+                              <span class="label-text">Enable Auto-Boarding</span> 
+                              <input type="checkbox" class="toggle toggle-success" checked />
+                            </label>
+                          </div>
+                     </div>
+                     <div class="pt-4 flex justify-end">
+                         <button class="btn btn-primary btn-sm">Save Changes</button>
+                     </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function showView(view) {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.getElementById('btn-vault').classList.remove('bg-white', 'text-black');
+            document.getElementById('btn-settings').classList.remove('bg-white', 'text-black');
+
+            document.getElementById('view-' + view).classList.remove('hidden');
+            document.getElementById('btn-' + view).classList.add('bg-white', 'text-black');
+        }
+    </script>
+</body>
+</html>

@@ -341,20 +341,22 @@ defmodule Mcp.Gdpr.Compliance do
   end
 
   defp restore_deleted_user(user, user_id, actor_id) do
-    user
-    |> Ash.Changeset.for_update(:update, %{status: :active})
-    |> Ash.Changeset.force_change_attribute(:deleted_at, nil)
-    |> Ash.Changeset.force_change_attribute(:deletion_reason, nil)
-    |> Ash.Changeset.force_change_attribute(:gdpr_retention_expires_at, nil)
-    |> Ash.update()
-    |> case do
-      {:ok, restored_user} ->
-        AuditTrail.log_action(user_id, "deletion_cancelled", actor_id, %{})
-        {:ok, restored_user}
+    Repo.transaction(fn ->
+      user
+      |> Ash.Changeset.for_update(:update, %{status: :active})
+      |> Ash.Changeset.force_change_attribute(:deleted_at, nil)
+      |> Ash.Changeset.force_change_attribute(:deletion_reason, nil)
+      |> Ash.Changeset.force_change_attribute(:gdpr_retention_expires_at, nil)
+      |> Ash.update()
+      |> case do
+        {:ok, restored_user} ->
+          AuditTrail.log_action(user_id, "deletion_cancelled", actor_id, %{})
+          restored_user
 
-      {:error, error} ->
-        Repo.rollback(error)
-    end
+        {:error, error} ->
+          Repo.rollback(error)
+      end
+    end)
   end
 
   # Private functions

@@ -11,11 +11,20 @@ defmodule Mcp.Underwriting.VendorSettings do
     repo(Mcp.Repo)
   end
 
+  multitenancy do
+    strategy :context
+  end
+
   actions do
-    defaults [:read, :create, :update, :destroy]
+    defaults [:read, :update, :destroy]
+
+    create :create do
+      primary? true
+      accept [:preferred_vendor, :sla_hours, :auto_approve_threshold, :auto_reject_threshold]
+    end
 
     read :get_settings do
-      # Singleton access: return the first record or default
+      # Singleton access: return the first record or default (per tenant)
       prepare build(limit: 1)
     end
   end
@@ -40,9 +49,26 @@ defmodule Mcp.Underwriting.VendorSettings do
       allow_nil? false
     end
 
+    attribute :webhook_token, :string do
+      allow_nil? false
+      default &Ash.UUID.generate/0
+    end
+
+    attribute :auto_approve_threshold, :integer do
+      default 90
+      allow_nil? false
+    end
+
+    attribute :auto_reject_threshold, :integer do
+      default 50
+      allow_nil? false
+    end
+
+    attribute :sla_hours, :integer do
+      default 4
+      allow_nil? false
+    end
+
     timestamps()
   end
-
-  # Singleton enforcement could be done via unique index or code,
-  # but for now we'll just rely on the Admin UI to manage the single record.
 end

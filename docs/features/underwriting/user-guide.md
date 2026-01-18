@@ -1,366 +1,55 @@
-# User Guide: Underwriting Engine
+# User Guide: Operating the Sovereign Engine
 
-## Getting Started
+## 🤵 The Merchant Atlas Concierge
 
-This guide covers the day-to-day use of the MCP Underwriting Engine for
-processing applications, reviewing decisions, and managing verification
-workflows.
+Atlas is a proactive assistant that lives on the merchant-facing application. As an underwriter, you benefit from the "cleaned" data Atlas produces, but you can also monitor its interactions.
 
-## Application Workflow
+### 1. Intelligent Intake Workflow
+- **Proactive Help**: Atlas watches for "idle" time on difficult fields (like EIN or SSN). It interjects with friendly guidance before the user gives up.
+- **Suggestion Mode**: If a merchant enters a vague business description (e.g. "I sell stuff"), Atlas suggests a more detailed entry (e.g. "Tell us about your products and target market") to help the deal pass the automated risk filters.
+- **Encouragement**: Atlas provides positive reinforcement as the user completes sections, maintaining high conversion velocity.
 
-### Application Lifecycle
+## 🌉 The "Amber Zone" (Cognitive Resolution)
 
-```
-Draft → Submitted → In Review → [Approved | Rejected]
-```
+Not every deal is a clear "Approve" or "Reject". Complex deals enter the **Amber Zone**, where AI-Human collaboration takes place.
 
-1. **Draft**: Application created, data being collected
-2. **Submitted**: Ready for automated processing
-3. **In Review**: Verification checks in progress
-4. **Approved/Rejected**: Final decision rendered
+### 2. The Sovereign Brief
+When a deal enters the Amber Zone, the system generates a **Sovereign Brief** for you to review.
+- **Decision Lineage**: View the exact Playbook rules that flagged the deal.
+- **The Evidence Vault**: Click any risk factor to see the supporting evidence (website snapshots, raw KYB results, or OCR-extracted document data).
 
-### Creating an Application
+### 3. Atlas "Healing" Chat (Autonomous Negotiation)
+While you review the brief, Atlas is already working on your behalf.
+- **Data Collection**: If a document is blurry or an address doesn't match, Atlas asks the merchant for a new version or clarification.
+- **Chat History**: You can view the full transcript of Atlas's negotiation with the merchant inside the Underwriting Dashboard.
+- **Manual Intervention**: You only step in if Atlas's autonomous "Healing" fails to resolve the data gap.
 
-Applications are created when a subject (individual or business) begins the
-onboarding process:
+## 💰 Managing Bank Placements
 
-```elixir
-# Via API
-POST /api/applications
-{
-  "subject_id": "merchant-uuid",
-  "subject_type": "merchant",
-  "application_data": {
-    "business_name": "Acme Corp",
-    "legal_structure": "llc",
-    "owners": [
-      {"first_name": "John", "last_name": "Doe", "email": "john@acme.com"}
-    ]
-  }
-}
+The engine suggests the "Best Match" for every application through the **Profit-Aware Router**.
 
-# Via Elixir
-{:ok, app} = Ash.create(Application, %{
-  subject_id: merchant_id,
-  subject_type: :merchant,
-  application_data: data
-}, tenant: tenant_schema)
-```
+### 4. Why was this Bank chosen?
+Click the **Rationale** icon to see the logic.
+- **Regional Match**: Verify that the processor's supported countries cover the merchant's location.
+- **Risk Weighting**: See how the application's score (e.g. 85) aligns with the bank's appetite rule (e.g. min score 80).
+- **Yield Potential**: The system prioritizes the most profitable bank that is compatible with the merchant's risk profile.
 
-### Submitting for Review
+## 🖥️ Underwriting Dashboard Operations
 
-Once application data is complete:
+### 5. Managing Playbooks (Your Policy Engine)
+Playbooks are where you define the platform's risk appetite.
+- **Writing Rules**: Use natural language in Markdown. (e.g., `* Reject if industry is 'gambling'.`)
+- **Versioning**: Every change to a Playbook generates a new SHA-256 hash. This hash is permanently stamped on every decision made while that version was active.
+- **Simulation**: Use the **Playbook Concierge** to test new rules against historical applications before making them active.
 
-```elixir
-# Update status to submitted
-Ash.update!(application, %{status: :submitted}, tenant: tenant)
-```
+## 🆘 Troubleshooting Boarding Failures
 
-### Running Verification
+If a boarding record transitions to `:failed`:
+1. Open the **Audit Log Side Drawer**.
+2. Examine the **Error Metadata**: This contains the raw response from the processor API (e.g., "Invalid Business License").
+3. **Correct & Retry**: Fix the data on the Application resource and click **Retry Boarding**.
 
-Trigger the full screening process:
-
-```elixir
-{:ok, risk_score} = Gateway.screen_application(application.id, tenant: tenant)
-```
-
-This automatically:
-1. Runs KYB verification on the business
-2. Runs KYC verification on each owner
-3. Screens against watchlists
-4. Calculates risk score
-5. Updates application status
-
-## Verification Types
-
-### KYC (Know Your Customer)
-
-Identity verification for individuals:
-
-| Check Type | Description |
-|------------|-------------|
-| Identity | Name, DOB, SSN validation |
-| Address | Residence verification |
-| Document | ID document authenticity |
-| Biometric | Facial recognition match |
-
-### KYB (Know Your Business)
-
-Business verification:
-
-| Check Type | Description |
-|------------|-------------|
-| Registration | Business registration validation |
-| EIN | Tax ID verification |
-| Ownership | UBO (Ultimate Beneficial Owner) identification |
-| Address | Business address verification |
-
-### Watchlist Screening
-
-AML/Compliance checks:
-
-| List Type | Description |
-|-----------|-------------|
-| PEP | Politically Exposed Persons |
-| Sanctions | OFAC, UN, EU sanctions lists |
-| Adverse Media | Negative news screening |
-| Criminal | Criminal database checks |
-
-## Reviewing Results
-
-### Check Status
-
-Each verification check has a status:
-
-- **Pending**: Check initiated, awaiting results
-- **Complete**: Results received
-- **Failed**: Check could not be completed
-
-### Check Outcomes
-
-Completed checks have an outcome:
-
-- **Clear**: Verification passed
-- **Review**: Requires manual review
-- **Alert**: Potential issue detected
-- **Fail**: Verification failed
-
-### Viewing Check Results
-
-```elixir
-# Get all checks for a client
-checks = Check.list_by_client(client_id, tenant: tenant)
-
-# Get latest check of a specific type
-check = Check.get_latest_by_type(client_id, :identity, tenant: tenant)
-
-# View raw result from vendor
-check.raw_result
-```
-
-## Risk Assessment
-
-### Risk Score
-
-Applications receive a risk score from 0-100:
-
-| Score Range | Risk Level | Typical Action |
-|-------------|------------|----------------|
-| 0-30 | Low | Auto-approve |
-| 31-60 | Medium | Standard review |
-| 61-80 | High | Enhanced review |
-| 81-100 | Critical | Manual review required |
-
-### Risk Factors
-
-The assessment includes factor breakdown:
-
-```elixir
-assessment = RiskAssessment
-  |> Ash.Query.filter(application_id == ^app.id)
-  |> Ash.read_one!(tenant: tenant)
-
-# Example factors
-assessment.factors
-# => %{
-#   "identity_score" => 95,
-#   "address_match" => true,
-#   "watchlist_hits" => 0,
-#   "document_quality" => "high",
-#   "business_age_months" => 24
-# }
-```
-
-### Recommendations
-
-The system provides a recommendation:
-
-- **Approve**: Application meets criteria
-- **Reject**: Application fails criteria
-- **Manual Review**: Requires human decision
-
-## Activity Log
-
-### Viewing Activities
-
-All actions are logged for audit purposes:
-
-```elixir
-activities = Activity
-  |> Ash.Query.filter(application_id == ^app.id)
-  |> Ash.Query.sort(inserted_at: :desc)
-  |> Ash.read!(tenant: tenant)
-```
-
-### Activity Types
-
-| Type | Description |
-|------|-------------|
-| `status_change` | Application status updated |
-| `document_upload` | Document added to application |
-| `kyc_initiated` | KYC check started |
-| `kyc_completed` | KYC check finished |
-| `kyc_success` | KYC passed |
-| `kyc_failure` | KYC failed |
-| `watchlist_hit` | Watchlist match found |
-| `watchlist_clear` | No watchlist matches |
-| `risk_calculated` | Risk score computed |
-| `decision_made` | Final decision rendered |
-
-### Activity Details
-
-Each activity includes metadata:
-
-```elixir
-# Status change activity
-%{
-  type: :status_change,
-  metadata: %{
-    "from" => "submitted",
-    "to" => "approved",
-    "reason" => "auto_approved"
-  },
-  actor_id: system_user_id
-}
-
-# KYC failure activity
-%{
-  type: :kyc_failure,
-  metadata: %{
-    "owner_email" => "john@example.com",
-    "reason" => "document_expired"
-  }
-}
-```
-
-## Manual Review Workflow
-
-### When Manual Review is Required
-
-- Risk score exceeds threshold
-- Watchlist match detected
-- Document quality issues
-- Conflicting information
-- Agent confidence below threshold
-
-### Performing Manual Review
-
-1. **Review Application Data**
-   ```elixir
-   app = Application.get_by_id!(app_id, tenant: tenant)
-   ```
-
-2. **Review Verification Results**
-   ```elixir
-   checks = Check.list_by_client(client_id, tenant: tenant)
-   ```
-
-3. **Review Risk Assessment**
-   ```elixir
-   assessment = RiskAssessment
-     |> Ash.Query.filter(application_id == ^app_id)
-     |> Ash.read_one!(tenant: tenant)
-   ```
-
-4. **Make Decision**
-   ```elixir
-   Ash.update!(app, %{status: :approved}, tenant: tenant)
-   # or
-   Ash.update!(app, %{status: :rejected}, tenant: tenant)
-   ```
-
-5. **Log Decision**
-   ```elixir
-   Ash.create!(Activity, %{
-     application_id: app.id,
-     type: :decision_made,
-     metadata: %{"decision" => "approved", "reviewer" => user_id},
-     actor_id: user_id
-   }, tenant: tenant)
-   ```
-
-## Troubleshooting
-
-### Common Issues
-
-#### Application Stuck in "In Review"
-
-**Cause**: Verification check failed or timed out.
-
-**Solution**:
-1. Check activity log for errors
-2. Review check status for failed checks
-3. Retry failed checks or proceed with manual review
-
-#### KYC Failure
-
-**Cause**: Identity verification could not be completed.
-
-**Solution**:
-1. Review the specific failure reason in activity log
-2. Request updated documents from applicant
-3. Retry verification with new information
-
-#### Watchlist Hit
-
-**Cause**: Name matches a watchlist entry.
-
-**Solution**:
-1. Review the match details in check results
-2. Determine if it's a true match or false positive
-3. Document your decision in the activity log
-4. Proceed with appropriate action
-
-#### High Risk Score
-
-**Cause**: Multiple risk factors combined.
-
-**Solution**:
-1. Review individual risk factors
-2. Determine which factors are most concerning
-3. Request additional documentation if needed
-4. Make informed approval/rejection decision
-
-### Error Messages
-
-| Error | Cause | Resolution |
-|-------|-------|------------|
-| `tenant_required` | No tenant context | Ensure tenant is passed to all operations |
-| `kyc_failed` | KYC verification error | Check activity log for details |
-| `circuit_open` | Vendor unavailable | System will auto-recover; wait and retry |
-| `rate_limit_exceeded` | Too many requests | Wait for rate limit window to reset |
-
-## Best Practices
-
-### Data Quality
-
-- Ensure complete application data before submission
-- Validate email addresses and phone numbers
-- Use standardized address formats
-- Include all required owner information
-
-### Review Efficiency
-
-- Set up notification webhooks for status changes
-- Use batch processing for multiple applications
-- Configure auto-approval thresholds appropriately
-- Document all manual review decisions
-
-### Compliance
-
-- Review activity logs regularly
-- Export audit data for compliance reports
-- Keep instruction sets up to date with regulations
-- Test with sample applications before policy changes
-
-## Support
-
-For technical issues:
-- Check the activity log for error details
-- Review the developer guide for integration help
-- Contact technical support with application ID and error details
-
-For policy questions:
-- Review the stakeholder guide for business requirements
-- Consult with compliance team for regulatory questions
-- Request instruction set updates through proper channels
+## 📅 Best Practices for Underwriters
+- **Audit your Playbooks quarterly** to ensure rules match the current economic climate.
+- **Review Atlas transcripts** periodically to identify common merchant pain points.
+- **Monitor the SLAs**: Ensure `pending` boardings are synced if they exceed the 24-hour mark.

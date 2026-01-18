@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>MCP Sovereign Underwriting | Interactive Mockup</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        >
+        <style>
+            :root {
+                --noir-bg: #0a0a0a;
+                --noir-surface: #141414;
+                --noir-accent: #2ecc71;
+                --noir-amber: #f39c12;
+                --noir-crimson: #e74c3c;
+            }
+
+            body {
+                font-family: "Inter", sans-serif;
+                background-color: var(--noir-bg);
+                color: #e0e0e0;
+                overflow-x: hidden;
+            }
+
+            .glass {
+                background: rgba(20, 20, 20, 0.7);
+                backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+            }
+
+            .atlas-bubble {
+                animation: float 4s ease-in-out infinite;
+            }
+
+            @keyframes float {
+                0%, 100% {
+                    transform: translateY(0);
+                }
+                50% {
+                    transform: translateY(-10px);
+                }
+            }
+
+            .shimmer {
+                background: linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.05),
+                    transparent
+                );
+                background-size: 200% 100%;
+                animation: shimmer 2s infinite;
+            }
+
+            @keyframes shimmer {
+                0% {
+                    background-position: -200% 0;
+                }
+                100% {
+                    background-position: 200% 0;
+                }
+            }
+
+            .status-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                display: inline-block;
+            }
+
+            .noir-card {
+                background: var(--noir-surface);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                transition: all 0.3s ease;
+            }
+
+            .noir-card:hover {
+                border-color: rgba(255, 255, 255, 0.15);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            }
+
+            .sidebar-active {
+                background: rgba(255, 255, 255, 0.05);
+                border-right: 2px solid var(--noir-accent);
+            }
+        </style>
+    </head>
+    <body class="min-h-screen">
+        <!-- Navigation Overlay -->
+        <div
+            class="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex gap-2 p-1 glass rounded-full"
+        >
+            <button
+                onclick="showView('merchant')"
+                id="btn-merchant"
+                class="px-6 py-2 rounded-full font-medium transition-all bg-white text-black"
+            >
+                Merchant OLA
+            </button>
+            <button
+                onclick="showView('underwriter')"
+                id="btn-underwriter"
+                class="px-6 py-2 rounded-full font-medium transition-all hover:bg-white/5"
+            >
+                Underwriter Dashboard
+            </button>
+        </div>
+
+        <!-- MAIN CONTAINER -->
+        <div class="p-8 pt-24 max-w-7xl mx-auto min-h-screen">
+            <!-- MERCHANT VIEW -->
+            <div id="view-merchant" class="view space-y-8">
+                <header class="flex justify-between items-end">
+                    <div>
+                        <h1 class="text-4xl font-extrabold tracking-tight">
+                            Merchant Application
+                        </h1>
+                        <p class="text-zinc-500 mt-2">
+                            Step 2 of 5: Business Operations & Yield Targeting
+                        </p>
+                    </div>
+                    <div
+                        class="flex items-center gap-4 text-sm font-mono text-zinc-400"
+                    >
+                        <span class="flex items-center gap-2"><div
+                                class="status-dot bg-emerald-500"
+                            >
+                            </div> Connected</span>
+                        <span class="opacity-50">Sovereign-ID: UA-9982-FX</span>
+                    </div>
+                </header>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- FORM -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="noir-card p-8 rounded-2xl space-y-6">
+                            <div class="grid grid-cols-2 gap-6">
+                                <div class="form-control">
+                                    <label class="label"><span
+                                            class="label-text text-zinc-400 uppercase text-xs font-bold tracking-widest"
+                                        >Business Legal Name</span></label>
+                                    <input
+                                        type="text"
+                                        value="Cyberdyne Systems LLC"
+                                        class="input input-bordered bg-black/40 border-zinc-800 focus:border-emerald-500 transition-all font-medium"
+                                    />
+                                </div>
+                                <div class="form-control">
+                                    <label class="label"><span
+                                            class="label-text text-zinc-400 uppercase text-xs font-bold tracking-widest"
+                                        >Tax ID (EIN)</span></label>
+                                    <input
+                                        type="text"
+                                        placeholder="XX-XXXXXXX"
+                                        class="input input-bordered bg-black/40 border-zinc-800 focus:border-emerald-500 transition-all font-mono"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="form-control">
+                                <label class="label"><span
+                                        class="label-text text-zinc-400 uppercase text-xs font-bold tracking-widest"
+                                    >Business Description</span></label>
+                                <textarea
+                                    id="business-desc"
+                                    oninput="triggerAtlas('desc')"
+                                    class="textarea textarea-bordered bg-black/40 border-zinc-800 focus:border-emerald-500 min-h-[120px] transition-all"
+                                    placeholder="Tell us about what you sell..."
+                                ></textarea>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="form-control">
+                                    <label class="label"><span
+                                            class="label-text text-zinc-400 uppercase text-xs font-bold tracking-widest"
+                                        >Monthly Vol</span></label>
+                                    <select
+                                        class="select select-bordered bg-black/40 border-zinc-800"
+                                    >
+                                        <option>$0 - $50k</option>
+                                        <option selected>$50k - $250k</option>
+                                        <option>$250k+</option>
+                                    </select>
+                                </div>
+                                <div class="form-control">
+                                    <label class="label"><span
+                                            class="label-text text-zinc-400 uppercase text-xs font-bold tracking-widest"
+                                        >Region</span></label>
+                                    <select
+                                        class="select select-bordered bg-black/40 border-zinc-800"
+                                    >
+                                        <option>North America</option>
+                                        <option>European Union</option>
+                                        <option>Global / Multi</option>
+                                    </select>
+                                </div>
+                                <div class="form-control pt-9">
+                                    <button
+                                        class="btn btn-emerald bg-emerald-500 hover:bg-emerald-600 border-none text-black font-bold w-full uppercase tracking-tighter shadow-lg shadow-emerald-500/20"
+                                    >
+                                        Analyze & Proceed
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ATLAS CONCIERGE -->
+                    <div class="lg:col-span-1">
+                        <div
+                            id="atlas-widget"
+                            class="glass rounded-3xl p-6 sticky top-24 border-emerald-500/20"
+                        >
+                            <div class="flex items-center gap-3 mb-6">
+                                <div
+                                    class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shadow-xl shadow-emerald-500/30 atlas-bubble"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        class="w-6 h-6 text-black"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                                        />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg">Atlas</h3>
+                                    <p
+                                        class="text-xs text-emerald-400 uppercase tracking-widest font-bold"
+                                    >
+                                        Intelligent Concierge
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div
+                                id="atlas-chat"
+                                class="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar"
+                            >
+                                <div
+                                    class="bg-emerald-500/10 p-4 rounded-2xl rounded-tl-none border border-emerald-500/10"
+                                >
+                                    <p class="text-sm leading-relaxed">
+                                        Hello! I'm **Atlas**. I'm watching your
+                                        application in real-time to ensure you
+                                        get approved at the best possible rate.
+                                    </p>
+                                </div>
+                                <div
+                                    id="atlas-suggestion"
+                                    class="hidden bg-white/5 p-4 rounded-2xl border border-white/10 animate-pulse"
+                                >
+                                    <p
+                                        class="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1"
+                                    >
+                                        Suggestion
+                                    </p>
+                                    <p class="text-sm">
+                                        "Your description is a bit short. Try
+                                        adding information about your **target
+                                        market** to help our Profit-Aware Router
+                                        find a better bank match."
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div
+                                class="mt-6 pt-6 border-t border-white/5 flex gap-2"
+                            >
+                                <input
+                                    type="text"
+                                    placeholder="Ask Atlas anything..."
+                                    class="input input-sm bg-white/5 border-none focus:ring-0 w-full text-sm"
+                                />
+                                <button class="btn btn-sm btn-ghost p-1">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        class="h-5 w-5"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M14 5l7 7m0 0l-7 7m7-7H3"
+                                        />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- UNDERWRITER VIEW -->
+            <div
+                id="view-underwriter"
+                class="hidden view space-y-8 animate-in fade-in duration-500"
+            >
+                <header class="flex justify-between items-end">
+                    <div>
+                        <h1 class="text-4xl font-extrabold tracking-tight">
+                            Underwriting Control
+                        </h1>
+                        <p class="text-zinc-500 mt-2">
+                            Sovereign Decision Platform & Yield Optimizer
+                        </p>
+                    </div>
+                    <div class="flex gap-4">
+                        <div
+                            class="stat bg-zinc-900/50 rounded-2xl border border-white/5 p-4 py-2"
+                        >
+                            <div
+                                class="stat-title text-[10px] uppercase font-bold text-zinc-500"
+                            >
+                                Auto-Approval Rate
+                            </div>
+                            <div class="stat-value text-2xl text-emerald-500">
+                                88.4%
+                            </div>
+                        </div>
+                        <div
+                            class="stat bg-zinc-900/50 rounded-2xl border border-white/5 p-4 py-2"
+                        >
+                            <div
+                                class="stat-title text-[10px] uppercase font-bold text-zinc-500"
+                            >
+                                Latent Payout Potential
+                            </div>
+                            <div class="stat-value text-2xl text-emerald-400">
+                                +$124.2k
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    <!-- LIST -->
+                    <div class="lg:col-span-3 space-y-4">
+                        <div class="flex justify-between items-center mb-6">
+                            <div
+                                class="tabs tabs-boxed bg-zinc-900/50 border border-white/5 p-1"
+                            >
+                                <a class="tab tab-active">Amber Zone (12)</a>
+                                <a class="tab">Approved</a>
+                                <a class="tab">Rejected</a>
+                            </div>
+                            <div class="flex gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Search lineage..."
+                                    class="input input-sm input-bordered bg-zinc-900/50 w-64"
+                                />
+                            </div>
+                        </div>
+
+                        <div
+                            class="overflow-x-auto rounded-3xl border border-white/5 bg-zinc-900/30"
+                        >
+                            <table class="table table-zebra">
+                                <thead>
+                                    <tr
+                                        class="text-zinc-500 border-white/5 font-mono text-[10px] uppercase tracking-widest"
+                                    >
+                                        <th>Merchant</th>
+                                        <th>Score</th>
+                                        <th>Risk Factor</th>
+                                        <th>SLA</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm">
+                                    <tr
+                                        class="border-white/5 hover:bg-white/5 cursor-pointer group"
+                                        onclick="openBrief('Quantum Labs')"
+                                    >
+                                        <td>
+                                            <div class="font-bold">
+                                                Quantum Labs Inc
+                                            </div>
+                                            <div
+                                                class="text-[10px] opacity-50 font-mono italic"
+                                            >
+                                                Tech / High-Vol
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div
+                                                class="badge badge-outline border-amber-500 text-amber-500 font-mono px-3"
+                                            >
+                                                74
+                                            </div>
+                                        </td>
+                                        <td
+                                            class="max-w-[200px] truncate opacity-80"
+                                        >
+                                            Foreign domicile detected in KYB.
+                                        </td>
+                                        <td>
+                                            <span
+                                                class="text-amber-400 font-mono"
+                                            >01:42:12</span>
+                                        </td>
+                                        <td>
+                                            <button
+                                                class="btn btn-xs btn-ghost border border-white/10 group-hover:bg-emerald-500 group-hover:text-black"
+                                            >
+                                                Open Brief
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr
+                                        class="border-white/5 hover:bg-white/5 cursor-pointer group"
+                                        onclick="openBrief('Neon Grid')"
+                                    >
+                                        <td>
+                                            <div class="font-bold">
+                                                Neon Grid Energy
+                                            </div>
+                                            <div
+                                                class="text-[10px] opacity-50 font-mono italic"
+                                            >
+                                                Utility / EU
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div
+                                                class="badge badge-outline border-emerald-500 text-emerald-500 font-mono px-3"
+                                            >
+                                                92
+                                            </div>
+                                        </td>
+                                        <td
+                                            class="max-w-[200px] truncate opacity-40 italic"
+                                        >
+                                            Waiting for Vision sync...
+                                        </td>
+                                        <td>
+                                            <span
+                                                class="text-zinc-500 font-mono"
+                                            >00:12:05</span>
+                                        </td>
+                                        <td>
+                                            <button
+                                                class="btn btn-xs btn-ghost border border-white/10 group-hover:bg-emerald-500 group-hover:text-black"
+                                            >
+                                                Open Brief
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- SOVEREIGN BRIEF SIDEBAR -->
+                    <div class="lg:col-span-1">
+                        <div
+                            id="brief-panel"
+                            class="hidden glass rounded-3xl p-6 border-emerald-500/20 sticky top-24 space-y-6"
+                        >
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3
+                                        id="brief-title"
+                                        class="font-extrabold text-xl"
+                                    >
+                                        Sovereign Brief
+                                    </h3>
+                                    <p
+                                        class="text-xs text-zinc-500 font-mono uppercase tracking-widest mt-1"
+                                    >
+                                        Ref: #SL-991
+                                    </p>
+                                </div>
+                                <div
+                                    class="badge badge-sm badge-ghost font-mono opacity-50"
+                                >
+                                    v3.1.0
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div
+                                    class="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10"
+                                >
+                                    <label
+                                        class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest block mb-2"
+                                    >Policy Lineage</label>
+                                    <p
+                                        class="text-[11px] font-mono leading-tight break-all opacity-80"
+                                    >
+                                        SHA-256: 8a91b2c...9f1e40
+                                    </p>
+                                    <p class="text-xs mt-2 italic font-serif">
+                                        "Reject if domicile != US and volume >
+                                        $1M"
+                                    </p>
+                                </div>
+
+                                <div class="space-y-2">
+                                    <label
+                                        class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block"
+                                    >Evidence Vault</label>
+                                    <div class="flex flex-col gap-1">
+                                        <div
+                                            class="flex justify-between items-center p-2 rounded-lg bg-white/5 text-xs hover:bg-white/10 cursor-pointer"
+                                        >
+                                            <span>📜 KYB Report (IDenfy)</span>
+                                            <span
+                                                class="text-emerald-500 text-[10px] font-bold"
+                                            >CLEAR</span>
+                                        </div>
+                                        <div
+                                            class="flex justify-between items-center p-2 rounded-lg bg-white/5 text-xs hover:bg-white/10 cursor-pointer"
+                                        >
+                                            <span>👁️ Storefront Vision</span>
+                                            <span
+                                                class="text-amber-500 text-[10px] font-bold"
+                                            >MANUAL</span>
+                                        </div>
+                                        <div
+                                            class="flex justify-between items-center p-2 rounded-lg bg-white/5 text-xs hover:bg-white/10 cursor-pointer"
+                                        >
+                                            <span>💬 Atlas Healing Log</span>
+                                            <span
+                                                class="text-blue-500 text-[10px] font-bold"
+                                            >5 EVENTS</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="p-4 bg-zinc-900 rounded-2xl border border-white/5"
+                                >
+                                    <label
+                                        class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1"
+                                    >Profit-Aware Recommendation</label>
+                                    <div class="font-bold text-lg mb-1">
+                                        QorPay Platinum
+                                    </div>
+                                    <div
+                                        class="flex justify-between text-xs font-mono"
+                                    >
+                                        <span class="text-zinc-500"
+                                        >Est Yield:</span>
+                                        <span class="text-emerald-400"
+                                        >2.4% net</span>
+                                    </div>
+                                    <div
+                                        class="flex justify-between text-xs font-mono"
+                                    >
+                                        <span class="text-zinc-500"
+                                        >Match Rank:</span>
+                                        <span class="text-zinc-300"
+                                        >#1 / Opti-Match</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div
+                                class="flex gap-2 mt-4 pt-4 border-t border-white/10"
+                            >
+                                <button
+                                    class="btn btn-sm flex-1 bg-emerald-500 text-black border-none hover:bg-emerald-600 font-bold uppercase text-xs"
+                                >
+                                    Approve
+                                </button>
+                                <button
+                                    class="btn btn-sm flex-1 btn-outline btn-error text-xs uppercase font-bold"
+                                >
+                                    Reject
+                                </button>
+                            </div>
+                        </div>
+
+                        <div
+                            id="brief-placeholder"
+                            class="glass rounded-3xl p-12 border-white/5 flex flex-col items-center justify-center text-center opacity-30"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-12 w-12 mb-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1"
+                                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                                />
+                            </svg>
+                            <p class="text-sm italic">
+                                Select an application in the Amber Zone to
+                                generate the Sovereign Brief.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function showView(view) {
+                document.querySelectorAll(".view").forEach(
+                    (v) => v.classList.add("hidden")
+                );
+                document.getElementById("btn-merchant")
+                    .classList.remove("bg-white", "text-black");
+                document.getElementById("btn-underwriter")
+                    .classList.remove("bg-white", "text-black");
+
+                if (view === "merchant") {
+                    document.getElementById("view-merchant")
+                        .classList.remove("hidden");
+                    document.getElementById("btn-merchant")
+                        .classList.add(
+                            "bg-white",
+                            "text-black",
+                        );
+                } else {
+                    document.getElementById("view-underwriter")
+                        .classList.remove("hidden");
+                    document.getElementById("btn-underwriter")
+                        .classList.add(
+                            "bg-white",
+                            "text-black",
+                        );
+                }
+            }
+
+            function triggerAtlas(type) {
+                const bubble = document.getElementById(
+                    "atlas-suggestion",
+                );
+                bubble.classList.remove("hidden");
+                setTimeout(() => {
+                    bubble.classList.remove("animate-pulse");
+                }, 3000);
+            }
+
+            function openBrief(name) {
+                document.getElementById("brief-panel").classList
+                    .remove("hidden");
+                document.getElementById("brief-placeholder")
+                    .classList.add("hidden");
+                document.getElementById("brief-title")
+                    .innerText = name + " Brief";
+            }
+        </script>
+    </body>
+</html>

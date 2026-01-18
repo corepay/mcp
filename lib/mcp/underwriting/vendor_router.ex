@@ -6,29 +6,24 @@ defmodule Mcp.Underwriting.VendorRouter do
   alias Mcp.Underwriting.Adapters.ComplyCube
   alias Mcp.Underwriting.Adapters.Idenfy
   alias Mcp.Underwriting.Adapters.Mock
-  alias Mcp.Underwriting.CircuitBreaker
+  alias Mcp.Utils.CircuitBreaker
 
   def select_adapter(_context \\ %{}) do
     # 1. Determine preferred adapter based on config or env
     adapter = determine_adapter()
 
-    # 2. Check circuit breaker
-    case CircuitBreaker.check_circuit(service_name(adapter)) do
-      :ok ->
+    if CircuitBreaker.open?(service_name(adapter)) do
+      # Fallback logic
+      fallback = get_fallback_adapter(adapter)
+
+      if CircuitBreaker.open?(service_name(fallback)) do
+        # Both down, return original (Gateway handles failure)
         adapter
-
-      {:error, :circuit_open} ->
-        # Fallback logic
-        fallback = get_fallback_adapter(adapter)
-
-        case CircuitBreaker.check_circuit(service_name(fallback)) do
-          :ok ->
-            fallback
-
-          {:error, :circuit_open} ->
-            # Both down, return original (Gateway handles failure)
-            adapter
-        end
+      else
+        fallback
+      end
+    else
+      adapter
     end
   end
 

@@ -21,10 +21,13 @@ defmodule Mcp.Underwriting.InstructionSet do
     create :create do
       primary? true
       accept [:name, :instructions, :blueprint_id]
+      change &calculate_hash/2
     end
 
     update :update do
+      require_atomic? false
       accept [:name, :instructions]
+      change &calculate_hash/2
     end
   end
 
@@ -49,6 +52,10 @@ defmodule Mcp.Underwriting.InstructionSet do
       description "Natural language instructions for the agent."
     end
 
+    attribute :hash, :string do
+      description "SHA-256 hash of the instructions for version tracking."
+    end
+
     create_timestamp :inserted_at
     update_timestamp :updated_at
   end
@@ -64,6 +71,17 @@ defmodule Mcp.Underwriting.InstructionSet do
       # but explicit relationship is better for DB constraints.
       allow_nil? true
       attribute_type :uuid
+    end
+  end
+
+  def calculate_hash(changeset, _) do
+    case Ash.Changeset.get_attribute(changeset, :instructions) do
+      nil ->
+        changeset
+
+      instructions ->
+        hash = :crypto.hash(:sha256, instructions) |> Base.encode16()
+        Ash.Changeset.force_change_attribute(changeset, :hash, hash)
     end
   end
 end

@@ -37,9 +37,7 @@ defmodule Mcp.Underwriting.Services.TheEye do
   - {:error, reason}
   """
   def analyze_document(file_content, filename) do
-    # Build multipart body manually for Req 0.5.x
     boundary = "----WebKitFormBoundary#{:crypto.strong_rand_bytes(16) |> Base.encode16()}"
-
     body = build_multipart_body(boundary, filename, file_content)
     headers = [{"content-type", "multipart/form-data; boundary=#{boundary}"}]
 
@@ -62,6 +60,59 @@ defmodule Mcp.Underwriting.Services.TheEye do
       {:error, exception} ->
         {:error, {:request_failed, exception}}
     end
+  end
+
+  @doc """
+  Runs full multimodal forensics analysis including camera telemetry validation.
+  """
+  def analyze_multimodal(file_content, filename, telemetry \\ %{}) do
+    if Application.get_env(:mcp, :the_eye_adapter) == :mock do
+      mock_multimodal(filename, telemetry)
+    else
+      # Real implementation would call /analyze/multimodal
+
+      # Include telemetry as a separate JSON part in multipart
+      parts = [
+        {:file, file_content, [filename: filename, name: "file"]},
+        {:field, Jason.encode!(telemetry), [name: "telemetry"]}
+      ]
+
+      case Req.post("#{base_url()}/analyze/multimodal", multipart: parts) do
+        {:ok, %{status: 200, body: resp_body}} ->
+          {:ok, resp_body}
+
+        error ->
+          error
+      end
+    end
+  end
+
+  defp mock_multimodal(filename, telemetry) do
+    # Forensics simulation logic
+    is_manipulated =
+      String.contains?(filename, "fake") || String.contains?(filename, "test_spliced")
+
+    ai_confidence = if String.contains?(filename, "ai"), do: 0.98, else: 0.02
+
+    # Telemetry validation (e.g. check if GPS matches IP region)
+    gps_valid = Map.get(telemetry, "gps_accuracy", 100) < 50
+
+    {:ok,
+     %{
+       "status" => "success",
+       "analysis_type" => "multimodal",
+       "forensics_report" => %{
+         "manipulation_detected" => is_manipulated,
+         "ai_generated_score" => ai_confidence,
+         "forensic_markers" => ["double_quantization", "ela_mismatch"],
+         "verdict" =>
+           if(is_manipulated or ai_confidence > 0.5, do: "suspicious", else: "authentic")
+       },
+       "camera_telemetry" => Map.put(telemetry, "verified", gps_valid),
+       "markdown_content" => "# Scanned Document\nExtracted text from #{filename}...",
+       "structured_data" => %{"doc_type" => "identity_card"},
+       "provider" => "the_eye"
+     }}
   end
 
   @doc """

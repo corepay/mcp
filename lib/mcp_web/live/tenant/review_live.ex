@@ -4,17 +4,23 @@ defmodule McpWeb.Tenant.ReviewLive do
   alias Mcp.Accounts.User
   alias Mcp.Chat.{Conversation, Message}
   alias Mcp.Platform.Tenant
-  alias Mcp.Underwriting.{Activity, Application, Document, RiskAssessment}
-  alias McpWeb.Tenant.Underwriting.Components.CoPilotChat
-  alias McpWeb.Tenant.Underwriting.Components.NotesPanel
-  alias McpWeb.Tenant.Underwriting.Components.RequestInfoModal
-  alias McpWeb.Tenant.Underwriting.Components.TimelineComponent
+  alias Mcp.Underwriting.{Activity, Application, Document, DocumentAnalysis, RiskAssessment}
+  alias Mcp.Underwriting.Services.{BoardingService, PlacementIntelligence, PrecedentEngine}
+
+  alias McpWeb.Tenant.Underwriting.Components.{
+    CoPilotChat,
+    NotesPanel,
+    RequestInfoModal,
+    TimelineComponent
+  }
+
   require Ash.Query
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     tenant_id = socket.assigns.current_user.tenant_id
     tenant = Tenant.get_by_id!(tenant_id)
+    tenant_schema = tenant.company_schema
 
     # Load activities sorted by inserted_at desc
     query =
@@ -22,16 +28,43 @@ defmodule McpWeb.Tenant.ReviewLive do
       |> Ash.Query.load([:merchant, :documents])
       |> Ash.Query.load(activities: Ash.Query.sort(Activity, inserted_at: :desc))
 
-    application = Application.get_by_id!(id, query: query, tenant: tenant.company_schema)
+    application = Application.get_by_id!(id, query: query, tenant: tenant_schema)
 
-    # Try to fetch risk assessment if it exists
+    # Fetch risk assessment linked to this application
     risk_assessment =
-      case RiskAssessment.read(tenant: tenant.company_schema) do
-        {:ok, assessments} ->
-          Enum.find(assessments, fn r -> r.application_id == id end)
+      RiskAssessment
+      |> Ash.Query.filter(application_id == ^id)
+      |> Ash.read_one(tenant: tenant_schema)
+      |> case do
+        {:ok, ra} -> ra
+        _ -> nil
+      end
 
-        _ ->
-          nil
+    # Load forensics (DocumentAnalysis)
+    merchant_id = application.subject_id
+
+    document_analyses =
+      DocumentAnalysis
+      |> Ash.Query.filter(merchant_id == ^merchant_id)
+      |> Ash.Query.sort(inserted_at: :desc)
+      |> Ash.read!(tenant: tenant_schema)
+
+    # Harvest precedents (Decision Graph)
+    precedents = PrecedentEngine.harvest(merchant_id, tenant_schema)
+
+    # Suggested Placement (Sprint 5)
+    placement_result =
+      if risk_assessment do
+        case PlacementIntelligence.suggest_placement(
+               application.id,
+               risk_assessment.id,
+               tenant_schema
+             ) do
+          {:ok, result} -> result
+          _ -> nil
+        end
+      else
+        nil
       end
 
     # Load team members for @mention functionality in notes
@@ -43,6 +76,9 @@ defmodule McpWeb.Tenant.ReviewLive do
      |> assign(:tenant, tenant)
      |> assign(:application, application)
      |> assign(:risk_assessment, risk_assessment)
+     |> assign(:document_analyses, document_analyses)
+     |> assign(:precedents, precedents)
+     |> assign(:placement_result, placement_result)
      |> assign(:team_members, team_members)
      |> assign(:show_request_info_modal, false)
      |> assign(:show_copilot, false)
@@ -212,6 +248,195 @@ defmodule McpWeb.Tenant.ReviewLive do
                   </div>
                 </div>
               </div>
+              
+    <!-- Forensics & Intelligence -->
+              <div class="card bg-base-100 shadow-lg border border-base-200">
+                <div class="card-body">
+                  <h2 class="card-title text-lg mb-4 flex items-center gap-2">
+                    <.icon name="hero-magnifying-glass-circle" class="w-5 h-5 text-primary" />
+                    Forensics & Multimodal Intelligence
+                  </h2>
+
+                  <%= if Enum.empty?(@document_analyses) do %>
+                    <p class="text-zinc-500 italic">No forensic analysis performed yet.</p>
+                  <% else %>
+                    <div class="space-y-4">
+                      <%= for analysis <- @document_analyses do %>
+                        <div class="p-4 rounded-lg bg-base-200/50 border border-base-300">
+                          <div class="flex justify-between items-start mb-2">
+                            <div>
+                              <span class="badge badge-sm badge-outline uppercase font-bold text-[10px]">
+                                {analysis.analysis_type}
+                              </span>
+                              <p class="text-xs text-zinc-500 mt-1">
+                                {Calendar.strftime(analysis.inserted_at, "%Y-%m-%d %H:%M")}
+                              </p>
+                            </div>
+                            <%= if analysis.forensics_report["manipulation_detected"] do %>
+                              <span class="badge badge-error gap-1 text-white">
+                                <.icon name="hero-exclamation-triangle" class="w-3 h-3" /> SUSPECT
+                              </span>
+                            <% else %>
+                              <span class="badge badge-success gap-1 text-white">
+                                <.icon name="hero-check-badge" class="w-3 h-3" /> AUTHENTIC
+                              </span>
+                            <% end %>
+                          </div>
+
+                          <div class="grid grid-cols-2 gap-4 text-xs">
+                            <div>
+                              <p class="text-zinc-500 font-bold uppercase">Device</p>
+                              <p>{analysis.camera_telemetry["device"] || "N/A"}</p>
+                            </div>
+                            <div>
+                              <p class="text-zinc-500 font-bold uppercase">Liveness Verified</p>
+                              <p class={
+                                if analysis.camera_telemetry["verified"],
+                                  do: "text-success font-bold",
+                                  else: "text-error"
+                              }>
+                                {if analysis.camera_telemetry["verified"], do: "YES", else: "NO"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <%= if analysis.forensics_report["findings"] && Enum.any?(analysis.forensics_report["findings"]) do %>
+                            <div class="mt-2 pt-2 border-t border-base-300">
+                              <p class="text-[10px] text-zinc-500 font-bold uppercase mb-1">
+                                AI Analyst Findings
+                              </p>
+                              <ul class="text-[11px] list-disc list-inside">
+                                <%= for finding <- analysis.forensics_report["findings"] do %>
+                                  <li>{finding}</li>
+                                <% end %>
+                              </ul>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+              
+    <!-- Decision Lineage -->
+              <div class="card bg-base-100 shadow-lg border border-base-200">
+                <div class="card-body">
+                  <h2 class="card-title text-lg mb-4 flex items-center gap-2">
+                    <.icon name="hero-fingerprint" class="w-5 h-5 text-indigo-500" />
+                    Decision Lineage & Attribution
+                  </h2>
+
+                  <%= if @risk_assessment && @risk_assessment.policy_hash do %>
+                    <div class="space-y-4">
+                      <div>
+                        <p class="text-xs text-zinc-500 font-bold uppercase mb-1">
+                          Playbook Fingerprint (SHA-256)
+                        </p>
+                        <code class="text-[10px] break-all bg-base-200 p-1 rounded font-mono">
+                          {@risk_assessment.policy_hash}
+                        </code>
+                      </div>
+
+                      <div>
+                        <p class="text-xs text-zinc-500 font-bold uppercase mb-1">Rule Factors</p>
+                        <div class="flex flex-wrap gap-2">
+                          <%= for {factor, score} <- @risk_assessment.factors do %>
+                            <div class="badge badge-ghost badge-sm gap-2">
+                              {factor}: <span class="font-bold">{score}</span>
+                            </div>
+                          <% end %>
+                        </div>
+                      </div>
+
+                      <div class="p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-lg">
+                        <p class="text-xs text-indigo-700 dark:text-indigo-300 italic">
+                          "This decision was automatically generated using the active underwriting playbook. The immutable hash ensures auditability and non-repudiation."
+                        </p>
+                      </div>
+                    </div>
+                  <% else %>
+                    <p class="text-zinc-500 italic">
+                      No automated lineage captured for this session.
+                    </p>
+                  <% end %>
+                </div>
+              </div>
+              <!-- Placement Intelligence (Sprint 5) -->
+              <div class="card bg-base-100 shadow-lg border border-base-200">
+                <div class="card-body">
+                  <h2 class="card-title text-lg mb-4 flex items-center gap-2">
+                    <.icon name="hero-building-library" class="w-5 h-5 text-amber-500" />
+                    Placement Intelligence
+                  </h2>
+
+                  <%= if @placement_result do %>
+                    <div class="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-lg border border-amber-100 dark:border-amber-800">
+                      <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold uppercase text-amber-900 dark:text-amber-100">
+                          Recommended Bank
+                        </span>
+                        <span class="badge badge-warning">High Compatibility</span>
+                      </div>
+                      <p class="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                        {@placement_result.profile.name}
+                      </p>
+                      <p class="text-xs text-zinc-500 mt-1">
+                        Processor: {@placement_result.profile.processor.name}
+                      </p>
+
+                      <div class="mt-4 pt-4 border-t border-amber-200 dark:border-amber-800">
+                        <p class="text-[10px] text-zinc-500 font-bold uppercase mb-2">
+                          Appetite Match Highlights
+                        </p>
+                        <ul class="text-xs space-y-1">
+                          <li class="flex items-center gap-2">
+                            <.icon name="hero-check" class="w-3 h-3 text-success" /> Industry Accepted
+                          </li>
+                          <li class="flex items-center gap-2">
+                            <.icon name="hero-check" class="w-3 h-3 text-success" />
+                            Score within threshold
+                          </li>
+                          <li class="flex items-center gap-2">
+                            <.icon name="hero-check" class="w-3 h-3 text-success" />
+                            Volume appetite verified
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    <button
+                      class="btn btn-warning btn-block mt-4 text-white"
+                      phx-click="initialize_boarding"
+                    >
+                      Initialize Boarding
+                    </button>
+                  <% else %>
+                    <div class="p-4 text-center rounded-lg border-2 border-dashed border-base-300">
+                      <p class="text-zinc-500 text-sm italic">
+                        No optimal bank placement found for this risk profile.
+                      </p>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+              
+    <!-- Context Graph: Precedents -->
+              <div class="card bg-base-100 shadow-lg border border-base-200">
+                <div class="card-body">
+                  <h2 class="card-title text-lg mb-4 flex items-center gap-2">
+                    <.icon name="hero-share" class="w-5 h-5 text-emerald-500" />
+                    Context Graph: Precedents
+                  </h2>
+
+                  <div class="bg-emerald-50 dark:bg-emerald-900/10 p-4 rounded-lg border border-emerald-100 dark:border-emerald-800">
+                    <pre class="text-[11px] whitespace-pre-wrap font-mono text-emerald-900 dark:text-emerald-100">{@precedents}</pre>
+                  </div>
+                  <p class="text-[10px] text-zinc-500 mt-2 italic">
+                    AI-harvested context from historical merchant behavior and past underwriting outcomes.
+                  </p>
+                </div>
+              </div>
             </div>
             
     <!-- Sidebar -->
@@ -289,6 +514,31 @@ defmodule McpWeb.Tenant.ReviewLive do
       <% end %>
     </div>
     """
+  end
+
+  @impl true
+  def handle_event("initialize_boarding", _params, socket) do
+    tenant_schema = socket.assigns.tenant.company_schema
+    app = socket.assigns.application
+    placement = socket.assigns.placement_result
+    actor = socket.assigns.current_user
+
+    case BoardingService.board(app.id, placement.profile.id, tenant_schema,
+           rationale: placement.rationale,
+           actor: actor
+         ) do
+      {:ok, result} ->
+        {:noreply,
+         socket
+         |> put_flash(
+           :info,
+           "Merchant successfully boarded! MID: #{result.mid || "Pending approval"}"
+         )
+         |> push_navigate(to: ~p"/tenant/underwriting")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Boarding failed: #{inspect(reason)}")}
+    end
   end
 
   @impl true

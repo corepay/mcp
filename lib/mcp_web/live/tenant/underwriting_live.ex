@@ -46,6 +46,9 @@ defmodule McpWeb.Tenant.UnderwritingLive do
           </p>
         </div>
         <div class="flex gap-2">
+          <.link navigate={~p"/tenant/underwriting/boarding"} class="btn btn-outline btn-sm">
+            <.icon name="hero-building-library" class="w-4 h-4 mr-1" /> Boarding Dashboard
+          </.link>
           <button class="btn btn-outline btn-sm">Filter</button>
           <button class="btn btn-primary btn-sm">Export</button>
         </div>

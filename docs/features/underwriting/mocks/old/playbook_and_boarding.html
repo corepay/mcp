@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Ops & Governance | Interactive Mockup</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --noir-bg: #0a0a0a;
+            --noir-surface: #141414;
+            --noir-accent: #2ecc71;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--noir-bg);
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .code-editor {
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.6;
+        }
+
+        .status-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(46, 204, 113, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-20">
+
+    <!-- Navigation Overlay -->
+    <div class="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex gap-2 p-1 glass rounded-full">
+        <button onclick="showView('governance')" id="btn-governance" class="px-6 py-2 rounded-full font-medium transition-all bg-white text-black">Playbook Governance</button>
+        <button onclick="showView('boarding')" id="btn-boarding" class="px-6 py-2 rounded-full font-medium transition-all hover:bg-white/5">Boarding Ops</button>
+        <button onclick="showView('forensics')" id="btn-forensics" class="px-6 py-2 rounded-full font-medium transition-all hover:bg-white/5">The Eye (Forensics)</button>
+    </div>
+
+    <div class="p-8 pt-24 max-w-7xl mx-auto min-h-screen">
+        
+        <!-- === GOVERNANCE VIEW (PLAYBOOKS) === -->
+        <div id="view-governance" class="view space-y-6">
+            <header class="flex justify-between items-end">
+                <div>
+                    <h1 class="text-4xl font-extrabold tracking-tight">Governance Console</h1>
+                    <p class="text-zinc-500 mt-2">Manage Risk Playbooks & Appetite Rules</p>
+                </div>
+                <div class="text-xs font-mono text-zinc-500">
+                    ACTIVE HASH: <span class="text-emerald-500">8a91b2c...9f1e40</span>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Editor -->
+                <div class="lg:col-span-2 glass rounded-2xl p-6 border-zinc-800">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-bold text-lg">Rules Definition (Markdown)</h2>
+                        <div class="badge badge-outline text-xs">v4.2.0 (Draft)</div>
+                    </div>
+                    <textarea class="code-editor w-full h-[500px] bg-black/40 border-none rounded-xl p-4 text-sm text-zinc-300 resize-none focus:ring-1 focus:ring-emerald-500" spellcheck="false">
+# Standard Retail Policy
+
+## Prohibited Industries
+* Reject if industry in ["gambling", "adult", "cannabis"]
+* Reject if description contains "crypto" or "bitcoin"
+
+## Volume Thresholds
+* Auto-Approve if volume < $100k AND score > 85
+* Refer to Amber Zone if volume > $250k
+
+## Regional Rules
+* Reject if country not in ["US", "CA", "GB"]
+* Require "Utility Bill" if country == "GB"
+</textarea>
+                    <div class="flex justify-end gap-2 mt-4">
+                        <button class="btn btn-sm btn-ghost">Discard</button>
+                        <button class="btn btn-sm bg-white text-black hover:bg-zinc-200">Commit & Hash</button>
+                    </div>
+                </div>
+
+                <!-- Simulation/Concierge -->
+                <div class="lg:col-span-1 space-y-4">
+                    <div class="glass rounded-2xl p-6 border-zinc-800 h-full flex flex-col">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                            </div>
+                            <h3 class="font-bold">Playbook Simulator</h3>
+                        </div>
+                        
+                        <div class="flex-1 bg-black/20 rounded-xl p-4 overflow-y-auto space-y-3 font-mono text-xs">
+                            <div class="p-2 border border-green-500/20 bg-green-500/5 rounded">
+                                <div class="text-green-500 font-bold mb-1">Pass: "Joe's Coffee"</div>
+                                <div class="opacity-50">Score: 88, Vol: $15k</div>
+                            </div>
+                            <div class="p-2 border border-red-500/20 bg-red-500/5 rounded">
+                                <div class="text-red-500 font-bold mb-1">Reject: "BitCoin X"</div>
+                                <div class="opacity-50">Reason: Keyword 'bitcoin'</div>
+                            </div>
+                            <div class="p-2 border border-amber-500/20 bg-amber-500/5 rounded">
+                                <div class="text-amber-500 font-bold mb-1">Amber: "Luxury Imports"</div>
+                                <div class="opacity-50">Volume > $250k</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t border-white/5">
+                             <button class="btn btn-sm w-full btn-outline border-zinc-700 text-zinc-400 hover:text-white">Run Full Regression (1000 items)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- === BOARDING OPS VIEW === -->
+        <div id="view-boarding" class="hidden view space-y-6 animate-in fade-in">
+            <header class="flex justify-between items-end">
+                <div>
+                    <h1 class="text-4xl font-extrabold tracking-tight">Boarding Operations</h1>
+                    <p class="text-zinc-500 mt-2">Global Processor Sync & Circuit Health</p>
+                </div>
+                <!-- Circuit Health -->
+                <div class="flex gap-4">
+                    <div class="glass px-4 py-2 rounded-xl flex items-center gap-3 border-emerald-500/30">
+                        <div class="status-dot bg-emerald-500 status-pulse"></div>
+                        <div>
+                            <div class="text-[10px] uppercase font-bold text-zinc-500">QorPay API</div>
+                            <div class="text-sm font-bold text-emerald-400">OPERATIONAL</div>
+                        </div>
+                    </div>
+                    <div class="glass px-4 py-2 rounded-xl flex items-center gap-3 border-zinc-800">
+                        <div class="status-dot bg-zinc-600"></div>
+                        <div>
+                            <div class="text-[10px] uppercase font-bold text-zinc-500">Stripe Connect</div>
+                            <div class="text-sm font-bold text-zinc-400">STANDBY</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="w-full border-b border-white/5"></div>
+
+            <!-- Boarding Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Active Item -->
+                <div class="glass p-5 rounded-2xl border-l-2 border-l-emerald-500 space-y-3">
+                    <div class="flex justify-between items-start">
+                        <div class="font-bold">Alpha Logistics</div>
+                        <div class="badge badge-xs bg-emerald-500 text-black font-bold">ACTIVE</div>
+                    </div>
+                    <div class="text-xs font-mono text-zinc-500 space-y-1">
+                        <div>MID: 829102938</div>
+                        <div>TID: 99182</div>
+                        <div>Processor: QorPay</div>
+                    </div>
+                    <div class="pt-2 flex justify-end">
+                        <button class="btn btn-xs btn-ghost text-zinc-500">Details</button>
+                    </div>
+                </div>
+
+                <!-- Pending Item -->
+                <div class="glass p-5 rounded-2xl border-l-2 border-l-amber-500 space-y-3 relative overflow-hidden">
+                    <div class="flex justify-between items-start relative z-10">
+                        <div class="font-bold">Beta Retail</div>
+                        <div class="badge badge-xs bg-amber-500 text-black font-bold animate-pulse">PENDING</div>
+                    </div>
+                    <div class="text-xs font-mono text-zinc-500 space-y-1 relative z-10">
+                        <div>Ref: QP-99182-X</div>
+                        <div>Waited: 4h 12m</div>
+                    </div>
+                    <!-- Sync Button -->
+                    <div class="pt-2 flex justify-end relative z-10">
+                        <button class="btn btn-xs btn-outline border-zinc-700 hover:bg-white hover:text-black">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                            Sync Now
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Failed Item -->
+                <div class="glass p-5 rounded-2xl border-l-2 border-l-red-500 space-y-3">
+                    <div class="flex justify-between items-start">
+                        <div class="font-bold">Gamma Spec</div>
+                        <div class="badge badge-xs bg-red-500 text-black font-bold">FAILED</div>
+                    </div>
+                    <div class="bg-red-500/10 p-2 rounded text-[10px] font-mono text-red-400">
+                        Error: Invalid Business Address (Zip mismatch)
+                    </div>
+                    <div class="pt-2 flex justify-end gap-2">
+                        <button class="btn btn-xs btn-outline btn-error">Retry</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- === FORENSICS VIEW (THE EYE) === -->
+        <div id="view-forensics" class="hidden view space-y-6 animate-in zoom-in-95 duration-300">
+            <header class="flex justify-between items-end">
+                <div>
+                    <h1 class="text-4xl font-extrabold tracking-tight">Forensic Analysis</h1>
+                    <p class="text-zinc-500 mt-2">Multimodal Vision & Document Integrity</p>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Storefront Analysis -->
+                <div class="glass rounded-3xl overflow-hidden group">
+                    <div class="relative h-64 bg-zinc-900 border-b border-white/5">
+                        <img src="https://placehold.co/800x400/111/444?text=Storefront+Street+View" class="w-full h-full object-cover opacity-50 grayscale group-hover:grayscale-0 transition-all duration-700" alt="Storefront">
+                        <!-- Bounding Boxes (Mock) -->
+                        <div class="absolute top-1/4 left-1/4 w-32 h-20 border-2 border-emerald-500 bg-emerald-500/10 flex items-start justify-end p-1">
+                            <span class="bg-emerald-500 text-black text-[10px] font-bold px-1">SIGNAGE MATCH</span>
+                        </div>
+                        <div class="absolute bottom-4 right-4 bg-black/80 backdrop-blur px-3 py-1 rounded-full text-xs font-mono border border-emerald-500/30 text-emerald-400">
+                            Confidence: 98.4%
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-lg mb-2 flex items-center gap-2">
+                            <span class="status-dot bg-emerald-500"></span>
+                            Physical Presence Verified
+                        </h3>
+                        <p class="text-sm text-zinc-400 leading-relaxed">
+                            "The Eye" analysis confirms consistent signage for <strong>'Gamma Electronics'</strong>. Street view correlates with provided business address. No indications of temporary/shell location.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Document Analysis -->
+                <div class="glass rounded-3xl overflow-hidden group">
+                    <div class="relative h-64 bg-zinc-900 border-b border-white/5">
+                        <img src="https://placehold.co/800x400/111/444?text=Passport+ID+Scan" class="w-full h-full object-cover opacity-50 grayscale group-hover:grayscale-0 transition-all duration-700" alt="Passport">
+                        <!-- Risk Bounding Box -->
+                        <div class="absolute top-10 right-10 w-24 h-24 border-2 border-amber-500 bg-amber-500/10 flex items-start justify-end p-1 animate-pulse">
+                            <span class="bg-amber-500 text-black text-[10px] font-bold px-1">GLARE</span>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-lg mb-2 flex items-center gap-2">
+                            <span class="status-dot bg-amber-500"></span>
+                            Hologram Warning
+                        </h3>
+                        <p class="text-sm text-zinc-400 leading-relaxed">
+                            "The Eye" detected excessive glare obscuring the holographic security feature on the provided ID. 
+                            <span class="text-amber-500 block mt-2 font-bold">Recommendation: Request retake via Atlas.</span>
+                        </p>
+                        <div class="mt-4">
+                             <button class="btn btn-sm btn-outline border-zinc-700 w-full hover:bg-amber-500 hover:text-black hover:border-amber-500">Trigger Atlas Retake Request</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function showView(view) {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.getElementById('btn-governance').classList.remove('bg-white', 'text-black');
+            document.getElementById('btn-boarding').classList.remove('bg-white', 'text-black');
+            document.getElementById('btn-forensics').classList.remove('bg-white', 'text-black');
+
+            document.getElementById('view-' + view).classList.remove('hidden');
+            document.getElementById('btn-' + view).classList.add('bg-white', 'text-black');
+        }
+    </script>
+</body>
+</html>

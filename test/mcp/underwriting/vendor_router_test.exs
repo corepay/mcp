@@ -2,8 +2,8 @@ defmodule Mcp.Underwriting.VendorRouterTest do
   use ExUnit.Case, async: false
   alias Mcp.Underwriting.Adapters.ComplyCube
   alias Mcp.Underwriting.Adapters.Idenfy
-  alias Mcp.Underwriting.CircuitBreaker
   alias Mcp.Underwriting.VendorRouter
+  alias Mcp.Utils.CircuitBreaker
 
   setup do
     # Reset configuration
@@ -16,8 +16,6 @@ defmodule Mcp.Underwriting.VendorRouterTest do
     # Reset circuit breakers to ensure test isolation
     CircuitBreaker.reset("Elixir.Mcp.Underwriting.Adapters.ComplyCube")
     CircuitBreaker.reset("Elixir.Mcp.Underwriting.Adapters.Idenfy")
-    # Small delay to ensure async cast is processed
-    Process.sleep(10)
 
     on_exit(fn ->
       if original_adapter, do: Application.put_env(:mcp, :underwriting_adapter, original_adapter)
@@ -37,7 +35,8 @@ defmodule Mcp.Underwriting.VendorRouterTest do
     # Since we can't easily reset, we rely on unique names or just reporting success enough times?
     # Or we can just assume it's closed if we haven't failed it.
     # To be safe, report success.
-    CircuitBreaker.report_success("Elixir.Mcp.Underwriting.Adapters.ComplyCube")
+    # To be safe, record success.
+    CircuitBreaker.record_success("Elixir.Mcp.Underwriting.Adapters.ComplyCube")
 
     assert VendorRouter.select_adapter() == ComplyCube
   end
@@ -49,10 +48,10 @@ defmodule Mcp.Underwriting.VendorRouterTest do
 
     # Open the circuit for ComplyCube
     for _ <- 1..6 do
-      CircuitBreaker.report_failure(service_name)
+      CircuitBreaker.record_failure(service_name)
     end
 
-    assert CircuitBreaker.check_circuit(service_name) == {:error, :circuit_open}
+    assert CircuitBreaker.open?(service_name) == true
 
     # Should now return Idenfy
     assert VendorRouter.select_adapter() == Idenfy
@@ -66,12 +65,12 @@ defmodule Mcp.Underwriting.VendorRouterTest do
 
     # Open both circuits
     for _ <- 1..6 do
-      CircuitBreaker.report_failure(primary)
-      CircuitBreaker.report_failure(secondary)
+      CircuitBreaker.record_failure(primary)
+      CircuitBreaker.record_failure(secondary)
     end
 
-    assert CircuitBreaker.check_circuit(primary) == {:error, :circuit_open}
-    assert CircuitBreaker.check_circuit(secondary) == {:error, :circuit_open}
+    assert CircuitBreaker.open?(primary) == true
+    assert CircuitBreaker.open?(secondary) == true
 
     # Should return primary (ComplyCube) as last resort
     assert VendorRouter.select_adapter() == ComplyCube

@@ -1,20 +1,64 @@
-Running ExUnit with seed: 0, max_cases: 20
-Excluding tags: [:slow, :integration, :external_api, :performance]
+    warning: default values for the optional arguments in process_risk_assessment/5 are never used
+    │
+ 77 │   defp process_risk_assessment(application, kyb_result, doc_results, tenant, policy_hash \\ nil) do
+    │        ~
+    │
+    └─ lib/mcp/underwriting/gateway.ex:77:8: Mcp.Underwriting.Gateway (module)
 
-HTML Response: "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <meta name=\"csrf-token\" content=\"VX5CFzsoXiUpOlw6BDdJJHMzGAB6YxorfH0mdmhaMs2qRn9S4BoTKNqx\">\n    <title data-default=\"Mcp\" data-suffix=\" · Phoenix Framework\">\n      Tenant Portal\n     · Phoenix Framework</title>\n    <link phx-track-static rel=\"stylesheet\" href=\"/assets/css/app.css\">\n    <script defer phx-track-static type=\"text/javascript\" src=\"/assets/js/app.js\">\n    </script>\n    <script>\n      (() => {\n        const setTheme = (theme) => {\n          if (theme === \"system\") {\n            localStorage.removeItem(\"phx:theme\");\n            document.documentElement.removeAttribute(\"data-theme\");\n          } else {\n            localStorage.setItem(\"phx:theme\", theme);\n            document.documentElement.setAttribute(\"data-theme\", theme);\n          }\n        };\n        if (!document.documentElement.hasAttribute(\"data-theme\")) {\n          setTheme(localStorage.getItem(\"phx:theme\") || \"system\");\n        }\n        window.addEventListener(\"storage\", (e) => e.key === \"phx:theme\" && setTheme(e.newValue || \"system\"));\n        \n        window.addEventListener(\"phx:set-theme\", (e) => setTheme(e.target.dataset.phxTheme));\n      })();\n    </script>\n  </head>\n  <body>\n    <div id=\"phx-GH0SvmWM5tmekwAi\" data-phx-main data-phx-session=\"SFMyNTY.g2gDaAJhBnQAAAAIdwJpZG0AAAAUcGh4LUdIMFN2bVdNNXRtZWt3QWl3B3Nlc3Npb250AAAAAHcGcm91dGVydxRFbGl4aXIuTWNwV2ViLlJvdXRlcncKcGFyZW50X3BpZHcDbmlsdwR2aWV3dxlFbGl4aXIuTWNwV2ViLkxhbmRpbmdMaXZldwhyb290X3BpZHcDbmlsdwlyb290X3ZpZXd3GUVsaXhpci5NY3BXZWIuTGFuZGluZ0xpdmV3EWxpdmVfc2Vzc2lvbl9uYW1ldwdkZWZhdWx0bgYASXKY2ZoBYgABUYA.zZeY9SnJxeeBaNBFS_1WR4qsZQ_A_CdMk_AX5AXVFDA\" data-phx-static=\"SFMyNTY.g2gDaAJhBnQAAAADdwJpZG0AAAAUcGh4LUdIMFN2bVdNNXRtZWt3QWl3BWZsYXNodAAAAAB3CmFzc2lnbl9uZXdqbgYASnKY2ZoBYgABUYA._3TfUyS8xVKuiVaLzOFJPrsQ53eQpybar6GZQAuAAnA\"><div class=\"min-h-screen bg-base-200 font-sans relative overflow-hidden\">\n  <!-- Background Gradients (Context Aware) -->\n  <div class=\"absolute inset-0 bg-gradient-to-br opacity-10 from-blue-600 to-indigo-700\">\n  </div>\n  \n<!-- Animated Background Shapes -->\n  <div class=\"absolute inset-0 overflow-hidden pointer-events-none\">\n    <div class=\"absolute -top-24 -left-24 w-96 h-96 rounded-full blur-3xl opacity-20 animate-pulse bg-indigo-500\">\n    </div>\n    <div class=\"absolute top-1/2 right-0 w-64 h-64 rounded-full blur-2xl opacity-20 bg-indigo-500\">\n    </div>\n  </div>\n  \n<!-- Navbar -->\n  <nav class=\"relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex justify-between items-center\">\n    <div class=\"flex items-center gap-3\">\n      <div class=\"p-2 rounded-xl text-white shadow-lg bg-gradient-to-br from-blue-600 to-indigo-700\">\n        <span class=\"hero-building-office-2 size-6\"></span>\n      </div>\n      <span class=\"text-xl font-bold tracking-tight text-base-content\">\n        MCP <span class=\"opacity-60 font-normal\">Platform</span>\n      </span>\n    </div>\n\n    <button phx-click=\"show_login\" class=\"btn btn-primary shadow-lg shadow-primary/20\">\n      Sign In\n    </button>\n  </nav>\n  \n<!-- Hero Section -->\n  <main class=\"relative z-10 w-full max-w-7xl mx-auto px-6 py-12 md:py-24 flex flex-col md:flex-row items-center gap-12\">\n    <div class=\"flex-1 text-center md:text-left space-y-8\">\n      <div class=\"inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border bg-base-100/50 backdrop-blur-sm border-indigo-200 text-indigo-600\">\n        <span class=\"relative flex h-2 w-2\">\n          <span class=\"animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-indigo-500\">\n          </span>\n          <span class=\"relative inline-flex rounded-full h-2 w-2 bg-indigo-500\">\n          </span>\n        </span>\n        Tenant Portal\n      </div>\n\n      <h1 class=\"text-5xl md:text-7xl font-bold tracking-tight text-base-content leading-tight\">\n        Welcome to your\n        <span class=\"text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-700\">\n          Workspace\n        </span>\n      </h1>\n\n      <p" <> ...
+15:33:34.369 [notice]     :alarm_handler: {:set, {:system_memory_high_watermark, []}}
+15:33:34.578 [info] Starting Cache RedisClient
+15:33:34.578 [info] Starting Cache SessionStore
+15:33:34.578 [info] Starting CacheManager with Redis backend
+15:33:34.589 [info] Starting Storage ClientFactory with backend: s3, CDN: false
+15:33:34.589 [info] Starting Storage FileManager
+15:33:34.589 [info] Starting Storage CDNManager
+15:33:34.590 [info] [libcluster:postgres_cluster] Connected to Postgres database
+15:33:34.609 [info] Starting GDPR Data Retention GenServer
+15:33:34.609 [info] GDPR Anonymizer started
+Bootstrapping Template Schema: acq_test_template via SetupRepo...
+Template Schema acq_test_template ready.
+Running ExUnit with seed: 0, max_cases: 4
+Excluding tags: [:slow, :integration, :external_api, :performance, :pending_oauth_implementation, :pending_atlas_chat, :pending_mox_setup, :pending_api_key_migration, :skip]
+
+    warning: unused alias VendorSettings
+    │
+  9 │   alias Mcp.Underwriting.{
+    │   ~
+    │
+    └─ test/mcp/underwriting/uaas_lineage_test.exs:9:3
 
 
-  1) test GET / (McpWeb.PageControllerTest)
-     test/mcp_web/controllers/page_controller_test.exs:4
-     Assertion with =~ failed
-     code:  assert html =~ "Welcome to your Workspace"
-     left:  "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <meta name=\"csrf-token\" content=\"VX5CFzsoXiUpOlw6BDdJJHMzGAB6YxorfH0mdmhaMs2qRn9S4BoTKNqx\">\n    <title data-default=\"Mcp\" data-suffix=\" · Phoenix Framework\">\n      Tenant Portal\n     · Phoenix Framework</title>\n    <link phx-track-static rel=\"stylesheet\" href=\"/assets/css/app.css\">\n    <script defer phx-track-static type=\"text/javascript\" src=\"/assets/js/app.js\">\n    </script>\n    <script>\n      (() => {\n        const setTheme = (theme) => {\n          if (theme === \"system\") {\n            localStorage.removeItem(\"phx:theme\");\n            document.documentElement.removeAttribute(\"data-theme\");\n          } else {\n            localStorage.setItem(\"phx:theme\", theme);\n            document.documentElement.setAttribute(\"data-theme\", theme);\n          }\n        };\n        if (!document.documentElement.hasAttribute(\"data-theme\")) {\n          setTheme(localStorage.getItem(\"phx:theme\") || \"system\");\n        }\n        window.addEventListener(\"storage\", (e) => e.key === \"phx:theme\" && setTheme(e.newValue || \"system\"));\n        \n        window.addEventListener(\"phx:set-theme\", (e) => setTheme(e.target.dataset.phxTheme));\n      })();\n    </script>\n  </head>\n  <body>\n    <div id=\"phx-GH0SvmWM5tmekwAi\" data-phx-main data-phx-session=\"SFMyNTY.g2gDaAJhBnQAAAAIdwJpZG0AAAAUcGh4LUdIMFN2bVdNNXRtZWt3QWl3B3Nlc3Npb250AAAAAHcGcm91dGVydxRFbGl4aXIuTWNwV2ViLlJvdXRlcncKcGFyZW50X3BpZHcDbmlsdwR2aWV3dxlFbGl4aXIuTWNwV2ViLkxhbmRpbmdMaXZldwhyb290X3BpZHcDbmlsdwlyb290X3ZpZXd3GUVsaXhpci5NY3BXZWIuTGFuZGluZ0xpdmV3EWxpdmVfc2Vzc2lvbl9uYW1ldwdkZWZhdWx0bgYASXKY2ZoBYgABUYA.zZeY9SnJxeeBaNBFS_1WR4qsZQ_A_CdMk_AX5AXVFDA\" data-phx-static=\"SFMyNTY.g2gDaAJhBnQAAAADdwJpZG0AAAAUcGh4LUdIMFN2bVdNNXRtZWt3QWl3BWZsYXNodAAAAAB3CmFzc2lnbl9uZXdqbgYASnKY2ZoBYgABUYA._3TfUyS8xVKuiVaLzOFJPrsQ53eQpybar6GZQAuAAnA\"><div class=\"min-h-screen bg-base-200 font-sans relative overflow-hidden\">\n  <!-- Background Gradients (Context Aware) -->\n  <div class=\"absolute inset-0 bg-gradient-to-br opacity-10 from-blue-600 to-indigo-700\">\n  </div>\n  \n<!-- Animated Background Shapes -->\n  <div class=\"absolute inset-0 overflow-hidden pointer-events-none\">\n    <div class=\"absolute -top-24 -left-24 w-96 h-96 rounded-full blur-3xl opacity-20 animate-pulse bg-indigo-500\">\n    </div>\n    <div class=\"absolute top-1/2 right-0 w-64 h-64 rounded-full blur-2xl opacity-20 bg-indigo-500\">\n    </div>\n  </div>\n  \n<!-- Navbar -->\n  <nav class=\"relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex justify-between items-center\">\n    <div class=\"flex items-center gap-3\">\n      <div class=\"p-2 rounded-xl text-white shadow-lg bg-gradient-to-br from-blue-600 to-indigo-700\">\n        <span class=\"hero-building-office-2 size-6\"></span>\n      </div>\n      <span class=\"text-xl font-bold tracking-tight text-base-content\">\n        MCP <span class=\"opacity-60 font-normal\">Platform</span>\n      </span>\n    </div>\n\n    <button phx-click=\"show_login\" class=\"btn btn-primary shadow-lg shadow-primary/20\">\n      Sign In\n    </button>\n  </nav>\n  \n<!-- Hero Section -->\n  <main class=\"relative z-10 w-full max-w-7xl mx-auto px-6 py-12 md:py-24 flex flex-col md:flex-row items-center gap-12\">\n    <div class=\"flex-1 text-center md:text-left space-y-8\">\n      <div class=\"inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border bg-base-100/50 backdrop-blur-sm border-indigo-200 text-indigo-600\">\n        <span class=\"relative flex h-2 w-2\">\n          <span class=\"animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-indigo-500\">\n          </span>\n          <span class=\"relative inline-flex rounded-full h-2 w-2 bg-indigo-500\">\n          </span>\n        </span>\n        Tenant Portal\n      </div>\n\n      <h1 class=\"text-5xl md:text-7xl font-bold tracking-tight text-base-content leading-tight\">\n        Welcome to your\n        <span class=\"text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-700\">\n          Workspace\n        </span>\n      </h1>\n\n      <p" <> ...
-     right: "Welcome to your Workspace"
+
+  1) test full underwriting life-cycle with deterministic lineage (Mcp.Underwriting.UaasLineageTest)
+     test/mcp/underwriting/uaas_lineage_test.exs:192
+     ** (Ash.Error.Framework) 
+     Framework Error
+
+     * Mcp.Underwriting.InstructionSet.update must be performed atomically, but it could not be
+
+     Reason: Ash.Resource.Change.Function does not implement `atomic/3`
+
+     See https://hexdocs.pm/ash/update-actions.html#fully-atomic-updates for more on atomics.
+
+       (ash 3.9.0) lib/ash/error/framework/must_be_atomic.ex:8: Ash.Error.Framework.MustBeAtomic.exception/1
+       (ash 3.9.0) lib/ash/actions/update/update.ex:221: Ash.Actions.Update.run/4
+       (ash 3.9.0) lib/ash.ex:3639: Ash.update/3
+       (ash 3.9.0) lib/ash.ex:3557: Ash.update!/3
+       test/mcp/underwriting/uaas_lineage_test.exs:266: Mcp.Underwriting.UaasLineageTest."test full underwriting life-cycle with deterministic lineage"/1
+       (ex_unit 1.18.4) lib/ex_unit/runner.ex:511: ExUnit.Runner.exec_test/2
+       (stdlib 7.0.2) timer.erl:599: :timer.tc/2
+       (ex_unit 1.18.4) lib/ex_unit/runner.ex:433: anonymous fn/6 in ExUnit.Runner.spawn_test_monitor/4
+     code: |> Ash.update!(tenant: schema, authorize?: false)
      stacktrace:
-       test/mcp_web/controllers/page_controller_test.exs:8: (test)
+       (ash 3.9.0) lib/ash/error/framework.ex:7: Ash.Error.Framework.exception/1
+       (ash 3.9.0) /Users/rp/Developer/Base/mcp/deps/splode/lib/splode.ex:264: Ash.Error.to_class/2
+       (ash 3.9.0) lib/ash/error/error.ex:112: Ash.Error.to_error_class/2
+       (ash 3.9.0) lib/ash.ex:3646: anonymous fn/1 in Ash.update/3
+       (ash 3.9.0) lib/ash.ex:3557: Ash.update!/3
+       test/mcp/underwriting/uaas_lineage_test.exs:266: (test)
 
 --max-failures reached, aborting test suite
-Finished in 0.08 seconds (0.00s async, 0.08s sync)
+Finished in 0.4 seconds (0.00s async, 0.4s sync)
 1 test, 1 failure
 [os_mon] cpu supervisor port (cpu_sup): Erlang has closed
 [os_mon] memory supervisor port (memsup): Erlang has closed

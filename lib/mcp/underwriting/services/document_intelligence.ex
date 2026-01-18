@@ -6,21 +6,22 @@ defmodule Mcp.Underwriting.Services.DocumentIntelligence do
   require Logger
 
   alias Mcp.Storage.S3Client
+  alias Mcp.Underwriting.Services.TheEye
 
   @base_url "http://localhost:#{System.get_env("THE_EYE_PORT", "48291")}"
 
-  @doc """
-  Analyzes a document by sending it to the Python service.
-  Supports multiple source types:
-  - Local file paths
-  - MinIO URLs: "minio://bucket/key"
-  - S3 URLs: "s3://bucket/key"
-  - HTTP/HTTPS URLs
-  """
-  def analyze(source, merchant_id) do
+  def analyze(source, merchant_id, opts \\ []) do
     case resolve_file_content(source) do
       {:ok, content, filename} ->
-        send_to_analyzer(content, filename, merchant_id)
+        analysis_type = Keyword.get(opts, :analysis_type, :ocr)
+        telemetry = Keyword.get(opts, :camera_telemetry, %{})
+        tenant = Keyword.get(opts, :tenant)
+
+        if analysis_type == :multimodal do
+          perform_multimodal_analysis(content, filename, merchant_id, telemetry, tenant)
+        else
+          send_to_analyzer(content, filename, merchant_id, tenant)
+        end
 
       {:error, reason} ->
         Logger.error("Failed to resolve file content from #{source}: #{inspect(reason)}")
@@ -103,14 +104,25 @@ defmodule Mcp.Underwriting.Services.DocumentIntelligence do
     end
   end
 
-  defp send_to_analyzer(content, filename, merchant_id) do
+  defp perform_multimodal_analysis(content, filename, merchant_id, telemetry, tenant) do
+    case TheEye.analyze_multimodal(content, filename, telemetry) do
+      {:ok, body} ->
+        create_record(body, merchant_id, tenant)
+
+      {:error, reason} ->
+        Logger.error("Multimodal analysis failed: #{inspect(reason)}")
+        {:error, :analysis_failed}
+    end
+  end
+
+  defp send_to_analyzer(content, filename, merchant_id, tenant) do
     case Req.post("#{@base_url}/analyze/document",
            multipart: [
              file: {content, filename}
            ]
          ) do
       {:ok, %Req.Response{status: 200, body: body}} ->
-        create_record(body, merchant_id)
+        create_record(body, merchant_id, tenant)
 
       {:ok, %Req.Response{status: status}} ->
         Logger.error("Document analysis failed with status: #{status}")
@@ -122,17 +134,23 @@ defmodule Mcp.Underwriting.Services.DocumentIntelligence do
     end
   end
 
-  defp create_record(body, merchant_id) do
-    # Create the Ash record
-    Mcp.Underwriting.DocumentAnalysis
-    |> Ash.Changeset.for_create(:create, %{
-      # Assuming success for now
+  defp create_record(body, merchant_id, tenant) do
+    analysis_type = String.to_atom(body["analysis_type"] || "ocr")
+    provider = String.to_atom(body["provider"] || "the_eye")
+
+    attrs = %{
       status: :completed,
+      analysis_type: analysis_type,
       markdown_content: body["markdown_content"],
       structured_data: body["structured_data"],
-      provider: String.to_atom(body["provider"]),
+      forensics_report: body["forensics_report"],
+      camera_telemetry: body["camera_telemetry"],
+      provider: provider,
       merchant_id: merchant_id
-    })
-    |> Ash.create()
+    }
+
+    Mcp.Underwriting.DocumentAnalysis
+    |> Ash.Changeset.for_create(:create, attrs)
+    |> Ash.create(tenant: tenant)
   end
 end

@@ -26,6 +26,8 @@ config :mcp, :compliance_impl, ComplianceMock
 config :mcp, :run_tenant_migrations, false
 config :mcp, :force_tenant_schema, "acq_test_template"
 config :mcp, :agent_runner_adapter, :mock
+config :mcp, :underwriting_adapter, :mock
+config :mcp, :the_eye_adapter, :mock
 
 config :mcp, :qorpay,
   base_url: "http://qorpay.test",

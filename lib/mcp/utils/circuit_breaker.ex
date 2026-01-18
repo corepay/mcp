@@ -55,6 +55,14 @@ defmodule Mcp.Utils.CircuitBreaker do
     GenServer.cast(@name, {:failure, service})
   end
 
+  @doc """
+  Resets the circuit breaker state for a specific service.
+  Synchronous call to ensure test isolation.
+  """
+  def reset(service) do
+    GenServer.call(@name, {:reset, service})
+  end
+
   # Server Callbacks
 
   @impl true
@@ -82,6 +90,12 @@ defmodule Mcp.Utils.CircuitBreaker do
       end
 
     {:reply, is_open, state}
+  end
+
+  @impl true
+  def handle_call({:reset, service}, _from, state) do
+    new_services = Map.delete(state.services, service)
+    {:reply, :ok, %{state | services: new_services}}
   end
 
   @impl true

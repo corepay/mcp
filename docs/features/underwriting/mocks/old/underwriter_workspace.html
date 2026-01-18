@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Underwriting Workspace | Deep Dive</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --noir-bg: #0a0a0a;
+            --noir-surface: #141414;
+            --noir-accent: #2ecc71;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--noir-bg);
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-bubble-atlas {
+            background-color: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.2);
+            color: #d1fae5;
+        }
+
+        .chat-bubble-merchant {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .precedent-card:hover {
+            border-color: var(--noir-accent);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-20">
+
+    <!-- Navigation Overlay -->
+    <div class="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex gap-2 p-1 glass rounded-full">
+        <button onclick="showView('detail')" id="btn-detail" class="px-6 py-2 rounded-full font-medium transition-all bg-white text-black">App Detail</button>
+        <button onclick="showView('transcript')" id="btn-transcript" class="px-6 py-2 rounded-full font-medium transition-all hover:bg-white/5">Atlas Transcript</button>
+        <button onclick="showView('precedent')" id="btn-precedent" class="px-6 py-2 rounded-full font-medium transition-all hover:bg-white/5">Context Graph</button>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="p-8 pt-24 max-w-7xl mx-auto min-h-screen">
+        
+        <!-- === APPLICATION DETAIL VIEW === -->
+        <div id="view-detail" class="view space-y-6 animate-in fade-in">
+            <header class="flex justify-between items-start">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-4xl font-extrabold tracking-tight">Quantum Labs Inc.</h1>
+                        <div class="badge badge-warning gap-2 font-mono">
+                            TR-99281
+                        </div>
+                    </div>
+                    <p class="text-zinc-500 mt-2">Submitted: 2h 14m ago • Origin: San Francisco, CA</p>
+                </div>
+                <div class="flex gap-2">
+                    <button class="btn btn-sm btn-outline border-zinc-700">Flag for Review</button>
+                    <button class="btn btn-sm bg-emerald-500 text-black border-none hover:bg-emerald-600">Approve Boarding</button>
+                </div>
+            </header>
+
+            <!-- TABS -->
+            <div role="tablist" class="tabs tabs-bordered mb-4">
+                <a role="tab" class="tab tab-active">Overview</a>
+                <a role="tab" class="tab">Entities & UBOs</a>
+                <a role="tab" class="tab">Documents</a>
+                <a role="tab" class="tab">Financials (Plaid)</a>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Main Info -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="glass p-6 rounded-2xl border-white/5">
+                        <h3 class="font-bold text-lg mb-4 text-zinc-300">Business Profile</h3>
+                        <div class="grid grid-cols-2 gap-y-4 text-sm">
+                            <div>
+                                <div class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Legal Name</div>
+                                <div class="font-mono">QUANTUM LABS INC</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">DBA</div>
+                                <div class="font-mono">QL Cloud Services</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Entity Type</div>
+                                <div>C-Corporation</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Formation Date</div>
+                                <div class="font-mono">2022-09-12 (3y 4m)</div>
+                            </div>
+                            <div class="col-span-2">
+                                <div class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Description</div>
+                                <div class="italic text-zinc-400 mt-1">"Provider of high-performance cloud compute for AI training workloads. B2B SaaS model with monthly recurring billing."</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass p-6 rounded-2xl border-white/5">
+                         <h3 class="font-bold text-lg mb-4 text-zinc-300">Bank & Processing</h3>
+                         <div class="grid grid-cols-2 gap-y-4 text-sm">
+                             <div>
+                                 <div class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Est. Monthly Volume</div>
+                                 <div class="font-mono text-emerald-400">$450,000.00</div>
+                             </div>
+                             <div>
+                                 <div class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Avg Ticket</div>
+                                 <div class="font-mono">$1,250.00</div>
+                             </div>
+                             <div>
+                                 <div class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Website</div>
+                                 <a href="#" class="link link-primary no-underline text-blue-400">https://quantumlabs.ai</a>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+                
+                <!-- Side Panel -->
+                <div class="space-y-6">
+                    <div class="glass p-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="status-dot bg-emerald-500"></span>
+                            <h3 class="font-bold">Automated Checks</h3>
+                        </div>
+                        <div class="space-y-2 text-xs font-mono">
+                            <div class="flex justify-between">
+                                <span class="text-zinc-400">KYB (ComplyCube)</span>
+                                <span class="text-emerald-500 font-bold">PASS</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-zinc-400">KYC (Idenfy)</span>
+                                <span class="text-emerald-500 font-bold">PASS</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-zinc-400">AML Watchlist</span>
+                                <span class="text-emerald-500 font-bold">CLEAN</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-zinc-400">Web Presence</span>
+                                <span class="text-amber-500 font-bold">REVIEW (New Domain)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- === ATLAS TRANSCRIPT VIEW === -->
+        <div id="view-transcript" class="hidden view space-y-6 animate-in zoom-in-95">
+             <header class="flex justify-between items-end">
+                <div>
+                    <h1 class="text-4xl font-extrabold tracking-tight">Atlas "Healing" Log</h1>
+                    <p class="text-zinc-500 mt-2">Autonomous Negotiation Transcript • Session ID: #AT-9982</p>
+                </div>
+            </header>
+
+            <div class="glass p-8 rounded-3xl h-[600px] overflow-y-auto custom-scrollbar space-y-4 flex flex-col">
+                <div class="flex justify-center mb-4">
+                    <div class="badge badge-ghost text-xs font-mono opacity-50">Session Started: 2026-01-17 14:10:00</div>
+                </div>
+
+                <!-- Chat Items -->
+                <div class="chat chat-start">
+                    <div class="chat-image avatar">
+                        <div class="w-10 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold">AI</div>
+                    </div>
+                    <div class="chat-header text-emerald-500 mb-1 text-xs font-bold uppercase tracking-wide">Atlas Agent</div>
+                    <div class="chat-bubble chat-bubble-atlas text-sm">Hi there! I noticed you entered a PO Box for your business address. To comply with banking regulations, we need a physical street address. Do you have one available?</div>
+                </div>
+
+                <div class="chat chat-end">
+                    <div class="chat-header opacity-50 mb-1 text-xs">Merchant User</div>
+                    <div class="chat-bubble chat-bubble-merchant text-sm">Oh, I work from home. Is my home address okay?</div>
+                </div>
+
+                <div class="chat chat-start">
+                    <div class="chat-image avatar">
+                        <div class="w-10 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold">AI</div>
+                    </div>
+                    <div class="chat-header text-emerald-500 mb-1 text-xs font-bold uppercase tracking-wide">Atlas Agent</div>
+                    <div class="chat-bubble chat-bubble-atlas text-sm">Yes, absolutely! Since you are a sole proprietor/remote LLC, your home address works perfectly as the physical operating address. We will keep this private and only use it for verification.</div>
+                </div>
+
+                <div class="chat chat-end">
+                    <div class="chat-header opacity-50 mb-1 text-xs">Merchant User</div>
+                    <div class="chat-bubble chat-bubble-merchant text-sm">Okay, it's 123 Maple Street, San Francisco, CA 94110.</div>
+                </div>
+
+                <div class="chat chat-start">
+                    <div class="chat-image avatar">
+                        <div class="w-10 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold">AI</div>
+                    </div>
+                    <div class="chat-header text-emerald-500 mb-1 text-xs font-bold uppercase tracking-wide">Atlas Agent</div>
+                    <div class="chat-bubble chat-bubble-atlas text-sm">Perfect. I've updated your application with that address. One last thing - the system is flagging the 'Monthly Volume' as very high for a new business ($450k). Do you have processing statements from a previous provider?</div>
+                </div>
+
+                <div class="chat chat-end">
+                    <div class="chat-header opacity-50 mb-1 text-xs">Merchant User</div>
+                    <div class="chat-bubble chat-bubble-merchant text-sm">Yes, I have stripe statements.</div>
+                </div>
+
+                <div class="chat chat-start">
+                    <div class="chat-image avatar">
+                        <div class="w-10 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold">AI</div>
+                    </div>
+                    <div class="chat-header text-emerald-500 mb-1 text-xs font-bold uppercase tracking-wide">Atlas Agent</div>
+                    <div class="chat-bubble chat-bubble-atlas text-sm">Great! I've enabled the document upload section below. Please upload the last 3 months of statements there, and I'll attach them to your file. This will help speed up approval significantly!</div>
+                </div>
+
+                <div class="flex justify-center mt-4">
+                     <div class="badge badge-success gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                        Healed: Address Gap, Volume Justification
+                     </div>
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- === PRECEDENT GRAPH VIEW === -->
+        <div id="view-precedent" class="hidden view space-y-6 animate-in fade-in">
+            <header class="flex justify-between items-end">
+                <div>
+                     <h1 class="text-4xl font-extrabold tracking-tight">Context Graph Explorer</h1>
+                     <p class="text-zinc-500 mt-2">Searching for: <span class="text-emerald-500 font-mono">"SaaS" + "High Volume" + "New Incorporation"</span></p>
+                </div>
+            </header>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Precedent 1 -->
+                <div class="glass p-6 rounded-2xl border-white/5 precedent-card transition-all cursor-pointer">
+                    <div class="flex justify-between mb-4">
+                        <div class="font-bold text-lg">TechFlow Inc</div>
+                        <div class="badge badge-success badge-sm">APPROVED</div>
+                    </div>
+                    <p class="text-sm text-zinc-400 mb-4">"Applied 3 months ago. Similar profile: $300k vol, DE Corp. Provided Stripe statements."</p>
+                    <div class="text-xs font-mono p-2 bg-black/40 rounded border border-white/5">
+                        Outcome: Approved with $50k Reserve.
+                    </div>
+                    <div class="mt-4 text-[10px] text-emerald-500 uppercase tracking-widest font-bold">Similarity: 94%</div>
+                </div>
+
+                <!-- Precedent 2 -->
+                <div class="glass p-6 rounded-2xl border-white/5 precedent-card transition-all cursor-pointer">
+                    <div class="flex justify-between mb-4">
+                        <div class="font-bold">CloudCompute LLC</div>
+                        <div class="badge badge-error badge-sm">REJECTED</div>
+                    </div>
+                    <p class="text-sm text-zinc-400 mb-4">"High volume ($500k) but no previous processing history. Founder IP matched to known fraud ring."</p>
+                    <div class="text-xs font-mono p-2 bg-black/40 rounded border border-white/5">
+                        Outcome: Hard Reject (Fraud).
+                    </div>
+                    <div class="mt-4 text-[10px] text-emerald-500 uppercase tracking-widest font-bold">Similarity: 82%</div>
+                </div>
+
+                <!-- Insight Card -->
+                <div class="bg-gradient-to-br from-emerald-900/50 to-black p-6 rounded-2xl border border-emerald-500/30">
+                    <h3 class="font-bold text-emerald-400 mb-2">AI Insight</h3>
+                    <p class="text-sm leading-relaxed">
+                        Based on 14 precedents, companies in this vertical with >$300k volume are <strong>safe</strong> if they provide >3 months of statements. 
+                        <br><br>
+                        <strong>Recommendation:</strong> Request statements (done by Atlas) and Approve.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function showView(view) {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.getElementById('btn-detail').classList.remove('bg-white', 'text-black');
+            document.getElementById('btn-transcript').classList.remove('bg-white', 'text-black');
+            document.getElementById('btn-precedent').classList.remove('bg-white', 'text-black');
+
+            document.getElementById('view-' + view).classList.remove('hidden');
+            document.getElementById('btn-' + view).classList.add('bg-white', 'text-black');
+        }
+    </script>
+</body>
+</html>

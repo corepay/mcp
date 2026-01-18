@@ -27,6 +27,7 @@ defmodule Mcp.Payments.Gateways.Adapter do
 
   # QorPay Specifics
   @callback create_merchant(merchant_params :: map(), context :: context()) :: response()
+  @callback get_merchant_status(mid :: String.t(), context :: context()) :: response()
   @callback create_form_session(form_params :: map(), context :: context()) :: response()
   @callback lookup_bin(bin :: String.t(), context :: context()) :: response()
 end

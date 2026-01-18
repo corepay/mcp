@@ -126,6 +126,7 @@ defmodule McpWeb.Router do
       on_mount: [{McpWeb.Auth.LiveAuth, :require_authenticated}] do
       live "/underwriting", Tenant.UnderwritingLive
       live "/underwriting/board", Tenant.Underwriting.KanbanLive
+      live "/underwriting/boarding", Tenant.BoardingLive
       live "/underwriting/settings", Tenant.Underwriting.SettingsLive
       live "/underwriting/:id", Tenant.ReviewLive
     end

@@ -22,13 +22,14 @@ defmodule Mcp.Underwriting.CriticalIssuesTest do
     AgentBlueprint,
     Application,
     Check,
-    CircuitBreaker,
     Client,
     Engine.AgentRunner,
     Gateway,
     InstructionSet,
     VendorRouter
   }
+
+  alias Mcp.Utils.CircuitBreaker
 
   # =============================================================================
   # CRIT-3: CircuitBreaker Module Location Mismatch
@@ -66,7 +67,7 @@ defmodule Mcp.Underwriting.CriticalIssuesTest do
       # This requires the correct CircuitBreaker module to be running
       # and accepting report_failure/1 calls
       for _ <- 1..6 do
-        CircuitBreaker.report_failure("Elixir.Mcp.Underwriting.Adapters.Idenfy")
+        CircuitBreaker.record_failure("Elixir.Mcp.Underwriting.Adapters.Idenfy")
       end
 
       # Should fallback to ComplyCube when Idenfy circuit is open

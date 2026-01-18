@@ -167,6 +167,16 @@ defmodule Mcp.Payments.Gateways.QorPay do
   end
 
   @impl true
+  @spec get_merchant_status(String.t(), map()) :: {:ok, map()} | {:error, any()}
+  def get_merchant_status(mid, _context) do
+    Logger.info("QorPay: Checking status for merchant #{mid}")
+
+    client()
+    |> Req.get(url: "/channels/merchant_status/#{mid}")
+    |> handle_response()
+  end
+
+  @impl true
   @spec create_form_session(map(), map()) :: {:ok, map()} | {:error, any()}
   def create_form_session(form_params, _context) do
     Logger.info("QorPay: Creating hosted form session")
@@ -297,6 +307,8 @@ defmodule Mcp.Payments.Gateways.QorPay do
   defp handle_response({:ok, %{status: 200, body: body}}) do
     case body do
       %{"status" => "approved"} -> {:ok, body}
+      %{"status" => "active"} -> {:ok, body}
+      %{"status" => "pending"} -> {:ok, body}
       %{"status" => "success"} -> {:ok, body}
       %{"status" => "ok"} -> {:ok, body}
       # Explicit error status

@@ -20,7 +20,7 @@ defmodule Mcp.Underwriting.RiskAssessment do
 
     create :create do
       primary? true
-      accept [:score, :factors, :recommendation, :subject_id, :subject_type]
+      accept [:score, :factors, :recommendation, :subject_id, :subject_type, :policy_hash]
       argument :application_id, :uuid, allow_nil?: false
       change manage_relationship(:application_id, :application, type: :append_and_remove)
     end
@@ -28,6 +28,10 @@ defmodule Mcp.Underwriting.RiskAssessment do
 
   attributes do
     uuid_primary_key :id
+
+    attribute :policy_hash, :string do
+      description "The hash of the instruction set used to generate this assessment."
+    end
 
     attribute :subject_id, :uuid do
       allow_nil? false
@@ -65,5 +69,6 @@ defmodule Mcp.Underwriting.RiskAssessment do
     define :create
     define :read
     define :destroy
+    define :get_by_id, action: :read, get_by: [:id]
   end
 end

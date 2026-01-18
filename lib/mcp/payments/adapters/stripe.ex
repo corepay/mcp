@@ -54,6 +54,8 @@ defmodule Mcp.Payments.Gateways.Stripe do
   @impl true
   def create_merchant(_merchant_params, _context), do: {:error, :not_supported}
   @impl true
+  def get_merchant_status(_mid, _context), do: {:error, :not_supported}
+  @impl true
   def create_form_session(_form_params, _context), do: {:error, :not_supported}
   @impl true
   def lookup_bin(_bin, _context), do: {:error, :not_supported}

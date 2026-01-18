@@ -10,8 +10,8 @@ defmodule Mcp.Underwriting.Gateway do
     Client,
     RiskAssessment,
     RiskEngine,
-    SlaCalculator,
-    VendorRouter
+    VendorRouter,
+    VendorSettings
   }
 
   require Ash.Query
@@ -35,7 +35,8 @@ defmodule Mcp.Underwriting.Gateway do
     # ... (previous code)
     with {:ok, kyb_result} <-
            call_adapter(adapter, :screen_business, [application.application_data, %{}]),
-         {:ok, _check} <- record_check(application, :extensive_screening_check, kyb_result) do
+         {:ok, _check} <-
+           record_kyb_check(application, :extensive_screening_check, kyb_result, opts) do
       # 2. Screen Owners (KYC) - Process each owner, record checks, and propagate errors
       owners = Map.get(application.application_data, "owners", [])
 
@@ -49,7 +50,8 @@ defmodule Mcp.Underwriting.Gateway do
             run_document_check(adapter, doc)
           end)
 
-        process_risk_assessment(application, kyb_result, doc_results, tenant)
+        policy_hash = Keyword.get(opts, :policy_hash)
+        process_risk_assessment(application, kyb_result, doc_results, tenant, policy_hash)
       end
     else
       error -> {:error, error}
@@ -73,17 +75,15 @@ defmodule Mcp.Underwriting.Gateway do
     end
   end
 
-  defp process_risk_assessment(application, kyb_result, doc_results, tenant) do
+  defp process_risk_assessment(application, kyb_result, doc_results, tenant, policy_hash) do
     # 4. Calculate Risk Score
     vendor_data = %{kyb: kyb_result, documents: doc_results}
     evaluation = RiskEngine.evaluate(application, vendor_data)
     score = evaluation.score
     reasons = evaluation.reasons
 
-    # Calculate SLA
-    now = DateTime.utc_now()
-    submitted_at = application.submitted_at || now
-    sla_due_at = SlaCalculator.calculate_due_at(submitted_at)
+    settings = fetch_thresholds(tenant)
+    recommendation = determine_recommendation(score, settings)
 
     # 5. Create Risk Assessment
     RiskAssessment.create!(
@@ -93,21 +93,25 @@ defmodule Mcp.Underwriting.Gateway do
         application_id: application.id,
         score: score,
         factors: %{kyb: kyb_result, documents: doc_results, risk_reasons: reasons},
-        recommendation: if(score > 80, do: :approve, else: :manual_review)
+        recommendation: recommendation,
+        policy_hash: policy_hash
       },
       tenant: tenant
     )
 
-    # 6. Update Application Status & SLA
-    new_status = determine_new_status(score)
+    # 6. Update Application Status
+    new_status =
+      case recommendation do
+        :approve -> :approved
+        :reject -> :rejected
+        :manual_review -> :manual_review
+      end
 
     Application.update!(
       application,
       %{
         status: new_status,
-        risk_score: score,
-        submitted_at: submitted_at,
-        sla_due_at: sla_due_at
+        risk_score: score
       },
       tenant: tenant
     )
@@ -131,10 +135,18 @@ defmodule Mcp.Underwriting.Gateway do
     {:ok, score}
   end
 
-  defp determine_new_status(score) do
+  defp fetch_thresholds(tenant) do
+    case VendorSettings.get_settings(tenant: tenant) do
+      {:ok, [s | _]} -> s
+      {:ok, s} when is_map(s) and not is_nil(s) -> s
+      _ -> %{auto_approve_threshold: 90, auto_reject_threshold: 50}
+    end
+  end
+
+  defp determine_recommendation(score, settings) do
     cond do
-      score >= 90 -> :approved
-      score < 50 -> :rejected
+      score >= settings.auto_approve_threshold -> :approve
+      score <= settings.auto_reject_threshold -> :reject
       true -> :manual_review
     end
   end
@@ -255,8 +267,49 @@ defmodule Mcp.Underwriting.Gateway do
     end)
   end
 
-  defp record_check(_application, _type, _result) do
-    # Placeholder: In a real implementation, we would create a Check record linked to a Client
-    {:ok, :check_recorded}
+  defp record_kyb_check(application, type, result, opts) do
+    tenant = Keyword.get(opts, :tenant)
+    client = find_or_create_business_client(application, tenant)
+
+    Check
+    |> Ash.Changeset.for_create(:create, %{
+      type: type,
+      status: :complete,
+      outcome: map_kyb_outcome(result),
+      raw_result: result,
+      client_id: client.id
+    })
+    |> Ash.create(tenant: tenant)
+  end
+
+  defp find_or_create_business_client(application, tenant) do
+    name = application.application_data["business_name"]
+
+    existing =
+      Client
+      |> Ash.Query.filter(application_id == ^application.id and type == :company)
+      |> Ash.read_one(tenant: tenant)
+
+    case existing do
+      {:ok, nil} ->
+        Client
+        |> Ash.Changeset.for_create(:create, %{
+          type: :company,
+          company_details: %{"name" => name},
+          application_id: application.id
+        })
+        |> Ash.create!(tenant: tenant)
+
+      {:ok, client} ->
+        client
+    end
+  end
+
+  defp map_kyb_outcome(result) do
+    cond do
+      result["status"] in ["clear", "passed", "approved"] -> :clear
+      result["status"] in ["failed", "rejected"] -> :not_confirmed
+      true -> :attention
+    end
   end
 end

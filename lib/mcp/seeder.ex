@@ -8,7 +8,7 @@ defmodule Mcp.Seeder do
   alias Mcp.Platform.{Merchant, Store, Tenant}
   alias Mcp.Platform.TenantUserManager
   alias Mcp.Repo
-  alias Mcp.Underwriting.AgentBlueprint
+  alias Mcp.Underwriting.{AgentBlueprint, BankSeeder}
 
   @password "Password123!"
 
@@ -25,6 +25,9 @@ defmodule Mcp.Seeder do
 
     # 3. Create Agent Blueprints
     seed_agent_blueprints()
+
+    # 4. Create Bank Matrix
+    BankSeeder.run()
 
     IO.puts("✅ Seeding Complete!")
   end

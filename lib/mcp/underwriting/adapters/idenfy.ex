@@ -79,10 +79,36 @@ defmodule Mcp.Underwriting.Adapters.Idenfy do
   end
 
   @impl true
-  def check_watchlist(_name, _context) do
-    # iDenfy does AML checks as part of the main flow or separate endpoint
-    # For now, placeholder
-    {:ok, %{provider: "idenfy", status: "clear"}}
+  def check_watchlist(name, context) do
+    client = get_client()
+
+    payload = %{
+      name: name,
+      # optional metadata from context
+      birthDate: context[:birth_date],
+      country: context[:country]
+    }
+
+    case Req.post(client, url: "/api/v2/aml/search", json: payload) do
+      {:ok, %{status: 200, body: body}} ->
+        # If there are NO hits, it's clear
+        status = if Enum.empty?(body["hits"] || []), do: "clear", else: "match_found"
+
+        {:ok,
+         %{
+           provider: "idenfy",
+           status: status,
+           hits: body["hits"],
+           aml_reference: body["reference"]
+         }}
+
+      {:ok, response} ->
+        Logger.error("iDenfy AML check failed: #{inspect(response.body)}")
+        {:error, "API Error"}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @impl true

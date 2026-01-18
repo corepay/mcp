@@ -27,6 +27,17 @@ defmodule Mcp.Underwriting.Application do
       primary? true
       accept [:status, :application_data, :risk_score, :submitted_at, :sla_due_at]
     end
+
+    update :submit do
+      accept [:application_data]
+      require_atomic? false
+      change set_attribute(:status, :submitted)
+      change set_attribute(:submitted_at, &DateTime.utc_now/0)
+      change Mcp.Underwriting.Changes.SetSla
+
+      change {Mcp.Underwriting.Changes.LogActivity,
+              type: :status_change, metadata: %{event: "application_submitted"}}
+    end
   end
 
   attributes do
@@ -49,7 +60,8 @@ defmodule Mcp.Underwriting.Application do
                     :manual_review,
                     :approved,
                     :rejected,
-                    :more_info_required
+                    :more_info_required,
+                    :funded
                   ]
 
       default :draft
@@ -84,6 +96,7 @@ defmodule Mcp.Underwriting.Application do
   code_interface do
     define :create
     define :update
+    define :submit
     define :read
     define :destroy
     define :get_by_id, action: :read, get_by: [:id]

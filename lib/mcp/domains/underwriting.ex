@@ -22,10 +22,17 @@ defmodule Mcp.Underwriting do
     # Agentic UaaS Resources
     resource Mcp.Underwriting.AgentBlueprint
     resource Mcp.Underwriting.InstructionSet
+    resource Mcp.Underwriting.Playbook
+    resource Mcp.Underwriting.PlaybookConcierge
     resource Mcp.Underwriting.Pipeline
     resource Mcp.Underwriting.Execution
 
     # Deal Room Resources
     resource Mcp.Underwriting.Note
+
+    # Sprint 5: Yield & Boarding
+    resource Mcp.Underwriting.Processor
+    resource Mcp.Underwriting.BankProfile
+    resource Mcp.Underwriting.Boarding
   end
 end

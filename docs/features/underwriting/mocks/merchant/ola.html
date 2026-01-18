@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="black">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sovereign Intake | Merchant OLA</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --noir-bg: #050505;
+            --noir-surface: #101010;
+            --emerald: #10b981;
+            --amber: #f59e0b;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--noir-bg); color: #e5e5e5; }
+        .glass-panel { background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        
+        .atlas-glow { box-shadow: 0 0 15px rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.4); }
+        .atlas-amber-glow { box-shadow: 0 0 15px rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.4); }
+        
+        .inline-healer {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease-out;
+            opacity: 0;
+        }
+        .inline-healer.expanded {
+            max-height: 200px;
+            opacity: 1;
+            margin-top: 0.5rem;
+        }
+
+        .step-content { display: none; }
+        .step-content.active { display: flex; }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* Input Styles */
+        .noir-input {
+            border-bottom: 1px solid #333;
+            border-radius: 0;
+            background: transparent;
+            padding-left: 0;
+            transition: all 0.2s;
+        }
+        .noir-input:focus {
+            border-bottom-color: var(--emerald);
+            outline: none;
+        }
+        .label-text { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #666; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-8 bg-black">
+
+    <!-- SPLIT LAYOUT CONTAINER -->
+    <div class="w-full max-w-7xl flex gap-6 h-[800px] items-stretch">
+        
+        <!-- LEFT: FORM APPLICATION (MAIN) -->
+        <div class="flex-[2] flex flex-col glass-panel rounded-2xl overflow-hidden shadow-2xl relative">
+            
+            <!-- 1. Header (Fixed) -->
+            <div class="h-20 border-b border-zinc-800/50 flex items-center justify-between px-8 bg-black/20 shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded bg-white/5 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <div>
+                        <div class="font-bold text-white text-sm tracking-wide">SOVEREIGN BOARDING</div>
+                        <div class="text-[10px] text-zinc-500 font-mono">SECURE ENCLAVE v4.2</div>
+                    </div>
+                </div>
+                <!-- Progress Stepper -->
+                <div class="flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest">
+                    <div id="step-ind-1" class="text-emerald-500 flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full border border-emerald-500 flex items-center justify-center">1</span> Business
+                    </div>
+                    <div class="w-8 h-px bg-zinc-800 mx-2"></div>
+                    <div id="step-ind-2" class="text-zinc-600 flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full border border-zinc-700 flex items-center justify-center">2</span> Owners
+                    </div>
+                    <div class="w-8 h-px bg-zinc-800 mx-2"></div>
+                    <div id="step-ind-3" class="text-zinc-600 flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full border border-zinc-700 flex items-center justify-center">3</span> Financials
+                    </div>
+                     <div class="w-8 h-px bg-zinc-800 mx-2"></div>
+                    <div id="step-ind-4" class="text-zinc-600 flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full border border-zinc-700 flex items-center justify-center">4</span> Review
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Content Area (Scrollable) -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-10 relative bg-gradient-to-br from-zinc-900/10 to-transparent">
+                
+                <!-- SUCCESS OVERLAY (Hidden) -->
+                <div id="success-overlay" class="absolute inset-0 bg-black/95 z-50 flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-1000">
+                    <!-- Fixed Spinner & Icon -->
+                    <div class="relative w-24 h-24 mb-6 flex items-center justify-center">
+                        <div class="absolute inset-0 rounded-full border-4 border-zinc-800"></div>
+                        <div class="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
+                        <div class="bg-emerald-500/10 rounded-full p-4 animate-pulse">
+                            <i data-lucide="check" class="w-8 h-8 text-emerald-500"></i>
+                        </div>
+                    </div>
+                    <h2 class="text-4xl font-bold text-white mb-2 tracking-tight">Application Received</h2>
+                    <p class="text-zinc-500 font-mono mb-8">Reference ID: <span class="text-emerald-500">#TR-9982-AX</span></p>
+                    <div class="flex gap-4">
+                        <button onclick="location.reload()" class="btn btn-outline border-zinc-700 hover:bg-zinc-800 text-zinc-400">Start New Application</button>
+                    </div>
+                </div>
+
+                <!-- STEP 1: BUSINESS ENTITY -->
+                <div id="step-1" class="step-content flex-col active h-full space-y-8">
+                    <div>
+                        <h1 class="text-3xl font-light text-white mb-2">Business Profile</h1>
+                        <p class="text-zinc-500 text-sm">Legal entity details as registered with the Secretary of State.</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-x-8 gap-y-6">
+                        <div class="form-control hover:border-b-zinc-600 transition-colors">
+                            <label class="label-text mb-1">Legal Business Name</label>
+                            <input type="text" class="input input-ghost noir-input h-10 px-0 text-lg w-full" placeholder="e.g. Acme Innovations LLC" value="Acme Innovations LLC" />
+                        </div>
+                        <div class="form-control">
+                            <label class="label-text mb-1">DBA (Doing Business As)</label>
+                            <input type="text" class="input input-ghost noir-input h-10 px-0 text-lg w-full" placeholder="Optional" />
+                        </div>
+                        <div class="form-control">
+                            <label class="label-text mb-1">Tax ID (EIN)</label>
+                             <input type="text" class="input input-ghost noir-input h-10 px-0 text-lg w-full font-mono tracking-widest" placeholder="XX-XXXXXXX" value="82-1049283" />
+                        </div>
+                        <div class="form-control">
+                            <label class="label-text mb-1">Date Established</label>
+                             <input type="date" class="input input-ghost noir-input h-10 px-0 text-lg w-full text-zinc-400" value="2022-04-15" />
+                        </div>
+                    </div>
+
+                    <!-- The Interceptor Field -->
+                    <div class="form-control relative group">
+                        <label class="label-text mb-2 text-emerald-500">Business Description (Detailed)</label>
+                        <textarea id="biz-desc" class="textarea textarea-ghost w-full bg-zinc-900/30 border border-zinc-800 focus:border-emerald-500 rounded-lg p-4 text-base leading-relaxed transition-all min-h-[120px]" 
+                        placeholder="Explain exactly what you sell, who you sell to, and when you deliver..."
+                        onblur="analyzeDescription(this)"></textarea>
+                        
+                        <!-- Atlas Intervention UI -->
+                        <div id="inline-healer" class="inline-healer bg-gradient-to-r from-amber-900/20 to-transparent border-l-2 border-amber-500 ml-1 pl-4 mt-2">
+                            <div class="py-2">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i>
+                                    <span class="text-xs font-bold text-amber-500 uppercase tracking-wide">Compliance Risk Detected</span>
+                                </div>
+                                <p class="text-xs text-zinc-400 mb-3">Descripion is too vague. Atlas has generated a banking-compliant revision.</p>
+                                <div id="suggestion-box" class="bg-black/40 border border-zinc-800 rounded p-3 hidden animate-in fade-in">
+                                    <p class="text-xs text-zinc-300 italic mb-2">"We provide B2B SaaS analytics..."</p>
+                                    <button type="button" onclick="applySuggestion()" class="btn btn-xs bg-amber-600 hover:bg-amber-500 border-none text-white w-full">Apply Revision</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-8">
+                         <div class="form-control">
+                            <label class="label-text mb-1">Business Address</label>
+                            <div class="relative">
+                                <i data-lucide="map-pin" class="absolute left-0 top-3 w-4 h-4 text-zinc-600"></i>
+                                <input type="text" class="input input-ghost noir-input h-10 pl-6 text-lg w-full" value="440 Nancy St" />
+                            </div>
+                        </div>
+                        <div class="form-control">
+                            <label class="label-text mb-1">Website URL</label>
+                             <div class="relative">
+                                <i data-lucide="globe" class="absolute left-0 top-3 w-4 h-4 text-zinc-600"></i>
+                                <input type="text" class="input input-ghost noir-input h-10 pl-6 text-lg w-full text-emerald-500" value="https://acme.io" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: OWNERS -->
+                <div id="step-2" class="step-content flex-col h-full space-y-8">
+                     <div>
+                        <h1 class="text-3xl font-light text-white mb-2">Beneficial Owners</h1>
+                        <p class="text-zinc-500 text-sm">Individuals with >25% equity or significant control.</p>
+                    </div>
+                    
+                    <!-- Owner Card 1 -->
+                    <div class="bg-zinc-900/20 border border-zinc-800 rounded-xl p-6 relative">
+                        <div class="absolute -top-3 left-4 bg-black px-2 text-xs font-bold text-zinc-500 uppercase">Primary Principal</div>
+                        <div class="grid grid-cols-2 gap-6 mb-6">
+                            <div class="form-control">
+                                <label class="label-text mb-1">Legal First Name</label>
+                                <input type="text" class="input input-ghost noir-input h-10 px-0 text-base w-full" value="John" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label-text mb-1">Legal Last Name</label>
+                                <input type="text" class="input input-ghost noir-input h-10 px-0 text-base w-full" value="Doe" />
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-6">
+                             <div class="form-control">
+                                <label class="label-text mb-1">Ownership %</label>
+                                <input type="range" class="range range-xs range-emerald" value="100" />
+                                <div class="text-right text-xs text-emerald-500 font-mono mt-1">100%</div>
+                            </div>
+                            <div class="form-control">
+                                <label class="label-text mb-1">SSN</label>
+                                <input type="password" class="input input-ghost noir-input h-10 px-0 text-base w-full tracking-widest" value="xxx-xx-1234" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label-text mb-1">ID Upload (DL/Passport)</label>
+                                <div class="h-10 border border-dashed border-zinc-700 rounded flex items-center justify-center cursor-pointer hover:border-emerald-500 hover:text-emerald-500 transition-colors text-xs text-zinc-500 gap-2">
+                                    <i data-lucide="upload-cloud" class="w-3 h-3"></i> Uploaded: dl_front.jpg
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-outline border-zinc-800 border-dashed text-zinc-500 w-full hover:bg-zinc-900 hover:text-white hover:border-zinc-600">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Add Another Owner
+                    </button>
+                </div>
+
+                <!-- STEP 3: FINANCIALS (Simplified for Mock) -->
+                <div id="step-3" class="step-content flex-col h-full space-y-8">
+                     <div>
+                        <h1 class="text-3xl font-light text-white mb-2">Banking & Volume</h1>
+                        <p class="text-zinc-500 text-sm">Settlement account and processing history.</p>
+                    </div>
+
+                    <div class="glass-panel p-6 rounded-xl border-l-4 border-l-indigo-500 bg-indigo-900/10 mb-6">
+                        <h3 class="font-bold text-indigo-400 text-sm mb-1 flex items-center gap-2"><i data-lucide="link" class="w-4 h-4"></i> Plaid Connected</h3>
+                        <p class="text-xs text-zinc-400">Chase Business Checking ****8829 verified.</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-8">
+                         <div class="form-control">
+                            <label class="label-text mb-1">Est. Monthly Volume</label>
+                            <input type="text" class="input input-ghost noir-input h-10 px-0 text-xl w-full" value="$150,000" />
+                        </div>
+                        <div class="form-control">
+                            <label class="label-text mb-1">Avg. Ticket Size</label>
+                            <input type="text" class="input input-ghost noir-input h-10 px-0 text-xl w-full" value="$250.00" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 4: REVIEW (Summary) -->
+                <div id="step-4" class="step-content flex-col h-full space-y-6">
+                     <div>
+                        <h1 class="text-3xl font-light text-white mb-2">Final Review</h1>
+                        <p class="text-zinc-500 text-sm">Please confirm all details are accurate.</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-4 border border-zinc-800 rounded bg-zinc-900/20">
+                            <div>
+                                <div class="text-[10px] uppercase text-zinc-500">Legal Entity</div>
+                                <div class="text-white font-medium">Acme Innovations LLC</div>
+                            </div>
+                             <div class="badge badge-success badge-outline badge-xs opacity-50">VERIFIED</div>
+                        </div>
+                         <div class="flex justify-between items-center p-4 border border-zinc-800 rounded bg-zinc-900/20">
+                            <div>
+                                <div class="text-[10px] uppercase text-zinc-500">Business Description</div>
+                                <div class="text-white text-sm truncate w-64">We provide B2B SaaS analytics...</div>
+                            </div>
+                             <div class="badge badge-warning badge-outline badge-xs">ATLAS HEALED</div>
+                        </div>
+                        <div class="flex justify-between items-center p-4 border border-zinc-800 rounded bg-zinc-900/20">
+                            <div>
+                                <div class="text-[10px] uppercase text-zinc-500">Banking</div>
+                                <div class="text-white text-sm">Chase ****8829</div>
+                            </div>
+                             <div class="badge badge-success badge-outline badge-xs opacity-50">VERIFIED</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-control">
+                        <label class="cursor-pointer label justify-start gap-4 items-start">
+                            <input type="checkbox" class="checkbox checkbox-emerald rounded-sm mt-1" />
+                            <span class="label-text normal-case text-zinc-400 text-xs leading-relaxed">I certify that the information provided is true and accurate. I authorize Sovereign and its partners to retrieve credit reports for underwriting purposes.</span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+
+             <!-- 3. Footer (Sticky Actions) -->
+            <div class="h-24 bg-[#0a0a0a] border-t border-zinc-800 flex items-center justify-between px-10 shrink-0 z-10 rounded-b-2xl">
+                <button onclick="prevStep()" id="btn-back" class="btn btn-ghost text-zinc-500 hover:text-white uppercase tracking-widest text-xs disabled:opacity-0">Back</button>
+                
+                <div class="flex gap-4">
+                    <button class="btn btn-ghost hover:bg-zinc-900 text-zinc-500">Save Draft</button>
+                    <button onclick="nextStep()" id="btn-next" class="btn bg-white hover:bg-zinc-200 text-black border-none px-10 font-bold tracking-wide shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                        NEXT STEP <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+                    </button>
+                     <button onclick="submitApp()" id="btn-submit" class="hidden btn bg-emerald-500 hover:bg-emerald-400 text-black border-none px-10 font-bold tracking-wide shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                        SUBMIT APPLICATION
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT: ATLAS COMPANION (Sticky Sidebar) -->
+        <div class="w-[380px] flex flex-col">
+            <div class="glass-panel rounded-2xl flex-1 flex flex-col relative overflow-hidden bg-black/40 border-zinc-800 h-full"> 
+                
+                <!-- Helper Header -->
+                <div class="p-6 border-b border-zinc-800/50 shrink-0">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center" id="bot-avatar">
+                            <i data-lucide="bot" class="w-5 h-5 text-zinc-500"></i>
+                        </div>
+                        <div>
+                            <div class="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Atlas Assistant</div>
+                            <div id="bot-status" class="text-sm font-bold text-zinc-400">Idle</div>
+                        </div>
+                    </div>
+                    <!-- Confidence Meter -->
+                    <div class="bg-zinc-900 rounded-full h-1.5 w-full overflow-hidden mb-1">
+                        <div id="conf-bar" class="bg-zinc-700 h-full w-0 transition-all duration-700"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-zinc-600 font-mono uppercase">
+                        <span>Approval Odds</span>
+                        <span id="conf-val">Checking...</span>
+                    </div>
+                </div>
+
+                <!-- Contextual Tips (Auto-Height to Shrink to Content) -->
+                <div class="p-6 border-b border-zinc-800/50 shrink-0">
+                    <div class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-3 h-3"></i> Smart Hints
+                    </div>
+                    <ul id="tips-list" class="space-y-4">
+                        <!-- Dynamic tips go here -->
+                    </ul>
+                </div>
+
+                <!-- Chat Interface (Fills Remaining Space) -->
+                <div class="p-4 bg-[#080808] border-t border-zinc-800 rounded-b-2xl flex-1 flex flex-col min-h-0">
+                    <div id="chat-log" class="flex-1 overflow-y-auto mb-3 custom-scrollbar space-y-3 pr-2">
+                         <div class="chat chat-start">
+                            <div class="chat-bubble bg-zinc-900 text-zinc-400 text-xs rounded-lg rounded-tl-none border border-zinc-800">
+                                I'm monitoring your application for errors in real-time.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative shrink-0">
+                        <input type="text" id="chat-input" class="input input-sm h-10 w-full bg-zinc-900 border-zinc-800 focus:border-zinc-600 text-xs pl-3 pr-10 rounded text-zinc-300" placeholder="Ask Atlas a question..." onkeypress="if(event.key==='Enter') sendChat()">
+                        <button onclick="sendChat()" class="absolute right-2 top-2.5 text-zinc-600 hover:text-white transition-colors">
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // STATE
+        let currentStep = 1;
+        const totalSteps = 4;
+        
+        const TIPS_DB = {
+            1: [
+                { icon: 'search', text: "Verification is automatic. Use precise legal name as listed in your Articles of Incorporation." },
+                { icon: 'alert-circle', text: "Website must show clear refund policy and T&C." }
+            ],
+            2: [
+                { icon: 'shield', text: "All owners >25% must be listed to satisfy FinCEN requirements." },
+                { icon: 'file-check', text: "Ensure ID uploads are legible and color copies." }
+            ],
+            3: [
+                { icon: 'trending-up', text: "Consistent volume improves approved monthly caps." },
+            ],
+            4: [
+                { icon: 'check-circle', text: "Double check all fields. Mistakes delay approval by 3-5 days." }
+            ]
+        };
+
+        // INIT
+        refreshTips(1);
+
+        // NAVIGATION LOGIC
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                // Animation handling could go here
+                document.getElementById(`step-${currentStep}`).classList.remove('active');
+                
+                // Colors
+                document.getElementById(`step-ind-${currentStep}`).classList.remove('text-emerald-500');
+                document.getElementById(`step-ind-${currentStep}`).classList.add('text-emerald-500', 'opacity-50'); // Completed style
+
+                currentStep++;
+                document.getElementById(`step-${currentStep}`).classList.add('active');
+                document.getElementById(`step-ind-${currentStep}`).classList.remove('text-zinc-600');
+                document.getElementById(`step-ind-${currentStep}`).classList.add('text-emerald-500');
+
+                // UI Updates
+                document.getElementById('btn-back').disabled = false;
+                
+                if (currentStep === totalSteps) {
+                    document.getElementById('btn-next').classList.add('hidden');
+                    document.getElementById('btn-submit').classList.remove('hidden');
+                }
+
+                refreshTips(currentStep);
+                updateConfidenceSimple();
+                addChatLog("Moving to section " + currentStep + "...");
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                document.getElementById(`step-${currentStep}`).classList.remove('active');
+                
+                // Revert stepper
+                document.getElementById(`step-ind-${currentStep}`).classList.remove('text-emerald-500');
+                document.getElementById(`step-ind-${currentStep}`).classList.add('text-zinc-600');
+
+                currentStep--;
+                document.getElementById(`step-${currentStep}`).classList.add('active');
+                document.getElementById(`step-ind-${currentStep}`).classList.remove('opacity-50');
+                document.getElementById(`step-ind-${currentStep}`).classList.add('text-emerald-500');
+
+                if (currentStep === 1) document.getElementById('btn-back').disabled = true;
+                
+                document.getElementById('btn-next').classList.remove('hidden');
+                document.getElementById('btn-submit').classList.add('hidden');
+
+                refreshTips(currentStep);
+            }
+        }
+
+        // INTERACTIVITY
+        function analyzeDescription(el) {
+            const val = el.value.toLowerCase();
+            if (val.length > 0 && (val.includes('stuff') || val.length < 20)) {
+                // Trigger Interceptor
+                document.getElementById('inline-healer').classList.add('expanded');
+                setTimeout(() => document.getElementById('suggestion-box').classList.remove('hidden'), 500);
+                
+                // Update Bot
+                setBotState('amber', 'Compliance Issue');
+                addChatLog("I detected a vague business description. This often leads to rejection.", 'bot');
+            } else {
+                 setBotState('emerald', 'Looking Good');
+            }
+        }
+
+        function applySuggestion() {
+            const goodDesc = "We provide B2B SaaS analytics platforms for Tier-1 Logistics companies. Revenue is subscription-based, billed monthly.";
+            const el = document.getElementById('biz-desc');
+            el.value = "";
+            let i = 0;
+            const t = setInterval(() => {
+                el.value += goodDesc.charAt(i);
+                i++;
+                if (i >= goodDesc.length) {
+                    clearInterval(t);
+                    document.getElementById('inline-healer').classList.remove('expanded');
+                    document.getElementById('suggestion-box').classList.add('hidden');
+                    setBotState('emerald', 'Resolved');
+                    addChatLog("Excellent choice. This description fits the 'SaaS - Low Risk' profile.", 'bot');
+                }
+            }, 10);
+        }
+
+        function refreshTips(step) {
+            const list = document.getElementById('tips-list');
+            list.innerHTML = TIPS_DB[step].map(t => `
+                <li class="glass-panel p-3 rounded flex gap-3 animate-in slide-in-from-right-2 border-l-2 border-emerald-500/30">
+                    <i data-lucide="${t.icon}" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i>
+                    <span class="text-xs text-zinc-400 leading-normal">${t.text}</span>
+                </li>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function setBotState(color, text) {
+            const avatar = document.getElementById('bot-avatar');
+            const status = document.getElementById('bot-status');
+            const bar = document.getElementById('conf-bar');
+            const val = document.getElementById('conf-val');
+
+            if (color === 'amber') {
+                avatar.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500"></i>`;
+                status.className = "text-sm font-bold text-amber-500 animate-pulse";
+                status.innerText = text;
+                bar.classList.remove('bg-emerald-500', 'bg-zinc-700');
+                bar.classList.add('bg-amber-500');
+                bar.style.width = "40%";
+                val.innerText = "40% (Low)";
+                val.className = "text-amber-500 font-bold";
+            } else {
+                avatar.innerHTML = `<i data-lucide="check" class="w-5 h-5 text-emerald-500"></i>`;
+                status.className = "text-sm font-bold text-emerald-500";
+                status.innerText = text;
+                bar.classList.remove('bg-amber-500', 'bg-zinc-700');
+                bar.classList.add('bg-emerald-500');
+                bar.style.width = "92%";
+                 val.innerText = "92% (High)";
+                val.className = "text-emerald-500 font-bold";
+            }
+            lucide.createIcons();
+        }
+        
+        function updateConfidenceSimple() {
+             // Just a simulation helper to move the bar a bit on step change
+             const bar = document.getElementById('conf-bar');
+             if (bar.classList.contains('bg-zinc-700')) {
+                 bar.style.width = (currentStep * 20) + "%";
+             }
+        }
+
+        // CHAT SIM
+        function sendChat() {
+            const ipt = document.getElementById('chat-input');
+            const txt = ipt.value.trim();
+            if(!txt) return;
+            
+            addChatLog(txt, 'user');
+            ipt.value = "";
+            
+            setTimeout(() => {
+                addChatLog("I'm analyzing that query against our Underwriting Knowledge Base. One moment...", 'bot');
+            }, 800);
+        }
+
+        function addChatLog(msg, sender) {
+            const container = document.getElementById('chat-log');
+            const isUser = sender === 'user';
+            
+            const html = `
+                <div class="chat ${isUser ? 'chat-end' : 'chat-start'} animate-in fade-in slide-in-from-bottom-2">
+                    <div class="chat-bubble ${isUser ? 'bg-emerald-900/30 text-emerald-100 border border-emerald-500/20' : 'bg-zinc-900/80 text-zinc-300 border border-zinc-800'} text-xs rounded-lg ${isUser ? 'rounded-tr-none' : 'rounded-tl-none'} shadow-none">
+                        ${msg}
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', html);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function submitApp() {
+            const btn = document.getElementById('btn-submit');
+            btn.innerHTML = `<span class="loading loading-spinner"></span> ENCRYPTING & SENDING...`;
+            
+            setTimeout(() => {
+                document.getElementById('success-overlay').classList.remove('hidden');
+                 requestAnimationFrame(() => document.getElementById('success-overlay').classList.remove('opacity-0'));
+            }, 2000);
+        }
+
+    </script>
+</body>
+</html>

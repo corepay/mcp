@@ -35,6 +35,8 @@ defmodule McpWeb.Layouts.PortalLayouts do
       <:sidebar>
         <li><.link navigate={~p"/tenant"}>Dashboard</.link></li>
         <li><.link navigate={~p"/tenant/merchants"}>Merchants</.link></li>
+        <li><.link navigate={~p"/tenant/underwriting"}>Underwriting</.link></li>
+        <li><.link navigate={~p"/tenant/underwriting/boarding"}>Boarding</.link></li>
         <li><.link navigate={~p"/tenant/settings"}>Settings</.link></li>
       </:sidebar>
       <:user_menu>
