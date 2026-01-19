@@ -7,8 +7,8 @@ defmodule Mcp.Underwriting.Engine.AnalyzeApplication do
 
   require Ash.Query
 
-  alias Mcp.Underwriting.Services.{TheEye, TheInspector}
   alias Mcp.Storage
+  alias Mcp.Underwriting.Services.{TheEye, TheInspector}
 
   input(:application_id)
   input(:tenant)

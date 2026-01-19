@@ -13,6 +13,8 @@ defmodule Mcp.Platform.Merchant do
     ],
     notifiers: []
 
+  alias Mcp.Graph.Notifier
+
   # use Mcp.Graph.Extension
 
   # paper_trail do
@@ -104,7 +106,7 @@ defmodule Mcp.Platform.Merchant do
 
       change fn changeset, _ ->
         Ash.Changeset.after_action(changeset, fn _changeset, merchant ->
-          Mcp.Graph.Notifier.sync_to_graph(Mcp.Platform.Merchant, merchant, merchant.tenant_id)
+          Notifier.sync_to_graph(__MODULE__, merchant, merchant.tenant_id)
           {:ok, merchant}
         end)
       end

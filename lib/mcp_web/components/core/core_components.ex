@@ -166,8 +166,13 @@ defmodule McpWeb.Core.CoreComponents do
         @width || "max-w-lg",
         "max-h-[95vh] rounded-3xl"
       ]}>
-        <div :if={@title != []} class="px-8 py-6 border-b border-white/5 shrink-0 bg-base-100/50 backdrop-blur-md z-[60]">
-          <h3 class="font-black text-xl uppercase tracking-widest text-white">{render_slot(@title)}</h3>
+        <div
+          :if={@title != []}
+          class="px-8 py-6 border-b border-white/5 shrink-0 bg-base-100/50 backdrop-blur-md z-[60]"
+        >
+          <h3 class="font-black text-xl uppercase tracking-widest text-white">
+            {render_slot(@title)}
+          </h3>
         </div>
 
         <div class="p-8 overflow-y-auto custom-scrollbar flex-1 bg-gradient-to-b from-transparent to-base-200/20 relative z-[40]">
@@ -183,7 +188,10 @@ defmodule McpWeb.Core.CoreComponents do
           </div>
           <div class="flex gap-3">
             <form :if={@cancel_text != []} method="dialog">
-              <button class="btn btn-ghost rounded-xl px-6 font-bold uppercase tracking-widest text-xs" phx-click={@on_cancel}>
+              <button
+                class="btn btn-ghost rounded-xl px-6 font-bold uppercase tracking-widest text-xs"
+                phx-click={@on_cancel}
+              >
                 {render_slot(@cancel_text)}
               </button>
             </form>

@@ -4,6 +4,7 @@ defmodule McpWeb.Tenant.DashboardLive do
   alias Mcp.Platform.Tenant
   alias Mcp.Underwriting.Application
   alias Mcp.Underwriting.Atlas.Agent, as: AtlasAgent
+  alias Mcp.Underwriting.AtlasAssistant
 
   @impl true
   def mount(_params, session, socket) do
@@ -136,7 +137,7 @@ defmodule McpWeb.Tenant.DashboardLive do
     Task.start(fn ->
       result =
         try do
-          Mcp.Underwriting.AtlasAssistant.ask(query, context)
+          AtlasAssistant.ask(query, context)
         rescue
           e -> {:error, e}
         end
@@ -359,8 +360,7 @@ defmodule McpWeb.Tenant.DashboardLive do
                       Total Merchants
                     </span>
                     <div class="flex items-center gap-1.5 text-[11px] font-mono font-bold text-success shrink-0">
-                      <span class="size-1 bg-success rounded-full"></span>
-                      +{@stats.merchants_growth}
+                      <span class="size-1 bg-success rounded-full"></span> +{@stats.merchants_growth}
                     </div>
                   </div>
                   <div class="flex items-baseline gap-2">
@@ -502,14 +502,18 @@ defmodule McpWeb.Tenant.DashboardLive do
                         <div class="flex items-center gap-3">
                           <div class="w-1.5 h-1.5 rounded-full bg-primary/40"></div>
                           <div class="flex-1 flex justify-between items-center text-xs">
-                            <span class="font-bold text-base-content/60">Authorized (Uncaptured)</span>
+                            <span class="font-bold text-base-content/60">
+                              Authorized (Uncaptured)
+                            </span>
                             <span class="font-mono text-base-content/40">$840,250</span>
                           </div>
                         </div>
                         <div class="flex items-center gap-3">
                           <div class="w-1.5 h-1.5 rounded-full bg-primary/70"></div>
                           <div class="flex-1 flex justify-between items-center text-xs">
-                            <span class="font-bold text-base-content/60">Batched (Pending Sweep)</span>
+                            <span class="font-bold text-base-content/60">
+                              Batched (Pending Sweep)
+                            </span>
                             <span class="font-mono text-base-content/60">$1,250,850</span>
                           </div>
                         </div>
@@ -1009,7 +1013,7 @@ defmodule McpWeb.Tenant.DashboardLive do
                     Portfolio Volume
                   </div>
                   <div class="text-xl font-black text-emerald-400 mono-num">
-                    <%= @stats.volume %>
+                    {@stats.volume}
                   </div>
                 </div>
                 <div class="bg-base-200/50 p-4 rounded-2xl border border-white/5 shadow-sm">
@@ -1017,7 +1021,7 @@ defmodule McpWeb.Tenant.DashboardLive do
                     Growth Velocity
                   </div>
                   <div class="text-xl font-black text-primary mono-num">
-                    <%= @stats.growth %>
+                    {@stats.growth}
                   </div>
                 </div>
                 <div class="bg-base-200/50 p-4 rounded-2xl border border-white/5 shadow-sm">
@@ -1025,7 +1029,7 @@ defmodule McpWeb.Tenant.DashboardLive do
                     Active Merchants
                   </div>
                   <div class="text-xl font-black text-white mono-num">
-                    <%= @stats.merchants_count %>
+                    {@stats.merchants_count}
                   </div>
                 </div>
                 <div class="bg-base-200/50 p-4 rounded-2xl border border-white/5 shadow-sm">
@@ -1033,12 +1037,12 @@ defmodule McpWeb.Tenant.DashboardLive do
                     Pending Apps
                   </div>
                   <div class="text-xl font-black text-amber-400 mono-num">
-                    <%= @stats.pending_apps %>
+                    {@stats.pending_apps}
                   </div>
                 </div>
               </div>
-
-              <!-- Real Volume Chart Integration -->
+              
+    <!-- Real Volume Chart Integration -->
               <div class="bg-base-200/50 p-8 rounded-3xl border border-white/5 shadow-inner">
                 <div class="flex items-center justify-between mb-8">
                   <div class="flex flex-col gap-1">
@@ -1053,15 +1057,21 @@ defmodule McpWeb.Tenant.DashboardLive do
                   <div class="flex items-center gap-4">
                     <div class="flex items-center gap-1.5">
                       <span class="size-1.5 rounded-full bg-emerald-500"></span>
-                      <span class="text-[8px] font-bold uppercase text-base-content/60 tracking-widest">Approved</span>
+                      <span class="text-[8px] font-bold uppercase text-base-content/60 tracking-widest">
+                        Approved
+                      </span>
                     </div>
                     <div class="flex items-center gap-1.5">
                       <span class="size-1.5 rounded-full bg-amber-500"></span>
-                      <span class="text-[8px] font-bold uppercase text-base-content/60 tracking-widest">Pending</span>
+                      <span class="text-[8px] font-bold uppercase text-base-content/60 tracking-widest">
+                        Pending
+                      </span>
                     </div>
                     <div class="flex items-center gap-1.5">
                       <span class="size-1.5 rounded-full bg-error"></span>
-                      <span class="text-[8px] font-bold uppercase text-base-content/60 tracking-widest">Declined</span>
+                      <span class="text-[8px] font-bold uppercase text-base-content/60 tracking-widest">
+                        Declined
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1071,21 +1081,27 @@ defmodule McpWeb.Tenant.DashboardLive do
                     <div class="flex-1 group relative h-full flex flex-col justify-end gap-0.5">
                       <% total = point.approved + point.pending + point.declined %>
                       <% total = if total == 0, do: 1, else: total %>
-
-                      <!-- Tooltip -->
+                      
+    <!-- Tooltip -->
                       <div class="absolute -top-16 left-1/2 -translate-x-1/2 bg-base-300 px-3 py-2 rounded-lg border border-white/10 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-20 whitespace-nowrap shadow-2xl">
-                        <div class="text-[10px] font-black text-white mb-1"><%= point.timestamp %></div>
+                        <div class="text-[10px] font-black text-white mb-1">{point.timestamp}</div>
                         <div class="flex items-center gap-2 mb-1">
                           <span class="size-1.5 rounded-full bg-emerald-500"></span>
-                          <span class="text-[9px] font-bold text-emerald-400">Approved: <%= point.approved %></span>
+                          <span class="text-[9px] font-bold text-emerald-400">
+                            Approved: {point.approved}
+                          </span>
                         </div>
                         <div class="flex items-center gap-2 mb-1">
                           <span class="size-1.5 rounded-full bg-amber-500"></span>
-                          <span class="text-[9px] font-bold text-amber-400">Pending: <%= point.pending %></span>
+                          <span class="text-[9px] font-bold text-amber-400">
+                            Pending: {point.pending}
+                          </span>
                         </div>
                         <div class="flex items-center gap-2">
                           <span class="size-1.5 rounded-full bg-error"></span>
-                          <span class="text-[9px] font-bold text-error">Declined: <%= point.declined %></span>
+                          <span class="text-[9px] font-bold text-error">
+                            Declined: {point.declined}
+                          </span>
                         </div>
                       </div>
 
@@ -1113,15 +1129,15 @@ defmodule McpWeb.Tenant.DashboardLive do
                 <div class="flex justify-between mt-4 px-1 border-t border-white/5 pt-3">
                   <%= for point <- Enum.take(@approval_chart_data || [], -7) do %>
                     <span class="text-[8px] font-black uppercase tracking-tighter text-white/20">
-                      <%= point.timestamp %>
+                      {point.timestamp}
                     </span>
                   <% end %>
                 </div>
               </div>
-
-              <!-- AI Intelligence Report -->
+              
+    <!-- AI Intelligence Report -->
               <div class="prose prose-emerald dark:prose-invert max-w-none bg-base-300/30 p-10 rounded-3xl border border-white/5 shadow-2xl text-base-content leading-relaxed">
-                <%= render_markdown(@executive_report) %>
+                {render_markdown(@executive_report)}
               </div>
             </div>
           <% end %>
@@ -1133,16 +1149,14 @@ defmodule McpWeb.Tenant.DashboardLive do
           disabled={!@executive_report || @generating_report}
           class="btn btn-ghost btn-xs rounded-xl px-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-primary/10 hover:text-primary transition-all disabled:opacity-30"
         >
-          <.icon name="hero-envelope" class="size-4" />
-          Email Report
+          <.icon name="hero-envelope" class="size-4" /> Email Report
         </button>
         <button
           phx-click={JS.push("download_report")}
           disabled={!@executive_report || @generating_report}
           class="btn btn-ghost btn-xs rounded-xl px-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-primary/10 hover:text-primary transition-all disabled:opacity-30"
         >
-          <.icon name="hero-arrow-down-tray" class="size-4" />
-          Download PDF
+          <.icon name="hero-arrow-down-tray" class="size-4" /> Download PDF
         </button>
       </:extra_footer>
       <:confirm_text>Close</:confirm_text>

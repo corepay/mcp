@@ -8,6 +8,10 @@ defmodule Mcp.Ai.Document do
     extensions: [AshAi, AshArchival, AshOban],
     authorizers: [Ash.Policy.Authorizer]
 
+  alias Mcp.Ai.OpenAiEmbeddingModel
+
+  require Ash.Query
+
   policies do
     policy action_type(:read) do
       authorize_if expr(tenant_id == ^actor(:tenant_id))
@@ -37,7 +41,7 @@ defmodule Mcp.Ai.Document do
 
   vectorize do
     strategy :ash_oban
-    embedding_model(Mcp.Ai.OpenAiEmbeddingModel)
+    embedding_model(OpenAiEmbeddingModel)
 
     full_text do
       text(fn record -> record.content end)
@@ -118,7 +122,7 @@ defmodule Mcp.Ai.Document do
       argument :query, :string, allow_nil?: false
 
       prepare before_action(fn query, _context ->
-                case Mcp.Ai.OpenAiEmbeddingModel.generate([query.arguments.query], []) do
+                case OpenAiEmbeddingModel.generate([query.arguments.query], []) do
                   {:ok, [search_vector]} ->
                     Ash.Query.filter(
                       query,

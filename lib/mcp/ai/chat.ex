@@ -6,6 +6,8 @@ defmodule Mcp.Ai.Chat do
     domain: Mcp.Ai,
     extensions: [AshAi]
 
+  alias Mcp.Ai.Orchestrator
+
   actions do
     action :chat, :string do
       description "Chat with the AI."
@@ -15,7 +17,7 @@ defmodule Mcp.Ai.Chat do
       end
 
       run fn input, _context ->
-        Mcp.Ai.Orchestrator.ask("You are a helpful assistant.", input.arguments.message)
+        Orchestrator.ask("You are a helpful assistant.", input.arguments.message)
       end
     end
   end

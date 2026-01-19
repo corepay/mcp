@@ -4,7 +4,8 @@ defmodule Mcp.TestFactories do
   """
 
   alias Mcp.Accounts.{RegistrationRequest, User}
-  alias Mcp.Platform.ApiKey
+  alias Mcp.Platform.{ApiKey, Merchant, Tenant}
+  alias Mcp.Repo
 
   # Main insert function that mimics ExMachina but works with Ash
   def insert(factory_name, attrs \\ %{})
@@ -38,7 +39,7 @@ defmodule Mcp.TestFactories do
       else
         id = Ecto.UUID.generate()
 
-        Mcp.Repo.insert!(%Mcp.Platform.Tenant{
+        Repo.insert!(%Tenant{
           id: id,
           name: "Factory Tenant #{id}",
           slug: "factory-tenant-#{id}",
@@ -138,7 +139,7 @@ defmodule Mcp.TestFactories do
       }
       |> Map.merge(attrs)
 
-    case Mcp.Platform.Tenant.create(tenant_attrs) do
+    case Tenant.create(tenant_attrs) do
       {:ok, tenant} ->
         tenant
 
@@ -160,7 +161,7 @@ defmodule Mcp.TestFactories do
 
     tenant = Map.get(attrs, :tenant)
 
-    case Mcp.Platform.Merchant.create(merchant_attrs, tenant: tenant) do
+    case Merchant.create(merchant_attrs, tenant: tenant) do
       {:ok, merchant} -> merchant
       {:error, reason} -> raise "Failed to create merchant: #{inspect(reason)}"
     end

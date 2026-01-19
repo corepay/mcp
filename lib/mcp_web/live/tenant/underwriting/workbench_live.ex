@@ -191,7 +191,7 @@ defmodule McpWeb.Tenant.Underwriting.WorkbenchLive do
           <% end %>
         </div>
       </aside>
-
+      
     <!-- CENTER: EVIDENCE CANVAS -->
       <main class="panopticon-canvas bg-base-100 flex flex-col h-full overflow-hidden">
         <%!-- Contextual Workbench Header (Thin) --%>
@@ -276,7 +276,7 @@ defmodule McpWeb.Tenant.Underwriting.WorkbenchLive do
           </div>
         </div>
       </main>
-
+      
     <!-- RIGHT: SOVEREIGN BRIEF -->
       <aside class={[
         "panopticon-wing-right bg-base-200 border-l border-base-300 flex flex-col shadow-2xl z-30 relative justify-between",
@@ -770,7 +770,7 @@ defmodule McpWeb.Tenant.Underwriting.WorkbenchLive do
             </div>
           </div>
         </div>
-
+        
     <!-- Right Col: Owners & Bank -->
         <div class="col-span-4 space-y-6">
           <div class="glass-panel p-5 rounded-xl border-t-2 border-t-base-300">

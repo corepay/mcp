@@ -7,6 +7,8 @@ defmodule Mcp.Underwriting.PlaybookConcierge do
     domain: Mcp.Underwriting,
     extensions: [AshAi]
 
+  alias Mcp.Ai.Orchestrator
+
   code_interface do
     define :suggest_rules, args: [:industry]
     define :analyze_policy, args: [:rules_markdown]
@@ -41,7 +43,7 @@ defmodule Mcp.Underwriting.PlaybookConcierge do
         Return ONLY the Markdown content.
         """
 
-        Mcp.Ai.Orchestrator.ask(system_prompt, user_message)
+        Orchestrator.ask(system_prompt, user_message)
       end
     end
 
@@ -63,7 +65,7 @@ defmodule Mcp.Underwriting.PlaybookConcierge do
         Return a JSON map with "gaps", "strengths", and "recommendations".
         """
 
-        case Mcp.Ai.Orchestrator.ask(system_prompt, user_message) do
+        case Orchestrator.ask(system_prompt, user_message) do
           {:ok, content} ->
             # Since this expects a :map, we need to parse it
             case Jason.decode(content) do

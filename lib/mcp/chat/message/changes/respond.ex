@@ -7,8 +7,13 @@ defmodule Mcp.Chat.Message.Changes.Respond do
   alias LangChain.ChatModels.ChatOpenAI
   alias LangChain.Message
   alias LangChain.MessageDelta
+  alias Mcp.Accounts.User
   alias Mcp.Ai.LlmUsage
   alias Mcp.Chat
+  alias Mcp.Finance.Ledger
+  alias Mcp.Platform.{ApiKey, Merchant, MID, Reseller, Tenant}
+  alias Mcp.Underwriting.Application, as: UWApplication
+  alias Mcp.Underwriting.Playbook
   alias Mcp.Underwriting.Tools.{AnalyzeDocument, ConsultExpert}
 
   require Ash.Query
@@ -33,7 +38,7 @@ defmodule Mcp.Chat.Message.Changes.Respond do
       subject_context = load_subject_context(conversation)
 
       playbook =
-        case Mcp.Underwriting.Playbook.active(authorize?: false) do
+        case Playbook.active(authorize?: false) do
           {:ok, [first | _]} -> first
           {:ok, []} -> nil
           _ -> nil
@@ -41,7 +46,7 @@ defmodule Mcp.Chat.Message.Changes.Respond do
 
       system_prompt =
         Message.new_system!(
-          Mcp.Chat.Persona.system_prompt(actor, %{
+          Chat.Persona.system_prompt(actor, %{
             subject: subject_context,
             playbook: playbook
           })
@@ -229,11 +234,11 @@ defmodule Mcp.Chat.Message.Changes.Respond do
 
   defp augment_actor(nil), do: nil
 
-  defp augment_actor(%Mcp.Accounts.User{merchant_id: nil} = actor), do: actor
+  defp augment_actor(%User{merchant_id: nil} = actor), do: actor
 
-  defp augment_actor(%Mcp.Accounts.User{merchant_id: merchant_id} = actor) do
+  defp augment_actor(%User{merchant_id: merchant_id} = actor) do
     # Try to load the merchant to determine if they are an applicant or operator
-    case Mcp.Platform.Merchant.get_by_id(merchant_id, authorize?: false) do
+    case Merchant.get_by_id(merchant_id, authorize?: false) do
       {:ok, merchant} ->
         category = if merchant.status == :active, do: :operator, else: :applicant
 
@@ -249,49 +254,49 @@ defmodule Mcp.Chat.Message.Changes.Respond do
   defp load_subject_context(%{subject_id: nil}), do: nil
 
   defp load_subject_context(%{subject_id: id, subject_type: :application}) do
-    case Mcp.Underwriting.Application.get_by_id(id, authorize?: false) do
+    case UWApplication.get_by_id(id, authorize?: false) do
       {:ok, app} -> app
       _ -> nil
     end
   end
 
   defp load_subject_context(%{subject_id: id, subject_type: :merchant}) do
-    case Mcp.Platform.Merchant.get_by_id(id, authorize?: false) do
+    case Merchant.get_by_id(id, authorize?: false) do
       {:ok, merchant} -> merchant
       _ -> nil
     end
   end
 
   defp load_subject_context(%{subject_id: id, subject_type: :reseller}) do
-    case Mcp.Platform.Reseller.get_by_id(id, authorize?: false) do
+    case Reseller.get_by_id(id, authorize?: false) do
       {:ok, reseller} -> reseller
       _ -> nil
     end
   end
 
   defp load_subject_context(%{subject_id: id, subject_type: :mid}) do
-    case Mcp.Platform.MID.get_by_id(id, authorize?: false) do
+    case MID.get_by_id(id, authorize?: false) do
       {:ok, mid} -> mid
       _ -> nil
     end
   end
 
   defp load_subject_context(%{subject_id: id, subject_type: :api_key}) do
-    case Mcp.Platform.ApiKey.get_by_id(id, authorize?: false) do
+    case ApiKey.get_by_id(id, authorize?: false) do
       {:ok, key} -> key
       _ -> nil
     end
   end
 
   defp load_subject_context(%{subject_id: id, subject_type: :ledger}) do
-    case Mcp.Finance.Ledger.get_by_id(id, authorize?: false) do
+    case Ledger.get_by_id(id, authorize?: false) do
       {:ok, ledger} -> ledger
       _ -> nil
     end
   end
 
   defp load_subject_context(%{subject_id: id, subject_type: :tenant}) do
-    case Mcp.Platform.Tenant.get_by_id(id, authorize?: false) do
+    case Tenant.get_by_id(id, authorize?: false) do
       {:ok, tenant} -> tenant
       _ -> nil
     end

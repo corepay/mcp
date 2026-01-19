@@ -6,6 +6,8 @@ defmodule Mcp.Graph.Query do
     domain: Mcp.Graph,
     extensions: [AshAi]
 
+  alias Mcp.Graph.{Notifier, TenantContext}
+
   resource do
     require_primary_key? false
   end
@@ -18,7 +20,7 @@ defmodule Mcp.Graph.Query do
       argument :depth, :integer, default: 2
 
       manual fn query, _opts, _context ->
-        tenant_slug = Mcp.Graph.Notifier.get_tenant_slug(query.context.tenant)
+        tenant_slug = Notifier.get_tenant_slug(query.context.tenant)
 
         rel_clause =
           if query.arguments.relationship_type do
@@ -33,7 +35,7 @@ defmodule Mcp.Graph.Query do
         LIMIT 50
         """
 
-        case Mcp.Graph.TenantContext.execute_cypher(tenant_slug, "graph", cypher,
+        case TenantContext.execute_cypher(tenant_slug, "graph", cypher,
                start_id: query.arguments.start_node_id
              ) do
           results when is_list(results) ->
@@ -53,7 +55,7 @@ defmodule Mcp.Graph.Query do
       argument :merchant_id, :string, allow_nil?: false
 
       manual fn query, _opts, _context ->
-        tenant_slug = Mcp.Graph.Notifier.get_tenant_slug(query.context.tenant)
+        tenant_slug = Notifier.get_tenant_slug(query.context.tenant)
 
         cypher = """
         MATCH (m:Merchant {id: $merchant_id})-[*1..3]-(other:Merchant)
@@ -61,7 +63,7 @@ defmodule Mcp.Graph.Query do
         RETURN other.business_name as name, other.risk_level as risk, other.id as id
         """
 
-        case Mcp.Graph.TenantContext.execute_cypher(tenant_slug, "graph", cypher,
+        case TenantContext.execute_cypher(tenant_slug, "graph", cypher,
                merchant_id: query.arguments.merchant_id
              ) do
           results when is_list(results) ->

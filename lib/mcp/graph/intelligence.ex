@@ -7,6 +7,7 @@ defmodule Mcp.Graph.Intelligence do
     domain: Mcp.Ai,
     authorizers: [Ash.Policy.Authorizer]
 
+  alias Mcp.Graph.Notifier
   alias Mcp.Graph.TenantContext
 
   policies do
@@ -27,7 +28,7 @@ defmodule Mcp.Graph.Intelligence do
 
       # We use a manual action to execute Cypher
       manual fn query, _data_layer_query, context ->
-        tenant_slug = Mcp.Graph.Notifier.get_tenant_slug(context.tenant)
+        tenant_slug = Notifier.get_tenant_slug(context.tenant)
         start_id = query.arguments.start_node_id
         rel = query.arguments.relationship_type
         depth = query.arguments.depth
@@ -65,7 +66,7 @@ defmodule Mcp.Graph.Intelligence do
       argument :merchant_id, :string, allow_nil?: false
 
       manual fn query, _data_layer_query, context ->
-        tenant_slug = Mcp.Graph.Notifier.get_tenant_slug(context.tenant)
+        tenant_slug = Notifier.get_tenant_slug(context.tenant)
         merchant_id = query.arguments.merchant_id
 
         # Query to find shared owners/resellers with high risk

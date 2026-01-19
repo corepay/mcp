@@ -170,7 +170,9 @@ defmodule McpWeb.Tenant.Components.ExecutiveChat do
               <div class="flex flex-col items-start gap-1 max-w-[85%] w-fit text-left">
                 <div class="flex items-center gap-1 mb-0.5 opacity-40 ml-0.5">
                   <.icon name="hero-bolt-solid" class="size-2.5 text-primary" />
-                  <span class="text-[7px] font-black uppercase tracking-tighter text-primary">Atlas is thinking</span>
+                  <span class="text-[7px] font-black uppercase tracking-tighter text-primary">
+                    Atlas is thinking
+                  </span>
                 </div>
                 <div class="bg-white/[0.04] p-2 rounded-md border border-white/5">
                   <div class="flex gap-1">

@@ -6,6 +6,7 @@ defmodule Mcp.Graph.Notifier do
   use Ash.Notifier
 
   alias Mcp.Graph.TenantContext
+  alias Mcp.Platform.{Merchant, Reseller, Tenant}
 
   @impl true
   def notify(notification) do
@@ -19,7 +20,7 @@ defmodule Mcp.Graph.Notifier do
     end
   end
 
-  def sync_to_graph(Mcp.Platform.Merchant, merchant, tenant) do
+  def sync_to_graph(Merchant, merchant, tenant) do
     tenant_slug = get_tenant_slug(tenant)
 
     # Cypher for Merchant
@@ -54,7 +55,7 @@ defmodule Mcp.Graph.Notifier do
     end
   end
 
-  def sync_to_graph(Mcp.Platform.Reseller, reseller, tenant) do
+  def sync_to_graph(Reseller, reseller, tenant) do
     tenant_slug = get_tenant_slug(tenant)
 
     cypher = """
@@ -85,11 +86,11 @@ defmodule Mcp.Graph.Notifier do
     end
   end
 
-  def get_tenant_slug(%Mcp.Platform.Tenant{slug: slug}), do: slug
+  def get_tenant_slug(%Tenant{slug: slug}), do: slug
 
   def get_tenant_slug(tenant) do
     # Try to fetch if it's an ID
-    case Mcp.Platform.Tenant.get_by_id(tenant) do
+    case Tenant.get_by_id(tenant) do
       {:ok, t} -> t.slug
       _ -> to_string(tenant)
     end

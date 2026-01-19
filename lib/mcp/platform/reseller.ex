@@ -10,6 +10,8 @@ defmodule Mcp.Platform.Reseller do
     extensions: [AshJsonApi.Resource, AshArchival, AshOban],
     notifiers: []
 
+  alias Mcp.Graph.Notifier
+
   # paper_trail do
   # end
 
@@ -67,7 +69,7 @@ defmodule Mcp.Platform.Reseller do
 
       change fn changeset, _ ->
         Ash.Changeset.after_action(changeset, fn _changeset, reseller ->
-          Mcp.Graph.Notifier.sync_to_graph(Mcp.Platform.Reseller, reseller, reseller.id)
+          Notifier.sync_to_graph(__MODULE__, reseller, reseller.id)
           {:ok, reseller}
         end)
       end

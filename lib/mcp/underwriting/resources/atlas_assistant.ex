@@ -7,6 +7,8 @@ defmodule Mcp.Underwriting.AtlasAssistant do
     domain: Mcp.Underwriting,
     extensions: [AshAi]
 
+  alias Mcp.Ai.Orchestrator
+
   code_interface do
     define :ask, args: [:query, :context]
   end
@@ -47,7 +49,7 @@ defmodule Mcp.Underwriting.AtlasAssistant do
         #{input.arguments.query}
         """
 
-        case Mcp.Ai.Orchestrator.ask(system_prompt, user_message) do
+        case Orchestrator.ask(system_prompt, user_message) do
           {:ok, response} -> {:ok, response}
           {:error, reason} -> {:error, reason}
         end
