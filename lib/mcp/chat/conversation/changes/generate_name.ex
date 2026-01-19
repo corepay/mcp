@@ -25,8 +25,17 @@ defmodule Mcp.Chat.Conversation.Changes.GenerateName do
 
       llm_messages = build_name_generation_messages(messages)
 
+      llm_config = Application.get_env(:mcp, :llm)
+      models = llm_config[:openrouter_fallback_models] || ["google/gemini-2.0-flash-exp:free"]
+      model = if is_list(models), do: List.first(models), else: models
+
       %{
-        llm: ChatOpenAI.new!(%{model: "gpt-4o"}),
+        llm:
+          ChatOpenAI.new!(%{
+            model: model,
+            api_key: llm_config[:openrouter_api_key],
+            endpoint: "#{llm_config[:openrouter_base_url]}/chat/completions"
+          }),
         custom_context: Map.new(Ash.Context.to_opts(context)),
         verbose?: true
       }

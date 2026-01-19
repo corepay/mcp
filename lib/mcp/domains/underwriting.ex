@@ -26,7 +26,7 @@ defmodule Mcp.Underwriting do
     resource Mcp.Underwriting.PlaybookConcierge
     resource Mcp.Underwriting.Pipeline
     resource Mcp.Underwriting.Execution
-    resource Mcp.Underwriting.ExecutiveAssistant
+    resource Mcp.Underwriting.AtlasAssistant
 
     # Deal Room Resources
     resource Mcp.Underwriting.Note

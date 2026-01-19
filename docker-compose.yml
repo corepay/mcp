@@ -52,13 +52,13 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - "${MINIO_PORT}"
-      - "${MINIO_CONSOLE_PORT}"  # Console
+      - "${MINIO_PORT}:${MINIO_PORT}"
+      - "${MINIO_CONSOLE_PORT}:${MINIO_CONSOLE_PORT}" # Console
     volumes:
       - minio_data:/data
     networks:
       - mcp_network
-    command: server /data --console-address "${MINIO_CONSOLE_PORT}"
+    command: server /data --console-address ":${MINIO_CONSOLE_PORT}" --address ":${MINIO_PORT}"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${MINIO_PORT}/minio/health/live"]
       interval: 30s

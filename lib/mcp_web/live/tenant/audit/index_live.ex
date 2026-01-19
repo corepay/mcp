@@ -185,26 +185,27 @@ defmodule McpWeb.Tenant.Audit.IndexLive do
   defp activity_icon(:kyc_failure), do: "hero-x-circle"
   defp activity_icon(_), do: "hero-bolt"
 
-  defp format_activity_msg(activity) do
-    case activity.type do
-      :status_change ->
-        from = activity.metadata["from"] || "unknown"
-        to = activity.metadata["to"] || "unknown"
-        "Application state transition recorded from #{from} state to #{to} state."
+  defp format_activity_msg(%{type: :status_change} = activity) do
+    from = activity.metadata["from"] || "unknown"
+    to = activity.metadata["to"] || "unknown"
+    "Application state transition recorded from #{from} state to #{to} state."
+  end
 
-      :risk_assessment ->
-        score = activity.metadata["score"] || "XX"
-        "AI-Driven Intelligence Scan completed. Forensic Signal Score: #{score}/100"
+  defp format_activity_msg(%{type: :risk_assessment} = activity) do
+    score = activity.metadata["score"] || "XX"
+    "AI-Driven Intelligence Scan completed. Forensic Signal Score: #{score}/100"
+  end
 
-      :internal_note ->
-        note = activity.metadata["note"] || "No content."
-        "Strategic and operational directive logged by system actor: \"#{note}\""
+  defp format_activity_msg(%{type: :internal_note} = activity) do
+    note = activity.metadata["note"] || "No content."
+    "Strategic and operational directive logged by system actor: \"#{note}\""
+  end
 
-      :kyc_success ->
-        "Primary identity verification successfully synchronized with biometric records."
+  defp format_activity_msg(%{type: :kyc_success}) do
+    "Primary identity verification successfully synchronized with biometric records."
+  end
 
-      _ ->
-        "Atomic operational trace recorded and appended to the ledger."
-    end
+  defp format_activity_msg(_activity) do
+    "Atomic operational trace recorded and appended to the ledger."
   end
 end

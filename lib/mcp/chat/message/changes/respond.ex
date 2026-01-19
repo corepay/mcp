@@ -5,8 +5,9 @@ defmodule Mcp.Chat.Message.Changes.Respond do
   use Ash.Resource.Change
   alias LangChain.Chains.LLMChain
   alias LangChain.ChatModels.ChatOpenAI
-  alias LangChain.{Message, MessageDelta}
-  alias Mcp.Ai.{LlmUsage}
+  alias LangChain.Message
+  alias LangChain.MessageDelta
+  alias Mcp.Ai.LlmUsage
   alias Mcp.Chat
   alias Mcp.Underwriting.Tools.{AnalyzeDocument, ConsultExpert}
 
@@ -30,7 +31,13 @@ defmodule Mcp.Chat.Message.Changes.Respond do
 
       conversation = Chat.Conversation.get_by_id!(message.conversation_id, authorize?: false)
       subject_context = load_subject_context(conversation)
-      playbook = Mcp.Underwriting.Playbook.active(authorize?: false) |> List.first()
+
+      playbook =
+        case Mcp.Underwriting.Playbook.active(authorize?: false) do
+          {:ok, [first | _]} -> first
+          {:ok, []} -> nil
+          _ -> nil
+        end
 
       system_prompt =
         Message.new_system!(
@@ -45,12 +52,14 @@ defmodule Mcp.Chat.Message.Changes.Respond do
       new_message_id = Ash.UUIDv7.generate()
 
       llm_config = Application.get_env(:mcp, :llm)
+      models = llm_config[:openrouter_fallback_models] || ["google/gemini-2.0-flash-exp:free"]
+      model = if is_list(models), do: List.first(models), else: models
 
       chain =
         %{
           llm:
             ChatOpenAI.new!(%{
-              model: llm_config[:openrouter_model],
+              model: model,
               api_key: llm_config[:openrouter_api_key],
               endpoint: "#{llm_config[:openrouter_base_url]}/chat/completions",
               receive_timeout: 120_000

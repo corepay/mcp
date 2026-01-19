@@ -25,7 +25,11 @@ defmodule Mcp.Seeder do
 
     # seed_agent_blueprints() is now called per-tenant
 
-    # 4. Create Bank Matrix
+    # 4. Underwriting Demo Data
+    Mcp.Underwriting.DemoSeeder.run("acme")
+    Mcp.Underwriting.DemoSeeder.run("globex")
+
+    # 5. Create Bank Matrix
     BankSeeder.run()
 
     IO.puts("✅ Seeding Complete!")

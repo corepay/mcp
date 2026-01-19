@@ -69,12 +69,15 @@ config :ash_typescript,
 config :mcp, :llm,
   openrouter_base_url: "https://openrouter.ai/api/v1",
   openrouter_api_key: System.get_env("OPENROUTER_API_KEY"),
-  openrouter_model: "google/gemini-2.5-pro",
-  analytics_model: "google/gemini-2.0-flash-exp:free"
+  openrouter_fallback_models: [
+    "google/gemini-2.0-flash-exp:free",
+    "openai/gpt-4o-mini",
+    "google/gemini-pro-1.5"
+  ]
 
 # AshAi Configuration
 config :ash_ai,
-  default_model: "google/gemini-2.5-pro"
+  default_model: "openai/gpt-4o-mini"
 
 config :mcp, :qorpay,
   base_url: System.get_env("QORPAY_SANDBOX_URL", "https://api-sandbox.qorcommerce.io/v3"),

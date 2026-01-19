@@ -6,7 +6,14 @@ defmodule Mcp.Ai.OpenRouter do
 
   @base_url "https://openrouter.ai/api/v1"
 
-  def chat_completion(messages, model \\ "google/gemini-2.5-pro") do
+  @default_models [
+    "google/gemini-2.0-flash-exp:free",
+    "google/gemini-flash-1.5",
+    "openai/gpt-4o-mini"
+  ]
+
+  def chat_completion(messages, model \\ nil) do
+    model = model || @default_models
     api_key = System.get_env("OPENROUTER_API_KEY")
 
     if is_nil(api_key) do
@@ -15,7 +22,6 @@ defmodule Mcp.Ai.OpenRouter do
       headers = [
         {"Authorization", "Bearer #{api_key}"},
         {"Content-Type", "application/json"},
-        # Required by OpenRouter
         {"HTTP-Referer", "https://mcp.com"},
         {"X-Title", "MCP Underwriting Agent"}
       ]

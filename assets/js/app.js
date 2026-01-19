@@ -139,6 +139,17 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
+// Show/Hide Modal events from server
+window.addEventListener("phx:show-modal", (e) => {
+  const el = document.getElementById(e.detail.id);
+  if (el) el.classList.add("modal-open");
+});
+
+window.addEventListener("phx:close-modal", (e) => {
+  const el = document.getElementById(e.detail.id);
+  if (el) el.classList.remove("modal-open");
+});
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 

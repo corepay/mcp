@@ -1,4 +1,7 @@
 defmodule McpWeb.Tenant.Components.ExecutiveChat do
+  @moduledoc """
+  A LiveComponent for executive chat interactions.
+  """
   use McpWeb, :live_component
 
   def mount(socket) do
@@ -106,10 +109,10 @@ defmodule McpWeb.Tenant.Components.ExecutiveChat do
             </div>
             <div class="flex flex-col">
               <span class="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-                Executive Assistant
+                Atlas Assistant
               </span>
               <span class="text-[8px] font-bold text-base-content/40 uppercase tracking-widest">
-                Active Strategic Link
+                Portfolio Intelligence
               </span>
             </div>
           </div>
@@ -134,7 +137,7 @@ defmodule McpWeb.Tenant.Components.ExecutiveChat do
                 <.icon name="hero-chat-bubble-left-right" class="size-6" />
               </div>
               <p class="text-[10px] font-black uppercase tracking-[0.2em] leading-relaxed">
-                Awaiting Strategic Query
+                Ready to assist
               </p>
             </div>
           <% else %>

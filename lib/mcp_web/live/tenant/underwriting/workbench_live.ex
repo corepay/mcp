@@ -2,9 +2,10 @@ defmodule McpWeb.Tenant.Underwriting.WorkbenchLive do
   use McpWeb, :live_view
 
   alias Mcp.Platform.Tenant
+  alias Mcp.Underwriting.Activity
   alias Mcp.Underwriting.Application, as: UWApplication
-  alias Mcp.Underwriting.{RiskAssessment, Activity}
   alias Mcp.Underwriting.Engine.AnalyzeApplication
+  alias Mcp.Underwriting.RiskAssessment
 
   require Ash.Query
 
@@ -12,44 +13,41 @@ defmodule McpWeb.Tenant.Underwriting.WorkbenchLive do
   def mount(params, session, socket) do
     tenant_id = session["tenant_id"] || (socket.assigns[:current_context] || %{})[:tenant_id]
 
-    if is_nil(tenant_id) do
+    case validate_tenant(tenant_id, socket) do
+      {:error, socket} ->
+        {:ok, socket}
+
+      {:ok, tenant} ->
+        initialize_workbench(params, tenant, socket)
+    end
+  end
+
+  defp validate_tenant(nil, socket) do
+    {:error,
+     socket
+     |> put_flash(:error, "No active tenant context. Please sign in via your tenant subdomain.")
+     |> redirect(to: "/")}
+  end
+
+  defp validate_tenant(tenant_id, _socket), do: {:ok, Tenant.get_by_id!(tenant_id)}
+
+  defp initialize_workbench(params, tenant, socket) do
+    tenant_schema = tenant.company_schema
+
+    # Load Queue
+    applications = load_applications(tenant_schema)
+
+    # Selected Application
+    application_id = params["id"] || (List.first(applications) && List.first(applications).id)
+    application = load_application(application_id, tenant_schema)
+
+    if params["id"] && is_nil(application) do
       {:ok,
        socket
-       |> put_flash(:error, "No active tenant context. Please sign in via your tenant subdomain.")
-       |> redirect(to: "/")}
+       |> put_flash(:info, "The requested application no longer exists.")
+       |> redirect(to: ~p"/tenant/underwriting")}
     else
-      tenant = Tenant.get_by_id!(tenant_id)
-      tenant_schema = tenant.company_schema
-
-      # Load Queue
-      applications =
-        UWApplication
-        |> Ash.Query.sort(inserted_at: :desc)
-        |> Ash.read!(tenant: tenant_schema)
-
-      # Selected Application
-      id = params["id"] || (List.first(applications) && List.first(applications).id)
-
-      application =
-        if id do
-          UWApplication.get_by_id!(id,
-            load: [:documents, :activities],
-            tenant: tenant_schema
-          )
-        else
-          nil
-        end
-
-      risk_assessment =
-        if application do
-          RiskAssessment
-          |> Ash.Query.filter(application_id == ^application.id)
-          |> Ash.Query.sort(inserted_at: :desc)
-          |> Ash.Query.limit(1)
-          |> Ash.read_one!(tenant: tenant_schema)
-        else
-          nil
-        end
+      risk_assessment = load_risk_assessment(application, tenant_schema)
 
       {:ok,
        socket
@@ -65,6 +63,31 @@ defmodule McpWeb.Tenant.Underwriting.WorkbenchLive do
     end
   end
 
+  defp load_applications(tenant_schema) do
+    UWApplication
+    |> Ash.Query.sort(inserted_at: :desc)
+    |> Ash.read!(tenant: tenant_schema)
+  end
+
+  defp load_application(nil, _), do: nil
+
+  defp load_application(id, tenant_schema) do
+    case UWApplication.get_by_id(id, load: [:documents, :activities], tenant: tenant_schema) do
+      {:ok, app} -> app
+      _ -> nil
+    end
+  end
+
+  defp load_risk_assessment(nil, _), do: nil
+
+  defp load_risk_assessment(application, tenant_schema) do
+    RiskAssessment
+    |> Ash.Query.filter(application_id == ^application.id)
+    |> Ash.Query.sort(inserted_at: :desc)
+    |> Ash.Query.limit(1)
+    |> Ash.read_one!(tenant: tenant_schema)
+  end
+
   @impl true
   def handle_params(params, _url, socket) do
     id = params["id"]
@@ -72,23 +95,29 @@ defmodule McpWeb.Tenant.Underwriting.WorkbenchLive do
     if id && id != (socket.assigns.application && socket.assigns.application.id) do
       tenant_schema = socket.assigns.tenant.company_schema
 
-      application =
-        UWApplication.get_by_id!(id,
-          load: [:documents, :activities],
-          tenant: tenant_schema
-        )
+      case UWApplication.get_by_id(id,
+             load: [:documents, :activities],
+             tenant: tenant_schema
+           ) do
+        {:ok, application} ->
+          risk_assessment =
+            RiskAssessment
+            |> Ash.Query.filter(application_id == ^application.id)
+            |> Ash.Query.sort(inserted_at: :desc)
+            |> Ash.Query.limit(1)
+            |> Ash.read_one!(tenant: tenant_schema)
 
-      risk_assessment =
-        RiskAssessment
-        |> Ash.Query.filter(application_id == ^application.id)
-        |> Ash.Query.sort(inserted_at: :desc)
-        |> Ash.Query.limit(1)
-        |> Ash.read_one!(tenant: tenant_schema)
+          {:noreply,
+           socket
+           |> assign(:application, application)
+           |> assign(:risk_assessment, risk_assessment)}
 
-      {:noreply,
-       socket
-       |> assign(:application, application)
-       |> assign(:risk_assessment, risk_assessment)}
+        _ ->
+          {:noreply,
+           socket
+           |> put_flash(:error, "Application not found.")
+           |> push_patch(to: ~p"/tenant/underwriting")}
+      end
     else
       {:noreply, socket}
     end
@@ -162,7 +191,7 @@ defmodule McpWeb.Tenant.Underwriting.WorkbenchLive do
           <% end %>
         </div>
       </aside>
-      
+
     <!-- CENTER: EVIDENCE CANVAS -->
       <main class="panopticon-canvas bg-base-100 flex flex-col h-full overflow-hidden">
         <%!-- Contextual Workbench Header (Thin) --%>
@@ -247,7 +276,7 @@ defmodule McpWeb.Tenant.Underwriting.WorkbenchLive do
           </div>
         </div>
       </main>
-      
+
     <!-- RIGHT: SOVEREIGN BRIEF -->
       <aside class={[
         "panopticon-wing-right bg-base-200 border-l border-base-300 flex flex-col shadow-2xl z-30 relative justify-between",
@@ -536,6 +565,13 @@ defmodule McpWeb.Tenant.Underwriting.WorkbenchLive do
     })
     |> Ash.create!(tenant: tenant)
 
+    # Reload with associations for the UI
+    updated_app =
+      UWApplication.get_by_id!(updated_app.id,
+        load: [:documents, :activities],
+        tenant: tenant
+      )
+
     # Refresh queue
     applications =
       UWApplication |> Ash.Query.sort(inserted_at: :desc) |> Ash.read!(tenant: tenant)
@@ -567,6 +603,13 @@ defmodule McpWeb.Tenant.Underwriting.WorkbenchLive do
     })
     |> Ash.create!(tenant: tenant)
 
+    # Reload with associations for the UI
+    updated_app =
+      UWApplication.get_by_id!(updated_app.id,
+        load: [:documents, :activities],
+        tenant: tenant
+      )
+
     # Refresh queue
     applications =
       UWApplication |> Ash.Query.sort(inserted_at: :desc) |> Ash.read!(tenant: tenant)
@@ -595,6 +638,13 @@ defmodule McpWeb.Tenant.Underwriting.WorkbenchLive do
       }
     })
     |> Ash.create!(tenant: tenant)
+
+    # Reload with associations for the UI
+    updated_app =
+      UWApplication.get_by_id!(updated_app.id,
+        load: [:documents, :activities],
+        tenant: tenant
+      )
 
     # Refresh queue
     applications =
@@ -720,7 +770,7 @@ defmodule McpWeb.Tenant.Underwriting.WorkbenchLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Right Col: Owners & Bank -->
         <div class="col-span-4 space-y-6">
           <div class="glass-panel p-5 rounded-xl border-t-2 border-t-base-300">

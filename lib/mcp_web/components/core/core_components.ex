@@ -149,32 +149,55 @@ defmodule McpWeb.Core.CoreComponents do
   attr :id, :string, required: true
   attr :show, :boolean, default: false
   attr :on_cancel, :any, default: nil
+  attr :on_confirm, :any, default: nil
   attr :"data-testid", :string, default: nil
+  attr :width, :string, default: nil
   slot :inner_block, required: true
   slot :title
   slot :confirm_text
   slot :cancel_text
+  slot :extra_footer
 
   def modal(assigns) do
     ~H"""
     <dialog id={@id} class={["modal", @show && "modal-open"]} data-testid={assigns[:"data-testid"]}>
-      <div class="modal-box bg-base-100/90 border border-white/10 shadow-2xl backdrop-blur-xl">
-        <h3 :if={@title != []} class="font-bold text-lg">{render_slot(@title)}</h3>
-        <div class="py-4">
+      <div class={[
+        "modal-box bg-base-100/95 border border-white/10 shadow-2xl backdrop-blur-xl flex flex-col p-0 overflow-hidden relative z-[50]",
+        @width || "max-w-lg",
+        "max-h-[95vh] rounded-3xl"
+      ]}>
+        <div :if={@title != []} class="px-8 py-6 border-b border-white/5 shrink-0 bg-base-100/50 backdrop-blur-md z-[60]">
+          <h3 class="font-black text-xl uppercase tracking-widest text-white">{render_slot(@title)}</h3>
+        </div>
+
+        <div class="p-8 overflow-y-auto custom-scrollbar flex-1 bg-gradient-to-b from-transparent to-base-200/20 relative z-[40]">
           {render_slot(@inner_block)}
         </div>
-        <div :if={@confirm_text != [] || @cancel_text != []} class="modal-action">
-          <form method="dialog">
-            <button :if={@cancel_text != []} class="btn" phx-click={@on_cancel}>
-              {render_slot(@cancel_text)}
-            </button>
-            <button :if={@confirm_text != []} class="btn btn-primary" phx-click="confirm">
+
+        <div
+          :if={@confirm_text != [] || @cancel_text != [] || @extra_footer != []}
+          class="shrink-0 px-8 py-6 border-t border-white/5 bg-base-100 flex items-center justify-between gap-3 relative z-[100]"
+        >
+          <div class="flex items-center gap-3">
+            {render_slot(@extra_footer)}
+          </div>
+          <div class="flex gap-3">
+            <form :if={@cancel_text != []} method="dialog">
+              <button class="btn btn-ghost rounded-xl px-6 font-bold uppercase tracking-widest text-xs" phx-click={@on_cancel}>
+                {render_slot(@cancel_text)}
+              </button>
+            </form>
+            <button
+              :if={@confirm_text != []}
+              class="btn btn-primary rounded-xl px-8 font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20"
+              phx-click={@on_confirm || "confirm"}
+            >
               {render_slot(@confirm_text)}
             </button>
-          </form>
+          </div>
         </div>
       </div>
-      <form method="dialog" class="modal-backdrop bg-black/40 backdrop-blur-sm">
+      <form method="dialog" class="modal-backdrop bg-black/60 backdrop-blur-sm z-[30]">
         <button phx-click={@on_cancel}>close</button>
       </form>
     </dialog>

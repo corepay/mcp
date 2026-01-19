@@ -1,8 +1,8 @@
 defmodule McpWeb.Tenant.Merchants.IndexLive do
   use McpWeb, :live_view
 
-  alias Mcp.Platform.Tenant
   alias Mcp.Platform.Merchant
+  alias Mcp.Platform.Tenant
 
   @impl true
   def mount(_params, session, socket) do

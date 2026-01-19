@@ -232,91 +232,185 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
       end
 
     config = Application.get_env(:mcp, :llm, [])
-    api_key = config[:openrouter_api_key]
-    base_url = config[:openrouter_base_url]
+
     # Prioritize model from blueprint routing config, then global config, then fallback
-    model =
+    raw_model =
       blueprint.routing_config[:primary_model] ||
         blueprint.routing_config["primary_model"] ||
-        config[:openrouter_model] ||
+        config[:openrouter_fallback_models] ||
         "google/gemini-2.5-pro"
 
-    # Check Semantic Cache
+    models = if is_list(raw_model), do: raw_model, else: [raw_model]
+
+    # Attempt models in sequence (Fallback strategy)
+    try_models(models, system_prompt, user_message, blueprint.name, config, opts)
+  end
+
+  defp try_models([model | rest], system_prompt, user_message, blueprint_name, config, opts) do
     cache_key_prompt = system_prompt <> user_message
 
     case SemanticCache.get(cache_key_prompt, model, :openrouter) do
       {:ok, cached_response} ->
-        IO.puts("⚡️ Cache Hit for Agent [#{blueprint.name}]")
-
-        usage_stats = %{
-          provider: :openrouter,
-          model: model,
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0,
-          cost: Decimal.new(0),
-          cached: true
-        }
-
-        {{:ok, cached_response}, usage_stats}
+        handle_cache_hit(blueprint_name, model, cached_response)
 
       nil ->
-        headers = [
-          {"Authorization", "Bearer #{api_key}"},
-          {"Content-Type", "application/json"},
-          {"HTTP-Referer", "https://mcp.local"},
-          {"X-Title", "MCP Underwriting"}
-        ]
-
-        body = %{
-          model: model,
-          messages: [
-            %{role: "system", content: system_prompt},
-            %{role: "user", content: user_message}
-          ],
-          temperature: 0.1,
-          response_format: %{type: "json_object"}
-        }
-
-        case Req.post("#{base_url}/chat/completions", headers: headers, json: body) do
+        case perform_openrouter_request(model, system_prompt, user_message, config) do
           {:ok, %{status: 200, body: body}} ->
-            choice = List.first(body["choices"])
-            content = choice["message"]["content"]
-            usage = body["usage"] || %{}
-
-            usage_stats = %{
-              provider: :openrouter,
+            args = %{
               model: model,
-              prompt_tokens: usage["prompt_tokens"] || 0,
-              completion_tokens: usage["completion_tokens"] || 0,
-              total_tokens: usage["total_tokens"] || 0,
-              cost:
-                LlmUsage.calculate_cost(
-                  model,
-                  usage["prompt_tokens"] || 0,
-                  usage["completion_tokens"] || 0
-                )
+              cache_key: cache_key_prompt,
+              rest: rest,
+              system_prompt: system_prompt,
+              user_message: user_message,
+              blueprint_name: blueprint_name,
+              config: config,
+              opts: opts
             }
 
-            result = parse_json(content)
-
-            case result do
-              {:ok, json_result} ->
-                SemanticCache.put(cache_key_prompt, model, :openrouter, json_result)
-                {{:ok, json_result}, usage_stats}
-
-              {:error, _} = error ->
-                {error, usage_stats}
-            end
+            handle_openrouter_success(body, args)
 
           {:ok, %{status: status}} ->
-            {{:ok, %{"error" => "OpenRouter request failed: #{status}"}},
-             %{provider: :openrouter, model: model}}
+            handle_openrouter_error(
+              status,
+              model,
+              rest,
+              system_prompt,
+              user_message,
+              blueprint_name,
+              config,
+              opts
+            )
 
-          {:error, _reason} ->
-            {{:ok, %{"error" => "OpenRouter request failed"}},
-             %{provider: :openrouter, model: model}}
+          {:error, reason} ->
+            handle_openrouter_failure(
+              reason,
+              model,
+              rest,
+              system_prompt,
+              user_message,
+              blueprint_name,
+              config,
+              opts
+            )
         end
+    end
+  end
+
+  defp try_models([], _system_prompt, _user_message, _blueprint_name, _config, _opts) do
+    {{:error, "No intelligence models available for fallback strategy."}, nil}
+  end
+
+  defp handle_cache_hit(blueprint_name, model, cached_response) do
+    IO.puts("⚡️ Cache Hit for Agent [#{blueprint_name}] using #{model}")
+
+    usage_stats = %{
+      provider: :openrouter,
+      model: model,
+      prompt_tokens: 0,
+      completion_tokens: 0,
+      total_tokens: 0,
+      cost: Decimal.new(0),
+      cached: true
+    }
+
+    {{:ok, cached_response}, usage_stats}
+  end
+
+  defp perform_openrouter_request(model, system_prompt, user_message, config) do
+    api_key = config[:openrouter_api_key]
+    base_url = config[:openrouter_base_url]
+
+    headers = [
+      {"Authorization", "Bearer #{api_key}"},
+      {"Content-Type", "application/json"},
+      {"HTTP-Referer", "https://mcp.local"},
+      {"X-Title", "MCP Underwriting"}
+    ]
+
+    body = %{
+      model: model,
+      messages: [
+        %{role: "system", content: system_prompt},
+        %{role: "user", content: user_message}
+      ],
+      temperature: 0.1,
+      response_format: %{type: "json_object"}
+    }
+
+    Req.post("#{base_url}/chat/completions",
+      headers: headers,
+      json: body,
+      receive_timeout: 120_000
+    )
+  end
+
+  defp handle_openrouter_success(body, args) do
+    %{
+      model: model,
+      cache_key: cache_key,
+      rest: rest,
+      system_prompt: sys,
+      user_message: user,
+      blueprint_name: blueprint,
+      config: config,
+      opts: opts
+    } = args
+
+    choice = List.first(body["choices"])
+    content = choice["message"]["content"]
+    usage = body["usage"] || %{}
+
+    usage_stats = build_usage_stats(model, usage)
+
+    case parse_json(content) do
+      {:ok, json_result} ->
+        SemanticCache.put(cache_key, model, :openrouter, json_result)
+        {{:ok, json_result}, usage_stats}
+
+      {:error, _} ->
+        if rest == [] do
+          {{:ok, %{"error" => "Failed to parse JSON response"}},
+           %{provider: :openrouter, model: model}}
+        else
+          IO.warn("JSON parse failed for #{model}. Trying next model...")
+          try_models(rest, sys, user, blueprint, config, opts)
+        end
+    end
+  end
+
+  defp build_usage_stats(model, usage) do
+    %{
+      provider: :openrouter,
+      model: model,
+      prompt_tokens: usage["prompt_tokens"] || 0,
+      completion_tokens: usage["completion_tokens"] || 0,
+      total_tokens: usage["total_tokens"] || 0,
+      cost:
+        LlmUsage.calculate_cost(
+          model,
+          usage["prompt_tokens"] || 0,
+          usage["completion_tokens"] || 0
+        )
+    }
+  end
+
+  defp handle_openrouter_error(status, model, rest, sys, user, blueprint, config, opts) do
+    if rest == [] do
+      {{:ok, %{"error" => "OpenRouter request failed: #{status}"}},
+       %{provider: :openrouter, model: model}}
+    else
+      IO.warn("Model #{model} failed with status #{status}. Trying next model...")
+      try_models(rest, sys, user, blueprint, config, opts)
+    end
+  end
+
+  defp handle_openrouter_failure(reason, model, rest, sys, user, blueprint, config, opts) do
+    if rest == [] do
+      {{:ok, %{"error" => "OpenRouter request failed: #{inspect(reason)}"}},
+       %{provider: :openrouter, model: model}}
+    else
+      IO.warn("Model #{model} failed with error: #{inspect(reason)}. Trying next model...")
+      try_models(rest, sys, user, blueprint, config, opts)
     end
   end
 
@@ -403,12 +497,15 @@ defmodule Mcp.Underwriting.Engine.AgentRunner do
   end
 
   defp extract_json_from_text(content) do
-    with [json_match] <- Regex.run(~r/\{.*\}/s, content),
-         {:ok, json_result} <- Jason.decode(json_match) do
-      {:ok, json_result}
-    else
+    case Regex.run(~r/\{.*\}/s, content) do
+      [json_match] ->
+        case Jason.decode(json_match) do
+          {:ok, json_result} -> {:ok, json_result}
+          {:error, _} -> {:error, :invalid_json}
+        end
+
       _ ->
-        {:ok, %{"raw_response" => content, "error" => "Failed to parse JSON"}}
+        {:error, :no_json_found}
     end
   end
 end

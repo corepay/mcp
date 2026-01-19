@@ -6,7 +6,7 @@
     "btree_gist",
     "citext",
     "ash-functions",
-    "pg_partman",
-    "age"
+    "age",
+    "vector"
   ]
 }

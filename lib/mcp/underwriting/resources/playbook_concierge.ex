@@ -7,10 +7,6 @@ defmodule Mcp.Underwriting.PlaybookConcierge do
     domain: Mcp.Underwriting,
     extensions: [AshAi]
 
-  alias LangChain.ChatModels.ChatOpenAI
-
-  import AshAi.Actions
-
   code_interface do
     define :suggest_rules, args: [:industry]
     define :analyze_policy, args: [:rules_markdown]
@@ -29,35 +25,24 @@ defmodule Mcp.Underwriting.PlaybookConcierge do
         default "moderate"
       end
 
-      run prompt(
-            fn _input, _context ->
-              config = Application.get_env(:mcp, :llm)
-              api_key = config[:openrouter_api_key]
-              base_url = config[:openrouter_base_url]
-              model = config[:analytics_model] || "google/gemini-2.0-flash-exp:free"
+      run fn input, _context ->
+        system_prompt = "You are an expert Underwriting Architect."
 
-              ChatOpenAI.new!(%{
-                model: model,
-                api_key: api_key,
-                endpoint: "#{base_url}/chat/completions",
-                receive_timeout: 120_000
-              })
-            end,
-            prompt: """
-            You are an expert Underwriting Architect.
-            Generate a comprehensive set of underwriting rules in Markdown format for the <%= @input.arguments.industry %> industry.
-            The risk appetite for this tenant is <%= @input.arguments.appetite %>.
+        user_message = """
+        Generate a comprehensive set of underwriting rules in Markdown format for the #{input.arguments.industry} industry.
+        The risk appetite for this tenant is #{input.arguments.appetite}.
 
-            Include specific sections for:
-            - KYB/KYC Requirements
-            - Financial Thresholds (DTI, Revenue, etc.)
-            - Industry-specific Red Flags
-            - Acceptable Business Models
+        Include specific sections for:
+        - KYB/KYC Requirements
+        - Financial Thresholds (DTI, Revenue, etc.)
+        - Industry-specific Red Flags
+        - Acceptable Business Models
 
-            Return ONLY the Markdown content.
-            """,
-            adapter: AshAi.Actions.Prompt.Adapter.RequestJson
-          )
+        Return ONLY the Markdown content.
+        """
+
+        Mcp.Ai.Orchestrator.ask(system_prompt, user_message)
+      end
     end
 
     action :analyze_policy, :map do
@@ -67,29 +52,33 @@ defmodule Mcp.Underwriting.PlaybookConcierge do
         allow_nil? false
       end
 
-      run prompt(
-            fn _input, _context ->
-              config = Application.get_env(:mcp, :llm)
-              api_key = config[:openrouter_api_key]
-              base_url = config[:openrouter_base_url]
-              model = config[:analytics_model] || "google/gemini-2.0-flash-exp:free"
+      run fn input, _context ->
+        system_prompt = "You are an expert Underwriting Architect."
 
-              ChatOpenAI.new!(%{
-                model: model,
-                api_key: api_key,
-                endpoint: "#{base_url}/chat/completions",
-                receive_timeout: 120_000
-              })
-            end,
-            prompt: """
-            Analyze the following underwriting rules for gaps, logic errors, or missing edge cases:
+        user_message = """
+        Analyze the following underwriting rules for gaps, logic errors, or missing edge cases:
 
-            <%= @input.arguments.rules_markdown %>
+        #{input.arguments.rules_markdown}
 
-            Return a JSON map with "gaps", "strengths", and "recommendations".
-            """,
-            adapter: AshAi.Actions.Prompt.Adapter.RequestJson
-          )
+        Return a JSON map with "gaps", "strengths", and "recommendations".
+        """
+
+        case Mcp.Ai.Orchestrator.ask(system_prompt, user_message) do
+          {:ok, content} ->
+            # Since this expects a :map, we need to parse it
+            case Jason.decode(content) do
+              {:ok, map} ->
+                {:ok, map}
+
+              {:error, _} ->
+                # Fallback: if not valid JSON, return as a map with error
+                {:ok, %{"error" => "Failed to parse analysis", "raw" => content}}
+            end
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+      end
     end
   end
 end

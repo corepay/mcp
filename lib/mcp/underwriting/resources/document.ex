@@ -44,7 +44,16 @@ defmodule Mcp.Underwriting.Document do
     end
 
     attribute :document_type, :atom do
-      constraints one_of: [:identity, :address, :incorporation, :other]
+      constraints one_of: [
+                    :identity,
+                    :address,
+                    :incorporation,
+                    :bank_statement,
+                    :tax_return,
+                    :business_license,
+                    :other
+                  ]
+
       default :other
     end
 

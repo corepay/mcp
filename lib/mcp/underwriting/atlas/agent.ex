@@ -38,7 +38,7 @@ defmodule Mcp.Underwriting.Atlas.Agent do
   """
   def atlas_blueprint do
     config = Application.get_env(:mcp, :llm, [])
-    model = config[:analytics_model] || "google/gemini-2.0-flash-exp:free"
+    models = config[:openrouter_fallback_models] || ["google/gemini-2.0-flash-exp:free"]
 
     %{
       name: "Atlas",
@@ -59,9 +59,9 @@ defmodule Mcp.Underwriting.Atlas.Agent do
       """,
       tools: [:field_help, :validation_check, :progress_summary],
       routing_config: %{
-        mode: :single,
+        mode: :fallback,
         primary_provider: :openrouter,
-        primary_model: model
+        primary_model: models
       }
     }
   end
@@ -571,119 +571,246 @@ defmodule Mcp.Underwriting.Atlas.Agent do
   """
   def generate_portfolio_summary(tenant_id, merchants, applications) do
     if mock_mode?() do
-      {:ok,
-       %{
-         type: :answer,
-         insights: [
-           %{
-             status: "green",
-             message: "Portfolio acquisition velocity is up 15% vs previous month."
-           },
-           %{
-             status: "amber",
-             message: "High-Ticket Retail sector requires manual signal verification."
-           },
-           %{status: "red", message: "Risk cluster detected in emerging tech merchant segment."}
-         ],
-         confidence: 0.95
-       }}
+      mock_portfolio_summary()
     else
       # Real LLM call for aggregate data
       blueprint = build_ash_blueprint()
-
-      portfolio_context = %{
-        merchant_count: length(merchants),
-        application_count: length(applications),
-        active_plans:
-          merchants
-          |> Enum.group_by(& &1.plan)
-          |> Enum.map(fn {p, l} -> {p, length(l)} end)
-          |> Map.new(),
-        risk_levels:
-          merchants
-          |> Enum.group_by(& &1.risk_level)
-          |> Enum.map(fn {r, l} -> {r, length(l)} end)
-          |> Map.new()
-      }
-
-      instructions_text = """
-      You are Atlas, the Portfolio Intelligence Analyst.
-      Analyze the following merchant portfolio data and provide exactly 3 strategic insights.
-      Each insight must have a status: "green" (positive/growth), "amber" (cautionary/pending), or "red" (risk/alert).
-
-      ## Portfolio Metrics
-      #{Jason.encode!(portfolio_context, pretty: true)}
-
-      Your goal is to identify trends in plan distribution, risk concentration, and acquisition velocity.
-      Respond with JSON:
-      {
-        "type": "answer",
-        "insights": [
-          {"status": "green", "message": "..."},
-          {"status": "amber", "message": "..."},
-          {"status": "red", "message": "..."}
-        ],
-        "confidence": 0.xx
-      }
-      """
+      portfolio_context = build_portfolio_context(merchants, applications)
 
       instructions = %Mcp.Underwriting.InstructionSet{
         name: "Dashboard Intelligence",
-        instructions: instructions_text
+        instructions: build_portfolio_instructions(portfolio_context)
       }
 
-      try do
-        case AgentRunner.run(blueprint, instructions, portfolio_context, tenant_id: tenant_id) do
-          {:ok, result} when is_map(result) ->
-            # Normalize insights to atom keys for stable rendering
-            insights =
-              case result["insights"] do
-                list when is_list(list) ->
-                  Enum.map(list, fn
-                    item when is_map(item) ->
-                      %{
-                        status: item["status"] || item[:status] || "green",
-                        message: item["message"] || item[:message] || "Analysis complete."
-                      }
-
-                    _ ->
-                      %{status: "green", message: "Portfolio analysis complete."}
-                  end)
-
-                _ ->
-                  [%{status: "green", message: "Portfolio analysis complete."}]
-              end
-
-            {:ok,
-             %{
-               type: :answer,
-               insights: insights,
-               confidence: result["confidence"] || 0.9
-             }}
-
-          {:ok, _other} ->
-            {:ok,
-             %{
-               type: :answer,
-               insights: [%{status: "green", message: "Portfolio analysis complete."}],
-               confidence: 0.5
-             }}
-
-          error ->
-            error
-        end
-      rescue
-        _ ->
-          {:ok,
-           %{
-             type: :answer,
-             insights: [
-               %{status: "green", message: "Strategic scan offline. Please try again later."}
-             ],
-             confidence: 0.0
-           }}
-      end
+      execute_portfolio_summary(blueprint, instructions, portfolio_context, tenant_id)
     end
+  end
+
+  defp execute_portfolio_summary(blueprint, instructions, context, tenant_id) do
+    case AgentRunner.run(blueprint, instructions, context, tenant_id: tenant_id) do
+      {:ok, result} when is_map(result) ->
+        # Normalize insights to atom keys for stable rendering
+        insights = normalize_portfolio_insights(result["insights"])
+        {:ok, %{type: :answer, insights: insights, confidence: result["confidence"] || 0.8}}
+
+      {:error, reason} ->
+        {:error, reason}
+
+      _ ->
+        {:error, "Intelligence scan interrupted."}
+    end
+  rescue
+    _ -> {:error, "System fault during intelligence scan."}
+  end
+
+  defp normalize_portfolio_insights(nil),
+    do: [%{status: "green", message: "Portfolio analysis complete."}]
+
+  defp normalize_portfolio_insights(list) when is_list(list) do
+    Enum.map(list, fn
+      item when is_map(item) ->
+        %{
+          status: item["status"] || item[:status] || "green",
+          message: item["message"] || item[:message] || "Analysis complete."
+        }
+
+      _ ->
+        %{status: "green", message: "Portfolio analysis complete."}
+    end)
+  end
+
+  defp normalize_portfolio_insights(_),
+    do: [%{status: "green", message: "Portfolio analysis complete."}]
+
+  defp build_portfolio_context(merchants, applications) do
+    %{
+      merchant_count: length(merchants),
+      application_count: length(applications),
+      active_plans: count_by_key(merchants, :plan),
+      risk_levels: count_by_key(merchants, :risk_level)
+    }
+  end
+
+  defp count_by_key(list, key) do
+    list
+    |> Enum.group_by(&Map.get(&1, key))
+    |> Enum.map(fn {k, l} -> {k, length(l)} end)
+    |> Map.new()
+  end
+
+  defp build_portfolio_instructions(portfolio_context) do
+    """
+    You are Atlas, the Portfolio Intelligence Analyst.
+    Analyze the following merchant portfolio data and provide exactly 3 strategic insights.
+    Each insight must have a status: "green" (positive/growth), "amber" (cautionary/pending), or "red" (risk/alert).
+
+    ## Portfolio Metrics
+    #{Jason.encode!(portfolio_context, pretty: true)}
+
+    Your goal is to identify trends in plan distribution, risk concentration, and acquisition velocity.
+    Respond with JSON:
+    {
+      "type": "answer",
+      "insights": [
+        {"status": "green", "message": "..."},
+        {"status": "amber", "message": "..."},
+        {"status": "red", "message": "..."}
+      ],
+      "confidence": 0.xx
+    }
+    """
+  end
+
+  defp mock_portfolio_summary do
+    {:ok,
+     %{
+       type: :answer,
+       insights: [
+         %{
+           status: "green",
+           message: "Portfolio acquisition velocity is up 15% vs previous month."
+         },
+         %{
+           status: "amber",
+           message: "High-Ticket Retail sector requires manual signal verification."
+         },
+         %{status: "red", message: "Risk cluster detected in emerging tech merchant segment."}
+       ],
+       confidence: 0.95
+     }}
+  end
+
+  @doc """
+  Generates a full-scale executive report for a tenant.
+  """
+  def generate_executive_report(tenant_id, merchants, applications, stats) do
+    if mock_mode?() do
+      mock_executive_report(merchants, stats)
+    else
+      blueprint = build_ash_blueprint()
+      portfolio_context = build_executive_context(merchants, applications, stats)
+
+      instructions = %Mcp.Underwriting.InstructionSet{
+        name: "Executive Report Generation",
+        instructions: build_executive_instructions(merchants, applications, stats)
+      }
+
+      execute_executive_report(blueprint, instructions, portfolio_context, tenant_id)
+    end
+  end
+
+  defp execute_executive_report(blueprint, instructions, context, tenant_id) do
+    case AgentRunner.run(blueprint, instructions, context, tenant_id: tenant_id) do
+      {:ok, result} when is_map(result) ->
+        extract_report_from_result(result)
+
+      {:ok, result} when is_binary(result) ->
+        {:ok, result}
+
+      {:error, reason} ->
+        {:error, reason}
+
+      _ ->
+        {:error, "Intelligence scan interrupted during report generation."}
+    end
+  rescue
+    _ -> {:error, "System fault during strategic analysis."}
+  end
+
+  defp extract_report_from_result(result) do
+    report = find_report_body(result)
+
+    cond do
+      is_binary(report) ->
+        {:ok, report}
+
+      result["error"] ->
+        {:error, result["error"]}
+
+      true ->
+        synth_report_from_result(result)
+    end
+  end
+
+  defp find_report_body(result) do
+    result["report"] || result[:report] || result["answer"] || result[:answer] ||
+      result["content"] || result["raw_response"]
+  end
+
+  defp synth_report_from_result(result) do
+    # If it's a map but has no recognized report key, try to synthesize from all string values
+    content =
+      result
+      |> Enum.filter(fn {_k, v} -> is_binary(v) end)
+      |> Enum.map_join("\n\n", fn {k, v} -> "## #{k}\n#{v}" end)
+
+    if content != "" do
+      {:ok, content}
+    else
+      {:ok,
+       "## [DEBUG_V3.0] Strategic Signal Lost\nThe intelligence agent returned a response without a report body. Raw result: #{inspect(result)}"}
+    end
+  end
+
+  defp build_executive_context(merchants, applications, stats) do
+    %{
+      merchant_count: length(merchants),
+      application_count: length(applications),
+      stats: stats,
+      active_plans: count_by_key(merchants, :plan),
+      risk_levels: count_by_key(merchants, :risk_level)
+    }
+  end
+
+  defp build_executive_instructions(merchants, applications, stats) do
+    """
+    You are Atlas, the MCP Executive Strategy Consultant (v2.1).
+    Generate a professional, high-density Strategic Executive Health Report.
+
+    ## Portfolio Overview
+    Total Merchants: #{length(merchants)}
+    Pending Applications: #{length(applications)}
+    Key Stats: #{Jason.encode!(stats)}
+
+    ## Requirements
+    - Structure: Use H1 for title, H2 for sections, and H3 for subcategories.
+    - Content: Include a KPI table, Performance Analysis, Risk Assessment, and Strategic Recommendations.
+    - Style: Authoritative, data-driven, and concise. Use emojis for visual cues.
+    - Formatting: Bullet points, bold text for emphasis, and clear tables.
+
+    ## Output Format
+    You must respond with a JSON object containing a "report" key with the markdown content.
+    Example: {"report": "# Strategic Report\\n...", "confidence": 0.95}
+    """
+  end
+
+  defp mock_executive_report(merchants, stats) do
+    {:ok,
+     """
+     # Executive Health Report: #{DateTime.utc_now() |> Calendar.strftime("%B %Y")}
+
+     ## 📊 Portfolio Overview
+     The portfolio currently consists of **#{length(merchants)}** active merchants with **#{stats.pending_apps}** applications in the pipeline.
+
+     ### Key Performance Indicators
+     | Metric | Value | Status |
+     | :--- | :--- | :--- |
+     | **30D Net Volume** | #{stats.volume} | 🟢 Strong |
+     | **Growth Rate** | #{stats.growth} | 📈 Above Average |
+     | **Risk Index** | #{stats.risk_index} | 🛡️ Healthy |
+
+     ## 💰 Profitability Analysis
+     The net yield remains stable at **18.4 bps**. Liquidity is concentrated in transit funds (**#{stats.today_volume}**), representing healthy transactional velocity.
+
+     ### Merchant Distribution
+     - **Retail:** 45% (Stable)
+     - **E-commerce:** 30% (High Growth)
+     - **Services:** 25% (Low Risk)
+
+     ## 🎯 Recommendations
+     1. **Accelerate Mid-Market Boarding**: The Stage 2 pipeline has 12 reviewing applications; prioritizing these will boost next month's volume by an estimated 8%.
+     2. **Monitor Tech Segment**: Emerging tech merchants show slight risk anomalies; recommend a deeper forensic scan.
+     """}
   end
 
   defp humanize_field(field) when is_binary(field) do
